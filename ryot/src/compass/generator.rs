@@ -87,13 +87,14 @@ pub fn build_map() -> Plan {
 
     for x in 60000..61100 {
         for y in 60000..61100 {
-            for z in 0..1 {
+            for z in 0..15 {
                 let mut tile = Tile::new(Position::new(x, y, z as u8));
                 let item1 = Item {
                     id: rand::thread_rng().gen_range(300..=305),
                     items: Vec::new(),
                     attributes: get_attribute_array(),
                 };
+
                 let item2 = Item {
                     id: rand::thread_rng().gen_range(300..=305),
                     items: vec![item1],
@@ -102,6 +103,8 @@ pub fn build_map() -> Plan {
 
                 tile.set_item(Item{
                     id: rand::thread_rng().gen_range(300..=400),
+                    // items: Vec::new(),
+                    // attributes: Vec::new(),
                     items: vec![item2],
                     attributes: get_attribute_array(),
                 });

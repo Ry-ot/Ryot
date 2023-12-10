@@ -2,7 +2,8 @@ mod serde;
 
 use std::fs;
 use std::path::{Path, PathBuf};
-use heed::{Env, EnvOpenOptions, RwTxn};
+use futures::TryFutureExt;
+use heed::{Env, EnvOpenOptions, RwTxn, RoTxn};
 pub use serde::{SerdePostcard};
 
 mod compression;
@@ -21,6 +22,7 @@ impl DatabaseName {
     }
 }
 
+#[derive(Clone)]
 pub struct Lmdb {
     pub env: Env,
 }
@@ -37,17 +39,23 @@ impl Lmdb {
         Ok(Self { env })
     }
 
-    pub fn create<K: 'static, V: 'static>(&self, name: DatabaseName) -> heed::Result<(RwTxn, heed::Database<K, V>)> {
+    pub fn rw<K: 'static, V: 'static>(&self, name: DatabaseName) -> heed::Result<(RwTxn, heed::Database<K, V>)> {
         let mut wtxn = self.env.write_txn()?;
         let db = self.env.create_database::<K, V>(&mut wtxn, Some(name.get_name()))?;
         Ok((wtxn, db))
     }
 
+    pub fn ro<K: 'static, V: 'static>(&self, name: DatabaseName) -> heed::Result<(RoTxn, Option<heed::Database<K, V>>)> {
+        let rtxn = self.env.read_txn()?;
+        let db = self.env.open_database::<K, V>(&rtxn, Some(name.get_name()))?.or(None);
+        Ok((rtxn, db))
+    }
+
     pub fn init<K: 'static, V: 'static>(&self, name: DatabaseName) -> heed::Result<(RwTxn, heed::Database<K, V>)> {
-        let (mut wtxn, _) = self.create::<K, V>(name.clone())?;
+        let (wtxn, _) = self.rw::<K, V>(name.clone())?;
         wtxn.commit()?;
 
-        self.create::<K, V>(name)
+        self.rw::<K, V>(name)
     }
 
     pub fn get_storage_path() -> PathBuf {

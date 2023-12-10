@@ -1,21 +1,16 @@
 use std::error::Error;
 
 use heed::types::*;
-use heed::{Database};
 use time_test::time_test;
+use tokio::task;
 use ryot::compass::{build_map, Item, KeyOption, Position};
 use ryot::lmdb::{compress, DatabaseName, decompress, Lmdb, SerdePostcard, Zstd};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn Error>> {
-    let db = Lmdb::new()?;
+    let lmdb = Lmdb::new()?;
 
-    db.init::<Bytes, SerdePostcard<Item>>(DatabaseName::Tiles)?;
-    let (mut wtxn, db) = db.init::<Bytes, SerdePostcard<Item>>(DatabaseName::Tiles)?;
-
-    let tile = db.get(&wtxn, &KeyOption::Position(Position{x: 60300, y: 60300, z: 0}).get_key_bytes()).unwrap();
-    println!("serde-json:\t{:?}", tile);
-    // exit(0);
+    let (mut wtxn, db) = lmdb.init::<Bytes, SerdePostcard<Item>>(DatabaseName::Tiles)?;
 
     let map = {
         time_test!("Building compass");
@@ -23,95 +18,98 @@ async fn main() -> Result<(), Box<dyn Error>> {
     };
 
     println!("Tiles: {}", map.tiles.len());
+    {
+        time_test!("Writing");
+        for tile in map.tiles {
+            let item = tile.item.unwrap();
 
-    time_test!("Writing");
-    for tile in map.tiles {
-        let item = tile.item.unwrap();
-
-        db.put(
-            &mut wtxn,
-            &KeyOption::Position(tile.position.clone()).get_key_bytes(),
-            &item
-        )?;
+            db.put(
+                &mut wtxn,
+                &KeyOption::Position(tile.position.clone()).get_key_bytes(),
+                &item
+            )?;
+        }
+        wtxn.commit()?;
     }
-    wtxn.commit()?;
-    // iwtxn.commit()?;
 
-    // // let rtxn = env.read_txn().expect("Failed to create read transaction");
-    // // let rodb = env.open_database::<Str, SerdeBincode<Tile>>(&rtxn, Some("serde-json"))?.unwrap();
-    // // let tile: Option<Tile> = rodb.get(&rtxn, &*format!("hello-{}", 1)).unwrap();
-    // // println!("serde-json:\t{:?}", tile);
+    let initial_pos = Position::new(60000, 60000, 0);
+    let final_pos = Position::new(61100, 61100, 15);
+
+    let chunks = get_chunks_per_z(initial_pos, final_pos);
+    println!("Chunks: {}", chunks.len());
+    // exit(0);
+
+    let mut handles = vec![];
+
+    for (start, end) in chunks {
+        let lmdb = lmdb.clone();
+        handles.push(task::spawn_blocking(move || {
+            // let mut tiles = vec![];
+            let mut count = 0;
+            let (rtxn, rodb) = lmdb.ro::<Bytes, SerdePostcard<Item>>(DatabaseName::Tiles).unwrap();
+            let rodb = rodb.unwrap();
+            for x in start.x..=end.x {
+                for y in start.y..=end.y {
+                    let key = KeyOption::Position(Position::new(x, y, start.z)).get_key_bytes();
+                    let tile: Option<Item> = rodb.get(&rtxn, &key).unwrap();
+                    if let Some(_) = tile {
+                        // tiles.push(tile);
+                        count += 1;
+                    }
+                }
+            }
+            rtxn.commit().expect("Failed to commit the transaction");
+            count
+        }));
+    }
+
+    // env.copy_to_file(Path::new("target").join("heed.mdb/bkp.mdb"), CompactionOption::Enabled).expect("Failed to copy the database");
     //
-    // let n = 10_000_000;
+    // env.prepare_for_closing().expect("Failed to prepare for closing");
     //
-    // // println!("Total: {}", db.len(&wtxn)?);
-    // // {
-    // //     time_test!("Writing");
-    // //     for i in 0..n {
-    // //         db.put_with_flags(&mut wtxn, PutFlags::APPEND_DUP, &*format!("hello-{}", i), &hello)?;
-    // //         if i % 100_000 == 0 {
-    // //             println!("Writed {}%", (100 * i) / n);
-    // //         }
-    // //     }
-    // //
-    // //     wtxn.commit()?;
-    // // }
-    //
-    //
-    // // env.copy_to_file(Path::new("target").join("heed.mdb/bkp.mdb"), CompactionOption::Enabled).expect("Failed to copy the database");
-    // //
-    // // env.prepare_for_closing().expect("Failed to prepare for closing");
-    // //
-    // // std::fs::remove_file(Path::new("target").join("heed.mdb/data.mdb")).expect("Failed to remove the database");
-    // // env.copy_to_file(Path::new("target").join("heed.mdb/bkp.mdb"), CompactionOption::Enabled).expect("Failed to copy the database");
-    //
-    // let vec = (0..n).collect::<Vec<_>>();
-    // let mut handles = vec![];
-    // let chunks = vec.chunks(n/100);
-    //
-    // println!("Starting reading");
-    //
-    // for chunk in chunks {
-    //     let chunk = chunk.to_vec();
-    //     let env = env.clone();
-    //     handles.push(task::spawn_blocking(move || {
-    //         let mut tiles = vec![];
-    //         let mut size = 0;
-    //         let rtxn = env.read_txn().expect("Failed to create read transaction");
-    //         let rodb = env.open_database::<Str, SerdeBincode<Tile>>(&rtxn, Some("serde-json")).unwrap().unwrap();
-    //         chunk.iter().for_each(|i|{
-    //             let tile: Option<Tile> = rodb.get(&rtxn, &*format!("hello-{}", i)).unwrap();
-    //             tiles.push(tile);
-    //             // println!("serde-json:\t{:?}", tile);
-    //             size += 1;
-    //         });
-    //         rtxn.commit().expect("Failed to commit the transaction");
-    //         sleep(Duration::from_secs(5));
-    //         size
-    //     }));
-    // };
-    //
-    // {
-    //     time_test!("Reading");
-    //     for handle in handles {
-    //         println!("Joining on task {:?}", handle.await?);
-    //     }
-    // }
-    //
-    // env.prepare_for_closing();
-    //
+    // std::fs::remove_file(Path::new("target").join("heed.mdb/data.mdb")).expect("Failed to remove the database");
+    // env.copy_to_file(Path::new("target").join("heed.mdb/bkp.mdb"), CompactionOption::Enabled).expect("Failed to copy the database");
 
     {
-        time_test!("DECompressing");
+        time_test!("Reading");
+        let mut count = 0;
+        for handle in handles {
+            // count += handle.join().unwrap();
+            count += handle.await?;
+        }
+        println!("Count: {}", count);
+    }
+
+    {
+        time_test!("Compressing");
         compress::<Zstd>(
             Lmdb::get_storage_path().join("data.mdb").to_str().unwrap(),
             Some(3)
         )?;
+    }
 
+    {
+        time_test!("Decompressing");
         decompress::<Zstd>(
             Lmdb::get_storage_path().join("data.mdb.snp").to_str().unwrap()
         )?;
     }
 
     Ok(())
+}
+
+fn get_chunks_per_z(initial_pos: Position, final_pos: Position) -> Vec<(Position, Position)> {
+    let mut chunks = Vec::new();
+    let n = 5;
+
+    for z in initial_pos.z..=final_pos.z {
+        for i in 1..=n {
+            let y_divided_by_6 = (final_pos.y - initial_pos.y) / n;
+            let chunk_start = Position::new(initial_pos.x, initial_pos.y + y_divided_by_6 * (i - 1), z);
+            let chunk_end = Position::new(final_pos.x, initial_pos.y + y_divided_by_6 * i, z);
+            chunks.push((chunk_start, chunk_end));
+        }
+    }
+
+    chunks
 }
