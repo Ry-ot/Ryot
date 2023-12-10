@@ -1,13 +1,9 @@
 mod serde;
+pub use serde::SerdePostcard;
 
 use std::fs;
 use std::path::{Path, PathBuf};
-use futures::TryFutureExt;
-use heed::{Env, EnvOpenOptions, RwTxn, RoTxn};
-pub use serde::{SerdePostcard};
-
-mod compression;
-pub use compression::{compress, decompress, Zstd, Compression};
+use heed::{Env, EnvOpenOptions, RwTxn, RoTxn, Error, CompactionOption};
 
 #[derive(Debug, Clone, Copy)]
 pub enum DatabaseName {
@@ -22,43 +18,48 @@ impl DatabaseName {
     }
 }
 
-#[derive(Clone)]
-pub struct Lmdb {
-    pub env: Env,
+pub const MDB_FILE_NAME: &'static str = "data.mdb";
+pub fn create_env(path: PathBuf) -> heed::Result<Env> {
+    fs::create_dir_all(&path)?;
+
+    let env = EnvOpenOptions::new()
+        .max_dbs(20)
+        .map_size(10 * 1024 * 1024 * 1024) // 10 GB
+        .open(get_storage_path().as_path())?;
+
+    Ok(env)
 }
 
-impl Lmdb {
-    pub fn new() -> heed::Result<Self> {
-        fs::create_dir_all(&Self::get_storage_path())?;
+pub fn rw<K: 'static, V: 'static>(env: &Env, name: DatabaseName) -> heed::Result<(RwTxn, heed::Database<K, V>)> {
+    let mut wtxn = env.write_txn()?;
+    let db = env.create_database::<K, V>(&mut wtxn, Some(name.get_name()))?;
+    Ok((wtxn, db))
+}
 
-        let env = EnvOpenOptions::new()
-            .max_dbs(20)
-            .map_size(1024 * 1024 * 1024 * 1024)
-            .open(Self::get_storage_path().as_path())?;
+pub fn ro<K: 'static, V: 'static>(env: &Env, name: DatabaseName) -> heed::Result<(RoTxn, heed::Database<K, V>)> {
+    let rtxn = env.read_txn()?;
+    let db = env.open_database::<K, V>(&rtxn, Some(name.get_name()))?;
 
-        Ok(Self { env })
+    match db {
+        Some(db) => Ok((rtxn, db)),
+        None => Err(Error::InvalidDatabaseTyping),
     }
+}
 
-    pub fn rw<K: 'static, V: 'static>(&self, name: DatabaseName) -> heed::Result<(RwTxn, heed::Database<K, V>)> {
-        let mut wtxn = self.env.write_txn()?;
-        let db = self.env.create_database::<K, V>(&mut wtxn, Some(name.get_name()))?;
-        Ok((wtxn, db))
-    }
+pub fn compact() -> heed::Result<()> {
+    let env = create_env(get_storage_path())?;
+    let backup_path = get_storage_path().join(MDB_FILE_NAME.to_string() + ".bkp");
+    // let old_path = get_storage_path().join(MDB_FILE_NAME);
 
-    pub fn ro<K: 'static, V: 'static>(&self, name: DatabaseName) -> heed::Result<(RoTxn, Option<heed::Database<K, V>>)> {
-        let rtxn = self.env.read_txn()?;
-        let db = self.env.open_database::<K, V>(&rtxn, Some(name.get_name()))?.or(None);
-        Ok((rtxn, db))
-    }
+    env.copy_to_file(backup_path.clone(), CompactionOption::Enabled)?;
+    // env.prepare_for_closing().wait();
+    //
+    // fs::remove_file(old_path.clone()).expect("Failed to remove the database");
+    // fs::rename(backup_path, old_path).expect("Failed to rename the database");
 
-    pub fn init<K: 'static, V: 'static>(&self, name: DatabaseName) -> heed::Result<(RwTxn, heed::Database<K, V>)> {
-        let (wtxn, _) = self.rw::<K, V>(name.clone())?;
-        wtxn.commit()?;
+    Ok(())
+}
 
-        self.rw::<K, V>(name)
-    }
-
-    pub fn get_storage_path() -> PathBuf {
-        Path::new("target").join("storage")
-    }
+pub fn get_storage_path() -> PathBuf {
+    Path::new("target").join("storage")
 }

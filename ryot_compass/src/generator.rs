@@ -80,7 +80,7 @@ house:id -> {
 }
  */
 use rand::Rng;
-use crate::compass::{Item, Plan, Component, Tile, Position, ItemAttribute};
+use crate::{Item, Plan, Component, Tile, Position, ItemAttribute};
 
 pub fn build_map() -> Plan {
     let mut map = Plan::default();
@@ -152,4 +152,20 @@ pub fn get_attribute_array() -> Vec<ItemAttribute> {
     }
 
     Vec::new()
+}
+
+pub fn get_chunks_per_z(initial_pos: Position, final_pos: Position) -> Vec<(Position, Position)> {
+    let mut chunks = Vec::new();
+    let n = 2;
+
+    for z in initial_pos.z..=final_pos.z {
+        for i in 1..=n {
+            let y_divided_by_6 = (final_pos.y - initial_pos.y) / n;
+            let chunk_start = Position::new(initial_pos.x, initial_pos.y + y_divided_by_6 * (i - 1), z);
+            let chunk_end = Position::new(final_pos.x, initial_pos.y + y_divided_by_6 * i, z);
+            chunks.push((chunk_start, chunk_end));
+        }
+    }
+
+    chunks
 }

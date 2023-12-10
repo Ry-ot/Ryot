@@ -1,4 +1,4 @@
-use crate::compass::{Header, House, Item, Position, RegionType, Spawn, Town, Waypoint, Zone};
+use crate::{Header, House, Item, Position, RegionType, Spawn, Town, Waypoint, Zone};
 
 #[derive(Debug)]
 pub enum Component {

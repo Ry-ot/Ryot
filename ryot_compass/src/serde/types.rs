@@ -1,12 +1,24 @@
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde::de::{SeqAccess, Visitor};
-use serde::ser::SerializeTuple;
+use serde::{Deserialize, Serialize};
+
+pub trait GetKey {
+    fn get_binary_key(&self) -> Vec<u8>;
+}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Position {
     pub x: u16,
     pub y: u16,
     pub z: u8,
+}
+
+impl GetKey for Position {
+    fn get_binary_key(&self) -> Vec<u8> {
+        let mut key = Vec::with_capacity(5);
+        key.extend_from_slice(&self.x.to_be_bytes());
+        key.extend_from_slice(&self.y.to_be_bytes());
+        key.push(self.z);
+        key
+    }
 }
 
 impl Default for Position {
@@ -41,7 +53,7 @@ impl Default for Header {
             height: u16::MAX,
             floors: 15,
             version: 1,
-            description: "This is a new compass".to_string(),
+            description: "This is a new ryot_compass".to_string(),
         }
     }
 }

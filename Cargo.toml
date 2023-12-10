@@ -1,5 +1,3 @@
 [workspace]
-members = ["ryot"]
+members = ["ryot", "ryot_compass"]
 resolver = "2"
-
-opt-level = 2
