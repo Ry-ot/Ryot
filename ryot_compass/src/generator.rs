@@ -82,13 +82,13 @@ house:id -> {
 use rand::Rng;
 use crate::{Item, Plan, Component, Tile, Position, ItemAttribute};
 
-pub fn build_map() -> Plan {
+pub fn build_map(z_size: u8) -> Plan {
     let mut map = Plan::default();
 
     for x in 60000..61100 {
         for y in 60000..61100 {
-            for z in 0..15 {
-                let mut tile = Tile::new(Position::new(x, y, z as u8));
+            for z in 0..z_size {
+                let mut tile = Tile::new(Position::new(x, y, z));
                 let item1 = Item {
                     id: rand::thread_rng().gen_range(300..=305),
                     items: Vec::new(),
@@ -156,7 +156,7 @@ pub fn get_attribute_array() -> Vec<ItemAttribute> {
 
 pub fn get_chunks_per_z(initial_pos: Position, final_pos: Position) -> Vec<(Position, Position)> {
     let mut chunks = Vec::new();
-    let n = 2;
+    let n = 1;
 
     for z in initial_pos.z..=final_pos.z {
         for i in 1..=n {
