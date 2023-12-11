@@ -1,5 +1,4 @@
-mod item;
-pub use item::*;
+pub mod item;
 
 mod generator;
 pub use generator::{build_map, get_chunks_per_z};
@@ -9,3 +8,6 @@ pub use plan::*;
 
 mod serde;
 pub use serde::{types::*};
+
+mod error;
+pub use error::*;

@@ -3,7 +3,8 @@ use std::sync::Arc;
 
 use time_test::time_test;
 use ryot::{compress, decompress, lmdb, Zstd};
-use ryot_compass::{build_map, Position, ItemsFromHeedLmdb, ItemRepository};
+use ryot_compass::{build_map, Position};
+use ryot_compass::item::{ItemRepository, ItemsFromHeedLmdb};
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<(), Box<dyn Error>> {
