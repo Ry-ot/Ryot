@@ -25,8 +25,9 @@ pub fn build_keys_for_area(
 
     for x in initial_pos.x..=final_pos.x {
         for y in initial_pos.y..=final_pos.y {
-            let key = Position::new(x, y, initial_pos.z).get_binary_key();
-            keys.push(key);
+            for z in initial_pos.z..=final_pos.z {
+                keys.push(Position::new(x, y, z).get_binary_key());
+            }
         }
     }
 

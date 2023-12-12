@@ -1,15 +1,13 @@
 use std::error::Error;
-use std::sync::Arc;
 
 use time_test::time_test;
 use ryot::{compress, decompress, lmdb, Zstd};
 use ryot_compass::{build_map, Position};
 use ryot_compass::item::{ItemRepository, ItemsFromHeedLmdb};
 
-#[tokio::main(flavor = "current_thread")]
-async fn main() -> Result<(), Box<dyn Error>> {
+fn main() -> Result<(), Box<dyn Error>> {
     let env = lmdb::create_env(lmdb::get_storage_path())?;
-    let item_repository = ItemsFromHeedLmdb::new(Arc::new(env));
+    let item_repository = ItemsFromHeedLmdb::new(env.clone());
     let z_size = 15;
 
     let map = {
@@ -23,7 +21,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let initial_pos = Position::new(60000, 60000, 0);
-    let final_pos = Position::new(61100, 61100, z_size - 1);
+    let final_pos = Position::new(61000, 61000, z_size - 1);
 
     {
         time_test!("Reading");
