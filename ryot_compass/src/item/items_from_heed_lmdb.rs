@@ -32,7 +32,7 @@ impl ItemRepository for ItemsFromHeedLmdb {
 
         let result: Vec<_> = chunks.par_iter()
             .flat_map(|(start, end)| {
-                self.get_for_keys(build_keys_for_area(start.clone(), end.clone())).unwrap_or_else(|_| Vec::new())
+                self.get_for_keys(build_keys_for_area(*start, *end)).unwrap_or_else(|_| Vec::new())
             })
             .collect();
 

@@ -4,7 +4,7 @@ pub trait GetKey {
     fn get_binary_key(&self) -> Vec<u8>;
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub struct Position {
     pub x: u16,
     pub y: u16,
