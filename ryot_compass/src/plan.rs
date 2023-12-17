@@ -1,7 +1,7 @@
 use crate::{Header, House, Item, Position, RegionType, Spawn, Town, Waypoint, Zone};
 
 #[derive(Debug)]
-pub enum Component {
+pub enum MapComponent {
     Tile(Tile),
     Spawn(Spawn),
     Region(RegionType),
@@ -34,11 +34,11 @@ impl Plan {
         }
     }
 
-    pub fn add(&mut self, item: Component) {
+    pub fn add(&mut self, item: MapComponent) {
         match item {
-            Component::Tile(tile) => self.tiles.push(tile),
-            Component::Region(region) => self.regions.add(region),
-            Component::Spawn(spawn) => self.spawns.push(spawn),
+            MapComponent::Tile(tile) => self.tiles.push(tile),
+            MapComponent::Region(region) => self.regions.add(region),
+            MapComponent::Spawn(spawn) => self.spawns.push(spawn),
         }
     }
 }

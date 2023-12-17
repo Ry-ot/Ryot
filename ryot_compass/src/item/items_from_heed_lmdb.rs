@@ -26,7 +26,7 @@ impl ItemsFromHeedLmdb {
 }
 
 impl ItemRepository for ItemsFromHeedLmdb {
-    fn get_for_area(&self, initial_pos: Position, final_pos: Position) -> crate::Result<Vec<(Vec<u8>, Item)>> {
+    fn get_for_area(&self, initial_pos: &Position, final_pos: &Position) -> crate::Result<Vec<(Vec<u8>, Item)>> {
         let chunks = get_chunks_per_z(initial_pos, final_pos);
         debug!("Chunks: {}", chunks.len());
 

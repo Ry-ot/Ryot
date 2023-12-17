@@ -35,6 +35,13 @@ impl Position {
     pub fn new(x: u16, y: u16, z: u8) -> Self {
         Self { x, y, z }
     }
+
+    pub fn from_binary_key(key: &[u8]) -> Self {
+        let x = u16::from_be_bytes([key[0], key[1]]);
+        let y = u16::from_be_bytes([key[2], key[3]]);
+        let z = key[4];
+        Self { x, y, z }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]

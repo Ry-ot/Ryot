@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 ryot = { version = "0.1.0", path = "../ryot" }
-bevy = "0.12.1"
 bevy_egui = "0.24.0"
 #bevy_ecs_tilemap = "0.11.1"
 bevy_ecs_tilemap = { git = "https://github.com/divark/bevy_ecs_tilemap.git", branch = "0.12-fixes" }
@@ -20,6 +19,40 @@ heed = { version = "0.20.0-alpha.9", features = ["serde-rmp"] }
 zstd = "0.13.0"
 postcard = { version = "1.0.8", features = ["alloc"] }
 bytes = "1.5.0"
+
+[dependencies.bevy]
+version = "0.12.1"
+default-features = false
+features = [
+    "animation",
+    "bevy_asset",
+    "bevy_audio",
+    "bevy_core_pipeline",
+    "bevy_gilrs",
+    "bevy_gizmos",
+    "bevy_gltf",
+    "bevy_pbr",
+    "bevy_render",
+    "bevy_scene",
+    "bevy_sprite",
+    "bevy_text",
+    "bevy_ui",
+    "bevy_winit",
+    "default_font",
+    "hdr",
+    "multi-threaded",
+    "png",
+    "tonemapping_luts",
+    "vorbis",
+    "webgl2",
+    "x11",
+    "zstd",
+]
+
+[dependencies.bevy-inspector-egui]
+version = "0.21.0"
+default-features = true
+#optional = true
 
 # Enable a small amount of optimization in debug mode
 [profile.dev]

@@ -36,17 +36,17 @@ pub fn movement(
         }
 
         if keyboard_input.pressed(KeyCode::Z) {
-            ortho.scale += 0.1;
+            ortho.scale += 1.0;
         }
 
         if keyboard_input.pressed(KeyCode::X) {
-            ortho.scale -= 0.1;
+            ortho.scale -= 1.0;
         }
 
-        ortho.scale = ortho.scale.clamp(0.2, 1000.0);
+        ortho.scale = ortho.scale.clamp(0.125, 50.0);
 
         let z = transform.translation.z;
-        transform.translation += time.delta_seconds() * direction * 500.;
+        transform.translation += time.delta_seconds() * direction * 5000.;
         // Important! We need to restore the Z values when moving the camera around.
         // Bevy has a specific camera setup and this can mess with how our layers are shown.
         transform.translation.z = z;

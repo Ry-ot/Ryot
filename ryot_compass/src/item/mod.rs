@@ -12,7 +12,7 @@ mod items_from_heed_lmdb;
 pub use items_from_heed_lmdb::ItemsFromHeedLmdb;
 
 pub trait ItemRepository {
-    fn get_for_area(&self, initial_pos: Position, final_pos: Position) -> crate::Result<Vec<(Vec<u8>, Item)>>;
+    fn get_for_area(&self, initial_pos: &Position, final_pos: &Position) -> crate::Result<Vec<(Vec<u8>, Item)>>;
     fn get_for_keys(&self, keys: Vec<Vec<u8>>) -> crate::Result<Vec<(Vec<u8>, Item)>>;
     fn save_from_tiles(&self, items: Vec<Tile>) -> crate::Result<()>;
 }
