@@ -43,7 +43,7 @@ pub fn movement(
             ortho.scale -= 1.0;
         }
 
-        ortho.scale = ortho.scale.clamp(0.125, 50.0);
+        ortho.scale = ortho.scale.clamp(0.125, 5.0);
 
         let z = transform.translation.z;
         transform.translation += time.delta_seconds() * direction * 5000.;

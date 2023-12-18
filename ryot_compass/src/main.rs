@@ -179,28 +179,22 @@ fn draw(
         let texture_atlas = TextureAtlas::from_grid(
             tile_handle_square,
             Vec2::new(50.0, 50.0),
-            1_000,
-            1_100,
+            200,
+            120,
             None,
             None,
         );
 
         let texture_atlas_handle = texture_atlases.add(texture_atlas);
 
-        for x in 0..1_100 {
-            for y in 0..1_100 {
-                if x % 10 != 0 {
-                    continue;
-                }
-                if y % 10 != 0 {
-                    continue;
-                }
+        for x in 0..200 {
+            for y in 0..120 {
                 let x = x * 50;
                 let y = y * 50;
                 commands.spawn(SpriteSheetBundle {
                     sprite: TextureAtlasSprite::new(0), // Using the same sprite from the atlas for each instance
                     texture_atlas: texture_atlas_handle.clone(),
-                    transform: Transform::from_xyz(x as f32, y as f32, 0.0).with_scale(Vec3::new(10.0, 10.0, 1.0)),
+                    transform: Transform::from_xyz(x as f32, y as f32, 0.0),
                     ..Default::default()
                 });
             }
