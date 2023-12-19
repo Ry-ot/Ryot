@@ -1,3 +1,7 @@
+use std::fs;
+use std::fs::File;
+use std::io::Read;
+use std::iter::Map;
 use bevy::math::Vec4Swizzles;
 use bevy::{
     input::{
@@ -11,6 +15,7 @@ use bevy_ecs_tilemap::prelude::*;
 
 use bevy_egui::EguiPlugin;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use serde_json::Value;
 use time_test::time_test;
 
 mod helpers;
@@ -317,43 +322,130 @@ fn cursor_pos_to_tile_pos(
 #[derive(SystemSet, Clone, Copy, Hash, PartialEq, Eq, Debug)]
 pub struct SpawnTilemapSet;
 
+use prost::Message;
+use serde::{Deserialize, Serialize};
+use ryot::appearances::Appearances;
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "type")]
+enum ItemType {
+    #[serde(rename = "appearances")]
+    Appearances {
+        file: String,
+        version: u32,
+    },
+    #[serde(rename = "staticdata")]
+    StaticData {
+        file: String,
+    },
+    #[serde(rename = "staticmapdata")]
+    StaticMapData {
+        file: String,
+    },
+    #[serde(rename = "map")]
+    Map {
+        file: String,
+    },
+    #[serde(rename = "sprite")]
+    Sprite {
+        file: String,
+        spritetype: u32,
+        firstspriteid: u32,
+        lastspriteid: u32,
+        area: u32,
+    },
+}
+
 fn main() {
-    App::new()
-        .add_event::<TilesAdded>()
-        .add_plugins(
-            DefaultPlugins
-                .set(WindowPlugin {
-                    primary_window: Some(Window {
-                        title: String::from("Mouse Position to Tile Position"),
-                        ..Default::default()
-                    }),
-                    ..default()
-                })
-                .set(ImagePlugin::default_nearest()),
-        )
-        .init_resource::<LmdbEnv>()
-        .init_resource::<CursorPos>()
-        .init_resource::<Tiles>()
-        .init_resource::<Counter>()
-        .init_resource::<TileHandleSquare>()
-        .add_plugins(TilemapPlugin)
-        .add_plugins((
-            EguiPlugin,
-            // WorldInspectorPlugin::default().run_if(input_toggle_active(true, KeyCode::Escape)),
-            MinimapPlugin,
-        ))
-        .add_systems(
-            Startup,
-            (spawn_tilemap, apply_deferred)
-                .chain()
-                .in_set(SpawnTilemapSet),
-        )
-        .add_systems(Startup, init_env.before(load_tiles))
-        .add_systems(Startup, load_tiles)
-        .add_systems(First, (camera_movement, update_cursor_pos).chain())
-        .add_systems(Update, add_tile)
-        .add_systems(Update, draw)
-        .add_systems(Update, draw_tiles_on_minimap)
-        .add_systems(Update, scroll_events)
-        .run();
+    // load json from file at C:\Users\lucas\Downloads\tibia-client-main
+    // Load JSON from a file.
+    let file_path = r"C:\Users\lucas\Downloads\tibia-client-main\assets\catalog-content.json";
+    let file_contents = fs::read_to_string(file_path)
+        .expect("Could not read a JSON file.");
+
+    let data: Vec<ItemType> = serde_json::from_str(&file_contents)
+        .expect("Could not parse JSON.");
+
+    let map = Map<i32>
+
+    for i in &data {
+        match i {
+            ItemType::Appearances { file, version } => {
+                let path = format!("C:\\Users\\lucas\\Downloads\\tibia-client-main\\assets\\{}", file);
+                let mut file = File::open(path).unwrap();
+                let mut buffer = Vec::new();
+                file.read_to_end(&mut buffer).unwrap();
+                let a = Appearances::decode(&*buffer).unwrap();
+                for (index, appearance) in a.object.iter().enumerate() {
+                    println!("Appearance {:?} has index: {:?}", appearance, index);
+                    // if let Some(description_bytes) = &appearance.description {
+                    //     match String::from_utf8(description_bytes.clone()) {
+                    //         Ok(description) => println!("Appearance {:?} has description: {:?}", appearance.name, description),
+                    //         Err(_) => println!("Appearance {:?} has invalid UTF-8 description: {:?}", appearance.name, String::from_utf8_lossy(&description_bytes.clone())),
+                    //     }
+                    // }
+                }
+                // println!("Appearances: {:?} {}", a, version);
+            }
+            ItemType::Sprite { file, spritetype, firstspriteid, lastspriteid, area } => {
+                // println!("Sprite: {} {} {} {} {}", file, spritetype, firstspriteid, lastspriteid, area);
+            }
+            _ => {}
+        }
+        // if data["type"] == "appearances" {
+        //     println!("{:?}", i);
+        // }
+        // Work with loaded JSON data.
+        // println!("{:?}", i);
+    }
+
+    /*
+
+    1. Load catalog-content
+    2. Load appearences and sprite sheets
+    3. Count total of sprites
+
+    */
+
+    // ... Rest of your existing code...
+
+
+    // App::new()
+    //     .add_event::<TilesAdded>()
+    //     .add_plugins(
+    //         DefaultPlugins
+    //             .set(WindowPlugin {
+    //                 primary_window: Some(Window {
+    //                     title: String::from("Mouse Position to Tile Position"),
+    //                     ..Default::default()
+    //                 }),
+    //                 ..default()
+    //             })
+    //             .set(ImagePlugin::default_nearest()),
+    //     )
+    //     .init_resource::<LmdbEnv>()
+    //     .init_resource::<CursorPos>()
+    //     .init_resource::<Tiles>()
+    //     .init_resource::<Counter>()
+    //     .init_resource::<TileHandleSquare>()
+    //     .add_plugins(TilemapPlugin)
+    //     .add_plugins((
+    //         EguiPlugin,
+    //         // WorldInspectorPlugin::default().run_if(input_toggle_active(true, KeyCode::Escape)),
+    //         MinimapPlugin,
+    //     ))
+    //     .add_systems(
+    //         Startup,
+    //         (spawn_tilemap, apply_deferred)
+    //             .chain()
+    //             .in_set(SpawnTilemapSet),
+    //     )
+    //     .add_systems(Startup, init_env.before(load_tiles))
+    //     .add_systems(Startup, load_tiles)
+    //     .add_systems(First, (camera_movement, update_cursor_pos).chain())
+    //     .add_systems(Update, add_tile)
+    //     .add_systems(Update, draw)
+    //     .add_systems(Update, draw_tiles_on_minimap)
+    //     .add_systems(Update, scroll_events)
+    //     .run();
 }
