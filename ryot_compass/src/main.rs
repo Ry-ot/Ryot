@@ -1,7 +1,4 @@
-use std::fs;
-use std::fs::File;
-use std::io::Read;
-use std::iter::Map;
+use std::io::{Read, Seek};
 use bevy::math::Vec4Swizzles;
 use bevy::{
     input::{
@@ -11,11 +8,15 @@ use bevy::{
     ecs::system::Resource,
     prelude::*,
 };
+use bevy::render::render_resource::{Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages};
 use bevy_ecs_tilemap::prelude::*;
 
-use bevy_egui::EguiPlugin;
+use bevy_egui::{EguiPlugin};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
-use serde_json::Value;
+use image::{Pixel, RgbaImage};
+use image::imageops::crop;
+use prost::Message;
+use rand::Rng;
 use time_test::time_test;
 
 mod helpers;
@@ -23,6 +24,8 @@ use helpers::camera::movement as camera_movement;
 use ryot_compass::{init_env, LmdbEnv, Position, Tile};
 use ryot_compass::item::{ItemRepository, ItemsFromHeedLmdb};
 use ryot_compass::minimap::{Minimap, MinimapPlugin};
+use rayon::prelude::*;
+use ryot::cip_content::{AppearanceFlags, Appearances, ContentType, get_full_file_buffer, get_sheet_by_sprite_id, load_content, load_sprite_sheet_for_content, SPRITE_SHEET_SIZE, SpriteLayout};
 
 const MAP_SIDE_LENGTH_X: u32 = 0;
 const MAP_SIDE_LENGTH_Y: u32 = 0;
@@ -166,9 +169,11 @@ fn draw(
     mut commands: Commands,
     // mut env: ResMut<LmdbEnv>,
     // tiles: ResMut<Tiles>,
+    content: Res<CipContent>,
+    mut textures: ResMut<Assets<Image>>,
     mut counter: ResMut<Counter>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    tile_handle_square: Res<TileHandleSquare>,
+    // mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    // tile_handle_square: Res<TileHandleSquare>,
     cursor_pos: Res<CursorPos>,
     tile_map: Query<(&TilemapSize, &TilemapGridSize, &TilemapType, &Transform)>,
     // tile_added_writer: EventWriter<TilesAdded>,
@@ -180,26 +185,64 @@ fn draw(
 
     if counter.0 < 1_100_000 {
         info!("{}", counter.0);
-        let tile_handle_square = tile_handle_square.clone();
-        let texture_atlas = TextureAtlas::from_grid(
-            tile_handle_square,
-            Vec2::new(50.0, 50.0),
-            200,
-            120,
-            None,
-            None,
-        );
 
-        let texture_atlas_handle = texture_atlases.add(texture_atlas);
+        let monster = get_sprite_image(91267, &content).unwrap();
+        let tile = get_sprite_image(195613, &content).unwrap();
+        let monster_img = Image {
+            texture_descriptor: TextureDescriptor {
+                label: None,
+                size: Extent3d {
+                    width: monster.width(),
+                    height: monster.height(),
+                    depth_or_array_layers: 1,
+                },
+                dimension: TextureDimension::D2,
+                format: TextureFormat::Rgba8UnormSrgb,
+                usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST | TextureUsages::RENDER_ATTACHMENT,
+                mip_level_count: 1,
+                sample_count: 1,
+                view_formats: &[],
+            },
+            data: monster.clone().into_raw(),
+            ..Default::default()
+        };
+        let tile_img = Image {
+            texture_descriptor: TextureDescriptor {
+                label: None,
+                size: Extent3d {
+                    width: tile.width(),
+                    height: tile.height(),
+                    depth_or_array_layers: 1,
+                },
+                dimension: TextureDimension::D2,
+                format: TextureFormat::Rgba8UnormSrgb,
+                usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST | TextureUsages::RENDER_ATTACHMENT,
+                mip_level_count: 1,
+                sample_count: 1,
+                view_formats: &[],
+            },
+            data: tile.clone().into_raw(),
+            ..Default::default()
+        };
+
+        let monster_handle = textures.add(monster_img);
+        let tile_handle = textures.add(tile_img);
 
         for x in 0..200 {
             for y in 0..120 {
-                let x = x * 50;
-                let y = y * 50;
-                commands.spawn(SpriteSheetBundle {
-                    sprite: TextureAtlasSprite::new(0), // Using the same sprite from the atlas for each instance
-                    texture_atlas: texture_atlas_handle.clone(),
-                    transform: Transform::from_xyz(x as f32, y as f32, 0.0),
+                commands.spawn(SpriteBundle {
+                    texture: tile_handle.clone(),
+                    transform: Transform::from_xyz((x * tile.width()) as f32, (y * tile.height()) as f32, 0.0),
+                    ..Default::default()
+                });
+            }
+        }
+
+        for x in 20..30 {
+            for y in 20..30 {
+                commands.spawn(SpriteBundle {
+                    texture: monster_handle.clone(),
+                    transform: Transform::from_xyz((x * monster.width()) as f32, (y * monster.height()) as f32, 0.0),
                     ..Default::default()
                 });
             }
@@ -322,130 +365,126 @@ fn cursor_pos_to_tile_pos(
 #[derive(SystemSet, Clone, Copy, Hash, PartialEq, Eq, Debug)]
 pub struct SpawnTilemapSet;
 
-use prost::Message;
-use serde::{Deserialize, Serialize};
-use ryot::appearances::Appearances;
+#[derive(Resource, Debug)]
+pub struct CipContent(Vec<ContentType>);
 
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(tag = "type")]
-enum ItemType {
-    #[serde(rename = "appearances")]
-    Appearances {
-        file: String,
-        version: u32,
-    },
-    #[serde(rename = "staticdata")]
-    StaticData {
-        file: String,
-    },
-    #[serde(rename = "staticmapdata")]
-    StaticMapData {
-        file: String,
-    },
-    #[serde(rename = "map")]
-    Map {
-        file: String,
-    },
-    #[serde(rename = "sprite")]
-    Sprite {
-        file: String,
-        spritetype: u32,
-        firstspriteid: u32,
-        lastspriteid: u32,
-        area: u32,
-    },
+impl Default for CipContent {
+    fn default() -> Self {
+        Self(vec![])
+    }
+}
+
+pub fn load_cip_content(
+    mut content: ResMut<CipContent>
+) {
+    info!("Loading CIP Content");
+    content.0 = load_content("ryot_compass/assets/assets/catalog-content.json").expect("Failed to load CIP content");
+    info!("CIP Content loaded: {}", content.0.len());
+}
+
+pub fn print_appearances(
+    content: Res<CipContent>,
+) {
+    content.0.iter().for_each(|content| {
+        match content {
+            ContentType::Appearances { file, version: _ } => {
+                let buffer = get_full_file_buffer(&format!("ryot_compass/assets/assets/{}", file)).unwrap();
+                let appearances =  Appearances::decode(&*buffer).unwrap();
+                appearances.object.iter().for_each(|object| {
+                    if let Some(AppearanceFlags{bank, market,  ..}) = &object.flags {
+                        if bank.is_some() {
+                            let bank = bank.clone().unwrap();
+                            info!("Object: {:?}, {:?}, {:?}", object.id, object.frame_group, bank);
+                        }
+
+                        if market.is_some() {
+                            let market = market.clone().unwrap();
+                            info!("Object: {:?}, {:?}, {:?}", object.id, object.frame_group, market);
+                        }
+                    }
+                });
+                // info!("Appearances: {:?}", file)
+            },
+            _ => (),
+        }
+    });
+}
+
+pub fn get_sprite_image(
+    id: u32,
+    content: &Res<CipContent>,
+) -> Option<RgbaImage> {
+    if let Some(ContentType::Sprite {first_sprite_id, layout, file, ..}) = get_sheet_by_sprite_id(&content.0, id) {
+        let sprite_offset = id - first_sprite_id;
+
+        let width = match layout {
+            SpriteLayout::OneByOne | SpriteLayout::OneByTwo => 32,
+            SpriteLayout::TwoByOne | SpriteLayout::TwoByTwo => 64,
+        };
+
+        let colums = SPRITE_SHEET_SIZE / width;
+
+        let row = ((sprite_offset as f32) / (colums as f32)).floor() as u32;
+        let column = sprite_offset % colums;
+
+        let mut sheet = load_sprite_sheet_for_content(&file, "ryot_compass/assets/assets/").expect("Failed to load sprite sheet");
+
+        let sprite_height = match layout {
+            SpriteLayout::OneByOne | SpriteLayout::TwoByOne => 32,
+            SpriteLayout::OneByTwo | SpriteLayout::TwoByTwo => 64,
+        };
+        let x = column * width;
+        let y = row * sprite_height;
+
+        // Create a view into the image at the calculated coordinates
+        return Some(crop(&mut sheet, x, y, width, sprite_height).to_image());
+    }
+
+    None
 }
 
 fn main() {
-    // load json from file at C:\Users\lucas\Downloads\tibia-client-main
-    // Load JSON from a file.
-    let file_path = r"C:\Users\lucas\Downloads\tibia-client-main\assets\catalog-content.json";
-    let file_contents = fs::read_to_string(file_path)
-        .expect("Could not read a JSON file.");
+    // println!("Sprites: {:?}", get_all_sprite_sheets(&content).len(), "ryot_compass/assets/assets/");
 
-    let data: Vec<ItemType> = serde_json::from_str(&file_contents)
-        .expect("Could not parse JSON.");
-
-    let map = Map<i32>
-
-    for i in &data {
-        match i {
-            ItemType::Appearances { file, version } => {
-                let path = format!("C:\\Users\\lucas\\Downloads\\tibia-client-main\\assets\\{}", file);
-                let mut file = File::open(path).unwrap();
-                let mut buffer = Vec::new();
-                file.read_to_end(&mut buffer).unwrap();
-                let a = Appearances::decode(&*buffer).unwrap();
-                for (index, appearance) in a.object.iter().enumerate() {
-                    println!("Appearance {:?} has index: {:?}", appearance, index);
-                    // if let Some(description_bytes) = &appearance.description {
-                    //     match String::from_utf8(description_bytes.clone()) {
-                    //         Ok(description) => println!("Appearance {:?} has description: {:?}", appearance.name, description),
-                    //         Err(_) => println!("Appearance {:?} has invalid UTF-8 description: {:?}", appearance.name, String::from_utf8_lossy(&description_bytes.clone())),
-                    //     }
-                    // }
-                }
-                // println!("Appearances: {:?} {}", a, version);
-            }
-            ItemType::Sprite { file, spritetype, firstspriteid, lastspriteid, area } => {
-                // println!("Sprite: {} {} {} {} {}", file, spritetype, firstspriteid, lastspriteid, area);
-            }
-            _ => {}
-        }
-        // if data["type"] == "appearances" {
-        //     println!("{:?}", i);
-        // }
-        // Work with loaded JSON data.
-        // println!("{:?}", i);
-    }
-
-    /*
-
-    1. Load catalog-content
-    2. Load appearences and sprite sheets
-    3. Count total of sprites
-
-    */
-
-    // ... Rest of your existing code...
-
-
-    // App::new()
-    //     .add_event::<TilesAdded>()
-    //     .add_plugins(
-    //         DefaultPlugins
-    //             .set(WindowPlugin {
-    //                 primary_window: Some(Window {
-    //                     title: String::from("Mouse Position to Tile Position"),
-    //                     ..Default::default()
-    //                 }),
-    //                 ..default()
-    //             })
-    //             .set(ImagePlugin::default_nearest()),
-    //     )
-    //     .init_resource::<LmdbEnv>()
-    //     .init_resource::<CursorPos>()
-    //     .init_resource::<Tiles>()
-    //     .init_resource::<Counter>()
-    //     .init_resource::<TileHandleSquare>()
-    //     .add_plugins(TilemapPlugin)
-    //     .add_plugins((
-    //         EguiPlugin,
-    //         // WorldInspectorPlugin::default().run_if(input_toggle_active(true, KeyCode::Escape)),
-    //         MinimapPlugin,
-    //     ))
-    //     .add_systems(
-    //         Startup,
-    //         (spawn_tilemap, apply_deferred)
-    //             .chain()
-    //             .in_set(SpawnTilemapSet),
-    //     )
-    //     .add_systems(Startup, init_env.before(load_tiles))
-    //     .add_systems(Startup, load_tiles)
-    //     .add_systems(First, (camera_movement, update_cursor_pos).chain())
-    //     .add_systems(Update, add_tile)
-    //     .add_systems(Update, draw)
-    //     .add_systems(Update, draw_tiles_on_minimap)
-    //     .add_systems(Update, scroll_events)
-    //     .run();
+    App::new()
+        .add_event::<TilesAdded>()
+        .add_plugins(
+            DefaultPlugins
+                .set(WindowPlugin {
+                    primary_window: Some(Window {
+                        title: String::from("Mouse Position to Tile Position"),
+                        ..Default::default()
+                    }),
+                    ..default()
+                })
+                .set(ImagePlugin::default_nearest()),
+        )
+        .init_resource::<LmdbEnv>()
+        .init_resource::<CipContent>()
+        .init_resource::<CursorPos>()
+        .init_resource::<Tiles>()
+        .init_resource::<Counter>()
+        .init_resource::<TileHandleSquare>()
+        .add_plugins(TilemapPlugin)
+        .add_plugins((
+            EguiPlugin,
+            WorldInspectorPlugin::default().run_if(input_toggle_active(true, KeyCode::Escape)),
+            MinimapPlugin,
+        ))
+        .add_systems(
+            Startup,
+            (spawn_tilemap, apply_deferred)
+                .chain()
+                .in_set(SpawnTilemapSet),
+        )
+        .add_systems(Startup, init_env.before(load_tiles))
+        .add_systems(Startup, load_tiles)
+        .add_systems(Startup, load_cip_content)
+        .add_systems(First, (camera_movement, update_cursor_pos).chain())
+        .add_systems(Update, add_tile)
+        .add_systems(Update, draw)
+        .add_systems(Update, draw_tiles_on_minimap)
+        .add_systems(Update, scroll_events)
+        .add_systems(Update, print_appearances)
+        .run();
 }
