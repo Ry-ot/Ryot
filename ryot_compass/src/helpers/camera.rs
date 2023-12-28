@@ -35,18 +35,18 @@ pub fn movement(
             direction -= Vec3::new(0.0, 1.0, 0.0);
         }
 
-        if keyboard_input.pressed(KeyCode::Z) {
-            ortho.scale += 1.0;
+        if keyboard_input.just_pressed(KeyCode::Z) {
+            ortho.scale += 0.25;
         }
 
-        if keyboard_input.pressed(KeyCode::X) {
-            ortho.scale -= 1.0;
+        if keyboard_input.just_pressed(KeyCode::X) {
+            ortho.scale -= 0.25;
         }
 
-        ortho.scale = ortho.scale.clamp(0.125, 5.0);
+        ortho.scale = ortho.scale.clamp(0.25, 5.0);
 
         let z = transform.translation.z;
-        transform.translation += time.delta_seconds() * direction * 5000.;
+        transform.translation += time.delta_seconds() * direction * 1000.;
         // Important! We need to restore the Z values when moving the camera around.
         // Bevy has a specific camera setup and this can mess with how our layers are shown.
         transform.translation.z = z;

@@ -21,6 +21,8 @@ zstd = "0.13.0"
 postcard = { version = "1.0.8", features = ["alloc"] }
 bytes = "1.5.0"
 prost = "0.12.3"
+lzma-rs = "0.3.0"
+image = "0.24.7"
 
 [dependencies.bevy]
 version = "0.12.1"
@@ -52,7 +54,7 @@ features = [
 ]
 
 [dependencies.bevy-inspector-egui]
-version = "0.21.0"
+version = "0.22.0"
 default-features = true
 #optional = true
 

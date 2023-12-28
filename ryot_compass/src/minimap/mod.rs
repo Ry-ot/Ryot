@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use bevy::render::render_resource::{Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages};
 use bevy_egui::{EguiContexts, EguiPlugin};
 use egui::emath::{Vec2, vec2};
+use image::Rgba;
 
 const DEFAULT_MINIMAP_ZOOM: f32 = 1.0;
 const DEFAULT_MINIMAP_TITLE: &str = "Minimap";
@@ -150,4 +151,20 @@ pub fn setup_default_texture(
     textures: ResMut<Assets<Image>>,
 ) {
     minimap.initialize_texture(textures);
+}
+
+pub fn color_from_8bits(color: u32) -> Rgba<u8> {
+    color_from_8bits_with_brightness(color, 1.0)
+}
+
+pub fn color_from_8bits_with_brightness(color: u32, brightness: f32) -> Rgba<u8> {
+    if color >= 216 || color == 0 {
+        return Rgba([0, 0, 0, 0]);
+    }
+
+    let r = ((color / 36 % 6 * 51) as f32 * brightness) as u8;
+    let g = ((color / 6 % 6 * 51) as f32 * brightness) as u8;
+    let b = ((color % 6 * 51) as f32 * brightness) as u8;
+
+    Rgba([r, g, b, 255])
 }
