@@ -7,17 +7,26 @@
  * Website: https://github.com/lgrossi/Ryot
  */
 
+use std::path::PathBuf;
 use image::{imageops, Rgba, RgbaImage};
-use image::codecs::png::FilterType::Paeth;
 use image::error::{LimitError, LimitErrorKind};
+use image::imageops::crop;
+use log::{debug, warn};
 use lzma_rs::lzma_decompress_with_options;
 use rayon::prelude::*;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use crate::cip_content::{ContentType, Result, get_full_file_buffer};
 
-pub const SPRITE_SHEET_SIZE: u32 = 384;
+pub const SPRITE_SHEET_SIZE: SpriteSize = SpriteSize{ width: 384, height: 384 };
+pub const DEFAULT_SPRITE_SIZE: SpriteSize = SpriteSize{ width: 32, height: 32 };
 pub const LZMA_CUSTOM_HEADER_SIZE: usize = 32;
 pub const SHEET_CUSTOM_HEADER_SIZE: usize = 122;
+
+#[derive(Debug, Clone)]
+pub struct SpriteSize {
+    pub width: u32,
+    pub height: u32,
+}
 
 #[derive(Serialize_repr, Deserialize_repr, Debug, Clone)]
 #[repr(u32)]
@@ -28,10 +37,38 @@ pub enum SpriteLayout {
     TwoByTwo = 3,
 }
 
+impl SpriteLayout {
+    pub fn get_width(&self) -> u32 {
+        match self {
+            SpriteLayout::OneByOne | SpriteLayout::OneByTwo => DEFAULT_SPRITE_SIZE.width,
+            SpriteLayout::TwoByOne | SpriteLayout::TwoByTwo => DEFAULT_SPRITE_SIZE.width * 2,
+        }
+    }
+
+    pub fn get_height(&self) -> u32 {
+        match self {
+            SpriteLayout::OneByOne | SpriteLayout::TwoByOne => DEFAULT_SPRITE_SIZE.height,
+            SpriteLayout::OneByTwo | SpriteLayout::TwoByTwo => DEFAULT_SPRITE_SIZE.height * 2,
+        }
+    }
+}
+
+impl Default for SpriteLayout {
+    fn default() -> Self {
+        SpriteLayout::OneByOne
+    }
+}
+
 pub fn load_sprite_sheet_image(path: &str) -> Result<RgbaImage> {
     let input_data = get_full_file_buffer(path)?;
-    let decompressed = decompress_lzma_sprite_sheet(input_data)?;
-    create_image_from_data(decompressed, SPRITE_SHEET_SIZE, SPRITE_SHEET_SIZE)
+
+    if is_compressed_file(path) {
+        debug!("Decompressing sprite sheet {}", path);
+        let decompressed = decompress_lzma_sprite_sheet(input_data)?;
+        return create_image_from_data(decompressed, SPRITE_SHEET_SIZE);
+    }
+
+    create_image_from_data(input_data, SPRITE_SHEET_SIZE)
 }
 
 /// CIP's sprite sheets have a 32 byte header that contains the following information:
@@ -64,10 +101,10 @@ pub fn decompress_lzma_sprite_sheet(buffer: Vec<u8>) -> Result<Vec<u8>> {
 /// The data is expected to be in the BGRA format.
 /// The data is expected to be flipped vertically.
 /// The data is expected to have a 122 byte header that we need to skip
-pub fn create_image_from_data(data: Vec<u8>, width: u32, height: u32) -> Result<RgbaImage> {
+pub fn create_image_from_data(data: Vec<u8>, size: SpriteSize) -> Result<RgbaImage> {
     let data = data[SHEET_CUSTOM_HEADER_SIZE..].to_vec();
 
-    let mut background_img = RgbaImage::from_raw(width, height, data)
+    let mut background_img = RgbaImage::from_raw(size.width, size.height, data)
         .ok_or(image::ImageError::Limits(LimitError::from_kind(LimitErrorKind::DimensionError)))?;
 
     flip_vertically(&mut background_img);
@@ -76,18 +113,28 @@ pub fn create_image_from_data(data: Vec<u8>, width: u32, height: u32) -> Result<
     Ok(background_img)
 }
 
-/// Loads, decompresses, filters and transforms all sprite sheets from a given content.
-/// The result is a vector of RgbaImages, where each image is a 384x384 sprite sheet.
-pub fn get_all_sprite_sheets(content: &Vec<ContentType>, path: &str) -> Vec<RgbaImage> {
+/// Decompress and save the plain sprite sheets to the given destination path.
+/// This is used to generate a decompressed cache of the sprite sheets, to optimize reading.
+/// Trade off here is that we use way more disk space in pro of faster sprite loading.
+pub fn decompress_all_sprite_sheets(content: &Vec<ContentType>, path: &str, destination_path: &str) {
     content.par_iter()
-        .filter_map(|c| match c {
-            ContentType::Sprite { file, layout: sprite_type, first_sprite_id, last_sprite_id, area } => {
-                Some(load_sprite_sheet_image(&format!("{}{}", path, file)))
+        .for_each(|c| match c {
+            ContentType::Sprite { file, .. } => {
+                let destination_file = &format!("{}/{}", destination_path, get_decompressed_file_name(file));
+
+                if PathBuf::from(destination_file).exists() {
+                    return;
+                }
+
+                match load_sprite_sheet_image(&format!("{}/{}", path, file)) {
+                    Ok(sheet) => sheet.save(destination_file).map_err(|e| {
+                        warn!("Failed to save sprite sheet {}: {}", destination_file, e);
+                    }).unwrap(),
+                    Err(_) => (),
+                }
             }
-            _ => None
-        })
-        .filter_map(Result::ok)
-        .collect()
+            _ => ()
+        });
 }
 
 pub fn get_sheet_by_sprite_id(content: &Vec<ContentType>, id: u32) -> Option<ContentType> {
@@ -100,8 +147,45 @@ pub fn get_sheet_by_sprite_id(content: &Vec<ContentType>, id: u32) -> Option<Con
         }).cloned()
 }
 
-pub fn load_sprite_sheet_for_content(file: &str, path: &str) -> Result<RgbaImage> {
-    Ok(load_sprite_sheet_image(&format!("{}{}", path, file))?)
+pub fn get_sprite_image_by_id(content: &Vec<ContentType>, id: u32, path: &str) -> Option<RgbaImage> {
+    match get_sheet_by_sprite_id(content, id) {
+        Some(ContentType::Sprite {
+             file,
+             layout,
+             first_sprite_id,
+             ..
+         }) => get_sprite_image_from_file(
+            format!("{}/{}", path, file),
+            layout,
+            first_sprite_id,
+            id
+        ),
+        _ => None
+    }
+}
+
+pub fn get_sprite_image_from_file(file: String, layout: SpriteLayout, first_sprite_id: u32, id: u32) -> Option<RgbaImage> {
+    let sprite_offset = id - first_sprite_id;
+
+    let width = layout.get_width();
+    let height = layout.get_height();
+
+    let columns = SPRITE_SHEET_SIZE.width / width;
+
+    let row = ((sprite_offset as f32) / (columns as f32)).floor() as u32;
+    let column = sprite_offset % columns;
+
+    let decompressed_file_name = get_decompressed_file_name(&file);
+
+    let file_name = if PathBuf::from(&decompressed_file_name).exists() {
+        decompressed_file_name
+    } else {
+        file
+    };
+
+    let mut sheet = load_sprite_sheet_image(&file_name).expect("Failed to load sprite sheet");
+
+    Some(crop(&mut sheet, column * width, row * height, width, height).to_image())
 }
 
 fn reverse_channels(img: &mut RgbaImage) {
@@ -113,4 +197,12 @@ fn reverse_channels(img: &mut RgbaImage) {
 
 fn flip_vertically(img: &mut RgbaImage) {
     *img = imageops::flip_vertical(img);
+}
+
+fn get_decompressed_file_name(file_name: &str) -> String {
+    file_name.replace(".lzma", "")
+}
+
+fn is_compressed_file(file_name: &str) -> bool {
+    file_name.ends_with(".lzma")
 }

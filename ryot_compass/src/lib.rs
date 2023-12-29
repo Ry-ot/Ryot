@@ -22,6 +22,9 @@ pub mod helpers;
 
 pub mod minimap;
 
+mod ryot_bevy;
+pub use ryot_bevy::*;
+
 #[derive(Resource)]
 pub struct LmdbEnv(pub Option<Env>);
 
