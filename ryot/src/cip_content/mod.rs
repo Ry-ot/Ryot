@@ -12,6 +12,7 @@ pub enum Error {
     Serde(serde_json::Error),
     Lzma(lzma_rs::error::Error),
     Image(image::ImageError),
+    SpriteNotFound,
 }
 
 impl From<std::io::Error> for Error {
@@ -61,16 +62,19 @@ pub enum ContentType {
         file: String,
     },
     #[serde(rename = "sprite")]
-    Sprite {
-        file: String,
-        #[serde(rename = "spritetype")]
-        layout: SpriteLayout,
-        #[serde(rename = "firstspriteid")]
-        first_sprite_id: u32,
-        #[serde(rename = "lastspriteid")]
-        last_sprite_id: u32,
-        area: u32,
-    },
+    Sprite(SpriteSheet),
+}
+
+#[derive(Serialize, Deserialize, Debug, Clone)]
+pub struct SpriteSheet {
+    pub file: String,
+    #[serde(rename = "spritetype")]
+    pub layout: SpriteLayout,
+    #[serde(rename = "firstspriteid")]
+    pub first_sprite_id: u32,
+    #[serde(rename = "lastspriteid")]
+    pub last_sprite_id: u32,
+    pub area: u32,
 }
 
 pub fn load_content(path: &str) -> Result<Vec<ContentType>> {

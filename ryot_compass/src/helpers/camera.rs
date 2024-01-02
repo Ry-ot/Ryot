@@ -47,6 +47,8 @@ pub fn movement(
 
         let z = transform.translation.z;
         transform.translation += time.delta_seconds() * direction * 1000.;
+        transform.translation.x = (transform.translation.x / 32.0).round() * 32.0;
+        transform.translation.y = (transform.translation.y / 32.0).round() * 32.0;
         // Important! We need to restore the Z values when moving the camera around.
         // Bevy has a specific camera setup and this can mess with how our layers are shown.
         transform.translation.z = z;

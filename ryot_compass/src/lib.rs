@@ -59,7 +59,7 @@ pub fn read_area(
     }
 }
 
-fn lmdb_example() -> std::result::Result<(), Box<dyn std::error::Error>> {
+pub fn lmdb_example() -> std::result::Result<(), Box<dyn std::error::Error>> {
 
     let env = lmdb::create_env(lmdb::get_storage_path())?;
     let item_repository = ItemsFromHeedLmdb::new(env.clone());

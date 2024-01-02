@@ -8,6 +8,7 @@ use bevy::{
     ecs::system::Resource,
     prelude::*,
 };
+use bevy::asset::LoadedFolder;
 use bevy_ecs_tilemap::prelude::*;
 
 use bevy_egui::{EguiPlugin};
@@ -21,7 +22,7 @@ use time_test::time_test;
 
 mod helpers;
 use helpers::camera::movement as camera_movement;
-use ryot_compass::{build_sprite_bundle, CipContent, init_env, LmdbEnv, load_sprites, Position, Tile};
+use ryot_compass::{CipContent, draw_sprite, init_env, LmdbEnv, load_sprites, Position, TextureAtlasHandlers, Tile};
 use ryot_compass::item::{ItemRepository, ItemsFromHeedLmdb};
 use ryot_compass::minimap::{Minimap, MinimapPlugin};
 use rayon::prelude::*;
@@ -177,6 +178,9 @@ fn draw(
     // tiles: ResMut<Tiles>,
     mut content: ResMut<CipContent>,
     mut textures: ResMut<Assets<Image>>,
+    asset_server: Res<AssetServer>,
+    mut atlas_handlers: ResMut<TextureAtlasHandlers>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     mut counter: ResMut<Counter>,
     // mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     // tile_handle_square: Res<TileHandleSquare>,
@@ -220,42 +224,40 @@ fn draw(
     // Random loading just to test memory consumption
     if counter.0 < sprite_ids.len() as u32 {
         {
-            sprite_ids.chunks(10_000).for_each(|chunk| {
-                time_test!("Loading");
-                let loaded_sprites = load_sprites(&chunk.to_vec(), DECOMPRESSED_CONTENT_FOLDER, &mut content, &mut textures);
-                info!("Loaded {} sprites", loaded_sprites.len());
-                counter.0 += loaded_sprites.len() as u32;
-            });
-            sprite_ids.chunks(10_000).for_each(|chunk| {
-                time_test!("Loading");
-                let loaded_sprites = load_sprites(&chunk.to_vec(), DECOMPRESSED_CONTENT_FOLDER, &mut content, &mut textures);
-                info!("Loaded {} sprites", loaded_sprites.len());
-            });
+            // time_test!("Loading");
+            // sprite_ids.chunks(10_000).for_each(|chunk| {
+            //     let loaded_sprites = load_sprites(&chunk.to_vec(), &content.raw_content, &asset_server, &mut atlas_handlers, &mut texture_atlases);
+            //     info!("Loaded {} sprites", loaded_sprites.len());
+            //     counter.0 += loaded_sprites.len() as u32;
+            // });
         };
     }
 
     if counter.0 < 200_000 {
-        let loaded_tile = load_sprites(&vec![195613], DECOMPRESSED_CONTENT_FOLDER, &mut content, &mut textures);
-        if let Some((tile_handle, tile_size)) = loaded_tile.first() {
-            for x in 0..200 {
-                for y in 0..120 {
-                    commands.spawn(
-                        build_sprite_bundle(tile_handle.clone(), Vec2::new((x * tile_size.width) as f32, (y * tile_size.height) as f32))
-                    );
+        for x in 0..200 {
+            for y in 0..120 {
+                let mut sprites = vec![195613];
+                if x.ge(&20) && x.le(&30) && y.ge(&20) && y.le(&30) {
+                    sprites.push(91267);
+                }
+
+                let sprites = load_sprites(&sprites, &content.raw_content, &asset_server, &mut atlas_handlers, &mut texture_atlases);
+
+                for (i, sprite) in sprites.iter().enumerate() {
+                    draw_sprite(Vec3::new(x as f32, y as f32, i as f32), sprite, &mut commands);
                 }
             }
         }
 
-        let loaded_monster = load_sprites(&vec![91267], DECOMPRESSED_CONTENT_FOLDER, &mut content, &mut textures);
-        if let Some((monster_handle, monster_size)) = loaded_monster.first() {
-            for x in 20..30 {
-                for y in 20..30 {
-                    commands.spawn(
-                        build_sprite_bundle(monster_handle.clone(), Vec2::new((x * monster_size.width) as f32, (y * monster_size.height) as f32))
-                    );
-                }
-            }
-        }
+
+        // let loaded_monster = load_sprites(&vec![91267], &content.raw_content, &asset_server, &mut atlas_handlers, &mut texture_atlases);
+        // if let Some(sprite) = loaded_monster.first() {
+        //     for x in 20..30 {
+        //         for y in 20..30 {
+        //             draw_sprite(Vec3::new(x as f32, y as f32, 0.0), sprite, &mut commands);
+        //         }
+        //     }
+        // }
 
         // let num_of_sprites = 400_689;
         // let sprites_per_row = (num_of_sprites as f32).sqrt() as u32;
@@ -425,6 +427,7 @@ pub fn print_appearances(
 fn main() {
     App::new()
         .add_event::<TilesAdded>()
+        .add_state::<AppState>()
         .add_plugins(
             DefaultPlugins
                 .set(WindowPlugin {
@@ -437,6 +440,8 @@ fn main() {
                 .set(ImagePlugin::default_nearest()),
         )
         .init_resource::<LmdbEnv>()
+        .init_resource::<SpriteSheetFolder>()
+        .init_resource::<TextureAtlasHandlers>()
         .init_resource::<CipContent>()
         .init_resource::<CursorPos>()
         .init_resource::<Tiles>()
@@ -465,4 +470,14 @@ fn main() {
         .add_systems(Update, scroll_events)
         .add_systems(Update, print_appearances)
         .run();
+}
+
+#[derive(Resource, Default)]
+struct SpriteSheetFolder(Handle<LoadedFolder>);
+
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, States)]
+enum AppState {
+    #[default]
+    Setup,
+    Finished,
 }
