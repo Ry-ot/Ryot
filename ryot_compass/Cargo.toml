@@ -24,6 +24,8 @@ prost = "0.12.3"
 lzma-rs = "0.3.0"
 image = "0.24.7"
 itertools = "0.12.0"
+strum = "0.25.0"
+strum_macros = "0.25.0"
 
 [dependencies.bevy]
 version = "0.12.1"

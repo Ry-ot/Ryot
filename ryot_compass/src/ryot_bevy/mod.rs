@@ -7,7 +7,7 @@
  * Website: https://github.com/lgrossi/Ryot
  */
 use bevy::prelude::*;
-use ryot::cip_content::{ContentType, Result, get_decompressed_file_name, get_sprite_grid_by_id, SheetGrid, get_sprite_index_by_id};
+use ryot::cip_content::{ContentType, get_decompressed_file_name, get_sprite_grid_by_id, SheetGrid, get_sprite_index_by_id};
 
 #[derive(Resource, Debug)]
 pub struct CipContent {
@@ -29,7 +29,7 @@ pub fn load_sprites(
     asset_server: &Res<AssetServer>,
     atlas_handlers: &mut ResMut<TextureAtlasHandlers>,
     texture_atlases: &mut ResMut<Assets<TextureAtlas>>,
-) -> Vec<(usize, SheetGrid, Handle<TextureAtlas>)> {
+) -> Vec<(u32, usize, SheetGrid, Handle<TextureAtlas>)> {
     let unsaved_sprites: Vec<(SheetGrid, TextureAtlas)> = sprite_ids.iter().filter_map(|sprite_id| {
         if let Ok(grid) = get_sprite_grid_by_id(content, *sprite_id) {
             Some((grid.clone(), build_texture_atlas_from_sheet(&grid, asset_server)))
@@ -45,6 +45,7 @@ pub fn load_sprites(
     sprite_ids.iter().filter_map(|sprite_id| {
         if let Ok(grid) = get_sprite_grid_by_id(content, *sprite_id) {
             Some((
+                *sprite_id,
                 get_sprite_index_by_id(content, *sprite_id).unwrap(),
                 grid.clone(),
                 atlas_handlers.0.get(&grid.file).unwrap().clone()
@@ -72,9 +73,10 @@ pub fn get_sprite_by_id(
     sprite_id: u32,
     content: &[ContentType],
     atlas_handlers: &mut ResMut<TextureAtlasHandlers>,
-) -> Option<(usize, SheetGrid, Handle<TextureAtlas>)> {
+) -> Option<(u32, usize, SheetGrid, Handle<TextureAtlas>)> {
     if let Ok(grid) = get_sprite_grid_by_id(content, sprite_id) {
         Some((
+            sprite_id,
             get_sprite_index_by_id(content, sprite_id).unwrap(),
             grid.clone(),
             atlas_handlers.0.get(&grid.file).unwrap().clone()
@@ -108,10 +110,10 @@ pub fn build_texture_atlas_from_sheet(
 
 pub fn draw_sprite(
     pos: Vec3,
-    sprite: &(usize, SheetGrid, Handle<TextureAtlas>),
+    sprite: &(u32, usize, SheetGrid, Handle<TextureAtlas>),
     commands: &mut Commands,
 ) {
-    if let (index, grid, handle) = sprite {
+    if let (_, index, _, handle) = sprite {
         let x = pos.x * 32.;
         let y = pos.y * 32.;
         let z = pos.z + (pos.x + pos.y) / u16::MAX as f32;

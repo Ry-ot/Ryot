@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::io::{Read, Seek};
 use bevy::math::Vec4Swizzles;
 use bevy::{
@@ -9,14 +10,17 @@ use bevy::{
     prelude::*,
 };
 use bevy::asset::LoadedFolder;
+use bevy::utils::HashMap;
 use bevy_ecs_tilemap::prelude::*;
 
-use bevy_egui::{EguiPlugin};
+use bevy_egui::{EguiContexts, EguiPlugin};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use egui::{Align, TextureId, WidgetText};
+use egui::load::SizedTexture;
 use image::Pixel;
 use itertools::Itertools;
 use prost::Message;
-use rand::prelude::SliceRandom;
+use rand::prelude::{IteratorRandom, SliceRandom};
 use rand::Rng;
 use time_test::time_test;
 
@@ -26,7 +30,9 @@ use ryot_compass::{CipContent, draw_sprite, init_env, LmdbEnv, load_sprites, Pos
 use ryot_compass::item::{ItemRepository, ItemsFromHeedLmdb};
 use ryot_compass::minimap::{Minimap, MinimapPlugin};
 use rayon::prelude::*;
-use ryot::cip_content::{AppearanceFlags, Appearances, ContentType, decompress_all_sprite_sheets, get_full_file_buffer, load_content, SpriteInfo};
+use strum::{EnumCount, IntoEnumIterator};
+use strum_macros::{EnumCount, EnumIter};
+use ryot::cip_content::{Appearance, AppearanceFlags, Appearances, ContentType, decompress_all_sprite_sheets, get_full_file_buffer, ItemCategory, load_content, SheetGrid, SpriteInfo};
 
 const MAP_SIDE_LENGTH_X: u32 = 0;
 const MAP_SIDE_LENGTH_Y: u32 = 0;
@@ -38,6 +44,181 @@ const GRID_SIZE_SQUARE: TilemapGridSize = TilemapGridSize { x: 50.0, y: 50.0 };
 
 #[derive(Deref, Resource)]
 pub struct TileHandleSquare(Handle<Image>);
+
+impl From<&AppearanceFlags> for TilesetCategory {
+    fn from(flags: &AppearanceFlags) -> Self {
+        // Market has categories, so we can use it to determine the category of the item.
+        // If the item has a market flag, it's category is prioritized over the other flags.
+        if let Some(market) = &flags.market {
+            if let Some(category) = market.category {
+                return (&ItemCategory::try_from(category).unwrap()).into();
+            }
+        }
+
+        if flags.bank.is_some() {
+            return TilesetCategory::Terrains;
+        }
+
+        if flags.clip.is_some() {
+            return TilesetCategory::Edges;
+        }
+
+        if flags.bottom.is_some() {
+            return TilesetCategory::BaseLayer;
+        }
+
+        if flags.top.is_some() {
+            return TilesetCategory::UpperLayer;
+        }
+
+        // Corpses are also containers, so they need to be checked first
+        if flags.corpse.is_some() || flags.player_corpse.is_some() {
+            return TilesetCategory::Corpses;
+        }
+
+        if flags.container.is_some() {
+            return TilesetCategory::Containers;
+        }
+
+        if flags.hang.is_some() || flags.hook.is_some() || flags.rotate.is_some() {
+            return TilesetCategory::Decor;
+        }
+
+        if flags.clothes.is_some() {
+            return TilesetCategory::Clothes;
+        }
+
+        TilesetCategory::Miscellaneous
+    }
+}
+
+impl From<&ItemCategory> for TilesetCategory {
+    fn from(category: &ItemCategory) -> Self {
+        match category {
+            ItemCategory::Ammunition
+            | ItemCategory::Axes
+            | ItemCategory::Clubs
+            | ItemCategory::DistanceWeapons
+            | ItemCategory::Shields
+            | ItemCategory::Quiver
+            | ItemCategory::Swords
+            | ItemCategory::WandsRods => TilesetCategory::Weapons,
+            ItemCategory::Armors
+            | ItemCategory::Amulets
+            | ItemCategory::Boots
+            | ItemCategory::HelmetsHats
+            | ItemCategory::Legs
+            | ItemCategory::Rings => TilesetCategory::Clothes,
+            ItemCategory::CreatureProducts => TilesetCategory::CreatureProducts,
+            ItemCategory::Containers => TilesetCategory::Containers,
+            ItemCategory::Decoration => TilesetCategory::Decor,
+            ItemCategory::Food
+            | ItemCategory::Potions
+            | ItemCategory::Runes => TilesetCategory::Consumables,
+            ItemCategory::PremiumScrolls
+            | ItemCategory::TibiaCoins
+            | ItemCategory::Valuables  => TilesetCategory::Valuables,
+            ItemCategory::Others => TilesetCategory::Miscellaneous,
+            ItemCategory::Tools => TilesetCategory::Tools,
+        }
+    }
+}
+
+impl From<&Appearance> for TilesetCategory {
+    fn from(appearance: &Appearance) -> Self {
+        if let Some(flags) = &appearance.flags {
+            return flags.into();
+        }
+
+        TilesetCategory::Miscellaneous
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, EnumIter, EnumCount)]
+pub enum TilesetCategory {
+    Terrains,
+    Edges,
+    BaseLayer,
+    UpperLayer,
+    Decor,
+    Corpses,
+    Containers,
+    Clothes,
+    Consumables,
+    Tools,
+    Miscellaneous,
+    Valuables,
+    CreatureProducts,
+    Weapons,
+}
+
+impl PartialOrd<Self> for TilesetCategory {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.get_label().partial_cmp(&other.get_label())
+    }
+}
+
+impl Ord for TilesetCategory {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.get_label().cmp(&other.get_label())
+    }
+}
+
+impl Into<WidgetText> for &TilesetCategory {
+    fn into(self) -> WidgetText {
+        WidgetText::from(self.get_label())
+    }
+}
+
+impl TilesetCategory {
+    pub fn get_label(&self) -> String {
+        match self {
+            TilesetCategory::Terrains => String::from("Terrains"),
+            TilesetCategory::Edges => String::from("Edges"),
+            TilesetCategory::BaseLayer => String::from("Base Layer"),
+            TilesetCategory::UpperLayer => String::from("Upper Layer"),
+            TilesetCategory::Decor => String::from("Decor"),
+            TilesetCategory::Corpses => String::from("Corpses"),
+            TilesetCategory::Containers => String::from("Containers"),
+            TilesetCategory::Clothes => String::from("Clothes"),
+            TilesetCategory::Consumables => String::from("Consumables"),
+            TilesetCategory::Tools => String::from("Tools"),
+            TilesetCategory::Miscellaneous => String::from("Miscellaneous"),
+            TilesetCategory::Valuables => String::from("Valuables"),
+            TilesetCategory::CreatureProducts => String::from("Creature Products"),
+            TilesetCategory::Weapons => String::from("Weapons"),
+        }
+    }
+}
+
+#[derive(Debug, Clone, Resource)]
+pub struct Palette {
+    pub tile_set: HashMap<TilesetCategory, Vec<u32>>,
+}
+
+impl Default for Palette {
+    fn default() -> Self {
+        Self {
+            tile_set: [
+                (TilesetCategory::Terrains, vec![]),
+                (TilesetCategory::Edges, vec![]),
+                (TilesetCategory::BaseLayer, vec![]),
+                (TilesetCategory::UpperLayer, vec![]),
+                (TilesetCategory::Decor, vec![]),
+                (TilesetCategory::Corpses, vec![]),
+                (TilesetCategory::Containers, vec![]),
+                (TilesetCategory::Clothes, vec![]),
+                (TilesetCategory::Consumables, vec![]),
+                (TilesetCategory::Tools, vec![]),
+                (TilesetCategory::Miscellaneous, vec![]),
+                (TilesetCategory::Valuables, vec![]),
+                (TilesetCategory::CreatureProducts, vec![]),
+                (TilesetCategory::Weapons, vec![]),
+            ].into(),
+        }
+    }
+
+}
 
 fn build_cip_content_path(file: &String) -> String {
     format!("{}/{}", CIP_CONTENT_FOLDER, file)
@@ -139,6 +320,15 @@ pub struct Counter(u32);
 impl Default for Counter {
     fn default() -> Self {
         Self(0)
+    }
+}
+
+#[derive(Resource, Debug)]
+pub struct SelectedPalette(TilesetCategory);
+
+impl Default for SelectedPalette {
+    fn default() -> Self {
+        Self(TilesetCategory::Terrains)
     }
 }
 
@@ -396,32 +586,141 @@ pub fn load_cip_content(
     info!("CIP Content loaded: {}", content.raw_content.len());
 }
 
+fn ui_example(mut egui_ctx: EguiContexts) {
+    egui::TopBottomPanel::top("top_panel").show(egui_ctx.ctx_mut(), |ui| {
+        ui.horizontal(|ui| {
+            ui.label("My Application");
+            // Placeholder for loading icon
+            ui.with_layout(egui::Layout::right_to_left(Align::LEFT), |ui| {
+                ui.label("⏳"); // Hourglass emoji
+            });
+        });
+    });
+}
+
 pub fn print_appearances(
     content: Res<CipContent>,
+    mut selected_palette: ResMut<SelectedPalette>,
+    asset_server: Res<AssetServer>,
+    mut egui_ctx: EguiContexts,
+    mut palettes: ResMut<Palette>,
+    mut atlas_handlers: ResMut<TextureAtlasHandlers>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
+    if palettes.tile_set.get(&TilesetCategory::Terrains).unwrap().len() > 0 {
+        let mut selected = selected_palette.0;
+        let mut egui_images: Vec<(u32, SheetGrid, egui::Image)> = vec![];
+
+        if let Some(sprites) = palettes.tile_set.get(&selected) {
+            time_test!("Loading");
+            for (sprite_id, index, grid, handle) in load_sprites(&sprites[0..sprites.len()].to_vec(), &content.raw_content, &asset_server, &mut atlas_handlers, &mut texture_atlases) {
+                let Some(atlas) = texture_atlases.get(handle) else {
+                    continue;
+                };
+
+                let Some(rect) = atlas.textures.get(index) else {
+                    continue;
+                };
+
+                let uv: egui::Rect = egui::Rect::from_min_max(
+                    egui::pos2(rect.min.x / atlas.size.x, rect.min.y / atlas.size.y),
+                    egui::pos2(rect.max.x / atlas.size.x, rect.max.y / atlas.size.y),
+                );
+
+                let rect_vec2: egui::Vec2 = egui::Vec2::new(rect.max.x - rect.min.x, rect.max.y - rect.min.y);
+                let tex: TextureId = egui_ctx.add_image(atlas.texture.clone_weak());
+                egui_images.push((sprite_id, grid, egui::Image::new(SizedTexture::new(tex, rect_vec2)).uv(uv)));
+            }
+        }
+
+        egui::Window::new("Palette")
+            // .max_width(300.)
+            .show(egui_ctx.ctx_mut(), |ui| {
+                egui::ComboBox::from_id_source("palette")
+                    .selected_text(selected.get_label().clone())
+                    .width(ui.available_width())
+                    .show_ui(ui, |ui| {
+                        for key in palettes.tile_set.keys().sorted() {
+                            if ui.selectable_value(&mut selected.get_label(), key.get_label().clone(), key).clicked() {
+                                selected_palette.0 = key.clone();
+                                info!("Selected: {:?}", selected_palette.0);
+                            }
+                        }
+                    });
+
+                egui::ScrollArea::both().show(ui, |ui| {
+                    egui_images.chunks(10).for_each(|chunk| {
+                        ui.horizontal(|ui| {
+                            chunk.iter().for_each(|(index, grid, image)| {
+                                ui.vertical(|ui| {
+                                    ui.add(image.clone());
+                                    ui.label(format!("{}", index));
+                                });
+                            });
+                        });
+                    });
+                });
+            });
+        return;
+    }
+
+
+    let mut total = 0;
+
     content.raw_content.iter().for_each(|content| {
         match content {
             ContentType::Appearances { file, version: _ } => {
                 let buffer = get_full_file_buffer(&build_cip_content_path(file)).unwrap();
                 let appearances =  Appearances::decode(&*buffer).unwrap();
-                appearances.object.iter().for_each(|object| {
-                    if let Some(AppearanceFlags{bank, market,  ..}) = &object.flags {
-                        if bank.is_some() {
-                            let _ = bank.clone().unwrap();
-                            // info!("Object: {:?}, {:?}, {:?}", object.id, object.frame_group, bank);
-                        }
-
-                        if market.is_some() {
-                            let _ = market.clone().unwrap();
-                            // info!("Object: {:?}, {:?}, {:?}", object.id, object.frame_group, market);
-                        }
+                info!("outfits: {}", appearances.outfit.len());
+                appearances.outfit.iter().for_each(|outfit| {
+                    if let None = outfit.id {
+                        warn!("No-id {:?}", outfit);
                     }
+                    total += 1;
+                });
+                appearances.object.iter().for_each(|object| {
+                    total += 1;
+
+                    let Some(frame_group) = object.frame_group.first() else {
+                        warn!("No-sprite {:?}", object);
+                        return;
+                    };
+
+                    let Some(sprite_info) = &frame_group.sprite_info else {
+                        warn!("No-sprite {:?}", object);
+                        return;
+                    };
+
+                    let Some(sprite_id) = sprite_info.sprite_id.first() else {
+                        warn!("No-sprite {:?}", object);
+                        return;
+                    };
+
+                    let category: TilesetCategory = object.into();
+                    palettes.tile_set.get_mut(&category).unwrap().push(*sprite_id);
+                    // if let Some(AppearanceFlags{bank, market,  ..}) = &object.flags {
+                    //     if bank.is_some() {
+                    //         let _ = bank.clone().unwrap();
+                    //         // info!("Object: {:?}, {:?}, {:?}", object.id, object.frame_group, bank);
+                    //     }
+                    //
+                    //     if market.is_some() {
+                    //         let _ = market.clone().unwrap();
+                    //         // info!("Object: {:?}, {:?}, {:?}", object.id, object.frame_group, market);
+                    //     }
+                    // }
                 });
                 // info!("Appearances: {:?}", file)
             },
             _ => (),
         }
     });
+
+    for (category, ids) in &palettes.tile_set {
+        info!("{}: {}", category.get_label(), ids.len());
+    }
+    info!("Total: {}", total);
 }
 
 fn main() {
@@ -440,12 +739,14 @@ fn main() {
                 .set(ImagePlugin::default_nearest()),
         )
         .init_resource::<LmdbEnv>()
+        .init_resource::<Palette>()
         .init_resource::<SpriteSheetFolder>()
         .init_resource::<TextureAtlasHandlers>()
         .init_resource::<CipContent>()
         .init_resource::<CursorPos>()
         .init_resource::<Tiles>()
         .init_resource::<Counter>()
+        .init_resource::<SelectedPalette>()
         .init_resource::<TileHandleSquare>()
         .add_plugins(TilemapPlugin)
         .add_plugins((
@@ -469,6 +770,7 @@ fn main() {
         .add_systems(Update, draw_tiles_on_minimap)
         .add_systems(Update, scroll_events)
         .add_systems(Update, print_appearances)
+        .add_systems(Update, ui_example)
         .run();
 }
 
