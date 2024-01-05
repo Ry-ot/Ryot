@@ -635,8 +635,8 @@ pub fn print_appearances(
 
     if palettes.tile_set.get(&TilesetCategory::Terrains).unwrap().len() > 0 {
         let mut selected = palette_state.category;
+
         let mut egui_images: Vec<(u32, SheetGrid, egui::Image)> = vec![];
-        let mut sprites = palettes.tile_set.get(&selected).unwrap();
 
         let mut sprite_ids = if selected == TilesetCategory::Raw {
             let mut sprite_ids = vec![];
@@ -647,17 +647,17 @@ pub fn print_appearances(
 
             sprite_ids
         } else {
-            sprites[0..sprites.len().clamp(0, 300)].to_vec()
+            palettes.tile_set.get(&selected).unwrap().to_vec()
         };
 
         sprite_ids.sort();
 
-        for (sprite_id, index, grid, handle) in load_sprites(&sprite_ids, &content.raw_content, &asset_server, &mut atlas_handlers, &mut texture_atlases) {
-            let Some(atlas) = texture_atlases.get(handle) else {
+        for sprite in load_sprites(&sprite_ids, &content.raw_content, &asset_server, &mut atlas_handlers, &mut texture_atlases) {
+            let Some(atlas) = texture_atlases.get(sprite.atlas_texture_handle) else {
                 continue;
             };
 
-            let Some(rect) = atlas.textures.get(index) else {
+            let Some(rect) = atlas.textures.get(sprite.sprite_index) else {
                 continue;
             };
 
@@ -668,7 +668,7 @@ pub fn print_appearances(
 
             let rect_vec2: egui::Vec2 = egui::Vec2::new(rect.max.x - rect.min.x, rect.max.y - rect.min.y);
             let tex: TextureId = egui_ctx.add_image(atlas.texture.clone_weak());
-            egui_images.push((sprite_id, grid, egui::Image::new(SizedTexture::new(tex, rect_vec2)).uv(uv)));
+            egui_images.push((sprite.sprite_id, sprite.atlas_grid, egui::Image::new(SizedTexture::new(tex, rect_vec2)).uv(uv)));
         }
 
         egui::Window::new("Palette")
@@ -694,39 +694,49 @@ pub fn print_appearances(
                     });
                 });
 
-                egui::ScrollArea::both().max_height(ui.available_height()).show(ui, |ui| {
-                    egui::ComboBox::from_id_source("palette")
-                        .selected_text(selected.get_label().clone())
-                        .width(ui.available_width())
-                        .show_ui(ui, |ui| {
-                            for key in palettes.tile_set.keys().sorted() {
-                                if ui.selectable_value(&mut selected.get_label(), key.get_label().clone(), key).clicked() {
-                                    palette_state.category = key.clone();
-                                    info!("Selected: {:?}", palette_state.category);
-                                }
+                egui::ComboBox::from_id_source("palette")
+                    .selected_text(selected.get_label().clone())
+                    .width(ui.available_width())
+                    .show_ui(ui, |ui| {
+                        for key in palettes.tile_set.keys().sorted() {
+                            if ui.selectable_value(&mut selected.get_label(), key.get_label().clone(), key).clicked() {
+                                palette_state.category = key.clone();
+
+
+                                info!("Selected: {:?}", palette_state.category);
                             }
-                        });
-
-                    let chunk_size = ((320 / palette_state.grid_size) as usize).clamp(4, 7);
-
-                    egui_images.chunks(chunk_size).for_each(|chunk| {
-                        ui.horizontal(|ui| {
-                            chunk.iter().enumerate().for_each(|(i, (index, grid, image))| {
-                                let size = palette_state.grid_size as f32;
-
-                                ui.vertical(|ui| {
-                                    ui.add(image.clone().fit_to_exact_size(egui::Vec2::new(size, size)));
-                                    ui.add_space(3.);
-                                });
-
-                                let ratio = grid.tile_size.height as f32 / grid.tile_size.width as f32;
-
-                                if ratio > 1.0 && i < chunk_size - 1 {
-                                    ui.add_space(size / 2.);
-                                }
-                            });
-                        });
+                        }
                     });
+
+                let row_padding = 3.;
+                let row_height = palette_state.grid_size as f32 + row_padding;
+
+                let chunk_size = ((320 / palette_state.grid_size) as usize).clamp(4, 9);
+                let total_rows = egui_images.len() / chunk_size;
+
+                egui::ScrollArea::vertical()
+                    .max_height(ui.available_height())
+                    .show_rows(ui, row_height, total_rows, |ui, row_range| {
+                        ui.set_width(ui.available_width());
+                        info!("row_range: {:?}", row_range);
+                        for row in row_range {
+                            ui.horizontal(|ui| {
+                                egui_images[row * chunk_size..(row + 1) * chunk_size].iter().for_each(|(index, grid, image)| {
+                                    let size = palette_state.grid_size as f32;
+
+                                    ui.vertical(|ui| {
+                                        ui.add(image.clone().fit_to_exact_size(egui::Vec2::new(size, size)));
+                                        ui.add_space(row_padding);
+                                    });
+
+                                    let ratio = grid.tile_size.height as f32 / grid.tile_size.width as f32;
+
+                                    if ratio > 1.0 && row < chunk_size - 1 {
+                                        ui.add_space(size / 2.);
+                                    }
+                                });
+                            });
+                        }
                 });
             });
         return;

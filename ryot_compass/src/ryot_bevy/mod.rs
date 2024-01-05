@@ -23,13 +23,20 @@ impl Default for CipContent {
     }
 }
 
+pub struct LoadedSprite {
+    pub sprite_id: u32,
+    pub sprite_index: usize,
+    pub atlas_grid: SheetGrid,
+    pub atlas_texture_handle: Handle<TextureAtlas>,
+}
+
 pub fn load_sprites(
-    sprite_ids: &Vec<u32>,
+    sprite_ids: &[u32],
     content: &[ContentType],
     asset_server: &Res<AssetServer>,
     atlas_handlers: &mut ResMut<TextureAtlasHandlers>,
     texture_atlases: &mut ResMut<Assets<TextureAtlas>>,
-) -> Vec<(u32, usize, SheetGrid, Handle<TextureAtlas>)> {
+) -> Vec<LoadedSprite> {
     let unsaved_sprites: Vec<(SheetGrid, TextureAtlas)> = sprite_ids.iter().filter_map(|sprite_id| {
         if let Ok(grid) = get_sprite_grid_by_id(content, *sprite_id) {
             Some((grid.clone(), build_texture_atlas_from_sheet(&grid, asset_server)))
@@ -44,12 +51,12 @@ pub fn load_sprites(
 
     sprite_ids.iter().filter_map(|sprite_id| {
         if let Ok(grid) = get_sprite_grid_by_id(content, *sprite_id) {
-            Some((
-                *sprite_id,
-                get_sprite_index_by_id(content, *sprite_id).unwrap(),
-                grid.clone(),
-                atlas_handlers.0.get(&grid.file).unwrap().clone()
-            ))
+            Some(LoadedSprite {
+                sprite_id: *sprite_id,
+                sprite_index: get_sprite_index_by_id(content, *sprite_id).unwrap(),
+                atlas_grid: grid.clone(),
+                atlas_texture_handle: atlas_handlers.0.get(&grid.file).unwrap().clone()
+            })
         } else {
             None
         }
@@ -73,14 +80,14 @@ pub fn get_sprite_by_id(
     sprite_id: u32,
     content: &[ContentType],
     atlas_handlers: &mut ResMut<TextureAtlasHandlers>,
-) -> Option<(u32, usize, SheetGrid, Handle<TextureAtlas>)> {
+) -> Option<LoadedSprite> {
     if let Ok(grid) = get_sprite_grid_by_id(content, sprite_id) {
-        Some((
+        Some(LoadedSprite {
             sprite_id,
-            get_sprite_index_by_id(content, sprite_id).unwrap(),
-            grid.clone(),
-            atlas_handlers.0.get(&grid.file).unwrap().clone()
-        ))
+            sprite_index: get_sprite_index_by_id(content, sprite_id).unwrap(),
+            atlas_grid: grid.clone(),
+            atlas_texture_handle: atlas_handlers.0.get(&grid.file).unwrap().clone()
+        })
     } else {
         None
     }
@@ -110,16 +117,14 @@ pub fn build_texture_atlas_from_sheet(
 
 pub fn draw_sprite(
     pos: Vec3,
-    sprite: &(u32, usize, SheetGrid, Handle<TextureAtlas>),
+    sprite: &LoadedSprite,
     commands: &mut Commands,
 ) {
-    if let (_, index, _, handle) = sprite {
-        let x = pos.x * 32.;
-        let y = pos.y * 32.;
-        let z = pos.z + (pos.x + pos.y) / u16::MAX as f32;
+    let x = pos.x * 32.;
+    let y = pos.y * 32.;
+    let z = pos.z + (pos.x + pos.y) / u16::MAX as f32;
 
-        commands.spawn(build_sprite_bundle(handle.clone(), Vec3::new(x, -y, z), *index));
-    }
+    commands.spawn(build_sprite_bundle(sprite.atlas_texture_handle.clone(), Vec3::new(x, -y, z), sprite.sprite_index));
 }
 
 pub fn build_sprite_bundle(handle: Handle<TextureAtlas>, translation: Vec3, index: usize) -> SpriteSheetBundle {
