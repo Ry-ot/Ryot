@@ -18,6 +18,9 @@ pub use serde::{types::*};
 mod error;
 pub use error::*;
 
+mod error_handling;
+pub use error_handling::*;
+
 pub mod helpers;
 
 pub mod minimap;

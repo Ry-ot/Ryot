@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 use std::io::{Read, Seek};
+use bevy::app::AppExit;
 use bevy::math::Vec4Swizzles;
 use bevy::{
     input::{
@@ -25,6 +26,7 @@ use rand::Rng;
 use time_test::time_test;
 
 mod helpers;
+mod error_handling;
 use helpers::camera::movement as camera_movement;
 use ryot_compass::{CipContent, draw_sprite, init_env, LmdbEnv, load_sprites, Position, TextureAtlasHandlers, Tile};
 use ryot_compass::item::{ItemRepository, ItemsFromHeedLmdb};
@@ -33,6 +35,7 @@ use rayon::prelude::*;
 use strum::{EnumCount, IntoEnumIterator};
 use strum_macros::{EnumCount, EnumIter};
 use ryot::cip_content::{Appearance, AppearanceFlags, Appearances, ContentType, decompress_all_sprite_sheets, get_full_file_buffer, ItemCategory, load_content, SheetGrid, SpriteInfo};
+use error_handling::{ErrorState, display_error_window, check_for_exit};
 
 const MAP_SIDE_LENGTH_X: u32 = 0;
 const MAP_SIDE_LENGTH_Y: u32 = 0;
@@ -378,7 +381,11 @@ fn draw(
     // tile_map: Query<(&TilemapSize, &TilemapGridSize, &TilemapType, &Transform)>,
     // tile_added_writer: EventWriter<TilesAdded>,
     // mut tile_storage_query: Query<(&mut TileStorage, &Transform, Entity)>,
+    mut error_states: Res<ErrorState>,
 ) {
+    if error_states.has_error {
+        return;
+    }
     // let (tile_storage, transform, entity) = tile_storage_query.single_mut();
 
     // info!("{:?}", cursor_pos_to_tile_pos(cursor_pos, tile_map.single()));
@@ -578,12 +585,17 @@ fn cursor_pos_to_tile_pos(
 #[derive(SystemSet, Clone, Copy, Hash, PartialEq, Eq, Debug)]
 pub struct SpawnTilemapSet;
 
-pub fn load_cip_content(
-    mut content: ResMut<CipContent>
+fn load_cip_content(
+    mut content: ResMut<CipContent>,
+    mut error_state: ResMut<ErrorState>,
 ) {
-    info!("Loading CIP Content");
-    content.raw_content = load_content(&build_cip_content_path(&String::from("catalog-content.json"))).expect("Failed to load CIP content");
-    info!("CIP Content loaded: {}", content.raw_content.len());
+    match load_content(&build_cip_content_path(&String::from("catalog-content.json"))) {
+        Ok(raw_content) => content.raw_content = raw_content,
+        Err(_) => {
+            error_state.has_error = true;
+            error_state.error_message = "Failed to load CIP content".to_string();
+        },
+    }
 }
 
 fn ui_example(mut egui_ctx: EguiContexts) {
@@ -606,7 +618,11 @@ pub fn print_appearances(
     mut palettes: ResMut<Palette>,
     mut atlas_handlers: ResMut<TextureAtlasHandlers>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    mut error_states: Res<ErrorState>,
 ) {
+    if error_states.has_error {
+        return;
+    }
     if palettes.tile_set.get(&TilesetCategory::Terrains).unwrap().len() > 0 {
         let mut selected = selected_palette.0;
         let mut egui_images: Vec<(u32, SheetGrid, egui::Image)> = vec![];
@@ -725,6 +741,7 @@ pub fn print_appearances(
 
 fn main() {
     App::new()
+        .add_event::<AppExit>()
         .add_event::<TilesAdded>()
         .add_state::<AppState>()
         .add_plugins(
@@ -738,6 +755,7 @@ fn main() {
                 })
                 .set(ImagePlugin::default_nearest()),
         )
+        .init_resource::<ErrorState>()
         .init_resource::<LmdbEnv>()
         .init_resource::<Palette>()
         .init_resource::<SpriteSheetFolder>()
@@ -771,6 +789,8 @@ fn main() {
         .add_systems(Update, scroll_events)
         .add_systems(Update, print_appearances)
         .add_systems(Update, ui_example)
+        .add_systems(Update, display_error_window)
+        .add_systems(Update, check_for_exit)
         .run();
 }
 
