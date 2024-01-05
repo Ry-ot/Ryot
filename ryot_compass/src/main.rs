@@ -1,5 +1,6 @@
 use std::cmp::Ordering;
 use std::io::{Read, Seek};
+use std::ops::Range;
 use bevy::app::AppExit;
 use bevy::math::Vec4Swizzles;
 use bevy::{
@@ -333,6 +334,7 @@ impl Default for Counter {
 pub struct PaletteState {
     pub category: TilesetCategory,
     pub grid_size: u32,
+    pub visible_rows: Range<usize>,
 }
 
 impl Default for PaletteState {
@@ -340,6 +342,7 @@ impl Default for PaletteState {
         Self {
             category: TilesetCategory::Terrains,
             grid_size: 64,
+            visible_rows: Range {start: 0, end: 10},
         }
     }
 }
@@ -650,9 +653,14 @@ pub fn print_appearances(
             palettes.tile_set.get(&selected).unwrap().to_vec()
         };
 
-        sprite_ids.sort();
+        let chunk_size = ((320 / palette_state.grid_size) as usize).clamp(4, 9);
+        let total_rows = sprite_ids.len() / chunk_size;
 
-        for sprite in load_sprites(&sprite_ids, &content.raw_content, &asset_server, &mut atlas_handlers, &mut texture_atlases) {
+        sprite_ids.sort();
+        let begin = palette_state.visible_rows.start * chunk_size;
+        let end = palette_state.visible_rows.end * chunk_size;
+
+        for sprite in load_sprites(&sprite_ids[begin..=end], &content.raw_content, &asset_server, &mut atlas_handlers, &mut texture_atlases) {
             let Some(atlas) = texture_atlases.get(sprite.atlas_texture_handle) else {
                 continue;
             };
@@ -702,7 +710,6 @@ pub fn print_appearances(
                             if ui.selectable_value(&mut selected.get_label(), key.get_label().clone(), key).clicked() {
                                 palette_state.category = key.clone();
 
-
                                 info!("Selected: {:?}", palette_state.category);
                             }
                         }
@@ -711,32 +718,48 @@ pub fn print_appearances(
                 let row_padding = 3.;
                 let row_height = palette_state.grid_size as f32 + row_padding;
 
-                let chunk_size = ((320 / palette_state.grid_size) as usize).clamp(4, 9);
-                let total_rows = egui_images.len() / chunk_size;
-
                 egui::ScrollArea::vertical()
                     .max_height(ui.available_height())
                     .show_rows(ui, row_height, total_rows, |ui, row_range| {
                         ui.set_width(ui.available_width());
+                        palette_state.visible_rows = row_range.clone();
                         info!("row_range: {:?}", row_range);
-                        for row in row_range {
+                        egui_images.chunks(chunk_size).for_each(|chunk| {
                             ui.horizontal(|ui| {
-                                egui_images[row * chunk_size..(row + 1) * chunk_size].iter().for_each(|(index, grid, image)| {
+                                chunk.iter().enumerate().for_each(|(i, (index, grid, image))| {
                                     let size = palette_state.grid_size as f32;
 
                                     ui.vertical(|ui| {
                                         ui.add(image.clone().fit_to_exact_size(egui::Vec2::new(size, size)));
-                                        ui.add_space(row_padding);
+                                        ui.add_space(3.);
                                     });
 
                                     let ratio = grid.tile_size.height as f32 / grid.tile_size.width as f32;
 
-                                    if ratio > 1.0 && row < chunk_size - 1 {
+                                    if ratio > 1.0 && i < chunk_size - 1 {
                                         ui.add_space(size / 2.);
                                     }
                                 });
                             });
-                        }
+                        });
+                        // for row in row_range {
+                        //     ui.horizontal(|ui| {
+                        //         egui_images[row * chunk_size..(row + 1) * chunk_size].iter().for_each(|(index, grid, image)| {
+                        //             let size = palette_state.grid_size as f32;
+                        //
+                        //             ui.vertical(|ui| {
+                        //                 ui.add(image.clone().fit_to_exact_size(egui::Vec2::new(size, size)));
+                        //                 ui.add_space(row_padding);
+                        //             });
+                        //
+                        //             let ratio = grid.tile_size.height as f32 / grid.tile_size.width as f32;
+                        //
+                        //             if ratio > 1.0 && row < chunk_size - 1 {
+                        //                 ui.add_space(size / 2.);
+                        //             }
+                        //         });
+                        //     });
+                        // }
                 });
             });
         return;
