@@ -153,6 +153,7 @@ pub enum TilesetCategory {
     Valuables,
     CreatureProducts,
     Weapons,
+    Raw,
 }
 
 impl PartialOrd<Self> for TilesetCategory {
@@ -190,6 +191,7 @@ impl TilesetCategory {
             TilesetCategory::Valuables => String::from("Valuables"),
             TilesetCategory::CreatureProducts => String::from("Creature Products"),
             TilesetCategory::Weapons => String::from("Weapons"),
+            TilesetCategory::Raw => String::from("Raw"),
         }
     }
 }
@@ -217,6 +219,7 @@ impl Default for Palette {
                 (TilesetCategory::Valuables, vec![]),
                 (TilesetCategory::CreatureProducts, vec![]),
                 (TilesetCategory::Weapons, vec![]),
+                (TilesetCategory::Raw, vec![]),
             ].into(),
         }
     }
@@ -327,11 +330,17 @@ impl Default for Counter {
 }
 
 #[derive(Resource, Debug)]
-pub struct SelectedPalette(TilesetCategory);
+pub struct PaletteState {
+    pub category: TilesetCategory,
+    pub grid_size: u32,
+}
 
-impl Default for SelectedPalette {
+impl Default for PaletteState {
     fn default() -> Self {
-        Self(TilesetCategory::Terrains)
+        Self {
+            category: TilesetCategory::Terrains,
+            grid_size: 64,
+        }
     }
 }
 
@@ -600,19 +609,19 @@ fn load_cip_content(
 
 fn ui_example(mut egui_ctx: EguiContexts) {
     egui::TopBottomPanel::top("top_panel").show(egui_ctx.ctx_mut(), |ui| {
+        ui.set_height(32.0); // Adjust the height as needed
         ui.horizontal(|ui| {
-            ui.label("My Application");
-            // Placeholder for loading icon
-            ui.with_layout(egui::Layout::right_to_left(Align::LEFT), |ui| {
-                ui.label("⏳"); // Hourglass emoji
-            });
+            if ui.button("🏠").clicked() {
+                let path = rfd::FileDialog::new().pick_folder();
+                println!("Selected file: {:?}", path);
+            }
         });
     });
 }
 
 pub fn print_appearances(
     content: Res<CipContent>,
-    mut selected_palette: ResMut<SelectedPalette>,
+    mut palette_state: ResMut<PaletteState>,
     asset_server: Res<AssetServer>,
     mut egui_ctx: EguiContexts,
     mut palettes: ResMut<Palette>,
@@ -623,55 +632,98 @@ pub fn print_appearances(
     if error_states.has_error {
         return;
     }
+
     if palettes.tile_set.get(&TilesetCategory::Terrains).unwrap().len() > 0 {
-        let mut selected = selected_palette.0;
+        let mut selected = palette_state.category;
         let mut egui_images: Vec<(u32, SheetGrid, egui::Image)> = vec![];
+        let mut sprites = palettes.tile_set.get(&selected).unwrap();
 
-        if let Some(sprites) = palettes.tile_set.get(&selected) {
-            time_test!("Loading");
-            for (sprite_id, index, grid, handle) in load_sprites(&sprites[0..sprites.len()].to_vec(), &content.raw_content, &asset_server, &mut atlas_handlers, &mut texture_atlases) {
-                let Some(atlas) = texture_atlases.get(handle) else {
-                    continue;
-                };
+        let mut sprite_ids = if selected == TilesetCategory::Raw {
+            let mut sprite_ids = vec![];
 
-                let Some(rect) = atlas.textures.get(index) else {
-                    continue;
-                };
-
-                let uv: egui::Rect = egui::Rect::from_min_max(
-                    egui::pos2(rect.min.x / atlas.size.x, rect.min.y / atlas.size.y),
-                    egui::pos2(rect.max.x / atlas.size.x, rect.max.y / atlas.size.y),
-                );
-
-                let rect_vec2: egui::Vec2 = egui::Vec2::new(rect.max.x - rect.min.x, rect.max.y - rect.min.y);
-                let tex: TextureId = egui_ctx.add_image(atlas.texture.clone_weak());
-                egui_images.push((sprite_id, grid, egui::Image::new(SizedTexture::new(tex, rect_vec2)).uv(uv)));
+            for category_sprites in palettes.tile_set.values() {
+                sprite_ids.extend(category_sprites);
             }
+
+            sprite_ids
+        } else {
+            sprites[0..sprites.len().clamp(0, 300)].to_vec()
+        };
+
+        sprite_ids.sort();
+
+        for (sprite_id, index, grid, handle) in load_sprites(&sprite_ids, &content.raw_content, &asset_server, &mut atlas_handlers, &mut texture_atlases) {
+            let Some(atlas) = texture_atlases.get(handle) else {
+                continue;
+            };
+
+            let Some(rect) = atlas.textures.get(index) else {
+                continue;
+            };
+
+            let uv: egui::Rect = egui::Rect::from_min_max(
+                egui::pos2(rect.min.x / atlas.size.x, rect.min.y / atlas.size.y),
+                egui::pos2(rect.max.x / atlas.size.x, rect.max.y / atlas.size.y),
+            );
+
+            let rect_vec2: egui::Vec2 = egui::Vec2::new(rect.max.x - rect.min.x, rect.max.y - rect.min.y);
+            let tex: TextureId = egui_ctx.add_image(atlas.texture.clone_weak());
+            egui_images.push((sprite_id, grid, egui::Image::new(SizedTexture::new(tex, rect_vec2)).uv(uv)));
         }
 
         egui::Window::new("Palette")
-            // .max_width(300.)
+            .min_width(350.)
+            .max_width(350.)
             .show(egui_ctx.ctx_mut(), |ui| {
-                egui::ComboBox::from_id_source("palette")
-                    .selected_text(selected.get_label().clone())
-                    .width(ui.available_width())
-                    .show_ui(ui, |ui| {
-                        for key in palettes.tile_set.keys().sorted() {
-                            if ui.selectable_value(&mut selected.get_label(), key.get_label().clone(), key).clicked() {
-                                selected_palette.0 = key.clone();
-                                info!("Selected: {:?}", selected_palette.0);
-                            }
-                        }
-                    });
 
-                egui::ScrollArea::both().show(ui, |ui| {
-                    egui_images.chunks(10).for_each(|chunk| {
+                // Add bottom panel for zoom controls
+                egui::TopBottomPanel::bottom("bottom_panel").show_inside(ui, |ui| {
+                    ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+                        ui.add_space(5.0); // Add some space from the top border
+                        ui.with_layout(egui::Layout::right_to_left(Align::Center), |ui| {
+                            if ui.button("+").clicked() {
+                                palette_state.grid_size += 16;
+                            }
+
+                            if ui.button("-").clicked() {
+                                palette_state.grid_size -= 16;
+                            }
+
+                            palette_state.grid_size = palette_state.grid_size.clamp(32, 80);
+                        });
+                    });
+                });
+
+                egui::ScrollArea::both().max_height(ui.available_height()).show(ui, |ui| {
+                    egui::ComboBox::from_id_source("palette")
+                        .selected_text(selected.get_label().clone())
+                        .width(ui.available_width())
+                        .show_ui(ui, |ui| {
+                            for key in palettes.tile_set.keys().sorted() {
+                                if ui.selectable_value(&mut selected.get_label(), key.get_label().clone(), key).clicked() {
+                                    palette_state.category = key.clone();
+                                    info!("Selected: {:?}", palette_state.category);
+                                }
+                            }
+                        });
+
+                    let chunk_size = ((320 / palette_state.grid_size) as usize).clamp(4, 7);
+
+                    egui_images.chunks(chunk_size).for_each(|chunk| {
                         ui.horizontal(|ui| {
-                            chunk.iter().for_each(|(index, grid, image)| {
+                            chunk.iter().enumerate().for_each(|(i, (index, grid, image))| {
+                                let size = palette_state.grid_size as f32;
+
                                 ui.vertical(|ui| {
-                                    ui.add(image.clone());
-                                    ui.label(format!("{}", index));
+                                    ui.add(image.clone().fit_to_exact_size(egui::Vec2::new(size, size)));
+                                    ui.add_space(3.);
                                 });
+
+                                let ratio = grid.tile_size.height as f32 / grid.tile_size.width as f32;
+
+                                if ratio > 1.0 && i < chunk_size - 1 {
+                                    ui.add_space(size / 2.);
+                                }
                             });
                         });
                     });
@@ -764,7 +816,7 @@ fn main() {
         .init_resource::<CursorPos>()
         .init_resource::<Tiles>()
         .init_resource::<Counter>()
-        .init_resource::<SelectedPalette>()
+        .init_resource::<PaletteState>()
         .init_resource::<TileHandleSquare>()
         .add_plugins(TilemapPlugin)
         .add_plugins((
@@ -779,12 +831,12 @@ fn main() {
                 .in_set(SpawnTilemapSet),
         )
         .add_systems(Startup, init_env.before(load_tiles))
-        .add_systems(Startup, load_tiles)
+        // .add_systems(Startup, load_tiles)
         .add_systems(Startup, load_cip_content.before(decompress_all_sprites))
         .add_systems(Startup, decompress_all_sprites)
         .add_systems(First, (camera_movement, update_cursor_pos).chain())
         .add_systems(Update, add_tile)
-        .add_systems(Update, draw)
+        // .add_systems(Update, draw)
         .add_systems(Update, draw_tiles_on_minimap)
         .add_systems(Update, scroll_events)
         .add_systems(Update, print_appearances)

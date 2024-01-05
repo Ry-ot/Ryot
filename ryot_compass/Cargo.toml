@@ -6,7 +6,6 @@ edition = "2021"
 [dependencies]
 ryot = { version = "0.1.0", path = "../ryot" }
 bevy_egui = "0.24.0"
-#bevy_ecs_tilemap = "0.11.1"
 bevy_ecs_tilemap = { git = "https://github.com/divark/bevy_ecs_tilemap.git", branch = "0.12-fixes" }
 egui = { version = "0.24.1", default-features = false, features = ["bytemuck"] }
 rand = "0.8.5"
@@ -26,6 +25,7 @@ image = "0.24.7"
 itertools = "0.12.0"
 strum = "0.25.0"
 strum_macros = "0.25.0"
+rfd = "0.12.1"
 
 [dependencies.bevy]
 version = "0.12.1"
