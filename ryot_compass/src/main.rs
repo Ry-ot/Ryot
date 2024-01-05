@@ -680,11 +680,9 @@ pub fn print_appearances(
         }
 
         egui::Window::new("Palette")
-            .min_width(350.)
-            .max_width(350.)
+            .max_width(424.)
             .show(egui_ctx.ctx_mut(), |ui| {
 
-                // Add bottom panel for zoom controls
                 egui::TopBottomPanel::bottom("bottom_panel").show_inside(ui, |ui| {
                     ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
                         ui.add_space(5.0); // Add some space from the top border
@@ -723,14 +721,22 @@ pub fn print_appearances(
                     .show_rows(ui, row_height, total_rows, |ui, row_range| {
                         ui.set_width(ui.available_width());
                         palette_state.visible_rows = row_range.clone();
-                        info!("row_range: {:?}", row_range);
                         egui_images.chunks(chunk_size).for_each(|chunk| {
                             ui.horizontal(|ui| {
                                 chunk.iter().enumerate().for_each(|(i, (index, grid, image))| {
                                     let size = palette_state.grid_size as f32;
 
                                     ui.vertical(|ui| {
-                                        ui.add(image.clone().fit_to_exact_size(egui::Vec2::new(size, size)));
+                                        let ui_button = ui.add(egui::ImageButton::new(image.clone().fit_to_exact_size(egui::Vec2::new(size, size))));
+
+                                        let ui_button = ui_button
+                                            .on_hover_text(format!("{}", index))
+                                            .on_hover_cursor(egui::CursorIcon::PointingHand);
+
+                                        if ui_button.clicked() {
+                                            info!("Tile: {:?} selected", index);
+                                        }
+
                                         ui.add_space(3.);
                                     });
 
