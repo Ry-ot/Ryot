@@ -9,6 +9,9 @@
 use bevy::prelude::*;
 use ryot::cip_content::{ContentType, get_decompressed_file_name, get_sprite_grid_by_id, SheetGrid, get_sprite_index_by_id};
 
+mod palette;
+pub use palette::*;
+
 #[derive(Resource, Debug)]
 pub struct CipContent {
     pub raw_content: Vec<ContentType>,

@@ -28,6 +28,12 @@ pub mod minimap;
 mod ryot_bevy;
 pub use ryot_bevy::*;
 
+mod tileset;
+pub use tileset::*;
+
+mod ui;
+pub use ui::*;
+
 #[derive(Resource)]
 pub struct LmdbEnv(pub Option<Env>);
 
