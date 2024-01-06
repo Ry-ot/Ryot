@@ -1,4 +1,5 @@
 use std::io::{Read, Seek};
+use bevy::app::AppExit;
 use bevy::math::Vec4Swizzles;
 use bevy::{
     input::{
@@ -9,45 +10,34 @@ use bevy::{
     prelude::*,
 };
 use bevy::asset::LoadedFolder;
-use bevy_ecs_tilemap::prelude::*;
 
-use bevy_egui::{EguiPlugin};
+use bevy_egui::{EguiContexts, EguiPlugin};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
+use egui::TextureId;
+use egui::load::SizedTexture;
 use image::Pixel;
 use itertools::Itertools;
 use prost::Message;
-use rand::prelude::SliceRandom;
+use rand::prelude::{IteratorRandom, SliceRandom};
 use rand::Rng;
 use time_test::time_test;
 
 mod helpers;
+mod error_handling;
 use helpers::camera::movement as camera_movement;
-use ryot_compass::{CipContent, draw_sprite, init_env, LmdbEnv, load_sprites, Position, TextureAtlasHandlers, Tile};
+use ryot_compass::{draw_palette_window, CipContent, draw_sprite, init_env, LmdbEnv, load_sprites, Palette, PaletteState, Position, TextureAtlasHandlers, Tile, TilesetCategory};
 use ryot_compass::item::{ItemRepository, ItemsFromHeedLmdb};
 use ryot_compass::minimap::{Minimap, MinimapPlugin};
 use rayon::prelude::*;
-use ryot::cip_content::{AppearanceFlags, Appearances, ContentType, decompress_all_sprite_sheets, get_full_file_buffer, load_content, SpriteInfo};
+use strum::{EnumCount, IntoEnumIterator};
+use ryot::cip_content::{Appearances, ContentType, decompress_all_sprite_sheets, get_full_file_buffer, load_content, SheetGrid, SpriteInfo};
+use error_handling::{ErrorState, display_error_window, check_for_exit};
 
-const MAP_SIDE_LENGTH_X: u32 = 0;
-const MAP_SIDE_LENGTH_Y: u32 = 0;
 const CIP_CONTENT_FOLDER: &str = "ryot_compass/assets/cip_catalog";
 const DECOMPRESSED_CONTENT_FOLDER: &str = "ryot_compass/assets/sprite-sheets";
 
-const TILE_SIZE_SQUARE: TilemapTileSize = TilemapTileSize { x: 50.0, y: 50.0 };
-const GRID_SIZE_SQUARE: TilemapGridSize = TilemapGridSize { x: 50.0, y: 50.0 };
-
-#[derive(Deref, Resource)]
-pub struct TileHandleSquare(Handle<Image>);
-
 fn build_cip_content_path(file: &String) -> String {
     format!("{}/{}", CIP_CONTENT_FOLDER, file)
-}
-
-impl FromWorld for TileHandleSquare {
-    fn from_world(world: &mut World) -> Self {
-        let asset_server = world.resource::<AssetServer>();
-        Self(asset_server.load("bw-tile-square.png"))
-    }
 }
 
 fn scroll_events(
@@ -72,44 +62,8 @@ fn draw_tiles_on_minimap(
     tiles.0.clear(); // TODO: replace this with a system that only adds new tiles
 }
 
-// Generates the initial tilemap, which is a square grid.
-fn spawn_tilemap(mut commands: Commands, tile_handle_square: Res<TileHandleSquare>) {
+fn spawn_camera(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
-
-    let map_size = TilemapSize {
-        x: MAP_SIDE_LENGTH_X,
-        y: MAP_SIDE_LENGTH_Y,
-    };
-
-    let mut tile_storage = TileStorage::empty(map_size);
-    let tilemap_entity = commands.spawn_empty().id();
-    let tilemap_id = TilemapId(tilemap_entity);
-
-    fill_tilemap(
-        TileTextureIndex(0),
-        TilemapSize {
-            x: 0,
-            y: 0,
-        },
-        tilemap_id,
-        &mut commands,
-        &mut tile_storage,
-    );
-
-    let tile_size = TILE_SIZE_SQUARE;
-    let grid_size = GRID_SIZE_SQUARE;
-    let map_type = TilemapType::Square;
-
-    commands.entity(tilemap_entity).insert(TilemapBundle {
-        grid_size,
-        size: map_size,
-        storage: tile_storage,
-        texture: TilemapTexture::Single(tile_handle_square.clone()),
-        tile_size,
-        map_type,
-        transform: get_tilemap_center_transform(&map_size, &grid_size, &map_type, 0.0),
-        ..Default::default()
-    });
 }
 
 #[derive(Resource, Debug)]
@@ -142,9 +96,6 @@ impl Default for Counter {
     }
 }
 
-#[derive(Event, Debug)]
-struct TilesAdded(TileTextureIndex, TilePos, TilemapSize, TilemapId);
-
 fn load_tiles(
     env: ResMut<LmdbEnv>,
     mut tiles: ResMut<Tiles>,
@@ -174,24 +125,23 @@ fn load_tiles(
 
 fn draw(
     mut commands: Commands,
-    // mut env: ResMut<LmdbEnv>,
     // tiles: ResMut<Tiles>,
     mut content: ResMut<CipContent>,
-    mut textures: ResMut<Assets<Image>>,
+    // mut textures: ResMut<Assets<Image>>,
     asset_server: Res<AssetServer>,
     mut atlas_handlers: ResMut<TextureAtlasHandlers>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     mut counter: ResMut<Counter>,
     // mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    // tile_handle_square: Res<TileHandleSquare>,
     // cursor_pos: Res<CursorPos>,
-    // tile_map: Query<(&TilemapSize, &TilemapGridSize, &TilemapType, &Transform)>,
-    // tile_added_writer: EventWriter<TilesAdded>,
     // mut tile_storage_query: Query<(&mut TileStorage, &Transform, Entity)>,
+    mut error_states: Res<ErrorState>,
 ) {
+    if error_states.has_error {
+        return;
+    }
     // let (tile_storage, transform, entity) = tile_storage_query.single_mut();
 
-    // info!("{:?}", cursor_pos_to_tile_pos(cursor_pos, tile_map.single()));
     let mut sprite_ids = vec![];
 
     for c in &content.raw_content {
@@ -217,9 +167,6 @@ fn draw(
     }
 
     sprite_ids = sprite_ids.iter().cloned().unique().collect();
-
-    info!("{}", counter.0);
-    info!("Textures: {}", textures.len());
 
     // Random loading just to test memory consumption
     if counter.0 < sprite_ids.len() as u32 {
@@ -275,48 +222,6 @@ fn draw(
 
         return;
     }
-
-    return;
-
-    // if buttons.just_pressed(MouseButton::Right) {
-    //     for x in 0..=1100 {
-    //         for y in 0..=1100 {
-    //             let remove_pos = TilePos{x, y};
-    //             if let Some(tile_entity) = tile_storage.get(&remove_pos) {
-    //                 commands.entity(tile_entity).despawn_recursive();
-    //                 tile_storage.remove(&remove_pos);
-    //             }
-    //         }
-    //     }
-    //     // tiles.clear();
-    //     return;
-    // }
-
-    // let mut to_load = 500;
-    // for tile in tiles {
-    //     let (tile, bool) = tile;
-    //
-    //     if *bool {
-    //         continue;
-    //     }
-    //
-    //     if to_load == 0 {
-    //         break;
-    //     }
-    //
-    //     let pos = tile.position;
-    //     let tile_pos = TilePos::new((pos.x - 60000u16) as u32, (pos.y - 60000u16) as u32);
-    //
-    //     tile_added_writer.send(TilesAdded(
-    //         TileTextureIndex(0),
-    //         tile_pos,
-    //         TilemapSize { x: 1, y: 1 },
-    //         TilemapId(entity),
-    //     ));
-    //
-    //     *bool = true;
-    //     to_load -= 1;
-    // }
 }
 
 fn decompress_all_sprites(
@@ -329,31 +234,6 @@ fn decompress_all_sprites(
         CIP_CONTENT_FOLDER,
         DECOMPRESSED_CONTENT_FOLDER,
     );
-}
-
-fn add_tile(
-    mut commands: Commands,
-    mut tile_added_reader: EventReader<TilesAdded>,
-    mut tile_storage_query: Query<&mut TileStorage>,
-) {
-    let mut max_events = 500;
-    // info!("Adding tiles");
-    for TilesAdded(tile_texture_index, tile_pos, tilemap_size, tilemap_id) in tile_added_reader.read() {
-        if max_events == 0 {
-            break;
-        }
-
-        fill_tilemap_rect(
-            *tile_texture_index,
-            *tile_pos,
-            *tilemap_size,
-            *tilemap_id,
-            &mut commands,
-            &mut tile_storage_query.get_mut(tilemap_id.0).expect("Tilemap not found"),
-        );
-
-        max_events -= 1;
-    }
 }
 
 // We need to keep the cursor position updated based on any `CursorMoved` events.
@@ -374,59 +254,156 @@ pub fn update_cursor_pos(
     }
 }
 
-fn cursor_pos_to_tile_pos(
-    cursor_pos: Res<CursorPos>,
-    tile_map: (&TilemapSize, &TilemapGridSize, &TilemapType, &Transform),
-) -> Option<TilePos> {
-    let (map_size, grid_size, map_type, map_transform) = tile_map;
-    let cursor_pos = Vec4::from((cursor_pos.0, 0.0, 1.0));
-    let cursor_in_map_pos = map_transform.compute_matrix().inverse() * cursor_pos;
+// fn cursor_pos_to_tile_pos(
+//     cursor_pos: Res<CursorPos>,
+//     tile_map: (&TilemapSize, &TilemapGridSize, &TilemapType, &Transform),
+// ) -> Option<TilePos> {
+//     let (map_size, grid_size, map_type, map_transform) = tile_map;
+//     let cursor_pos = Vec4::from((cursor_pos.0, 0.0, 1.0));
+//     let cursor_in_map_pos = map_transform.compute_matrix().inverse() * cursor_pos;
+//
+//     TilePos::from_world_pos(&cursor_in_map_pos.xy(), map_size, grid_size, map_type)
+// }
 
-    TilePos::from_world_pos(&cursor_in_map_pos.xy(), map_size, grid_size, map_type)
+fn load_cip_content(
+    mut content: ResMut<CipContent>,
+    mut error_state: ResMut<ErrorState>,
+) {
+    match load_content(&build_cip_content_path(&String::from("catalog-content.json"))) {
+        Ok(raw_content) => content.raw_content = raw_content,
+        Err(e) => {
+            info!("Failed to load CIP content: {:?}", e);
+            error_state.has_error = true;
+            error_state.error_message = "Failed to load CIP content".to_string();
+        },
+    }
 }
 
-#[derive(SystemSet, Clone, Copy, Hash, PartialEq, Eq, Debug)]
-pub struct SpawnTilemapSet;
-
-pub fn load_cip_content(
-    mut content: ResMut<CipContent>
-) {
-    info!("Loading CIP Content");
-    content.raw_content = load_content(&build_cip_content_path(&String::from("catalog-content.json"))).expect("Failed to load CIP content");
-    info!("CIP Content loaded: {}", content.raw_content.len());
+fn ui_example(mut egui_ctx: EguiContexts) {
+    egui::TopBottomPanel::top("top_panel").show(egui_ctx.ctx_mut(), |ui| {
+        ui.set_height(32.0); // Adjust the height as needed
+        ui.horizontal(|ui| {
+            if ui.button("🏠").clicked() {
+                let path = rfd::FileDialog::new().pick_folder();
+                println!("Selected file: {:?}", path);
+            }
+        });
+    });
 }
 
 pub fn print_appearances(
     content: Res<CipContent>,
+    mut palette_state: ResMut<PaletteState>,
+    asset_server: Res<AssetServer>,
+    mut egui_ctx: EguiContexts,
+    mut palettes: ResMut<Palette>,
+    mut atlas_handlers: ResMut<TextureAtlasHandlers>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    mut error_states: Res<ErrorState>,
 ) {
+    if error_states.has_error {
+        return;
+    }
+
+    if palettes.tile_set.get(&TilesetCategory::Terrains).unwrap().len() > 0 {
+        let mut egui_images: Vec<(u32, SheetGrid, egui::Image)> = vec![];
+
+        let mut sprite_ids: Vec<u32> = if palette_state.category == TilesetCategory::Raw {
+            let mut sprite_ids = vec![];
+
+            for category_sprites in palettes.tile_set.values() {
+                sprite_ids.extend(category_sprites);
+            }
+
+            sprite_ids
+        } else {
+            palettes.tile_set.get(&palette_state.category).unwrap().to_vec()
+        }.into_iter().unique().collect();
+
+        sprite_ids.sort();
+
+        for sprite in load_sprites(&sprite_ids[palette_state.begin()..=palette_state.end()], &content.raw_content, &asset_server, &mut atlas_handlers, &mut texture_atlases) {
+            let Some(atlas) = texture_atlases.get(sprite.atlas_texture_handle) else {
+                continue;
+            };
+
+            let Some(rect) = atlas.textures.get(sprite.sprite_index) else {
+                continue;
+            };
+
+            let uv: egui::Rect = egui::Rect::from_min_max(
+                egui::pos2(rect.min.x / atlas.size.x, rect.min.y / atlas.size.y),
+                egui::pos2(rect.max.x / atlas.size.x, rect.max.y / atlas.size.y),
+            );
+
+            let rect_vec2: egui::Vec2 = egui::Vec2::new(rect.max.x - rect.min.x, rect.max.y - rect.min.y);
+            let tex: TextureId = egui_ctx.add_image(atlas.texture.clone_weak());
+            egui_images.push((sprite.sprite_id, sprite.atlas_grid, egui::Image::new(SizedTexture::new(tex, rect_vec2)).uv(uv)));
+        }
+
+        draw_palette_window(
+            sprite_ids.len(),
+            palettes.tile_set.keys().sorted().collect_vec(),
+            egui_images,
+            egui_ctx,
+            palette_state,
+        );
+
+        return;
+    }
+
+    let mut total = 0;
+
     content.raw_content.iter().for_each(|content| {
         match content {
             ContentType::Appearances { file, version: _ } => {
                 let buffer = get_full_file_buffer(&build_cip_content_path(file)).unwrap();
                 let appearances =  Appearances::decode(&*buffer).unwrap();
-                appearances.object.iter().for_each(|object| {
-                    if let Some(AppearanceFlags{bank, market,  ..}) = &object.flags {
-                        if bank.is_some() {
-                            let _ = bank.clone().unwrap();
-                            // info!("Object: {:?}, {:?}, {:?}", object.id, object.frame_group, bank);
-                        }
-
-                        if market.is_some() {
-                            let _ = market.clone().unwrap();
-                            // info!("Object: {:?}, {:?}, {:?}", object.id, object.frame_group, market);
-                        }
+                appearances.outfit.iter().for_each(|outfit| {
+                    if let None = outfit.id {
+                        warn!("No-id {:?}", outfit);
                     }
+                    total += 1;
                 });
-                // info!("Appearances: {:?}", file)
+                appearances.object.iter().for_each(|object| {
+                    total += 1;
+
+                    let Some(frame_group) = object.frame_group.first() else {
+                        warn!("No-sprite {:?}", object);
+                        return;
+                    };
+
+                    let Some(sprite_info) = &frame_group.sprite_info else {
+                        warn!("No-sprite {:?}", object);
+                        return;
+                    };
+
+                    let Some(sprite_id) = sprite_info.sprite_id.first() else {
+                        warn!("No-sprite {:?}", object);
+                        return;
+                    };
+
+                    let category: TilesetCategory = object.into();
+                    palettes.tile_set.get_mut(&category).unwrap().push(*sprite_id);
+                });
             },
             _ => (),
         }
     });
+
+    total = 0;
+
+    for (category, ids) in palettes.tile_set.iter_mut() {
+        *ids = ids.iter().unique().cloned().collect();
+        info!("{}: {}", category.get_label(), ids.len());
+        total += ids.len();
+    }
+    info!("Total: {}", total);
 }
 
 fn main() {
     App::new()
-        .add_event::<TilesAdded>()
+        .add_event::<AppExit>()
         .add_state::<AppState>()
         .add_plugins(
             DefaultPlugins
@@ -439,36 +416,34 @@ fn main() {
                 })
                 .set(ImagePlugin::default_nearest()),
         )
+        .init_resource::<ErrorState>()
         .init_resource::<LmdbEnv>()
+        .init_resource::<Palette>()
         .init_resource::<SpriteSheetFolder>()
         .init_resource::<TextureAtlasHandlers>()
         .init_resource::<CipContent>()
         .init_resource::<CursorPos>()
         .init_resource::<Tiles>()
         .init_resource::<Counter>()
-        .init_resource::<TileHandleSquare>()
-        .add_plugins(TilemapPlugin)
+        .init_resource::<PaletteState>()
         .add_plugins((
             EguiPlugin,
             WorldInspectorPlugin::default().run_if(input_toggle_active(true, KeyCode::Escape)),
             MinimapPlugin,
         ))
-        .add_systems(
-            Startup,
-            (spawn_tilemap, apply_deferred)
-                .chain()
-                .in_set(SpawnTilemapSet),
-        )
+        .add_systems(Startup, spawn_camera)
         .add_systems(Startup, init_env.before(load_tiles))
-        .add_systems(Startup, load_tiles)
+        // .add_systems(Startup, load_tiles)
         .add_systems(Startup, load_cip_content.before(decompress_all_sprites))
         .add_systems(Startup, decompress_all_sprites)
         .add_systems(First, (camera_movement, update_cursor_pos).chain())
-        .add_systems(Update, add_tile)
         .add_systems(Update, draw)
         .add_systems(Update, draw_tiles_on_minimap)
         .add_systems(Update, scroll_events)
         .add_systems(Update, print_appearances)
+        .add_systems(Update, ui_example)
+        .add_systems(Update, display_error_window)
+        .add_systems(Update, check_for_exit)
         .run();
 }
 

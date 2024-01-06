@@ -187,10 +187,6 @@ pub fn get_decompressed_file_name(file_name: &str) -> String {
     file_name.replace(".bmp.lzma", ".png")
 }
 
-pub fn is_compressed_file(file_name: &str) -> bool {
-    file_name.ends_with(".lzma")
-}
-
 fn reverse_channels(img: &mut RgbaImage) {
     for pixel in img.pixels_mut() {
         let Rgba([r, g, b, a]) = *pixel;

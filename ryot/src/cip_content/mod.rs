@@ -4,6 +4,7 @@ mod sprites;
 pub use sprites::*;
 
 use std::io::Read;
+use log::info;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
@@ -78,6 +79,7 @@ pub struct SpriteSheet {
 }
 
 pub fn load_content(path: &str) -> Result<Vec<ContentType>> {
+    info!("Loading content from {}", path);
     let file = std::fs::File::open(path)?;
     let reader = std::io::BufReader::new(file);
     let content: Vec<ContentType> = serde_json::from_reader(reader)?;
