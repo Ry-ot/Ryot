@@ -138,8 +138,6 @@ pub fn draw_palette_items(
                         let spacing = (palette_state.width as f32 - palette_state.get_tile_size() * palette_state.get_chunk_size() as f32) / (palette_state.get_chunk_size() - 1) as f32;
                         let size = palette_state.grid_size as f32;
 
-                        info!("spacing: {}", spacing);
-
                         ui.vertical(|ui| {
                             let ui_button = ui.add(egui::ImageButton::new(image.clone().fit_to_exact_size(egui::Vec2::new(size, size))));
 
