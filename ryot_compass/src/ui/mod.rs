@@ -85,20 +85,52 @@ pub fn draw_palette_bottom_panel(
 ) {
     egui::TopBottomPanel::bottom("bottom_panel").show_inside(ui, |ui| {
         ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
+            ui.set_width(palette_state.width);
             ui.add_space(5.0); // Add some space from the top border
             ui.with_layout(egui::Layout::right_to_left(Align::Center), |ui| {
-                if ui.button("+").clicked() {
-                    palette_state.grid_size += 16;
-                }
+                let mut slider_value = palette_state.grid_size as f32;
 
-                if ui.button("-").clicked() {
-                    palette_state.grid_size -= 16;
-                }
+                ui.add(
+                    egui::DragValue::new(&mut slider_value)
+                        .clamp_range(32..=80)
+                        .custom_formatter(|n, _| {
+                            format!("{n}x{n}")
+                        })
+                        .custom_parser(|s| {
+                            let parts: Vec<&str> = s.split('x').collect();
 
-                palette_state.grid_size = palette_state.grid_size.clamp(32, 80);
+                            let Some(n) = parts.first() else {
+                                return None;
+                            };
+
+                            let Ok(n) = n.parse::<f64>() else {
+                                return None;
+                            };
+
+                            Some(n)
+                        })
+                );
+
+                palette_state.grid_size = get_grid_size_from_slider(slider_value);
             });
         });
     });
+}
+
+fn get_grid_size_from_slider(slider_value: f32) -> u32 {
+    let snap_values = [32, 48, 64, 80];
+    let mut nearest_value = snap_values[0];
+    let mut smallest_diff = (slider_value - nearest_value as f32).abs();
+
+    for &snap_value in &snap_values[1..] {
+        let diff = (slider_value - snap_value as f32).abs();
+        if diff < smallest_diff {
+            smallest_diff = diff;
+            nearest_value = snap_value;
+        }
+    }
+
+    nearest_value
 }
 
 pub fn draw_palette_picker(
