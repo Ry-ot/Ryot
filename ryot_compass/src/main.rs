@@ -9,7 +9,6 @@ use bevy::{
     ecs::system::Resource,
     prelude::*,
 };
-use bevy::asset::LoadedFolder;
 
 use bevy_egui::{EguiContexts, EguiPlugin};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
@@ -227,7 +226,7 @@ fn draw(
 fn decompress_all_sprites(
     content: Res<CipContent>,
 ) {
-    time_test!("Decompressing");
+    // time_test!("Decompressing");
     std::fs::create_dir_all(DECOMPRESSED_CONTENT_FOLDER).unwrap();
     decompress_all_sprite_sheets(
         &content.raw_content,
@@ -266,10 +265,11 @@ pub fn update_cursor_pos(
 // }
 
 fn load_cip_content(
+    path: &str,
     mut content: ResMut<CipContent>,
     mut error_state: ResMut<ErrorState>,
 ) {
-    match load_content(&build_cip_content_path(&String::from("catalog-content.json"))) {
+    match load_content(path) {
         Ok(raw_content) => content.raw_content = raw_content,
         Err(e) => {
             info!("Failed to load CIP content: {:?}", e);
@@ -279,16 +279,115 @@ fn load_cip_content(
     }
 }
 
-fn ui_example(mut egui_ctx: EguiContexts) {
+fn ui_example(
+    mut egui_ctx: EguiContexts,
+    mut content: ResMut<CipContent>,
+    mut exit: EventWriter<AppExit>,
+    error_state: ResMut<ErrorState>,
+    mut about_me: ResMut<AboutMeOpened>,
+) {
     egui::TopBottomPanel::top("top_panel").show(egui_ctx.ctx_mut(), |ui| {
-        ui.set_height(32.0); // Adjust the height as needed
-        ui.horizontal(|ui| {
-            if ui.button("🏠").clicked() {
-                let path = rfd::FileDialog::new().pick_folder();
-                println!("Selected file: {:?}", path);
-            }
+        egui::menu::bar(ui, |ui| {
+            ui.scope(|ui| {
+                let mut style = (*ui.ctx().style()).clone();
+
+                // Modify the style for your specific widget
+                style.visuals.widgets.inactive.bg_fill = egui::Color32::GRAY;
+                style.visuals.widgets.active.bg_fill = egui::Color32::GRAY;
+                style.visuals.widgets.hovered.bg_fill = egui::Color32::GRAY;
+
+                // Temporarily apply the style
+                ui.set_style(style);
+
+                let is_content_loaded = content.raw_content.len() > 0;
+
+                egui::menu::menu_button(ui, "File", |ui| {
+                    if ui.add_enabled(is_content_loaded, egui::Button::new("🗁 Open")).clicked() {
+                        let path = rfd::FileDialog::new()
+                            .add_filter(".mdb, .otbm", &["mdb", "otbm"])
+                            .pick_file();
+
+                        info!("Loading map from file: {:?}", path);
+                        info!("Current dir: {:?}", std::env::current_dir());
+                    }
+
+                    if ui.add_enabled(is_content_loaded, egui::Button::new("💾 Save")).clicked() {
+                        let path = rfd::FileDialog::new()
+                            .add_filter(".mdb, .otbm", &["mdb", "otbm"])
+                            .save_file();
+
+                        info!("Saving map to file: {:?}", path);
+                    }
+
+                    ui.separator();
+
+                    if ui.button("Load Content").clicked() {
+                        let path = rfd::FileDialog::new()
+                            .add_filter(".json", &["json"])
+                            .pick_file();
+
+                        let Some(path) = path else {
+                            return;
+                        };
+
+                        let Some(path) = path.to_str() else {
+                            return;
+                        };
+
+                        info!("Loading cip content");
+                        load_cip_content(path, content, error_state);
+                        info!("Content loaded!");
+                    }
+
+                    if ui.add_enabled(is_content_loaded, egui::Button::new("🔃 Refresh Content")).clicked() {
+                        if let Ok(_) = std::fs::remove_dir_all(DECOMPRESSED_CONTENT_FOLDER) {
+                            // decompress_all_sprites(content);
+                        }
+                    }
+
+                    ui.separator();
+
+                    if ui.button("⚙ Settings").clicked() {
+                    }
+
+                    ui.separator();
+
+                    if ui.button("Exit").clicked() {
+                        exit.send(AppExit);
+                    }
+                });
+
+                egui::menu::menu_button(ui, "View", |ui| {
+                    if ui.button("Windows").clicked() {
+                        // Open action
+                    }
+                });
+
+                egui::menu::menu_button(ui, "Help", |ui| {
+                    if ui.button("About").clicked() {
+                        about_me.0 = true;
+                    }
+                });
+
+                // ui.with_layout(egui::Layout::right_to_left(Align::Center), |ui| {
+                //     if ui.button("⚙").clicked() {
+                //     }
+                // })
+            });
         });
     });
+
+    egui::Window::new("About Ryot Compass")
+        .auto_sized()
+        .collapsible(false)
+        .movable(false)
+        .default_pos(egui::pos2(100.0, 100.0)) // Adjust position as needed
+        .open(&mut about_me.0)
+        .show(egui_ctx.ctx_mut(), |ui| {
+            ui.label("About Me information...");
+        });
+
+
 }
 
 pub fn print_appearances(
@@ -404,7 +503,6 @@ pub fn print_appearances(
 fn main() {
     App::new()
         .add_event::<AppExit>()
-        .add_state::<AppState>()
         .add_plugins(
             DefaultPlugins
                 .set(WindowPlugin {
@@ -419,7 +517,7 @@ fn main() {
         .init_resource::<ErrorState>()
         .init_resource::<LmdbEnv>()
         .init_resource::<Palette>()
-        .init_resource::<SpriteSheetFolder>()
+        .init_resource::<AboutMeOpened>()
         .init_resource::<TextureAtlasHandlers>()
         .init_resource::<CipContent>()
         .init_resource::<CursorPos>()
@@ -434,25 +532,18 @@ fn main() {
         .add_systems(Startup, spawn_camera)
         .add_systems(Startup, init_env.before(load_tiles))
         // .add_systems(Startup, load_tiles)
-        .add_systems(Startup, load_cip_content.before(decompress_all_sprites))
         .add_systems(Startup, decompress_all_sprites)
         .add_systems(First, (camera_movement, update_cursor_pos).chain())
+        .add_systems(Update, decompress_all_sprites)
         .add_systems(Update, draw)
         .add_systems(Update, draw_tiles_on_minimap)
         .add_systems(Update, scroll_events)
-        .add_systems(Update, print_appearances)
         .add_systems(Update, ui_example)
+        .add_systems(Update, print_appearances)
         .add_systems(Update, display_error_window)
         .add_systems(Update, check_for_exit)
         .run();
 }
 
 #[derive(Resource, Default)]
-struct SpriteSheetFolder(Handle<LoadedFolder>);
-
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, States)]
-enum AppState {
-    #[default]
-    Setup,
-    Finished,
-}
+struct AboutMeOpened(bool);
