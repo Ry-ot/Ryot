@@ -79,8 +79,8 @@ house:id -> {
     beds: u8,
 }
  */
+use crate::{Item, ItemAttribute, MapComponent, Plan, Position, Tile};
 use rand::Rng;
-use crate::{Item, Plan, MapComponent, Tile, Position, ItemAttribute};
 
 pub fn build_map(z_size: u8) -> Plan {
     let mut map = Plan::default();
@@ -101,7 +101,7 @@ pub fn build_map(z_size: u8) -> Plan {
                     attributes: get_attribute_array(),
                 };
 
-                tile.set_item(Item{
+                tile.set_item(Item {
                     id: rand::thread_rng().gen_range(300..=400),
                     // items: Vec::new(),
                     // attributes: Vec::new(),
@@ -124,7 +124,9 @@ pub fn get_attribute_array() -> Vec<ItemAttribute> {
     }
 
     if chance < 2 {
-        return vec![ItemAttribute::HouseId(rand::thread_rng().gen_range(0..=u16::MAX))];
+        return vec![ItemAttribute::HouseId(
+            rand::thread_rng().gen_range(0..=u16::MAX),
+        )];
     }
 
     if chance < 3 {
@@ -132,23 +134,33 @@ pub fn get_attribute_array() -> Vec<ItemAttribute> {
     }
 
     if chance < 4 {
-        return vec![ItemAttribute::ActionId(rand::thread_rng().gen_range(300..=305))];
+        return vec![ItemAttribute::ActionId(
+            rand::thread_rng().gen_range(300..=305),
+        )];
     }
 
     if chance < 5 {
-        return vec![ItemAttribute::UniqueId(rand::thread_rng().gen_range(300..=305))];
+        return vec![ItemAttribute::UniqueId(
+            rand::thread_rng().gen_range(300..=305),
+        )];
     }
 
     if chance < 6 {
-        return vec![ItemAttribute::DepotId(rand::thread_rng().gen_range(300..=305))];
+        return vec![ItemAttribute::DepotId(
+            rand::thread_rng().gen_range(300..=305),
+        )];
     }
 
     if chance < 7 {
-        return vec![ItemAttribute::Text(rand::thread_rng().gen_range(10000..=10005).to_string())];
+        return vec![ItemAttribute::Text(
+            rand::thread_rng().gen_range(10000..=10005).to_string(),
+        )];
     }
 
     if chance < 8 {
-        return vec![ItemAttribute::Flags(rand::thread_rng().gen_range(300..=305))];
+        return vec![ItemAttribute::Flags(
+            rand::thread_rng().gen_range(300..=305),
+        )];
     }
 
     Vec::new()
@@ -161,7 +173,8 @@ pub fn get_chunks_per_z(initial_pos: &Position, final_pos: &Position) -> Vec<(Po
     for z in initial_pos.z..=final_pos.z {
         for i in 1..=n {
             let y_divided_by_6 = (final_pos.y - initial_pos.y) / n;
-            let chunk_start = Position::new(initial_pos.x, initial_pos.y + y_divided_by_6 * (i - 1), z);
+            let chunk_start =
+                Position::new(initial_pos.x, initial_pos.y + y_divided_by_6 * (i - 1), z);
             let chunk_end = Position::new(final_pos.x, initial_pos.y + y_divided_by_6 * i, z);
             chunks.push((chunk_start, chunk_end));
         }

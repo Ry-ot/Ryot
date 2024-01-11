@@ -1,19 +1,16 @@
-use std::io::{Read, Seek};
 use bevy::app::AppExit;
 use bevy::math::Vec4Swizzles;
 use bevy::{
-    input::{
-        mouse::MouseWheel,
-        common_conditions::input_toggle_active
-    },
     ecs::system::Resource,
+    input::{common_conditions::input_toggle_active, mouse::MouseWheel},
     prelude::*,
 };
+use std::io::{Read, Seek};
 
 use bevy_egui::{EguiContexts, EguiPlugin};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
-use egui::TextureId;
 use egui::load::SizedTexture;
+use egui::TextureId;
 use image::Pixel;
 use itertools::Itertools;
 use prost::Message;
@@ -21,28 +18,31 @@ use rand::prelude::{IteratorRandom, SliceRandom};
 use rand::Rng;
 use time_test::time_test;
 
-mod helpers;
 mod error_handling;
+mod helpers;
+use error_handling::{check_for_exit, display_error_window, ErrorState};
 use helpers::camera::movement as camera_movement;
-use ryot_compass::{draw_palette_window, CipContent, draw_sprite, init_env, LmdbEnv, load_sprites, Palette, PaletteState, Position, TextureAtlasHandlers, Tile, TilesetCategory};
+use rayon::prelude::*;
+use ryot::cip_content::{
+    decompress_all_sprite_sheets, get_full_file_buffer, load_content, Appearances, ContentType,
+    SheetGrid, SpriteInfo,
+};
 use ryot_compass::item::{ItemRepository, ItemsFromHeedLmdb};
 use ryot_compass::minimap::{Minimap, MinimapPlugin};
-use rayon::prelude::*;
+use ryot_compass::{
+    config, draw_palette_window, draw_sprite, init_env, load_sprites, CipContent, LmdbEnv, Palette,
+    PaletteState, Position, TextureAtlasHandlers, Tile, TilesetCategory,
+};
 use strum::{EnumCount, IntoEnumIterator};
-use ryot::cip_content::{Appearances, ContentType, decompress_all_sprite_sheets, get_full_file_buffer, load_content, SheetGrid, SpriteInfo};
-use error_handling::{ErrorState, display_error_window, check_for_exit};
 
-const CIP_CONTENT_FOLDER: &str = "ryot_compass/assets/cip_catalog";
-const DECOMPRESSED_CONTENT_FOLDER: &str = "ryot_compass/assets/sprite-sheets";
+const CIP_CONTENT_FOLDER: &str = "assets/cip_catalog";
+const DECOMPRESSED_CONTENT_FOLDER: &str = "assets/sprite-sheets";
 
 fn build_cip_content_path(file: &String) -> String {
     format!("{}/{}", CIP_CONTENT_FOLDER, file)
 }
 
-fn scroll_events(
-    mut minimap: ResMut<Minimap>,
-    mut scroll_evr: EventReader<MouseWheel>,
-) {
+fn scroll_events(mut minimap: ResMut<Minimap>, mut scroll_evr: EventReader<MouseWheel>) {
     for ev in scroll_evr.read() {
         minimap.zoom += ev.y * 0.1;
         minimap.zoom = minimap.zoom.clamp(1.0, 25.0);
@@ -54,9 +54,11 @@ fn draw_tiles_on_minimap(
     mut images: ResMut<Assets<Image>>,
     mut tiles: ResMut<Tiles>,
 ) {
-    let positions = tiles.0.iter().map(|(tile, _)| {
-        UVec2::new(tile.position.x.into(), tile.position.y.into())
-    }).collect::<Vec<_>>();
+    let positions = tiles
+        .0
+        .iter()
+        .map(|(tile, _)| UVec2::new(tile.position.x.into(), tile.position.y.into()))
+        .collect::<Vec<_>>();
     minimap.update_texture(positions, &mut images);
     tiles.0.clear(); // TODO: replace this with a system that only adds new tiles
 }
@@ -95,10 +97,7 @@ impl Default for Counter {
     }
 }
 
-fn load_tiles(
-    env: ResMut<LmdbEnv>,
-    mut tiles: ResMut<Tiles>,
-) {
+fn load_tiles(env: ResMut<LmdbEnv>, mut tiles: ResMut<Tiles>) {
     let tiles = &mut tiles.0;
 
     if tiles.len() > 0 {
@@ -114,11 +113,19 @@ fn load_tiles(
 
     let lmdb_tiles = {
         time_test!("Reading");
-        item_repository.get_for_area(&initial_pos, &final_pos).unwrap()
+        item_repository
+            .get_for_area(&initial_pos, &final_pos)
+            .unwrap()
     };
 
     for tile in lmdb_tiles {
-        tiles.push((Tile{ position: Position::from_binary_key(&tile.0), item: Some(tile.1) }, false));
+        tiles.push((
+            Tile {
+                position: Position::from_binary_key(&tile.0),
+                item: Some(tile.1),
+            },
+            false,
+        ));
     }
 }
 
@@ -147,12 +154,17 @@ fn draw(
         match c {
             ContentType::Appearances { file, version: _ } => {
                 let buffer = get_full_file_buffer(&build_cip_content_path(&file)).unwrap();
-                let appearances =  Appearances::decode(&*buffer).unwrap();
+                let appearances = Appearances::decode(&*buffer).unwrap();
 
-                for group in vec![&appearances.object, &appearances.outfit, &appearances.missile, &appearances.effect] {
+                for group in vec![
+                    &appearances.object,
+                    &appearances.outfit,
+                    &appearances.missile,
+                    &appearances.effect,
+                ] {
                     group.iter().for_each(|appearance| {
                         for frame_group in &appearance.frame_group {
-                            if let Some(SpriteInfo{sprite_id, ..}) = &frame_group.sprite_info {
+                            if let Some(SpriteInfo { sprite_id, .. }) = &frame_group.sprite_info {
                                 for id in sprite_id {
                                     sprite_ids.push(id.clone());
                                 }
@@ -160,7 +172,7 @@ fn draw(
                         }
                     });
                 }
-            },
+            }
             _ => (),
         }
     }
@@ -187,14 +199,23 @@ fn draw(
                     sprites.push(91267);
                 }
 
-                let sprites = load_sprites(&sprites, &content.raw_content, &asset_server, &mut atlas_handlers, &mut texture_atlases);
+                let sprites = load_sprites(
+                    &sprites,
+                    &content.raw_content,
+                    &asset_server,
+                    &mut atlas_handlers,
+                    &mut texture_atlases,
+                );
 
                 for (i, sprite) in sprites.iter().enumerate() {
-                    draw_sprite(Vec3::new(x as f32, y as f32, i as f32), sprite, &mut commands);
+                    draw_sprite(
+                        Vec3::new(x as f32, y as f32, i as f32),
+                        sprite,
+                        &mut commands,
+                    );
                 }
             }
         }
-
 
         // let loaded_monster = load_sprites(&vec![91267], &content.raw_content, &asset_server, &mut atlas_handlers, &mut texture_atlases);
         // if let Some(sprite) = loaded_monster.first() {
@@ -223,9 +244,7 @@ fn draw(
     }
 }
 
-fn decompress_all_sprites(
-    content: Res<CipContent>,
-) {
+fn decompress_all_sprites(content: Res<CipContent>) {
     // time_test!("Decompressing");
     std::fs::create_dir_all(DECOMPRESSED_CONTENT_FOLDER).unwrap();
     decompress_all_sprite_sheets(
@@ -275,7 +294,7 @@ fn load_cip_content(
             info!("Failed to load CIP content: {:?}", e);
             error_state.has_error = true;
             error_state.error_message = "Failed to load CIP content".to_string();
-        },
+        }
     }
 }
 
@@ -302,7 +321,10 @@ fn ui_example(
                 let is_content_loaded = content.raw_content.len() > 0;
 
                 egui::menu::menu_button(ui, "File", |ui| {
-                    if ui.add_enabled(is_content_loaded, egui::Button::new("🗁 Open")).clicked() {
+                    if ui
+                        .add_enabled(is_content_loaded, egui::Button::new("🗁 Open"))
+                        .clicked()
+                    {
                         let path = rfd::FileDialog::new()
                             .add_filter(".mdb, .otbm", &["mdb", "otbm"])
                             .pick_file();
@@ -311,7 +333,10 @@ fn ui_example(
                         info!("Current dir: {:?}", std::env::current_dir());
                     }
 
-                    if ui.add_enabled(is_content_loaded, egui::Button::new("💾 Save")).clicked() {
+                    if ui
+                        .add_enabled(is_content_loaded, egui::Button::new("💾 Save"))
+                        .clicked()
+                    {
                         let path = rfd::FileDialog::new()
                             .add_filter(".mdb, .otbm", &["mdb", "otbm"])
                             .save_file();
@@ -339,7 +364,10 @@ fn ui_example(
                         info!("Content loaded!");
                     }
 
-                    if ui.add_enabled(is_content_loaded, egui::Button::new("🔃 Refresh Content")).clicked() {
+                    if ui
+                        .add_enabled(is_content_loaded, egui::Button::new("🔃 Refresh Content"))
+                        .clicked()
+                    {
                         if let Ok(_) = std::fs::remove_dir_all(DECOMPRESSED_CONTENT_FOLDER) {
                             // decompress_all_sprites(content);
                         }
@@ -347,8 +375,7 @@ fn ui_example(
 
                     ui.separator();
 
-                    if ui.button("⚙ Settings").clicked() {
-                    }
+                    if ui.button("⚙ Settings").clicked() {}
 
                     ui.separator();
 
@@ -386,8 +413,6 @@ fn ui_example(
         .show(egui_ctx.ctx_mut(), |ui| {
             ui.label("About Me information...");
         });
-
-
 }
 
 pub fn print_appearances(
@@ -404,7 +429,13 @@ pub fn print_appearances(
         return;
     }
 
-    if palettes.tile_set.get(&TilesetCategory::Terrains).unwrap().len() > 0 {
+    if palettes
+        .tile_set
+        .get(&TilesetCategory::Terrains)
+        .unwrap()
+        .len()
+        > 0
+    {
         let mut egui_images: Vec<(u32, SheetGrid, egui::Image)> = vec![];
 
         let mut sprite_ids: Vec<u32> = if palette_state.category == TilesetCategory::Raw {
@@ -416,12 +447,25 @@ pub fn print_appearances(
 
             sprite_ids
         } else {
-            palettes.tile_set.get(&palette_state.category).unwrap().to_vec()
-        }.into_iter().unique().collect();
+            palettes
+                .tile_set
+                .get(&palette_state.category)
+                .unwrap()
+                .to_vec()
+        }
+        .into_iter()
+        .unique()
+        .collect();
 
         sprite_ids.sort();
 
-        for sprite in load_sprites(&sprite_ids[palette_state.begin()..=palette_state.end()], &content.raw_content, &asset_server, &mut atlas_handlers, &mut texture_atlases) {
+        for sprite in load_sprites(
+            &sprite_ids[palette_state.begin()..palette_state.end()],
+            &content.raw_content,
+            &asset_server,
+            &mut atlas_handlers,
+            &mut texture_atlases,
+        ) {
             let Some(atlas) = texture_atlases.get(sprite.atlas_texture_handle) else {
                 continue;
             };
@@ -435,9 +479,14 @@ pub fn print_appearances(
                 egui::pos2(rect.max.x / atlas.size.x, rect.max.y / atlas.size.y),
             );
 
-            let rect_vec2: egui::Vec2 = egui::Vec2::new(rect.max.x - rect.min.x, rect.max.y - rect.min.y);
+            let rect_vec2: egui::Vec2 =
+                egui::Vec2::new(rect.max.x - rect.min.x, rect.max.y - rect.min.y);
             let tex: TextureId = egui_ctx.add_image(atlas.texture.clone_weak());
-            egui_images.push((sprite.sprite_id, sprite.atlas_grid, egui::Image::new(SizedTexture::new(tex, rect_vec2)).uv(uv)));
+            egui_images.push((
+                sprite.sprite_id,
+                sprite.atlas_grid,
+                egui::Image::new(SizedTexture::new(tex, rect_vec2)).uv(uv),
+            ));
         }
 
         draw_palette_window(
@@ -453,11 +502,13 @@ pub fn print_appearances(
 
     let mut total = 0;
 
-    content.raw_content.iter().for_each(|content| {
-        match content {
+    content
+        .raw_content
+        .iter()
+        .for_each(|content| match content {
             ContentType::Appearances { file, version: _ } => {
                 let buffer = get_full_file_buffer(&build_cip_content_path(file)).unwrap();
-                let appearances =  Appearances::decode(&*buffer).unwrap();
+                let appearances = Appearances::decode(&*buffer).unwrap();
                 appearances.outfit.iter().for_each(|outfit| {
                     if let None = outfit.id {
                         warn!("No-id {:?}", outfit);
@@ -483,12 +534,15 @@ pub fn print_appearances(
                     };
 
                     let category: TilesetCategory = object.into();
-                    palettes.tile_set.get_mut(&category).unwrap().push(*sprite_id);
+                    palettes
+                        .tile_set
+                        .get_mut(&category)
+                        .unwrap()
+                        .push(*sprite_id);
                 });
-            },
+            }
             _ => (),
-        }
-    });
+        });
 
     total = 0;
 
@@ -532,9 +586,9 @@ fn main() {
         .add_systems(Startup, spawn_camera)
         .add_systems(Startup, init_env.before(load_tiles))
         // .add_systems(Startup, load_tiles)
-        .add_systems(Startup, decompress_all_sprites)
+        // .add_systems(Startup, decompress_all_sprites)
         .add_systems(First, (camera_movement, update_cursor_pos).chain())
-        .add_systems(Update, decompress_all_sprites)
+        // .add_systems(Update, decompress_all_sprites)
         .add_systems(Update, draw)
         .add_systems(Update, draw_tiles_on_minimap)
         .add_systems(Update, scroll_events)

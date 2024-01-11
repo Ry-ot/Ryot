@@ -1,8 +1,8 @@
+use crate::item::{ItemRepository, ItemsFromHeedLmdb};
 use bevy::prelude::*;
 use heed::Env;
 use ryot::{compress, decompress, lmdb, Zstd};
 use time_test::time_test;
-use crate::item::{ItemRepository, ItemsFromHeedLmdb};
 
 pub mod item;
 
@@ -13,7 +13,7 @@ mod plan;
 pub use plan::*;
 
 mod serde;
-pub use serde::{types::*};
+pub use serde::types::*;
 
 mod error;
 pub use error::*;
@@ -34,6 +34,9 @@ pub use tileset::*;
 mod ui;
 pub use ui::*;
 
+mod config;
+pub use config::*;
+
 #[derive(Resource)]
 pub struct LmdbEnv(pub Option<Env>);
 
@@ -43,25 +46,21 @@ impl Default for LmdbEnv {
     }
 }
 
-pub fn init_env(
-    mut env: ResMut<LmdbEnv>
-) {
+pub fn init_env(mut env: ResMut<LmdbEnv>) {
     info!("Setting up LMDB");
     env.0 = Some(lmdb::create_env(lmdb::get_storage_path()).unwrap());
 }
 
-pub fn read_area(
-    initial_pos: &Position,
-    final_pos: &Position,
-    env: ResMut<LmdbEnv>,
-) {
+pub fn read_area(initial_pos: &Position, final_pos: &Position, env: ResMut<LmdbEnv>) {
     match &env.0 {
         Some(env) => {
             time_test!("Reading");
             let item_repository = ItemsFromHeedLmdb::new(env.clone());
-            let area = item_repository.get_for_area(initial_pos, final_pos).unwrap();
+            let area = item_repository
+                .get_for_area(initial_pos, final_pos)
+                .unwrap();
             println!("Count: {:?}", area.len());
-        },
+        }
         None => {
             error!("No LMDB env");
         }
@@ -69,7 +68,6 @@ pub fn read_area(
 }
 
 pub fn lmdb_example() -> std::result::Result<(), Box<dyn std::error::Error>> {
-
     let env = lmdb::create_env(lmdb::get_storage_path())?;
     let item_repository = ItemsFromHeedLmdb::new(env.clone());
     let z_size = 15;
@@ -100,14 +98,17 @@ pub fn lmdb_example() -> std::result::Result<(), Box<dyn std::error::Error>> {
         time_test!("Compressing");
         compress::<Zstd>(
             lmdb::get_storage_path().join("data.mdb").to_str().unwrap(),
-            Some(3)
+            Some(3),
         )?;
     }
 
     {
         time_test!("Decompressing");
         decompress::<Zstd>(
-            lmdb::get_storage_path().join("data.mdb.snp").to_str().unwrap()
+            lmdb::get_storage_path()
+                .join("data.mdb.snp")
+                .to_str()
+                .unwrap(),
         )?;
     }
 

@@ -10,7 +10,7 @@
 use std::path::PathBuf;
 use image::{ImageFormat, imageops, Rgba, RgbaImage};
 use image::error::{LimitError, LimitErrorKind};
-use log::warn;
+use log::{info, warn};
 use lzma_rs::lzma_decompress_with_options;
 use rayon::prelude::*;
 use serde_repr::{Deserialize_repr, Serialize_repr};
@@ -121,22 +121,25 @@ pub fn create_image_from_data(data: Vec<u8>, size: SpriteSize) -> Result<RgbaIma
 pub fn decompress_all_sprite_sheets(content: &Vec<ContentType>, path: &str, destination_path: &str) {
     content.par_iter()
         .for_each(|c| match c {
-            ContentType::Sprite(sheet) => {
-                let destination_file = &format!("{}/{}", destination_path, get_decompressed_file_name(&sheet.file));
-
-                if PathBuf::from(destination_file).exists() {
-                    return;
-                }
-
-                match load_sprite_sheet_image(&format!("{}/{}", path, sheet.file)) {
-                    Ok(sheet) => sheet.save_with_format(destination_file, ImageFormat::Png).map_err(|e| {
-                        warn!("Failed to save sprite sheet {}: {}", destination_file, e);
-                    }).unwrap(),
-                    Err(_) => (),
-                }
-            }
+            ContentType::Sprite(sheet) => decompress_sprite_sheet(&sheet.file, path, destination_path),
             _ => ()
         });
+}
+
+pub fn decompress_sprite_sheet(file: &str, path: &str, destination_path: &str) {
+    let destination_file = &format!("{}/{}", destination_path, get_decompressed_file_name(file));
+
+    if PathBuf::from(destination_file).exists() {
+        return;
+    }
+
+    info!("Decompressing sprite sheet {} {}", path, file);
+    match load_sprite_sheet_image(&format!("{}/{}", path, file)) {
+        Ok(sheet) => sheet.save_with_format(destination_file, ImageFormat::Png).map_err(|e| {
+            warn!("Failed to save sprite sheet {}: {}", destination_file, e);
+        }).unwrap(),
+        Err(_) => (),
+    }
 }
 
 pub fn get_sheet_by_sprite_id(content: &[ContentType], id: u32) -> Option<SpriteSheet> {

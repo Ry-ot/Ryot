@@ -7,9 +7,9 @@
  * Website: https://github.com/lgrossi/Ryot
  */
 
-use bevy::prelude::*;
 use bevy::app::AppExit;
-use bevy_egui::{EguiContexts};
+use bevy::prelude::*;
+use bevy_egui::EguiContexts;
 
 #[derive(Resource, Default)]
 pub struct ErrorState {
@@ -27,25 +27,18 @@ impl ErrorState {
         }
     }
 }
-pub fn display_error_window(
-    mut egui_ctx: EguiContexts,
-    mut error_state: ResMut<ErrorState>,
-) {
+pub fn display_error_window(mut egui_ctx: EguiContexts, mut error_state: ResMut<ErrorState>) {
     if error_state.has_error {
-        egui::Window::new("Error")
-            .show(egui_ctx.ctx_mut(), |ui| {
-                ui.label(&error_state.error_message);
-                if ui.button("OK").clicked() {
-                    error_state.close_requested = true;
-                }
-            });
+        egui::Window::new("Error").show(egui_ctx.ctx_mut(), |ui| {
+            ui.label(&error_state.error_message);
+            if ui.button("OK").clicked() {
+                error_state.close_requested = true;
+            }
+        });
     }
 }
 
-pub fn check_for_exit(
-    error_state: Res<ErrorState>,
-    mut app_exit_events: EventWriter<AppExit>,
-) {
+pub fn check_for_exit(error_state: Res<ErrorState>, mut app_exit_events: EventWriter<AppExit>) {
     if error_state.close_requested {
         app_exit_events.send(AppExit);
     }
