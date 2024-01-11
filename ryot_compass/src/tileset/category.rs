@@ -6,10 +6,10 @@
  * Contributors: https://github.com/lgrossi/Ryot/graphs/contributors
  * Website: https://github.com/lgrossi/Ryot
  */
-use std::cmp::Ordering;
 use egui::WidgetText;
-use strum_macros::{EnumCount, EnumIter};
 use ryot::cip_content::{Appearance, AppearanceFlags, ItemCategory};
+use std::cmp::Ordering;
+use strum_macros::{EnumCount, EnumIter};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, EnumIter, EnumCount)]
 pub enum TilesetCategory {
@@ -97,12 +97,12 @@ impl From<&ItemCategory> for TilesetCategory {
             ItemCategory::CreatureProducts => TilesetCategory::CreatureProducts,
             ItemCategory::Containers => TilesetCategory::Containers,
             ItemCategory::Decoration => TilesetCategory::Decor,
-            ItemCategory::Food
-            | ItemCategory::Potions
-            | ItemCategory::Runes => TilesetCategory::Consumables,
-            ItemCategory::PremiumScrolls
-            | ItemCategory::TibiaCoins
-            | ItemCategory::Valuables  => TilesetCategory::Valuables,
+            ItemCategory::Food | ItemCategory::Potions | ItemCategory::Runes => {
+                TilesetCategory::Consumables
+            }
+            ItemCategory::PremiumScrolls | ItemCategory::TibiaCoins | ItemCategory::Valuables => {
+                TilesetCategory::Valuables
+            }
             ItemCategory::Others => TilesetCategory::Miscellaneous,
             ItemCategory::Tools => TilesetCategory::Tools,
         }

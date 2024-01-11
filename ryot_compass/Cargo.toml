@@ -26,6 +26,8 @@ itertools = "0.12.0"
 strum = "0.25.0"
 strum_macros = "0.25.0"
 rfd = "0.12.1"
+config = "0.13.4"
+egui_dock = "0.10.0"
 
 [dependencies.bevy]
 version = "0.12.1"

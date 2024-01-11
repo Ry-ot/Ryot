@@ -1,8 +1,10 @@
 use bevy::asset::Handle;
 use bevy::prelude::*;
-use bevy::render::render_resource::{Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages};
+use bevy::render::render_resource::{
+    Extent3d, TextureDescriptor, TextureDimension, TextureFormat, TextureUsages,
+};
 use bevy_egui::{EguiContexts, EguiPlugin};
-use egui::emath::{Vec2, vec2};
+use egui::emath::{vec2, Vec2};
 use image::Rgba;
 
 const DEFAULT_MINIMAP_ZOOM: f32 = 1.0;
@@ -22,8 +24,7 @@ impl Plugin for MinimapPlugin {
             println!("Added EguiPlugin {}", app.is_plugin_added::<EguiPlugin>());
         }
 
-        app
-            .init_resource::<Minimap>()
+        app.init_resource::<Minimap>()
             .add_systems(Startup, setup_default_texture)
             .add_systems(Update, draw_minimap_window);
     }
@@ -51,7 +52,7 @@ impl Default for Minimap {
             texture_size: Extent3d {
                 width: DEFAULT_TEXTURE_DIMENSION,
                 height: DEFAULT_TEXTURE_DIMENSION,
-                depth_or_array_layers: 1 ,
+                depth_or_array_layers: 1,
             },
             image_handler: None,
         }
@@ -63,17 +64,16 @@ impl Minimap {
         self.image_size * self.zoom
     }
 
-    pub fn initialize_texture(
-        &mut self,
-        mut textures: ResMut<Assets<Image>>,
-    ) {
+    pub fn initialize_texture(&mut self, mut textures: ResMut<Assets<Image>>) {
         let mut texture = Image {
             texture_descriptor: TextureDescriptor {
                 label: None,
                 size: self.texture_size,
                 dimension: TextureDimension::D2,
                 format: TextureFormat::Rgba8UnormSrgb,
-                usage: TextureUsages::TEXTURE_BINDING | TextureUsages::COPY_DST | TextureUsages::RENDER_ATTACHMENT,
+                usage: TextureUsages::TEXTURE_BINDING
+                    | TextureUsages::COPY_DST
+                    | TextureUsages::RENDER_ATTACHMENT,
                 mip_level_count: 1,
                 sample_count: 1,
                 view_formats: &[],
@@ -87,22 +87,22 @@ impl Minimap {
         // Initialize the array with RGBA values (0,0,0,255):
         //      3 pixels with 0 = black
         //      1 pixel with 255 = opaque
-        texture.data.iter_mut().enumerate().for_each(|(index, pixel)| {
-            if index % 4 != 3 {
-                *pixel = 0;
-            } else {
-                *pixel = 255;
-            }
-        });
+        texture
+            .data
+            .iter_mut()
+            .enumerate()
+            .for_each(|(index, pixel)| {
+                if index % 4 != 3 {
+                    *pixel = 0;
+                } else {
+                    *pixel = 255;
+                }
+            });
 
         self.image_handler = Some(textures.add(texture));
     }
 
-    pub fn update_texture(
-        &mut self,
-        tiles: Vec<UVec2>,
-        images: &mut Assets<Image>,
-    ) {
+    pub fn update_texture(&mut self, tiles: Vec<UVec2>, images: &mut Assets<Image>) {
         if let Some(handler) = &self.image_handler {
             if let Some(texture) = images.get_mut(handler) {
                 let data = &mut texture.data;
@@ -117,7 +117,7 @@ impl Minimap {
                     let pixel_index = (y * self.texture_size.width + x) as usize * 4;
                     if pixel_index < data.len() {
                         // Example: Setting the pixel to white
-                        data[pixel_index] = 255;     // R
+                        data[pixel_index] = 255; // R
                         data[pixel_index + 1] = 255; // G
                         data[pixel_index + 2] = 255; // B
                         data[pixel_index + 3] = 255; // A
@@ -128,10 +128,7 @@ impl Minimap {
     }
 }
 
-pub fn draw_minimap_window(
-    mut contexts: EguiContexts,
-    minimap: ResMut<Minimap>,
-) {
+pub fn draw_minimap_window(mut contexts: EguiContexts, minimap: ResMut<Minimap>) {
     let image = contexts.add_image(minimap.image_handler.clone().unwrap());
 
     egui::Window::new(&minimap.title)
@@ -146,10 +143,7 @@ pub fn draw_minimap_window(
         });
 }
 
-pub fn setup_default_texture(
-    mut minimap: ResMut<Minimap>,
-    textures: ResMut<Assets<Image>>,
-) {
+pub fn setup_default_texture(mut minimap: ResMut<Minimap>, textures: ResMut<Assets<Image>>) {
     minimap.initialize_texture(textures);
 }
 

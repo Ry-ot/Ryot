@@ -7,14 +7,14 @@
  * Website: https://github.com/lgrossi/Ryot
  */
 
-use std::ops::Range;
+use crate::TilesetCategory;
 use bevy::log::info;
 use bevy::prelude::{ResMut, Resource};
 use bevy_egui::EguiContexts;
 use egui::{Align, Ui};
 use itertools::Itertools;
 use ryot::cip_content::SheetGrid;
-use crate::TilesetCategory;
+use std::ops::Range;
 
 #[derive(Resource, Debug)]
 pub struct PaletteState {
@@ -36,7 +36,7 @@ impl Default for PaletteState {
             grid_size: 64,
             tile_padding: 15.,
             category: TilesetCategory::Terrains,
-            visible_rows: Range {start: 0, end: 10},
+            visible_rows: Range { start: 0, end: 10 },
         }
     }
 }
@@ -79,10 +79,7 @@ pub fn draw_palette_window(
         });
 }
 
-pub fn draw_palette_bottom_panel(
-    ui: &mut Ui,
-    palette_state: &mut ResMut<PaletteState>,
-) {
+pub fn draw_palette_bottom_panel(ui: &mut Ui, palette_state: &mut ResMut<PaletteState>) {
     egui::TopBottomPanel::bottom("bottom_panel").show_inside(ui, |ui| {
         ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
             ui.set_width(palette_state.width);
@@ -93,9 +90,7 @@ pub fn draw_palette_bottom_panel(
                 ui.add(
                     egui::DragValue::new(&mut slider_value)
                         .clamp_range(32..=80)
-                        .custom_formatter(|n, _| {
-                            format!("{n}x{n}")
-                        })
+                        .custom_formatter(|n, _| format!("{n}x{n}"))
                         .custom_parser(|s| {
                             let parts: Vec<&str> = s.split('x').collect();
 
@@ -108,7 +103,7 @@ pub fn draw_palette_bottom_panel(
                             };
 
                             Some(n)
-                        })
+                        }),
                 );
 
                 palette_state.grid_size = get_grid_size_from_slider(slider_value);
@@ -143,7 +138,14 @@ pub fn draw_palette_picker(
         .width(palette_state.width)
         .show_ui(ui, |ui| {
             for key in categories {
-                if ui.selectable_value(&mut palette_state.category.get_label(), key.get_label().clone(), key).clicked() {
+                if ui
+                    .selectable_value(
+                        &mut palette_state.category.get_label(),
+                        key.get_label().clone(),
+                        key,
+                    )
+                    .clicked()
+                {
                     palette_state.category = key.clone();
                 }
             }
@@ -161,42 +163,60 @@ pub fn draw_palette_items(
 
     egui::ScrollArea::vertical()
         .max_height(ui.available_height())
-        .show_rows(ui, row_height, palette_state.get_total_rows(items_count), |ui, row_range| {
-            ui.set_width(palette_state.width);
-            palette_state.visible_rows = row_range.clone();
-            egui_images.chunks(palette_state.get_chunk_size()).for_each(|chunk| {
-                ui.horizontal(|ui| {
-                    chunk.iter().enumerate().for_each(|(i, (index, grid, image))| {
-                        let spacing = (palette_state.width as f32 - palette_state.get_tile_size() * palette_state.get_chunk_size() as f32) / (palette_state.get_chunk_size() - 1) as f32;
-                        let size = palette_state.grid_size as f32;
+        .show_rows(
+            ui,
+            row_height,
+            palette_state.get_total_rows(items_count),
+            |ui, row_range| {
+                ui.set_width(palette_state.width);
+                palette_state.visible_rows = row_range.clone();
+                egui_images
+                    .chunks(palette_state.get_chunk_size())
+                    .for_each(|chunk| {
+                        ui.horizontal(|ui| {
+                            chunk
+                                .iter()
+                                .enumerate()
+                                .for_each(|(i, (index, grid, image))| {
+                                    let spacing = (palette_state.width as f32
+                                        - palette_state.get_tile_size()
+                                            * palette_state.get_chunk_size() as f32)
+                                        / (palette_state.get_chunk_size() - 1) as f32;
+                                    let size = palette_state.grid_size as f32;
 
-                        ui.vertical(|ui| {
-                            let ui_button = ui.add(egui::ImageButton::new(image.clone().fit_to_exact_size(egui::Vec2::new(size, size))));
+                                    ui.vertical(|ui| {
+                                        let ui_button = ui.add(egui::ImageButton::new(
+                                            image
+                                                .clone()
+                                                .fit_to_exact_size(egui::Vec2::new(size, size)),
+                                        ));
 
-                            let ui_button = ui_button
-                                .on_hover_text(format!("{}", index))
-                                .on_hover_cursor(egui::CursorIcon::PointingHand);
+                                        let ui_button = ui_button
+                                            .on_hover_text(format!("{}", index))
+                                            .on_hover_cursor(egui::CursorIcon::PointingHand);
 
-                            if ui_button.clicked() {
-                                info!("Tile: {:?} selected", index);
-                            }
+                                        if ui_button.clicked() {
+                                            info!("Tile: {:?} selected", index);
+                                        }
 
-                            ui.add_space(row_padding);
+                                        ui.add_space(row_padding);
+                                    });
+
+                                    let ratio =
+                                        grid.tile_size.height as f32 / grid.tile_size.width as f32;
+
+                                    if i == palette_state.get_chunk_size() - 1 {
+                                        return;
+                                    }
+
+                                    ui.add_space(spacing);
+
+                                    if ratio > 1.0 && i < palette_state.get_chunk_size() - 1 {
+                                        ui.add_space(size / 2.);
+                                    }
+                                });
                         });
-
-                        let ratio = grid.tile_size.height as f32 / grid.tile_size.width as f32;
-
-                        if i == palette_state.get_chunk_size() - 1{
-                            return;
-                        }
-
-                        ui.add_space(spacing);
-
-                        if ratio > 1.0 && i < palette_state.get_chunk_size() - 1 {
-                            ui.add_space(size / 2.);
-                        }
                     });
-                });
-            });
-        });
+            },
+        );
 }

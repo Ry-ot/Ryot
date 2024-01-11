@@ -10,7 +10,7 @@ use std::fmt::{Display, Formatter};
 use std::result;
 
 #[derive(Debug)]
-pub enum Error{
+pub enum Error {
     DatabaseError(String),
 }
 

@@ -7,10 +7,9 @@
  * Website: https://github.com/lgrossi/Ryot
  */
 
-
+use crate::TilesetCategory;
 use bevy::prelude::Resource;
 use bevy::utils::HashMap;
-use crate::TilesetCategory;
 
 #[derive(Debug, Clone, Resource)]
 pub struct Palette {
@@ -36,7 +35,8 @@ impl Default for Palette {
                 (TilesetCategory::CreatureProducts, vec![]),
                 (TilesetCategory::Weapons, vec![]),
                 (TilesetCategory::Raw, vec![]),
-            ].into(),
+            ]
+            .into(),
         }
     }
 }

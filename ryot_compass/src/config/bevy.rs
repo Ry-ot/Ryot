@@ -6,6 +6,3 @@
  * Contributors: https://github.com/lgrossi/Ryot/graphs/contributors
  * Website: https://github.com/lgrossi/Ryot
  */
-
-mod category;
-pub use category::*;

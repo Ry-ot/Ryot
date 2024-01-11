@@ -45,7 +45,8 @@ impl Position {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Header { // header
+pub struct Header {
+    // header
     pub width: u16,
     pub height: u16,
     pub floors: u8,
