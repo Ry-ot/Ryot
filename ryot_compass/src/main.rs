@@ -1,5 +1,7 @@
 use bevy::app::AppExit;
 use bevy::math::Vec4Swizzles;
+use bevy::window::PrimaryWindow;
+use bevy::winit::WinitWindows;
 use bevy::{
     ecs::system::Resource,
     input::{common_conditions::input_toggle_active, mouse::MouseWheel},
@@ -30,17 +32,12 @@ use ryot::cip_content::{
 use ryot_compass::item::{ItemRepository, ItemsFromHeedLmdb};
 use ryot_compass::minimap::{Minimap, MinimapPlugin};
 use ryot_compass::{
-    config, draw_palette_window, draw_sprite, init_env, load_sprites, CipContent, LmdbEnv, Palette,
-    PaletteState, Position, TextureAtlasHandlers, Tile, TilesetCategory,
+    build, draw_palette_window, draw_sprite, init_env, load_sprites, CipContent, DecompressedCache,
+    LmdbEnv, Palette, PaletteState, Position, Settings, TextureAtlasHandlers, Tile,
+    TilesetCategory,
 };
 use strum::{EnumCount, IntoEnumIterator};
-
-const CIP_CONTENT_FOLDER: &str = "assets/cip_catalog";
-const DECOMPRESSED_CONTENT_FOLDER: &str = "assets/sprite-sheets";
-
-fn build_cip_content_path(file: &String) -> String {
-    format!("{}/{}", CIP_CONTENT_FOLDER, file)
-}
+use winit::window::Icon;
 
 fn scroll_events(mut minimap: ResMut<Minimap>, mut scroll_evr: EventReader<MouseWheel>) {
     for ev in scroll_evr.read() {
@@ -132,6 +129,7 @@ fn load_tiles(env: ResMut<LmdbEnv>, mut tiles: ResMut<Tiles>) {
 fn draw(
     mut commands: Commands,
     // tiles: ResMut<Tiles>,
+    settings: Res<Settings>,
     mut content: ResMut<CipContent>,
     // mut textures: ResMut<Assets<Image>>,
     asset_server: Res<AssetServer>,
@@ -146,6 +144,10 @@ fn draw(
     if error_states.has_error {
         return;
     }
+
+    if content.raw_content.len() == 0 {
+        return;
+    }
     // let (tile_storage, transform, entity) = tile_storage_query.single_mut();
 
     let mut sprite_ids = vec![];
@@ -153,7 +155,8 @@ fn draw(
     for c in &content.raw_content {
         match c {
             ContentType::Appearances { file, version: _ } => {
-                let buffer = get_full_file_buffer(&build_cip_content_path(&file)).unwrap();
+                let buffer =
+                    get_full_file_buffer(&settings.content.build_content_file_path(&file)).unwrap();
                 let appearances = Appearances::decode(&*buffer).unwrap();
 
                 for group in vec![
@@ -202,6 +205,7 @@ fn draw(
                 let sprites = load_sprites(
                     &sprites,
                     &content.raw_content,
+                    &settings,
                     &asset_server,
                     &mut atlas_handlers,
                     &mut texture_atlases,
@@ -209,7 +213,7 @@ fn draw(
 
                 for (i, sprite) in sprites.iter().enumerate() {
                     draw_sprite(
-                        Vec3::new(x as f32, y as f32, i as f32),
+                        Vec3::new(x as f32, -y as f32, i as f32),
                         sprite,
                         &mut commands,
                     );
@@ -244,21 +248,26 @@ fn draw(
     }
 }
 
-fn decompress_all_sprites(content: Res<CipContent>) {
+fn decompress_all_sprites(settings: Res<Settings>, content: Res<CipContent>) {
     // time_test!("Decompressing");
-    std::fs::create_dir_all(DECOMPRESSED_CONTENT_FOLDER).unwrap();
+    let DecompressedCache::Path(decompressed_path) = &settings.content.decompressed_cache else {
+        return;
+    };
+
+    std::fs::create_dir_all(decompressed_path).unwrap();
+
     decompress_all_sprite_sheets(
         &content.raw_content,
-        CIP_CONTENT_FOLDER,
-        DECOMPRESSED_CONTENT_FOLDER,
+        &settings.content.path,
+        decompressed_path,
     );
 }
 
 // We need to keep the cursor position updated based on any `CursorMoved` events.
 pub fn update_cursor_pos(
+    mut cursor_pos: ResMut<CursorPos>,
     camera_q: Query<(&GlobalTransform, &Camera)>,
     mut cursor_moved_events: EventReader<CursorMoved>,
-    mut cursor_pos: ResMut<CursorPos>,
 ) {
     for cursor_moved in cursor_moved_events.read() {
         // To get the mouse's world position, we have to transform its window position by
@@ -267,21 +276,75 @@ pub fn update_cursor_pos(
         for (cam_t, cam) in camera_q.iter() {
             if let Some(pos) = cam.viewport_to_world_2d(cam_t, cursor_moved.position) {
                 *cursor_pos = CursorPos(pos);
+                info!("cursor: {:?}", cursor_pos);
+                info!("cursor tile: {:?}", cursor_pos_to_tile_pos(cursor_pos.0));
             }
         }
     }
 }
 
-// fn cursor_pos_to_tile_pos(
-//     cursor_pos: Res<CursorPos>,
-//     tile_map: (&TilemapSize, &TilemapGridSize, &TilemapType, &Transform),
-// ) -> Option<TilePos> {
-//     let (map_size, grid_size, map_type, map_transform) = tile_map;
-//     let cursor_pos = Vec4::from((cursor_pos.0, 0.0, 1.0));
-//     let cursor_in_map_pos = map_transform.compute_matrix().inverse() * cursor_pos;
-//
-//     TilePos::from_world_pos(&cursor_in_map_pos.xy(), map_size, grid_size, map_type)
-// }
+fn update_cursor(
+    settings: Res<Settings>,
+    content: Res<CipContent>,
+    cursor_pos: Res<CursorPos>,
+    asset_server: Res<AssetServer>,
+    palette_state: Res<PaletteState>,
+    mut cursor_query: Query<(
+        &mut Transform,
+        &mut TextureAtlasSprite,
+        &mut Handle<TextureAtlas>,
+        &SelectedTile,
+    )>,
+    mut atlas_handlers: ResMut<TextureAtlasHandlers>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+) {
+    if content.raw_content.len() == 0 {
+        return;
+    }
+
+    let Some(sprite_id) = palette_state.selected_tile else {
+        return;
+    };
+
+    let sprites = load_sprites(
+        &vec![sprite_id],
+        &content.raw_content,
+        &settings,
+        &asset_server,
+        &mut atlas_handlers,
+        &mut texture_atlases,
+    );
+
+    let Some(new_sprite) = sprites.first() else {
+        return;
+    };
+
+    for (mut transform, mut sprite, mut atlas_handle, _) in cursor_query.iter_mut() {
+        *atlas_handle = new_sprite.atlas_texture_handle.clone();
+        sprite.index = new_sprite.sprite_index;
+        let cursor_pos = cursor_pos_to_tile_pos(cursor_pos.0);
+        info!("{:?}", cursor_pos);
+        transform.translation = Vec3::new(cursor_pos.x * 32., cursor_pos.y * -32., 128.);
+    }
+}
+
+fn spawn_cursor(mut commands: Commands) {
+    commands.spawn((
+        SpriteSheetBundle { ..default() },
+        SelectedTile {
+            index: None,
+            atlas: None,
+        },
+    ));
+}
+
+fn cursor_pos_to_tile_pos(cursor_pos: Vec2) -> Vec2 {
+    // Tiles are 32x32 and grows from left top to right bottom.
+    Vec2::new(
+        (cursor_pos.x / 32.) as i32 as f32,
+        (-cursor_pos.y / 32.) as i32 as f32,
+    )
+}
 
 fn load_cip_content(
     path: &str,
@@ -301,6 +364,7 @@ fn load_cip_content(
 fn ui_example(
     mut egui_ctx: EguiContexts,
     mut content: ResMut<CipContent>,
+    mut settings: Res<Settings>,
     mut exit: EventWriter<AppExit>,
     error_state: ResMut<ErrorState>,
     mut about_me: ResMut<AboutMeOpened>,
@@ -319,6 +383,20 @@ fn ui_example(
                 ui.set_style(style);
 
                 let is_content_loaded = content.raw_content.len() > 0;
+
+                // Load the image using `image-rs`
+                // let image_data = include_bytes!("path/to/your/image.png").to_vec();
+                // let image = image::RgbaImage::from_raw(1024, 1024, image_data);
+                //
+                // // Create an `egui::TextureHandle`
+                // let texture_handle = egui::TextureHandle::from_rgba_unmultiplied(
+                //     ctx,
+                //     egui::ColorImage::from_rgba_unmultiplied(size, &image_data)
+                // );
+
+                let img = egui::include_image!("../assets/icons/compass_2.png");
+
+                ui.image(img);
 
                 egui::menu::menu_button(ui, "File", |ui| {
                     if ui
@@ -355,6 +433,9 @@ fn ui_example(
                             return;
                         };
 
+                        info!("{:?}", path.file_name().unwrap());
+                        info!("{:?}", path.parent().unwrap());
+
                         let Some(path) = path.to_str() else {
                             return;
                         };
@@ -368,7 +449,13 @@ fn ui_example(
                         .add_enabled(is_content_loaded, egui::Button::new("🔃 Refresh Content"))
                         .clicked()
                     {
-                        if let Ok(_) = std::fs::remove_dir_all(DECOMPRESSED_CONTENT_FOLDER) {
+                        let DecompressedCache::Path(decompressed_path) =
+                            &settings.content.decompressed_cache
+                        else {
+                            return;
+                        };
+
+                        if let Ok(_) = std::fs::remove_dir_all(decompressed_path) {
                             // decompress_all_sprites(content);
                         }
                     }
@@ -415,8 +502,13 @@ fn ui_example(
         });
 }
 
+pub fn print_settings(mut settings: Res<Settings>) {
+    info!("{:?}", settings);
+}
+
 pub fn print_appearances(
     content: Res<CipContent>,
+    settings: Res<Settings>,
     mut palette_state: ResMut<PaletteState>,
     asset_server: Res<AssetServer>,
     mut egui_ctx: EguiContexts,
@@ -462,6 +554,7 @@ pub fn print_appearances(
         for sprite in load_sprites(
             &sprite_ids[palette_state.begin()..palette_state.end()],
             &content.raw_content,
+            &settings,
             &asset_server,
             &mut atlas_handlers,
             &mut texture_atlases,
@@ -507,7 +600,8 @@ pub fn print_appearances(
         .iter()
         .for_each(|content| match content {
             ContentType::Appearances { file, version: _ } => {
-                let buffer = get_full_file_buffer(&build_cip_content_path(file)).unwrap();
+                let buffer =
+                    get_full_file_buffer(&settings.content.build_content_file_path(&file)).unwrap();
                 let appearances = Appearances::decode(&*buffer).unwrap();
                 appearances.outfit.iter().for_each(|outfit| {
                     if let None = outfit.id {
@@ -554,6 +648,36 @@ pub fn print_appearances(
     info!("Total: {}", total);
 }
 
+pub fn setup_window(
+    mut egui_ctx: EguiContexts,
+    windows: NonSend<WinitWindows>,
+    primary_window_query: Query<Entity, With<PrimaryWindow>>,
+) {
+    egui_extras::install_image_loaders(egui_ctx.ctx_mut());
+
+    let primary_window_entity = primary_window_query.single();
+    let primary_window = windows.get_window(primary_window_entity).unwrap();
+
+    let (icon_rgba, icon_width, icon_height) = {
+        let image = image::open("assets/icons/compass_2.png")
+            .expect("Failed to open icon path")
+            .into_rgba8();
+        let (width, height) = image.dimensions();
+        let rgba = image.into_raw();
+        (rgba, width, height)
+    };
+
+    let icon = Icon::from_rgba(icon_rgba, icon_width, icon_height).unwrap();
+
+    primary_window.set_window_icon(Some(icon));
+}
+
+#[derive(Debug, Component)]
+pub struct SelectedTile {
+    pub index: Option<usize>,
+    pub atlas: Option<Handle<TextureAtlas>>,
+}
+
 fn main() {
     App::new()
         .add_event::<AppExit>()
@@ -561,7 +685,7 @@ fn main() {
             DefaultPlugins
                 .set(WindowPlugin {
                     primary_window: Some(Window {
-                        title: String::from("Mouse Position to Tile Position"),
+                        title: String::from("Ryot Compass"),
                         ..Default::default()
                     }),
                     ..default()
@@ -569,7 +693,9 @@ fn main() {
                 .set(ImagePlugin::default_nearest()),
         )
         .init_resource::<ErrorState>()
+        .insert_resource(build())
         .init_resource::<LmdbEnv>()
+        .init_resource::<Settings>()
         .init_resource::<Palette>()
         .init_resource::<AboutMeOpened>()
         .init_resource::<TextureAtlasHandlers>()
@@ -584,7 +710,9 @@ fn main() {
             MinimapPlugin,
         ))
         .add_systems(Startup, spawn_camera)
+        .add_systems(Startup, setup_window)
         .add_systems(Startup, init_env.before(load_tiles))
+        .add_systems(Startup, spawn_cursor)
         // .add_systems(Startup, load_tiles)
         // .add_systems(Startup, decompress_all_sprites)
         .add_systems(First, (camera_movement, update_cursor_pos).chain())
@@ -594,8 +722,10 @@ fn main() {
         .add_systems(Update, scroll_events)
         .add_systems(Update, ui_example)
         .add_systems(Update, print_appearances)
+        .add_systems(Update, print_settings)
         .add_systems(Update, display_error_window)
         .add_systems(Update, check_for_exit)
+        .add_systems(Update, update_cursor)
         .run();
 }
 
