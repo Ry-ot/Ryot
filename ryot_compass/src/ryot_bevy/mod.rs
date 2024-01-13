@@ -8,12 +8,12 @@
  */
 use bevy::prelude::*;
 use ryot::cip_content::{
-    decompress_sprite_sheet, get_decompressed_file_name, get_sprite_grid_by_id,
-    get_sprite_index_by_id, ContentType, SheetGrid,
+    decompress_sprite_sheet, get_sprite_grid_by_id, get_sprite_index_by_id, ContentType, SheetGrid,
 };
 use std::path::PathBuf;
 
 mod palette;
+use crate::{DecompressedCache, Settings};
 pub use palette::*;
 
 #[derive(Resource, Debug)]
@@ -32,6 +32,7 @@ impl Default for CipContent {
     }
 }
 
+#[derive(Debug)]
 pub struct LoadedSprite {
     pub sprite_id: u32,
     pub sprite_index: usize,
@@ -42,6 +43,7 @@ pub struct LoadedSprite {
 pub fn load_sprites(
     sprite_ids: &[u32],
     content: &[ContentType],
+    settings: &Res<Settings>,
     asset_server: &Res<AssetServer>,
     atlas_handlers: &mut ResMut<TextureAtlasHandlers>,
     texture_atlases: &mut ResMut<Assets<TextureAtlas>>,
@@ -52,7 +54,7 @@ pub fn load_sprites(
             if let Ok(grid) = get_sprite_grid_by_id(content, *sprite_id) {
                 Some((
                     grid.clone(),
-                    build_texture_atlas_from_sheet(&grid, asset_server),
+                    build_texture_atlas_from_sheet(&grid, settings, asset_server),
                 ))
             } else {
                 None
@@ -84,12 +86,13 @@ pub fn load_sprites(
 pub fn load_sprite(
     sprite_id: u32,
     content: &[ContentType],
+    settings: &Res<Settings>,
     asset_server: &Res<AssetServer>,
     atlas_handlers: &mut ResMut<TextureAtlasHandlers>,
     texture_atlases: &mut ResMut<Assets<TextureAtlas>>,
 ) {
     if let Ok(grid) = get_sprite_grid_by_id(content, sprite_id) {
-        let atlas = build_texture_atlas_from_sheet(&grid, asset_server);
+        let atlas = build_texture_atlas_from_sheet(&grid, settings, asset_server);
         build_atlas_handler(&grid, atlas, atlas_handlers, texture_atlases);
     }
 }
@@ -127,17 +130,22 @@ pub fn build_atlas_handler(
 
 pub fn build_texture_atlas_from_sheet(
     grid: &SheetGrid,
+    settings: &Res<Settings>,
     asset_server: &Res<AssetServer>,
 ) -> TextureAtlas {
-    let path = format!("sprite-sheets/{}", get_decompressed_file_name(&grid.file));
+    let DecompressedCache::Path(decompressed_path) = &settings.content.decompressed_cache else {
+        panic!("invalid path");
+    };
 
-    std::fs::create_dir_all("assets/sprite-sheets").unwrap();
+    std::fs::create_dir_all(decompressed_path).unwrap();
 
-    if !PathBuf::from(format!("assets/{}", path)).exists() {
-        decompress_sprite_sheet(&grid.file, "assets/cip_catalog", "assets/sprite-sheets");
+    if !PathBuf::from(format!("{}/{}", decompressed_path, &grid.file)).exists() {
+        decompress_sprite_sheet(&grid.file, &settings.content.path, decompressed_path);
     }
 
-    let image_handle: Handle<Image> = asset_server.load(&path);
+    let image_handle: Handle<Image> =
+        asset_server.load(settings.content.build_asset_path(&grid.file));
+
     TextureAtlas::from_grid(
         image_handle,
         Vec2::new(grid.tile_size.width as f32, grid.tile_size.height as f32),
@@ -151,11 +159,14 @@ pub fn build_texture_atlas_from_sheet(
 pub fn draw_sprite(pos: Vec3, sprite: &LoadedSprite, commands: &mut Commands) {
     let x = pos.x * 32.;
     let y = pos.y * 32.;
-    let z = pos.z + (pos.x + pos.y) / u16::MAX as f32;
+
+    // z for 2d sprites define the rendering order, for 45 degrees top-down
+    // perspective we always want right bottom items to be drawn on top.
+    let z = pos.z + (pos.x - pos.y) / u16::MAX as f32;
 
     commands.spawn(build_sprite_bundle(
         sprite.atlas_texture_handle.clone(),
-        Vec3::new(x, -y, z),
+        Vec3::new(x, y, z),
         sprite.sprite_index,
     ));
 }

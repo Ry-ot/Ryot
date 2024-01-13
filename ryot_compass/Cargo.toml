@@ -28,6 +28,8 @@ strum_macros = "0.25.0"
 rfd = "0.12.1"
 config = "0.13.4"
 egui_dock = "0.10.0"
+winit = "0.28.7"
+egui_extras = { version = "0.24.1", features = ["all_loaders"] }
 
 [dependencies.bevy]
 version = "0.12.1"

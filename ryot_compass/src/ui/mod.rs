@@ -23,6 +23,7 @@ pub struct PaletteState {
     pub width: f32,
     pub grid_size: u32,
     pub tile_padding: f32,
+    pub selected_tile: Option<u32>,
     pub category: TilesetCategory,
     pub visible_rows: Range<usize>,
 }
@@ -35,6 +36,7 @@ impl Default for PaletteState {
             width: 424.,
             grid_size: 64,
             tile_padding: 15.,
+            selected_tile: None,
             category: TilesetCategory::Terrains,
             visible_rows: Range { start: 0, end: 10 },
         }
@@ -185,17 +187,24 @@ pub fn draw_palette_items(
                                     let size = palette_state.grid_size as f32;
 
                                     ui.vertical(|ui| {
-                                        let ui_button = ui.add(egui::ImageButton::new(
-                                            image
-                                                .clone()
-                                                .fit_to_exact_size(egui::Vec2::new(size, size)),
-                                        ));
+                                        let tile = image
+                                            .clone()
+                                            .fit_to_exact_size(egui::Vec2::new(size, size));
+
+                                        let selected = match palette_state.selected_tile {
+                                            Some(selected_index) => selected_index == *index,
+                                            _ => false,
+                                        };
+
+                                        let ui_button =
+                                            ui.add(egui::ImageButton::new(tile).selected(selected));
 
                                         let ui_button = ui_button
                                             .on_hover_text(format!("{}", index))
                                             .on_hover_cursor(egui::CursorIcon::PointingHand);
 
                                         if ui_button.clicked() {
+                                            palette_state.selected_tile = Some(*index);
                                             info!("Tile: {:?} selected", index);
                                         }
 
