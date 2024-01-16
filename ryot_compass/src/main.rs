@@ -1,5 +1,9 @@
 use bevy::app::AppExit;
 use bevy::math::Vec4Swizzles;
+use bevy::reflect::TypeUuid;
+use bevy::render::mesh::{Indices, PrimitiveTopology};
+use bevy::render::render_resource::{AsBindGroup, ShaderRef};
+use bevy::sprite::{Material2d, Material2dPlugin, MaterialMesh2dBundle};
 use bevy::window::PrimaryWindow;
 use bevy::winit::WinitWindows;
 use bevy::{
@@ -27,14 +31,14 @@ use helpers::camera::movement as camera_movement;
 use rayon::prelude::*;
 use ryot::cip_content::{
     decompress_all_sprite_sheets, get_full_file_buffer, load_content, Appearances, ContentType,
-    SheetGrid, SpriteInfo,
+    SheetGrid,
 };
 use ryot_compass::item::{ItemRepository, ItemsFromHeedLmdb};
 use ryot_compass::minimap::{Minimap, MinimapPlugin};
 use ryot_compass::{
-    build, draw_palette_window, draw_sprite, init_env, load_sprites, CipContent, DecompressedCache,
-    LmdbEnv, Palette, PaletteState, Position, Settings, TextureAtlasHandlers, Tile,
-    TilesetCategory,
+    build, draw_palette_window, draw_sprite, init_env, load_sprites,
+    normalize_tile_pos_to_sprite_pos, CipContent, DecompressedCache, LmdbEnv, Palette,
+    PaletteState, Position, Settings, TextureAtlasHandlers, Tile, TilesetCategory,
 };
 use strum::{EnumCount, IntoEnumIterator};
 use winit::window::Icon;
@@ -60,8 +64,100 @@ fn draw_tiles_on_minimap(
     tiles.0.clear(); // TODO: replace this with a system that only adds new tiles
 }
 
-fn spawn_camera(mut commands: Commands) {
+#[derive(AsBindGroup, TypeUuid, Asset, TypePath, Debug, Clone)]
+#[uuid = "f229fdae-d598-45ac-8225-97e2a3f011e0"]
+pub struct RainbowOutlineMaterial {
+    /// The thickness of the outline. Preferred values between 0.01 and 0.005.
+    #[uniform(0)]
+    pub thickness: f32,
+    /// Frequency at which the colors of the rainbow are iterated over.
+    #[uniform(0)]
+    pub frequency: f32,
+    /// The texture to outline.
+    #[texture(1)]
+    #[sampler(2)]
+    pub texture: Handle<Image>,
+}
+
+impl Material2d for RainbowOutlineMaterial {
+    fn fragment_shader() -> ShaderRef {
+        "shaders/rainbow_outline_material.wgsl".into()
+    }
+}
+
+fn spawn_camera(
+    mut commands: Commands,
+    asset_server: Res<AssetServer>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+    mut rb_materials: ResMut<Assets<RainbowOutlineMaterial>>,
+) {
+    let area_size = u16::MAX as f32; // Size of the square
+    let grid_size = 32.0; // Size of each grid cell
+
+    let mut positions = Vec::new();
+    let mut colors = Vec::new();
+    let mut indices = Vec::new();
+
+    // Create vertices for the grid
+    for i in 0..=((area_size / grid_size) as u32) {
+        let offset = i as f32 * grid_size;
+        // Horizontal line
+        positions.push([0.0, -offset, 0.0]);
+        positions.push([area_size, -offset, 0.0]);
+        // Vertical line
+        positions.push([offset, 0.0, 0.0]);
+        positions.push([offset, -area_size, 0.0]);
+
+        // Add colors (white for grid lines)
+        colors.extend(vec![Color::WHITE.as_rgba_f32(); 4]);
+
+        // Add indices
+        let idx = i * 4;
+        indices.extend_from_slice(&[idx, idx + 1, idx + 2, idx + 3]);
+    }
+
+    // Create the mesh
+    let mut mesh = Mesh::new(PrimitiveTopology::LineList);
+    mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
+    mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, colors);
+    mesh.set_indices(Some(Indices::U32(indices)));
+
+    let mesh_handle: Handle<Mesh> = meshes.add(mesh);
+
+    // Spawn camera
     commands.spawn(Camera2dBundle::default());
+
+    // Spawn a black square on top for the main area
+    commands.spawn(SpriteBundle {
+        sprite: Sprite {
+            color: Color::rgba(255., 255., 255., 0.01),
+            custom_size: Some(Vec2::new(area_size, area_size)),
+            ..Default::default()
+        },
+        transform: Transform::from_xyz(area_size / 2., area_size / -2., 0.), // Slightly in front to cover the white border
+        ..Default::default()
+    });
+
+    // Spawn the square with the grid
+    commands.spawn(MaterialMesh2dBundle {
+        mesh: mesh_handle.into(),
+        transform: Transform::from_translation(Vec3::new(0., 0., 256.)),
+        material: materials.add(ColorMaterial::default()),
+        ..default()
+    });
+
+    commands.spawn(MaterialMesh2dBundle {
+        mesh: meshes.add(Mesh::from(shape::Quad::default())).into(),
+        transform: Transform::from_translation(Vec3::new(64., 75., 0.))
+            .with_scale(Vec3::splat(128.)),
+        material: rb_materials.add(RainbowOutlineMaterial {
+            thickness: 0.01,
+            frequency: 1.0,
+            texture: asset_server.load("ryot_mascot.png"),
+        }),
+        ..default()
+    });
 }
 
 #[derive(Resource, Debug)]
@@ -83,14 +179,6 @@ impl Default for Tiles {
         // Initialize the cursor pos at some far away place. It will get updated
         // correctly when the cursor moves.
         Self(vec![])
-    }
-}
-
-#[derive(Resource, Debug)]
-pub struct Counter(u32);
-impl Default for Counter {
-    fn default() -> Self {
-        Self(0)
     }
 }
 
@@ -128,19 +216,21 @@ fn load_tiles(env: ResMut<LmdbEnv>, mut tiles: ResMut<Tiles>) {
 
 fn draw(
     mut commands: Commands,
-    // tiles: ResMut<Tiles>,
     settings: Res<Settings>,
+    mut egui_ctx: EguiContexts,
     mut content: ResMut<CipContent>,
-    // mut textures: ResMut<Assets<Image>>,
     asset_server: Res<AssetServer>,
     mut atlas_handlers: ResMut<TextureAtlasHandlers>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    mut counter: ResMut<Counter>,
-    // mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    // cursor_pos: Res<CursorPos>,
-    // mut tile_storage_query: Query<(&mut TileStorage, &Transform, Entity)>,
+    cursor_pos: Res<CursorPos>,
+    palette_state: Res<PaletteState>,
+    mouse_button_input: Res<Input<MouseButton>>,
     mut error_states: Res<ErrorState>,
 ) {
+    if egui_ctx.ctx_mut().is_pointer_over_area() {
+        return;
+    }
+
     if error_states.has_error {
         return;
     }
@@ -148,53 +238,31 @@ fn draw(
     if content.raw_content.len() == 0 {
         return;
     }
-    // let (tile_storage, transform, entity) = tile_storage_query.single_mut();
 
-    let mut sprite_ids = vec![];
+    let Some(sprite_id) = palette_state.selected_tile else {
+        return;
+    };
 
-    for c in &content.raw_content {
-        match c {
-            ContentType::Appearances { file, version: _ } => {
-                let buffer =
-                    get_full_file_buffer(&settings.content.build_content_file_path(&file)).unwrap();
-                let appearances = Appearances::decode(&*buffer).unwrap();
+    let sprites = load_sprites(
+        &vec![sprite_id],
+        &content.raw_content,
+        &settings,
+        &asset_server,
+        &mut atlas_handlers,
+        &mut texture_atlases,
+    );
 
-                for group in vec![
-                    &appearances.object,
-                    &appearances.outfit,
-                    &appearances.missile,
-                    &appearances.effect,
-                ] {
-                    group.iter().for_each(|appearance| {
-                        for frame_group in &appearance.frame_group {
-                            if let Some(SpriteInfo { sprite_id, .. }) = &frame_group.sprite_info {
-                                for id in sprite_id {
-                                    sprite_ids.push(id.clone());
-                                }
-                            }
-                        }
-                    });
-                }
-            }
-            _ => (),
-        }
+    let Some(sprite) = sprites.first() else {
+        return;
+    };
+
+    if mouse_button_input.pressed(MouseButton::Left) {
+        let pos = cursor_pos_to_tile_pos(cursor_pos.0);
+        draw_sprite(Vec3::new(pos.x, pos.y, 1.1), sprite, &mut commands);
+        debug!("Tile: {:?} drawn", pos);
     }
 
-    sprite_ids = sprite_ids.iter().cloned().unique().collect();
-
-    // Random loading just to test memory consumption
-    if counter.0 < sprite_ids.len() as u32 {
-        {
-            // time_test!("Loading");
-            // sprite_ids.chunks(10_000).for_each(|chunk| {
-            //     let loaded_sprites = load_sprites(&chunk.to_vec(), &content.raw_content, &asset_server, &mut atlas_handlers, &mut texture_atlases);
-            //     info!("Loaded {} sprites", loaded_sprites.len());
-            //     counter.0 += loaded_sprites.len() as u32;
-            // });
-        };
-    }
-
-    if counter.0 < 200_000 {
+    if mouse_button_input.just_pressed(MouseButton::Right) {
         for x in 0..200 {
             for y in 0..120 {
                 let mut sprites = vec![195613];
@@ -213,39 +281,40 @@ fn draw(
 
                 for (i, sprite) in sprites.iter().enumerate() {
                     draw_sprite(
-                        Vec3::new(x as f32, -y as f32, i as f32),
+                        Vec3::new(x as f32, y as f32, 1. + i as f32),
                         sprite,
                         &mut commands,
                     );
                 }
             }
         }
-
-        // let loaded_monster = load_sprites(&vec![91267], &content.raw_content, &asset_server, &mut atlas_handlers, &mut texture_atlases);
-        // if let Some(sprite) = loaded_monster.first() {
-        //     for x in 20..30 {
-        //         for y in 20..30 {
-        //             draw_sprite(Vec3::new(x as f32, y as f32, 0.0), sprite, &mut commands);
-        //         }
-        //     }
-        // }
-
-        // let num_of_sprites = 400_689;
-        // let sprites_per_row = (num_of_sprites as f32).sqrt() as u32;
-        //
-        // commands.spawn_batch((0..num_of_sprites).map(move |i| {
-        //     let x = (i % sprites_per_row) as f32 * 50.0;
-        //     let y = (i / sprites_per_row) as f32 * 50.0;
-        //     SpriteBundle {
-        //         texture: tile_handle_square.clone(),
-        //         transform: Transform::from_xyz(x, y, 0.0),
-        //         ..Default::default()
-        //     }
-        // }));
-        counter.0 += 100_000;
-
-        return;
     }
+
+    // let loaded_monster = load_sprites(&vec![91267], &content.raw_content, &asset_server, &mut atlas_handlers, &mut texture_atlases);
+    // if let Some(sprite) = loaded_monster.first() {
+    //     for x in 20..30 {
+    //         for y in 20..30 {
+    //             draw_sprite(Vec3::new(x as f32, y as f32, 0.0), sprite, &mut commands);
+    //         }
+    //     }
+    // }
+
+    // let num_of_sprites = 400_689;
+    // let sprites_per_row = (num_of_sprites as f32).sqrt() as u32;
+    //
+    // commands.spawn_batch((0..num_of_sprites).map(move |i| {
+    //     let x = (i % sprites_per_row) as f32 * 50.0;
+    //     let y = (i / sprites_per_row) as f32 * 50.0;
+    //     SpriteBundle {
+    //         texture: tile_handle_square.clone(),
+    //         transform: Transform::from_xyz(x, y, 0.0),
+    //         ..Default::default()
+    //     }
+    // }));
+    //     counter.0 += 100_000;
+    //
+    //     return;
+    // }
 }
 
 fn decompress_all_sprites(settings: Res<Settings>, content: Res<CipContent>) {
@@ -276,8 +345,7 @@ pub fn update_cursor_pos(
         for (cam_t, cam) in camera_q.iter() {
             if let Some(pos) = cam.viewport_to_world_2d(cam_t, cursor_moved.position) {
                 *cursor_pos = CursorPos(pos);
-                info!("cursor: {:?}", cursor_pos);
-                info!("cursor tile: {:?}", cursor_pos_to_tile_pos(cursor_pos.0));
+                debug!("Cursor pos: {:?}", pos);
             }
         }
     }
@@ -289,8 +357,11 @@ fn update_cursor(
     cursor_pos: Res<CursorPos>,
     asset_server: Res<AssetServer>,
     palette_state: Res<PaletteState>,
+    mut egui_ctx: EguiContexts,
+    mut windows: Query<&mut Window>,
     mut cursor_query: Query<(
         &mut Transform,
+        &mut Visibility,
         &mut TextureAtlasSprite,
         &mut Handle<TextureAtlas>,
         &SelectedTile,
@@ -298,6 +369,8 @@ fn update_cursor(
     mut atlas_handlers: ResMut<TextureAtlasHandlers>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
+    egui_ctx.ctx_mut().set_cursor_icon(egui::CursorIcon::None);
+
     if content.raw_content.len() == 0 {
         return;
     }
@@ -319,12 +392,34 @@ fn update_cursor(
         return;
     };
 
-    for (mut transform, mut sprite, mut atlas_handle, _) in cursor_query.iter_mut() {
+    for (mut transform, mut visibility, mut sprite, mut atlas_handle, _) in cursor_query.iter_mut()
+    {
         *atlas_handle = new_sprite.atlas_texture_handle.clone();
         sprite.index = new_sprite.sprite_index;
-        let cursor_pos = cursor_pos_to_tile_pos(cursor_pos.0);
-        info!("{:?}", cursor_pos);
-        transform.translation = Vec3::new(cursor_pos.x * 32., cursor_pos.y * -32., 128.);
+        let cursor_pos = normalize_tile_pos_to_sprite_pos(cursor_pos_to_tile_pos(cursor_pos.0));
+        transform.translation = Vec3::from((cursor_pos, 128.));
+
+        if cursor_pos == Vec2::ZERO {
+            *visibility = Visibility::Hidden;
+        } else {
+            *visibility = Visibility::Visible;
+        }
+
+        match *visibility {
+            Visibility::Visible => {
+                egui_ctx.ctx_mut().set_cursor_icon(egui::CursorIcon::None);
+                windows.single_mut().cursor.icon = CursorIcon::Default;
+                windows.single_mut().cursor.visible = false;
+            }
+            Visibility::Hidden => {
+                egui_ctx
+                    .ctx_mut()
+                    .set_cursor_icon(egui::CursorIcon::NotAllowed);
+                windows.single_mut().cursor.icon = CursorIcon::NotAllowed;
+                windows.single_mut().cursor.visible = true;
+            }
+            _ => {}
+        }
     }
 }
 
@@ -354,7 +449,7 @@ fn load_cip_content(
     match load_content(path) {
         Ok(raw_content) => content.raw_content = raw_content,
         Err(e) => {
-            info!("Failed to load CIP content: {:?}", e);
+            error!("Failed to load CIP content: {:?}", e);
             error_state.has_error = true;
             error_state.error_message = "Failed to load CIP content".to_string();
         }
@@ -407,8 +502,8 @@ fn ui_example(
                             .add_filter(".mdb, .otbm", &["mdb", "otbm"])
                             .pick_file();
 
-                        info!("Loading map from file: {:?}", path);
-                        info!("Current dir: {:?}", std::env::current_dir());
+                        debug!("Loading map from file: {:?}", path);
+                        debug!("Current dir: {:?}", std::env::current_dir());
                     }
 
                     if ui
@@ -419,7 +514,7 @@ fn ui_example(
                             .add_filter(".mdb, .otbm", &["mdb", "otbm"])
                             .save_file();
 
-                        info!("Saving map to file: {:?}", path);
+                        debug!("Saving map to file: {:?}", path);
                     }
 
                     ui.separator();
@@ -433,16 +528,16 @@ fn ui_example(
                             return;
                         };
 
-                        info!("{:?}", path.file_name().unwrap());
-                        info!("{:?}", path.parent().unwrap());
+                        debug!("{:?}", path.file_name().unwrap());
+                        debug!("{:?}", path.parent().unwrap());
 
                         let Some(path) = path.to_str() else {
                             return;
                         };
 
-                        info!("Loading cip content");
+                        debug!("Loading cip content");
                         load_cip_content(path, content, error_state);
-                        info!("Content loaded!");
+                        debug!("Content loaded!");
                     }
 
                     if ui
@@ -503,7 +598,7 @@ fn ui_example(
 }
 
 pub fn print_settings(mut settings: Res<Settings>) {
-    info!("{:?}", settings);
+    debug!("{:?}", settings);
 }
 
 pub fn print_appearances(
@@ -642,10 +737,10 @@ pub fn print_appearances(
 
     for (category, ids) in palettes.tile_set.iter_mut() {
         *ids = ids.iter().unique().cloned().collect();
-        info!("{}: {}", category.get_label(), ids.len());
+        debug!("{}: {}", category.get_label(), ids.len());
         total += ids.len();
     }
-    info!("Total: {}", total);
+    debug!("Total: {}", total);
 }
 
 pub fn setup_window(
@@ -681,7 +776,7 @@ pub struct SelectedTile {
 fn main() {
     App::new()
         .add_event::<AppExit>()
-        .add_plugins(
+        .add_plugins((
             DefaultPlugins
                 .set(WindowPlugin {
                     primary_window: Some(Window {
@@ -691,7 +786,9 @@ fn main() {
                     ..default()
                 })
                 .set(ImagePlugin::default_nearest()),
-        )
+            Material2dPlugin::<RainbowOutlineMaterial>::default(),
+        ))
+        .insert_resource(ClearColor(Color::rgb(0.12, 0.12, 0.12)))
         .init_resource::<ErrorState>()
         .insert_resource(build())
         .init_resource::<LmdbEnv>()
@@ -702,7 +799,6 @@ fn main() {
         .init_resource::<CipContent>()
         .init_resource::<CursorPos>()
         .init_resource::<Tiles>()
-        .init_resource::<Counter>()
         .init_resource::<PaletteState>()
         .add_plugins((
             EguiPlugin,

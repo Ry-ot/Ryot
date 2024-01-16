@@ -180,7 +180,7 @@ pub fn draw_palette_items(
                                 .iter()
                                 .enumerate()
                                 .for_each(|(i, (index, grid, image))| {
-                                    let spacing = (palette_state.width as f32
+                                    let spacing = (palette_state.width
                                         - palette_state.get_tile_size()
                                             * palette_state.get_chunk_size() as f32)
                                         / (palette_state.get_chunk_size() - 1) as f32;
