@@ -1,9 +1,9 @@
 mod serde;
 pub use serde::SerdePostcard;
 
+use heed::{CompactionOption, Env, EnvOpenOptions, Error, RoTxn, RwTxn};
 use std::fs;
 use std::path::{Path, PathBuf};
-use heed::{Env, EnvOpenOptions, RwTxn, RoTxn, Error, CompactionOption};
 
 #[derive(Debug, Clone, Copy)]
 pub enum DatabaseName {
@@ -30,13 +30,19 @@ pub fn create_env(path: PathBuf) -> heed::Result<Env> {
     Ok(env)
 }
 
-pub fn rw<K: 'static, V: 'static>(env: &Env, name: DatabaseName) -> heed::Result<(RwTxn, heed::Database<K, V>)> {
+pub fn rw<K: 'static, V: 'static>(
+    env: &Env,
+    name: DatabaseName,
+) -> heed::Result<(RwTxn, heed::Database<K, V>)> {
     let mut wtxn = env.write_txn()?;
     let db = env.create_database::<K, V>(&mut wtxn, Some(name.get_name()))?;
     Ok((wtxn, db))
 }
 
-pub fn ro<K: 'static, V: 'static>(env: &Env, name: DatabaseName) -> heed::Result<(RoTxn, heed::Database<K, V>)> {
+pub fn ro<K: 'static, V: 'static>(
+    env: &Env,
+    name: DatabaseName,
+) -> heed::Result<(RoTxn, heed::Database<K, V>)> {
     let rtxn = env.read_txn()?;
     let db = env.open_database::<K, V>(&rtxn, Some(name.get_name()))?;
 

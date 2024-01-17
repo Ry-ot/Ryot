@@ -7,17 +7,23 @@
  * Website: https://github.com/lgrossi/Ryot
  */
 
-use std::path::PathBuf;
-use image::{ImageFormat, imageops, Rgba, RgbaImage};
+use crate::cip_content::{get_full_file_buffer, ContentType, Error, Result, SpriteSheet};
 use image::error::{LimitError, LimitErrorKind};
+use image::{imageops, ImageFormat, Rgba, RgbaImage};
 use log::{info, warn};
 use lzma_rs::lzma_decompress_with_options;
 use rayon::prelude::*;
 use serde_repr::{Deserialize_repr, Serialize_repr};
-use crate::cip_content::{ContentType, Result, get_full_file_buffer, SpriteSheet, Error};
+use std::path::PathBuf;
 
-pub const SPRITE_SHEET_SIZE: SpriteSize = SpriteSize{ width: 384, height: 384 };
-pub const DEFAULT_SPRITE_SIZE: SpriteSize = SpriteSize{ width: 32, height: 32 };
+pub const SPRITE_SHEET_SIZE: SpriteSize = SpriteSize {
+    width: 384,
+    height: 384,
+};
+pub const DEFAULT_SPRITE_SIZE: SpriteSize = SpriteSize {
+    width: 32,
+    height: 32,
+};
 pub const LZMA_CUSTOM_HEADER_SIZE: usize = 32;
 pub const SHEET_CUSTOM_HEADER_SIZE: usize = 122;
 
@@ -90,10 +96,14 @@ pub fn load_sprite_sheet_image(path: &str) -> Result<RgbaImage> {
 /// getting the lclppb, lp and pb values and ignoring the size, so we don't need to do anything special here.
 pub fn decompress_lzma_sprite_sheet(buffer: Vec<u8>) -> Result<Vec<u8>> {
     let mut decompressed = Vec::new();
-    lzma_decompress_with_options(&mut &buffer[LZMA_CUSTOM_HEADER_SIZE..], &mut decompressed, &lzma_rs::decompress::Options{
-        unpacked_size: lzma_rs::decompress::UnpackedSize::ReadHeaderButUseProvided(None),
-        ..Default::default()
-    })?;
+    lzma_decompress_with_options(
+        &mut &buffer[LZMA_CUSTOM_HEADER_SIZE..],
+        &mut decompressed,
+        &lzma_rs::decompress::Options {
+            unpacked_size: lzma_rs::decompress::UnpackedSize::ReadHeaderButUseProvided(None),
+            ..Default::default()
+        },
+    )?;
 
     Ok(decompressed)
 }
@@ -106,8 +116,9 @@ pub fn decompress_lzma_sprite_sheet(buffer: Vec<u8>) -> Result<Vec<u8>> {
 pub fn create_image_from_data(data: Vec<u8>, size: SpriteSize) -> Result<RgbaImage> {
     let data = data[SHEET_CUSTOM_HEADER_SIZE..].to_vec();
 
-    let mut background_img = RgbaImage::from_raw(size.width, size.height, data)
-        .ok_or(image::ImageError::Limits(LimitError::from_kind(LimitErrorKind::DimensionError)))?;
+    let mut background_img = RgbaImage::from_raw(size.width, size.height, data).ok_or(
+        image::ImageError::Limits(LimitError::from_kind(LimitErrorKind::DimensionError)),
+    )?;
 
     flip_vertically(&mut background_img);
     reverse_channels(&mut background_img);
@@ -118,12 +129,15 @@ pub fn create_image_from_data(data: Vec<u8>, size: SpriteSize) -> Result<RgbaIma
 /// Decompress and save the plain sprite sheets to the given destination path.
 /// This is used to generate a decompressed cache of the sprite sheets, to optimize reading.
 /// Trade off here is that we use way more disk space in pro of faster sprite loading.
-pub fn decompress_all_sprite_sheets(content: &Vec<ContentType>, path: &str, destination_path: &str) {
-    content.par_iter()
-        .for_each(|c| match c {
-            ContentType::Sprite(sheet) => decompress_sprite_sheet(&sheet.file, path, destination_path),
-            _ => ()
-        });
+pub fn decompress_all_sprite_sheets(
+    content: &Vec<ContentType>,
+    path: &str,
+    destination_path: &str,
+) {
+    content.par_iter().for_each(|c| match c {
+        ContentType::Sprite(sheet) => decompress_sprite_sheet(&sheet.file, path, destination_path),
+        _ => (),
+    });
 }
 
 pub fn decompress_sprite_sheet(file: &str, path: &str, destination_path: &str) {
@@ -135,15 +149,19 @@ pub fn decompress_sprite_sheet(file: &str, path: &str, destination_path: &str) {
 
     info!("Decompressing sprite sheet {} {}", path, file);
     match load_sprite_sheet_image(&format!("{}/{}", path, file)) {
-        Ok(sheet) => sheet.save_with_format(destination_file, ImageFormat::Png).map_err(|e| {
-            warn!("Failed to save sprite sheet {}: {}", destination_file, e);
-        }).unwrap(),
+        Ok(sheet) => sheet
+            .save_with_format(destination_file, ImageFormat::Png)
+            .map_err(|e| {
+                warn!("Failed to save sprite sheet {}: {}", destination_file, e);
+            })
+            .unwrap(),
         Err(_) => (),
     }
 }
 
 pub fn get_sheet_by_sprite_id(content: &[ContentType], id: u32) -> Option<SpriteSheet> {
-    content.iter()
+    content
+        .iter()
         .filter_map(|content| {
             if let ContentType::Sprite(sheet) = content {
                 if id >= sheet.first_sprite_id && id <= sheet.last_sprite_id {

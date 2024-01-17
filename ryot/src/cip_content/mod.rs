@@ -3,9 +3,9 @@ include!(concat!(env!("OUT_DIR"), "/appearances.rs"));
 mod sprites;
 pub use sprites::*;
 
-use std::io::Read;
 use log::info;
 use serde::{Deserialize, Serialize};
+use std::io::Read;
 
 #[derive(Debug)]
 pub enum Error {
@@ -46,22 +46,13 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[serde(tag = "type")]
 pub enum ContentType {
     #[serde(rename = "appearances")]
-    Appearances {
-        file: String,
-        version: u32,
-    },
+    Appearances { file: String, version: u32 },
     #[serde(rename = "staticdata")]
-    StaticData {
-        file: String,
-    },
+    StaticData { file: String },
     #[serde(rename = "staticmapdata")]
-    StaticMapData {
-        file: String,
-    },
+    StaticMapData { file: String },
     #[serde(rename = "map")]
-    Map {
-        file: String,
-    },
+    Map { file: String },
     #[serde(rename = "sprite")]
     Sprite(SpriteSheet),
 }

@@ -1,4 +1,4 @@
-pub mod lmdb;
 mod compression;
-pub use compression::{Compression, Zstd, compress, decompress};
+pub mod lmdb;
+pub use compression::{compress, decompress, Compression, Zstd};
 pub mod cip_content;
