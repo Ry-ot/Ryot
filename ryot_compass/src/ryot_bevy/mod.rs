@@ -17,6 +17,9 @@ use crate::{DecompressedCache, Settings};
 mod palette;
 pub use palette::*;
 
+mod async_events;
+pub use async_events::*;
+
 #[derive(Resource, Debug)]
 pub struct CipContent {
     pub raw_content: Vec<ContentType>,
