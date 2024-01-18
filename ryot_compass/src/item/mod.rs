@@ -8,7 +8,10 @@
  */
 use crate::{GetKey, Item, Position, Tile};
 
+#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
 mod items_from_heed_lmdb;
+
+#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
 pub use items_from_heed_lmdb::ItemsFromHeedLmdb;
 
 pub trait ItemRepository {

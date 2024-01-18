@@ -12,8 +12,9 @@ use ryot::cip_content::{
 };
 use std::path::PathBuf;
 
-mod palette;
 use crate::{DecompressedCache, Settings};
+
+mod palette;
 pub use palette::*;
 
 #[derive(Resource, Debug)]

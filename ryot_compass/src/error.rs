@@ -14,6 +14,7 @@ pub enum Error {
     DatabaseError(String),
 }
 
+#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
 impl From<heed::Error> for Error {
     fn from(e: heed::Error) -> Self {
         Error::DatabaseError(e.to_string())

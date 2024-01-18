@@ -79,9 +79,9 @@ pub fn load_content(path: &str) -> Result<Vec<ContentType>> {
 }
 
 pub fn get_full_file_buffer(path: &str) -> Result<Vec<u8>> {
-    let mut file = std::fs::File::open(path)?;
-    let mut buffer = Vec::new();
-    file.read_to_end(&mut buffer)?;
+    // let mut file = std::fs::File::open(path)?;
+    let mut buffer: Vec<u8> = Vec::new();
+    // file.read_to_end(&mut buffer)?;
 
-    Ok(buffer)
+    Ok(vec![])
 }
