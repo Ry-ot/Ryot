@@ -7,7 +7,7 @@
  * Website: https://github.com/lgrossi/Ryot
  */
 use egui::WidgetText;
-use ryot::cip_content::{Appearance, AppearanceFlags, ItemCategory};
+use ryot::appearances::{Appearance, AppearanceFlags, ItemCategory};
 use std::cmp::Ordering;
 use strum_macros::{EnumCount, EnumIter};
 

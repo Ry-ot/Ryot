@@ -62,14 +62,14 @@ pub fn movement(
 
         transform.translation.x = normalize_dimension(transform.translation.x, 32.);
         transform.translation.x = transform.translation.x.clamp(
-            ortho.scale * (window.width() / 2. - 100. / scale_balance),
+            ortho.scale * (window.width() / 2. - 50. / scale_balance),
             u16::MAX as f32,
         );
 
         transform.translation.y = normalize_dimension(transform.translation.y, 32.);
         transform.translation.y = transform.translation.y.clamp(
             -(u16::MAX as f32),
-            -ortho.scale * (window.height() / 2. - 175. / scale_balance),
+            -ortho.scale * (window.height() / 2. - 90. / scale_balance),
         );
 
         // Important! We need to restore the Z values when moving the camera around.

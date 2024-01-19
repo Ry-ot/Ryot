@@ -6,68 +6,51 @@
  * Contributors: https://github.com/lgrossi/Ryot/graphs/contributors
  * Website: https://github.com/lgrossi/Ryot
  */
-use config::Config;
-use ryot::cip_content::decompress_sprite_sheets;
-use serde::Deserialize;
+use ryot::{decompress_sprite_sheets, read_assets_configs, AssetsConfig, SpriteSheetConfig};
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
-static CONFIG_PATH: &str = "config/build/Assets.toml";
+static CONFIG_PATH: &str = "config/Assets.toml";
 static SPRITE_SHEET_FOLDER: &str = "sprite-sheets";
 
-#[derive(Debug, Deserialize)]
-pub struct AssetsConfig {
-    source_path: PathBuf,
-    #[serde(default = "default_destination_path")]
-    destination_path: PathBuf,
-}
-
 pub fn run() -> Result<(), std::io::Error> {
-    eprintln!("fuuuck");
     // Tell Cargo to rerun this build script if the config file changes
     println!("cargo:rerun-if-changed={}", CONFIG_PATH);
 
-    let settings = read_assets_configs(CONFIG_PATH);
+    let AssetsConfig {
+        directories,
+        sprite_sheet,
+    } = read_assets_configs(CONFIG_PATH);
 
-    // Tell Cargo to rerun this build script if our content file changes
+    // Tell Cargo to rerun this build script if our content folder changes
     println!(
         "cargo:rerun-if-changed={}",
-        settings.source_path.to_str().unwrap()
+        directories.source_path.to_str().unwrap()
     );
 
-    settings.source_path.try_exists().expect(
+    // Tell Cargo to rerun this build script if our destination folder changes
+    println!(
+        "cargo:rerun-if-changed={}",
+        directories.destination_path.to_str().unwrap()
+    );
+
+    directories.source_path.try_exists().expect(
         format!(
             "Source path {} does not exist",
-            settings.source_path.to_str().unwrap()
+            directories.source_path.to_str().unwrap()
         )
         .as_str(),
     );
 
-    copy_catalog(&settings.source_path, &settings.destination_path)?;
-    copy_appearances(&settings.source_path, &settings.destination_path)?;
-    decompress_sprites(&settings.source_path, &settings.destination_path)?;
+    copy_catalog(&directories.source_path, &directories.destination_path)?;
+    copy_appearances(&directories.source_path, &directories.destination_path)?;
+    decompress_sprites(
+        &directories.source_path,
+        &directories.destination_path,
+        sprite_sheet,
+    )?;
 
     Ok(())
-}
-
-pub fn read_assets_configs(config_path: &str) -> AssetsConfig {
-    let settings = Config::builder()
-        .add_source(config::File::with_name(config_path))
-        .build()
-        .expect("Failed to build config")
-        .try_deserialize::<AssetsConfig>()
-        .expect("Failed to deserialize config");
-
-    match is_path_within_root(&settings.destination_path, Path::new("assets")) {
-        Ok(true) => settings,
-        Ok(false) | Err(_) => panic!(
-            "Target path {} is not within assets folder",
-            settings
-                .destination_path
-                .to_str()
-                .expect("Failed to convert target path to str")
-        ),
-    }
 }
 
 pub fn is_path_within_root(
@@ -75,10 +58,6 @@ pub fn is_path_within_root(
     root_path: &Path,
 ) -> Result<bool, std::io::Error> {
     Ok(fs::canonicalize(destination_path)?.starts_with(&fs::canonicalize(root_path)?))
-}
-
-fn default_destination_path() -> PathBuf {
-    PathBuf::from("assets")
 }
 
 fn copy_catalog(source_path: &Path, destination_path: &Path) -> Result<u64, std::io::Error> {
@@ -115,7 +94,11 @@ fn copy_appearances(source_path: &Path, destination_path: &Path) -> Result<(), s
     Ok(())
 }
 
-fn decompress_sprites(source_path: &Path, destination_path: &Path) -> Result<(), std::io::Error> {
+fn decompress_sprites(
+    source_path: &Path,
+    destination_path: &Path,
+    sheet_config: SpriteSheetConfig,
+) -> Result<(), std::io::Error> {
     let sprite_sheet_path = destination_path.join(SPRITE_SHEET_FOLDER);
 
     fs::create_dir_all(sprite_sheet_path.clone()).expect("Failed to create sprite sheets folder");
@@ -141,9 +124,10 @@ fn decompress_sprites(source_path: &Path, destination_path: &Path) -> Result<(),
         .collect::<Vec<String>>();
 
     decompress_sprite_sheets(
-        &files,
         &source_path.to_str().unwrap(),
         &sprite_sheet_path.to_str().unwrap(),
+        &files,
+        sheet_config,
     );
 
     Ok(())

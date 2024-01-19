@@ -7,9 +7,6 @@
  * Website: https://github.com/lgrossi/Ryot
  */
 use bevy::prelude::*;
-use ryot::cip_content::{
-    decompress_sprite_sheet, get_sprite_grid_by_id, get_sprite_index_by_id, ContentType, SheetGrid,
-};
 use std::path::PathBuf;
 
 use crate::{DecompressedCache, Settings};
@@ -19,6 +16,8 @@ pub use palette::*;
 
 mod async_events;
 pub use async_events::*;
+use ryot::appearances::ContentType;
+use ryot::*;
 
 #[derive(Resource, Debug)]
 pub struct CipContent {
@@ -144,7 +143,12 @@ pub fn build_texture_atlas_from_sheet(
     std::fs::create_dir_all(decompressed_path).unwrap();
 
     if !PathBuf::from(format!("{}/{}", decompressed_path, &grid.file)).exists() {
-        decompress_sprite_sheet(&grid.file, &settings.content.path, decompressed_path);
+        decompress_sprite_sheet(
+            &grid.file,
+            &settings.content.path,
+            decompressed_path,
+            cip_sheet(),
+        );
     }
 
     let image_handle: Handle<Image> =

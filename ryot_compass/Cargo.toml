@@ -78,8 +78,6 @@ opt-level = 1
 opt-level = 3
 
 [build-dependencies]
-config = "0.13.4"
-serde = "1.0.195"
 embed-resource = "2.4.1"
 ryot = { version = "0.1.0", path = "../ryot" }
 
