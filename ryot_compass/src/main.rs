@@ -53,8 +53,6 @@ use rfd::AsyncFileDialog;
 use ryot::appearances::{get_full_file_buffer, load_content, Appearances, ContentType};
 use ryot::decompress_sprite_sheets_from_content;
 use std::future::Future;
-use std::sync::mpsc::{channel, Receiver, Sender};
-use std::sync::Mutex;
 
 fn scroll_events(mut minimap: ResMut<Minimap>, mut scroll_evr: EventReader<MouseWheel>) {
     for ev in scroll_evr.read() {
@@ -103,7 +101,7 @@ fn spawn_camera(
     asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    mut rb_materials: ResMut<Assets<RainbowOutlineMaterial>>,
+    // mut rb_materials: ResMut<Assets<RainbowOutlineMaterial>>,
 ) {
     let area_size = u16::MAX as f32; // Size of the square
     let grid_size = 32.0; // Size of each grid cell
@@ -350,10 +348,7 @@ fn decompress_all_sprites(settings: Res<Settings>, content: Res<CipContent>) {
 
     std::fs::create_dir_all(decompressed_path).unwrap();
 
-    let AssetsConfig {
-        directories,
-        sprite_sheet,
-    } = read_assets_configs("config/Assets.toml");
+    let AssetsConfig { sprite_sheet, .. } = read_assets_configs("config/Assets.toml");
 
     decompress_sprite_sheets_from_content(
         &settings.content.path,
@@ -493,7 +488,7 @@ fn ui_example(
     mut settings: Res<Settings>,
     mut exit: EventWriter<AppExit>,
     content_sender: Res<EventSender<ContentWasLoaded>>,
-    error_state: ResMut<ErrorState>,
+    // error_state: ResMut<ErrorState>,
     mut about_me: ResMut<AboutMeOpened>,
 ) {
     egui::TopBottomPanel::top("top_panel").show(egui_ctx.ctx_mut(), |ui| {
@@ -837,7 +832,7 @@ pub fn setup_window(
     let primary_window = windows.get_window(primary_window_entity).unwrap();
 
     let (icon_rgba, icon_width, icon_height) = {
-        let image = image::open("assets/icons/compass_2.png")
+        let image = image::open("assets/icons/compass_4.png")
             .expect("Failed to open icon path")
             .into_rgba8();
         let (width, height) = image.dimensions();
@@ -866,7 +861,7 @@ fn handle_content_loaded(
     mut events: EventReader<ContentWasLoaded>,
     mut content: ResMut<CipContent>,
 ) {
-    for event in events.iter() {
+    for event in events.read() {
         debug!("Handling loaded content from file: {:?}", event.file_name);
         content.raw_content = event.raw_content.clone(); // Modify content
     }

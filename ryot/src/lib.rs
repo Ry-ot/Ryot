@@ -14,6 +14,9 @@ pub mod appearances;
 mod sprites;
 pub use sprites::*;
 
+pub static CONFIG_PATH: &str = "config/Assets.toml";
+pub static SPRITE_SHEET_FOLDER: &str = "sprite-sheets";
+
 #[derive(Debug, Deserialize)]
 pub struct AssetsConfig {
     pub directories: DirectoryConfigs,
