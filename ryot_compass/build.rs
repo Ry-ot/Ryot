@@ -1,10 +1,9 @@
 extern crate embed_resource;
-use std::env;
+
+mod build_scripts;
+pub use build_scripts::*;
 
 fn main() {
-    let target = env::var("TARGET").unwrap();
-    if target.contains("windows") {
-        // on windows we will set our game icon as icon for the executable
-        embed_resource::compile("build/windows/icon.rc", embed_resource::NONE);
-    }
+    build_target::run();
+    assets_builder::run().expect("Failed to build assets");
 }

@@ -6,7 +6,6 @@
  * Contributors: https://github.com/lgrossi/Ryot/graphs/contributors
  * Website: https://github.com/lgrossi/Ryot
  */
-
 use crate::cip_content::{get_full_file_buffer, ContentType, Error, Result, SpriteSheet};
 use image::error::{LimitError, LimitErrorKind};
 use image::{imageops, ImageFormat, Rgba, RgbaImage};
@@ -126,17 +125,28 @@ pub fn create_image_from_data(data: Vec<u8>, size: SpriteSize) -> Result<RgbaIma
     Ok(background_img)
 }
 
-/// Decompress and save the plain sprite sheets to the given destination path.
-/// This is used to generate a decompressed cache of the sprite sheets, to optimize reading.
-/// Trade off here is that we use way more disk space in pro of faster sprite loading.
-pub fn decompress_all_sprite_sheets(
+pub fn decompress_sprite_sheets_from_content(
     content: &Vec<ContentType>,
     path: &str,
     destination_path: &str,
 ) {
-    content.par_iter().for_each(|c| match c {
-        ContentType::Sprite(sheet) => decompress_sprite_sheet(&sheet.file, path, destination_path),
-        _ => (),
+    let files = content
+        .par_iter()
+        .filter_map(|c| match c {
+            ContentType::Sprite(sheet) => Some(sheet.file.clone()),
+            _ => None,
+        })
+        .collect::<Vec<String>>();
+
+    decompress_sprite_sheets(&files, path, destination_path);
+}
+
+/// Decompress and save the plain sprite sheets to the given destination path.
+/// This is used to generate a decompressed cache of the sprite sheets, to optimize reading.
+/// Trade off here is that we use way more disk space in pro of faster sprite loading.
+pub fn decompress_sprite_sheets(files: &Vec<String>, path: &str, destination_path: &str) {
+    files.par_iter().for_each(|file| {
+        decompress_sprite_sheet(file, path, destination_path);
     });
 }
 
@@ -155,7 +165,7 @@ pub fn decompress_sprite_sheet(file: &str, path: &str, destination_path: &str) {
                 warn!("Failed to save sprite sheet {}: {}", destination_file, e);
             })
             .unwrap(),
-        Err(_) => (),
+        Err(e) => panic!("{:?}", e),
     }
 }
 

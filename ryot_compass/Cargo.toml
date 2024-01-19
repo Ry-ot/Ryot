@@ -10,7 +10,7 @@ bevy_egui = "0.24.0"
 bevy_ecs_tilemap = { git = "https://github.com/divark/bevy_ecs_tilemap.git", branch = "0.12-fixes" }
 egui = { version = "0.24.1", default-features = false, features = ["bytemuck"] }
 rand = "0.8.5"
-serde = "1.0.193"
+serde = { version = "1.0.193", features = ["derive"] }
 serde_json = "1.0.108"
 async-std = "1.12.0"
 rayon = "1.8.0"
@@ -78,7 +78,10 @@ opt-level = 1
 opt-level = 3
 
 [build-dependencies]
+config = "0.13.4"
+serde = "1.0.195"
 embed-resource = "2.4.1"
+ryot = { version = "0.1.0", path = "../ryot" }
 
 [features]
 default = []
