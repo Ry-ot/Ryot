@@ -61,7 +61,7 @@ impl Content {
 impl Default for Content {
     fn default() -> Self {
         Content {
-            path: "assets/cip_catalog".to_owned(),
+            path: "assets/cip-catalog".to_owned(),
             catalog_name: "catalog-content.json".to_owned(),
             decompressed_cache: DecompressedCache::default(),
         }
