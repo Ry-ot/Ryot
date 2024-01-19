@@ -10,17 +10,14 @@ use ryot::{decompress_sprite_sheets, read_assets_configs, AssetsConfig, SpriteSh
 use std::fs;
 use std::path::Path;
 
-static CONFIG_PATH: &str = "config/Assets.toml";
-static SPRITE_SHEET_FOLDER: &str = "sprite-sheets";
-
 pub fn run() -> Result<(), std::io::Error> {
     // Tell Cargo to rerun this build script if the config file changes
-    println!("cargo:rerun-if-changed={}", CONFIG_PATH);
+    println!("cargo:rerun-if-changed={}", ryot::CONFIG_PATH);
 
     let AssetsConfig {
         directories,
         sprite_sheet,
-    } = read_assets_configs(CONFIG_PATH);
+    } = read_assets_configs(ryot::CONFIG_PATH);
 
     // Tell Cargo to rerun this build script if our content folder changes
     println!(
@@ -99,7 +96,7 @@ fn decompress_sprites(
     destination_path: &Path,
     sheet_config: SpriteSheetConfig,
 ) -> Result<(), std::io::Error> {
-    let sprite_sheet_path = destination_path.join(SPRITE_SHEET_FOLDER);
+    let sprite_sheet_path = destination_path.join(ryot::SPRITE_SHEET_FOLDER);
 
     fs::create_dir_all(sprite_sheet_path.clone()).expect("Failed to create sprite sheets folder");
 
