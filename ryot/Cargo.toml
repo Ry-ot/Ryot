@@ -11,17 +11,17 @@ prost-build = "0.12.3"
 #big-brain = { git = "https://github.com/zkat/big-brain.git", branch = "main" }
 #moonshine-behavior = "0.1.1"
 #pathfinding = "4.4.0"
+config = "0.13.4"
 rand = "0.8.5"
 serde = "1.0.193"
 serde_repr = "0.1.17"
 serde_json = "1.0.108"
-async-std = "1.12.0"
 rayon = "1.8.0"
 log = "0.4.20"
 time-test = "0.2.3"
 heed = { version = "0.20.0-alpha.9", features = ["serde-rmp"], optional = true }
-zstd = "0.13.0"
-postcard = { version = "1.0.8", features = ["alloc"] }
+zstd = {  version = "0.13.0", optional = true }
+postcard = { version = "1.0.8", features = ["alloc"], optional = true }
 bytes = "1.5.0"
 lzma-rs = "0.3.0"
 image = "0.24.7"
@@ -39,4 +39,6 @@ opt-level = 1
 opt-level = 3
 
 [features]
-lmdb = ["dep:heed"]
+default = ["compression"]
+lmdb = ["dep:heed", "dep:postcard"]
+compression = ["dep:zstd"]

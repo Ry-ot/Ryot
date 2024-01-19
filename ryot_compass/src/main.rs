@@ -11,7 +11,7 @@ use bevy::{
     input::{common_conditions::input_toggle_active, mouse::MouseWheel},
     prelude::*,
 };
-use std::io::{Read, Seek};
+use std::io::{Cursor, Read, Seek};
 
 use bevy_egui::{EguiContexts, EguiPlugin};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
@@ -29,19 +29,32 @@ mod helpers;
 use error_handling::{check_for_exit, display_error_window, ErrorState};
 use helpers::camera::movement as camera_movement;
 use rayon::prelude::*;
-use ryot::cip_content::{
-    decompress_all_sprite_sheets, get_full_file_buffer, load_content, Appearances, ContentType,
-    SheetGrid,
-};
-use ryot_compass::item::{ItemRepository, ItemsFromHeedLmdb};
-use ryot_compass::minimap::{Minimap, MinimapPlugin};
+use ryot::*;
+use ryot_compass::item::ItemRepository;
+
+#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
+use ryot_compass::item::ItemsFromHeedLmdb;
+
+#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
+use ryot_compass::lmdb::LmdbEnv;
+
+use ryot_compass::minimap::Minimap;
+
 use ryot_compass::{
-    build, draw_palette_window, draw_sprite, init_env, load_sprites,
-    normalize_tile_pos_to_sprite_pos, CipContent, DecompressedCache, LmdbEnv, Palette,
-    PaletteState, Position, Settings, TextureAtlasHandlers, Tile, TilesetCategory,
+    build, draw_palette_window, draw_sprite, load_sprites, normalize_tile_pos_to_sprite_pos,
+    AsyncEventsExtension, CipContent, DecompressedCache, EventSender, Palette, PaletteState,
+    Position, Settings, TextureAtlasHandlers, Tile, TilesetCategory,
 };
 use strum::{EnumCount, IntoEnumIterator};
 use winit::window::Icon;
+
+use bevy::asset::AssetMetaCheck;
+use rfd::AsyncFileDialog;
+use ryot::appearances::{get_full_file_buffer, load_content, Appearances, ContentType};
+use ryot::decompress_sprite_sheets_from_content;
+use std::future::Future;
+use std::sync::mpsc::{channel, Receiver, Sender};
+use std::sync::Mutex;
 
 fn scroll_events(mut minimap: ResMut<Minimap>, mut scroll_evr: EventReader<MouseWheel>) {
     for ev in scroll_evr.read() {
@@ -147,17 +160,28 @@ fn spawn_camera(
         ..default()
     });
 
-    commands.spawn(MaterialMesh2dBundle {
-        mesh: meshes.add(Mesh::from(shape::Quad::default())).into(),
-        transform: Transform::from_translation(Vec3::new(64., 75., 0.))
-            .with_scale(Vec3::splat(128.)),
-        material: rb_materials.add(RainbowOutlineMaterial {
-            thickness: 0.01,
-            frequency: 1.0,
-            texture: asset_server.load("ryot_mascot.png"),
-        }),
-        ..default()
+    commands.spawn(SpriteBundle {
+        texture: asset_server.load("ryot_mascot.png"),
+        transform: Transform::from_translation(Vec3::new(
+            (u16::MAX / 2) as f32,
+            (u16::MAX / 2) as f32,
+            1.,
+        ))
+        .with_scale(Vec3::splat(16.)),
+        ..Default::default()
     });
+
+    // commands.spawn(MaterialMesh2dBundle {
+    //     mesh: meshes.add(Mesh::from(shape::Quad::default())).into(),
+    //     transform: Transform::from_translation(Vec3::new(64., 75., 0.))
+    //         .with_scale(Vec3::splat(128.)),
+    //     material: rb_materials.add(RainbowOutlineMaterial {
+    //         thickness: 0.01,
+    //         frequency: 1.0,
+    //         texture: asset_server.load("ryot_mascot.png"),
+    //     }),
+    //     ..default()
+    // });
 }
 
 #[derive(Resource, Debug)]
@@ -182,6 +206,7 @@ impl Default for Tiles {
     }
 }
 
+#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
 fn load_tiles(env: ResMut<LmdbEnv>, mut tiles: ResMut<Tiles>) {
     let tiles = &mut tiles.0;
 
@@ -325,10 +350,16 @@ fn decompress_all_sprites(settings: Res<Settings>, content: Res<CipContent>) {
 
     std::fs::create_dir_all(decompressed_path).unwrap();
 
-    decompress_all_sprite_sheets(
-        &content.raw_content,
+    let AssetsConfig {
+        directories,
+        sprite_sheet,
+    } = read_assets_configs("config/Assets.toml");
+
+    decompress_sprite_sheets_from_content(
         &settings.content.path,
         decompressed_path,
+        &content.raw_content,
+        sprite_sheet,
     );
 }
 
@@ -461,6 +492,7 @@ fn ui_example(
     mut content: ResMut<CipContent>,
     mut settings: Res<Settings>,
     mut exit: EventWriter<AppExit>,
+    content_sender: Res<EventSender<ContentWasLoaded>>,
     error_state: ResMut<ErrorState>,
     mut about_me: ResMut<AboutMeOpened>,
 ) {
@@ -489,23 +521,34 @@ fn ui_example(
                 //     egui::ColorImage::from_rgba_unmultiplied(size, &image_data)
                 // );
 
-                let img = egui::include_image!("../assets/icons/compass_2.png");
-
-                ui.image(img);
+                // let img = egui::include_image!("../assets/icons/compass_2.png");
+                //
+                // ui.image(img);
 
                 egui::menu::menu_button(ui, "File", |ui| {
+                    // #[cfg(not(target_arch = "wasm32"))]
                     if ui
                         .add_enabled(is_content_loaded, egui::Button::new("🗁 Open"))
                         .clicked()
                     {
-                        let path = rfd::FileDialog::new()
-                            .add_filter(".mdb, .otbm", &["mdb", "otbm"])
-                            .pick_file();
+                        read_file(
+                            AsyncFileDialog::new().add_filter(".mdb, .otbm", &["mdb", "otbm"]),
+                            |(file_name, content)| {
+                                debug!("Loading map from file: {:?}", file_name);
+                                debug!("Content: {:?}", content);
+                                debug!("Current dir: {:?}", std::env::current_dir());
+                            },
+                        );
 
-                        debug!("Loading map from file: {:?}", path);
-                        debug!("Current dir: {:?}", std::env::current_dir());
+                        // let path = rfd::FileDialog::new()
+                        //     .add_filter(".mdb, .otbm", &["mdb", "otbm"])
+                        //     .pick_file();
+                        //
+                        // debug!("Loading map from file: {:?}", path);
+                        // debug!("Current dir: {:?}", std::env::current_dir());
                     }
 
+                    #[cfg(not(target_arch = "wasm32"))]
                     if ui
                         .add_enabled(is_content_loaded, egui::Button::new("💾 Save"))
                         .clicked()
@@ -519,25 +562,45 @@ fn ui_example(
 
                     ui.separator();
 
+                    // #[cfg(not(target_arch = "wasm32"))]
                     if ui.button("Load Content").clicked() {
-                        let path = rfd::FileDialog::new()
-                            .add_filter(".json", &["json"])
-                            .pick_file();
+                        let sender = content_sender.0.clone();
 
-                        let Some(path) = path else {
-                            return;
-                        };
+                        read_file(
+                            AsyncFileDialog::new().add_filter(".json", &["json"]),
+                            move |(file_name, loaded)| {
+                                info!("Loading content from file: {:?}", file_name);
+                                let Ok(raw_content) =
+                                    serde_json::from_slice::<Vec<ContentType>>(&loaded)
+                                else {
+                                    error!("Failed to load content from file: {:?}", file_name);
+                                    return;
+                                };
 
-                        debug!("{:?}", path.file_name().unwrap());
-                        debug!("{:?}", path.parent().unwrap());
+                                sender
+                                    .send(ContentWasLoaded {
+                                        file_name,
+                                        raw_content,
+                                    })
+                                    .expect("TODO: panic message");
+                                // content.raw_content = deserialized;
+                            },
+                        );
 
-                        let Some(path) = path.to_str() else {
-                            return;
-                        };
-
-                        debug!("Loading cip content");
-                        load_cip_content(path, content, error_state);
-                        debug!("Content loaded!");
+                        // let Some(path) = path else {
+                        //     return;
+                        // };
+                        //
+                        // debug!("{:?}", path.file_name().unwrap());
+                        // debug!("{:?}", path.parent().unwrap());
+                        //
+                        // let Some(path) = path.to_str() else {
+                        //     return;
+                        // };
+                        //
+                        // debug!("Loading cip content");
+                        // load_cip_content(path, content, error_state);
+                        // debug!("Content loaded!");
                     }
 
                     if ui
@@ -743,6 +806,26 @@ pub fn print_appearances(
     debug!("Total: {}", total);
 }
 
+fn set_window_icon(
+    windows: NonSend<WinitWindows>,
+    primary_window: Query<Entity, With<PrimaryWindow>>,
+) {
+    let primary_entity = primary_window.single();
+    let Some(primary) = windows.get_window(primary_entity) else {
+        return;
+    };
+    let icon_buf = Cursor::new(include_bytes!(
+        "../build/macos/AppIcon.iconset/icon_256x256.png"
+    ));
+    if let Ok(image) = image::load(icon_buf, image::ImageFormat::Png) {
+        let image = image.into_rgba8();
+        let (width, height) = image.dimensions();
+        let rgba = image.into_raw();
+        let icon = Icon::from_rgba(rgba, width, height).unwrap();
+        primary.set_window_icon(Some(icon));
+    };
+}
+
 pub fn setup_window(
     mut egui_ctx: EguiContexts,
     windows: NonSend<WinitWindows>,
@@ -773,15 +856,38 @@ pub struct SelectedTile {
     pub atlas: Option<Handle<TextureAtlas>>,
 }
 
+#[derive(Event, Debug, Clone, Default)]
+pub struct ContentWasLoaded {
+    file_name: String,
+    raw_content: Vec<ContentType>,
+}
+
+fn handle_content_loaded(
+    mut events: EventReader<ContentWasLoaded>,
+    mut content: ResMut<CipContent>,
+) {
+    for event in events.iter() {
+        debug!("Handling loaded content from file: {:?}", event.file_name);
+        content.raw_content = event.raw_content.clone(); // Modify content
+    }
+}
+
 fn main() {
     App::new()
         .add_event::<AppExit>()
+        .insert_resource(AssetMetaCheck::Never)
         .add_plugins((
             DefaultPlugins
                 .set(WindowPlugin {
                     primary_window: Some(Window {
-                        title: String::from("Ryot Compass"),
-                        ..Default::default()
+                        title: "Compass".to_string(),
+                        // Bind to canvas included in `index.html`
+                        canvas: Some("#bevy".to_owned()),
+                        // The canvas size is constrained in index.html and build/web/styles.css
+                        fit_canvas_to_parent: true,
+                        // Tells wasm not to override default event handling, like F5 and Ctrl+R
+                        prevent_default_event_handling: false,
+                        ..default()
                     }),
                     ..default()
                 })
@@ -790,8 +896,9 @@ fn main() {
         ))
         .insert_resource(ClearColor(Color::rgb(0.12, 0.12, 0.12)))
         .init_resource::<ErrorState>()
+        .add_async_event::<ContentWasLoaded>()
         .insert_resource(build())
-        .init_resource::<LmdbEnv>()
+        // .init_resource::<LmdbEnv>()
         .init_resource::<Settings>()
         .init_resource::<Palette>()
         .init_resource::<AboutMeOpened>()
@@ -803,27 +910,54 @@ fn main() {
         .add_plugins((
             EguiPlugin,
             WorldInspectorPlugin::default().run_if(input_toggle_active(true, KeyCode::Escape)),
-            MinimapPlugin,
+            // MinimapPlugin,
         ))
         .add_systems(Startup, spawn_camera)
-        .add_systems(Startup, setup_window)
-        .add_systems(Startup, init_env.before(load_tiles))
+        // .add_systems(Startup, setup_window)
+        // .add_systems(Startup, init_env.before(load_tiles))
         .add_systems(Startup, spawn_cursor)
         // .add_systems(Startup, load_tiles)
         // .add_systems(Startup, decompress_all_sprites)
         .add_systems(First, (camera_movement, update_cursor_pos).chain())
         // .add_systems(Update, decompress_all_sprites)
         .add_systems(Update, draw)
-        .add_systems(Update, draw_tiles_on_minimap)
-        .add_systems(Update, scroll_events)
+        // .add_systems(Update, draw_tiles_on_minimap)
+        // .add_systems(Update, scroll_events)
         .add_systems(Update, ui_example)
         .add_systems(Update, print_appearances)
         .add_systems(Update, print_settings)
         .add_systems(Update, display_error_window)
         .add_systems(Update, check_for_exit)
         .add_systems(Update, update_cursor)
+        .add_systems(Update, handle_content_loaded)
         .run();
 }
 
 #[derive(Resource, Default)]
 struct AboutMeOpened(bool);
+
+#[cfg(not(target_arch = "wasm32"))]
+fn execute<F: Future<Output = ()> + Send + 'static>(f: F) {
+    // this is stupid... use any executor of your choice instead
+    std::thread::spawn(move || futures::executor::block_on(f));
+}
+
+#[cfg(target_arch = "wasm32")]
+fn execute<F: Future<Output = ()> + 'static>(f: F) {
+    wasm_bindgen_futures::spawn_local(f);
+}
+
+fn read_file(
+    async_rfd: AsyncFileDialog,
+    callback: impl FnOnce((String, Vec<u8>)) + 'static + Send,
+) {
+    let task = async_rfd.pick_file();
+
+    execute(async {
+        let file = task.await;
+
+        if let Some(file) = file {
+            callback((file.file_name(), file.read().await));
+        }
+    });
+}

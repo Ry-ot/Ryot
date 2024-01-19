@@ -6,76 +6,27 @@
  * Contributors: https://github.com/lgrossi/Ryot/graphs/contributors
  * Website: https://github.com/lgrossi/Ryot
  */
-use crate::cip_content::{get_full_file_buffer, ContentType, Error, Result, SpriteSheet};
+use crate::appearances::{get_full_file_buffer, ContentType, Error, Result, SpriteSheet};
+use crate::{cip_sheet, EncryptionHeaders, Rect, SheetGrid, SpriteSheetConfig};
 use image::error::{LimitError, LimitErrorKind};
 use image::{imageops, ImageFormat, Rgba, RgbaImage};
 use log::{info, warn};
 use lzma_rs::lzma_decompress_with_options;
+use rayon::prelude::IntoParallelRefIterator;
 use rayon::prelude::*;
-use serde_repr::{Deserialize_repr, Serialize_repr};
 use std::path::PathBuf;
 
-pub const SPRITE_SHEET_SIZE: SpriteSize = SpriteSize {
-    width: 384,
-    height: 384,
-};
-pub const DEFAULT_SPRITE_SIZE: SpriteSize = SpriteSize {
-    width: 32,
-    height: 32,
-};
-pub const LZMA_CUSTOM_HEADER_SIZE: usize = 32;
-pub const SHEET_CUSTOM_HEADER_SIZE: usize = 122;
-
-#[derive(Debug, Clone)]
-pub struct SpriteSize {
-    pub width: u32,
-    pub height: u32,
-}
-
-#[derive(Serialize_repr, Deserialize_repr, Debug, Clone)]
-#[repr(u32)]
-pub enum SpriteLayout {
-    OneByOne = 0,
-    OneByTwo = 1,
-    TwoByOne = 2,
-    TwoByTwo = 3,
-}
-
-impl SpriteLayout {
-    pub fn get_width(&self) -> u32 {
-        match self {
-            SpriteLayout::OneByOne | SpriteLayout::OneByTwo => DEFAULT_SPRITE_SIZE.width,
-            SpriteLayout::TwoByOne | SpriteLayout::TwoByTwo => DEFAULT_SPRITE_SIZE.width * 2,
-        }
-    }
-
-    pub fn get_height(&self) -> u32 {
-        match self {
-            SpriteLayout::OneByOne | SpriteLayout::TwoByOne => DEFAULT_SPRITE_SIZE.height,
-            SpriteLayout::OneByTwo | SpriteLayout::TwoByTwo => DEFAULT_SPRITE_SIZE.height * 2,
-        }
-    }
-}
-
-impl Default for SpriteLayout {
-    fn default() -> Self {
-        SpriteLayout::OneByOne
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct SheetGrid {
-    pub file: String,
-    pub tile_size: SpriteSize,
-    pub columns: usize,
-    pub rows: usize,
-}
-
-pub fn load_sprite_sheet_image(path: &str) -> Result<RgbaImage> {
+pub fn load_sprite_sheet_image(path: &str, sheet_config: SpriteSheetConfig) -> Result<RgbaImage> {
     let input_data = get_full_file_buffer(path)?;
 
-    let decompressed = decompress_lzma_sprite_sheet(input_data)?;
-    return create_image_from_data(decompressed, SPRITE_SHEET_SIZE);
+    let Some(encryption_headers) = &sheet_config.encryption_headers else {
+        return create_image_from_data(input_data, &sheet_config);
+    };
+
+    // panic!("{}, {:?}", path, sheet_config);
+
+    let decompressed = decompress_lzma_sprite_sheet(input_data, encryption_headers)?;
+    return create_image_from_data(decompressed, &sheet_config);
 }
 
 /// CIP's sprite sheets have a 32 byte header that contains the following information:
@@ -93,10 +44,13 @@ pub fn load_sprite_sheet_image(path: &str) -> Result<RgbaImage> {
 ///  2. Decompress without size defined and wait for the end-of-stream marker
 /// Option 2 works well for the sprite sheets, so we went with it. The lzma library already parses the header
 /// getting the lclppb, lp and pb values and ignoring the size, so we don't need to do anything special here.
-pub fn decompress_lzma_sprite_sheet(buffer: Vec<u8>) -> Result<Vec<u8>> {
+pub fn decompress_lzma_sprite_sheet(
+    buffer: Vec<u8>,
+    encryption_headers: &EncryptionHeaders,
+) -> Result<Vec<u8>> {
     let mut decompressed = Vec::new();
     lzma_decompress_with_options(
-        &mut &buffer[LZMA_CUSTOM_HEADER_SIZE..],
+        &mut &buffer[encryption_headers.lzma_header_size..],
         &mut decompressed,
         &lzma_rs::decompress::Options {
             unpacked_size: lzma_rs::decompress::UnpackedSize::ReadHeaderButUseProvided(None),
@@ -112,12 +66,23 @@ pub fn decompress_lzma_sprite_sheet(buffer: Vec<u8>) -> Result<Vec<u8>> {
 /// The data is expected to be in the BGRA format.
 /// The data is expected to be flipped vertically.
 /// The data is expected to have a 122 byte header that we need to skip
-pub fn create_image_from_data(data: Vec<u8>, size: SpriteSize) -> Result<RgbaImage> {
-    let data = data[SHEET_CUSTOM_HEADER_SIZE..].to_vec();
+pub fn create_image_from_data(
+    data: Vec<u8>,
+    sheet_config: &SpriteSheetConfig,
+) -> Result<RgbaImage> {
+    let data = match &sheet_config.encryption_headers {
+        None => data,
+        Some(encryption_headers) => data[encryption_headers.sheet_header_size..].to_vec(),
+    };
 
-    let mut background_img = RgbaImage::from_raw(size.width, size.height, data).ok_or(
-        image::ImageError::Limits(LimitError::from_kind(LimitErrorKind::DimensionError)),
-    )?;
+    let mut background_img = RgbaImage::from_raw(
+        sheet_config.sheet_size.width,
+        sheet_config.sheet_size.height,
+        data,
+    )
+    .ok_or(image::ImageError::Limits(LimitError::from_kind(
+        LimitErrorKind::DimensionError,
+    )))?;
 
     flip_vertically(&mut background_img);
     reverse_channels(&mut background_img);
@@ -126,9 +91,10 @@ pub fn create_image_from_data(data: Vec<u8>, size: SpriteSize) -> Result<RgbaIma
 }
 
 pub fn decompress_sprite_sheets_from_content(
-    content: &Vec<ContentType>,
     path: &str,
     destination_path: &str,
+    content: &Vec<ContentType>,
+    sheet_config: SpriteSheetConfig,
 ) {
     let files = content
         .par_iter()
@@ -138,19 +104,29 @@ pub fn decompress_sprite_sheets_from_content(
         })
         .collect::<Vec<String>>();
 
-    decompress_sprite_sheets(&files, path, destination_path);
+    decompress_sprite_sheets(path, destination_path, &files, sheet_config);
 }
 
 /// Decompress and save the plain sprite sheets to the given destination path.
 /// This is used to generate a decompressed cache of the sprite sheets, to optimize reading.
 /// Trade off here is that we use way more disk space in pro of faster sprite loading.
-pub fn decompress_sprite_sheets(files: &Vec<String>, path: &str, destination_path: &str) {
+pub fn decompress_sprite_sheets(
+    path: &str,
+    destination_path: &str,
+    files: &Vec<String>,
+    sheet_config: SpriteSheetConfig,
+) {
     files.par_iter().for_each(|file| {
-        decompress_sprite_sheet(file, path, destination_path);
+        decompress_sprite_sheet(file, path, destination_path, sheet_config);
     });
 }
 
-pub fn decompress_sprite_sheet(file: &str, path: &str, destination_path: &str) {
+pub fn decompress_sprite_sheet(
+    file: &str,
+    path: &str,
+    destination_path: &str,
+    sheet_config: SpriteSheetConfig,
+) {
     let destination_file = &format!("{}/{}", destination_path, get_decompressed_file_name(file));
 
     if PathBuf::from(destination_file).exists() {
@@ -158,7 +134,7 @@ pub fn decompress_sprite_sheet(file: &str, path: &str, destination_path: &str) {
     }
 
     info!("Decompressing sprite sheet {} {}", path, file);
-    match load_sprite_sheet_image(&format!("{}/{}", path, file)) {
+    match load_sprite_sheet_image(&format!("{}/{}", path, file), sheet_config) {
         Ok(sheet) => sheet
             .save_with_format(destination_file, ImageFormat::Png)
             .map_err(|e| {
@@ -192,14 +168,15 @@ pub fn get_sprite_index_by_id(content: &[ContentType], id: u32) -> Result<usize>
 }
 
 pub fn get_sprite_grid_by_id(content: &[ContentType], id: u32) -> Result<SheetGrid> {
+    let sheet_config = cip_sheet();
     if let Some(sheet) = get_sheet_by_sprite_id(content, id) {
-        let tile_size = SpriteSize {
-            width: sheet.layout.get_width(),
-            height: sheet.layout.get_height(),
+        let tile_size = Rect {
+            width: sheet.layout.get_width(&sheet_config),
+            height: sheet.layout.get_height(&sheet_config),
         };
 
-        let columns = (SPRITE_SHEET_SIZE.width / tile_size.width) as usize;
-        let rows = (SPRITE_SHEET_SIZE.height / tile_size.height) as usize;
+        let columns = (sheet_config.sheet_size.width / tile_size.width) as usize;
+        let rows = (sheet_config.sheet_size.height / tile_size.height) as usize;
 
         let grid = SheetGrid {
             file: sheet.file,

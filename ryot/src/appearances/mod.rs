@@ -1,11 +1,12 @@
 include!(concat!(env!("OUT_DIR"), "/appearances.rs"));
 
-mod sprites;
-pub use sprites::*;
+use std::fs;
 
+use crate::SpriteLayout;
 use log::info;
 use serde::{Deserialize, Serialize};
 use std::io::Read;
+use std::path::Path;
 
 #[derive(Debug)]
 pub enum Error {
@@ -84,4 +85,11 @@ pub fn get_full_file_buffer(path: &str) -> Result<Vec<u8>> {
     file.read_to_end(&mut buffer)?;
 
     Ok(buffer)
+}
+
+pub fn is_path_within_root(
+    destination_path: &Path,
+    root_path: &Path,
+) -> std::result::Result<bool, std::io::Error> {
+    Ok(fs::canonicalize(destination_path)?.starts_with(&fs::canonicalize(root_path)?))
 }

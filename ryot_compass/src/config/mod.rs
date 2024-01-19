@@ -9,7 +9,7 @@
 use bevy::prelude::Resource;
 use config::Config;
 use log::error;
-use ryot::cip_content::get_decompressed_file_name;
+use ryot::get_decompressed_file_name;
 use serde::de::Visitor;
 use serde::{de, Deserialize, Deserializer, Serialize, Serializer};
 use std::fmt;
