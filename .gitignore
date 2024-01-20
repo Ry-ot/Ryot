@@ -13,4 +13,6 @@ Cargo.lock
 # MSVC Windows builds of rustc generate these, which store debugging information
 *.pdb
 .idea/
-ryot_compass/assets/assets/
+ryot_compass/assets/cip_catalog/
+
+.DS_Store
