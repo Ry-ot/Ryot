@@ -21,11 +21,11 @@ use error_handling::{check_for_exit, display_error_window, ErrorState};
 use helpers::camera::movement as camera_movement;
 use ryot::*;
 
-#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
-use ryot_compass::item::ItemsFromHeedLmdb;
+// #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
+// use ryot_compass::item::ItemsFromHeedLmdb;
 
-#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
-use ryot_compass::lmdb::LmdbEnv;
+// #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
+// use ryot_compass::lmdb::LmdbEnv;
 
 use ryot_compass::{
     build, draw_palette_window, draw_sprite, load_sprites, normalize_tile_pos_to_sprite_pos,
@@ -38,6 +38,7 @@ use winit::window::Icon;
 use bevy::asset::AssetMetaCheck;
 use rfd::AsyncFileDialog;
 use ryot::appearances::ContentType;
+
 use std::future::Future;
 
 // fn scroll_events(mut minimap: ResMut<Minimap>, mut scroll_evr: EventReader<MouseWheel>) {
@@ -183,38 +184,37 @@ impl Default for CursorPos {
 pub struct Tiles(Vec<(Tile, bool)>);
 
 #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
-fn load_tiles(env: ResMut<LmdbEnv>, mut tiles: ResMut<Tiles>) {
-    let tiles = &mut tiles.0;
-
-    if tiles.len() > 0 {
-        return;
-    }
-
-    time_test!("Loading");
-
-    let initial_pos = Position::new(60000, 60000, 0);
-    let final_pos = Position::new(61100, 61100, 0);
-
-    let item_repository = ItemsFromHeedLmdb::new(env.0.clone().unwrap());
-
-    let lmdb_tiles = {
-        time_test!("Reading");
-        item_repository
-            .get_for_area(&initial_pos, &final_pos)
-            .unwrap()
-    };
-
-    for tile in lmdb_tiles {
-        tiles.push((
-            Tile {
-                position: Position::from_binary_key(&tile.0),
-                item: Some(tile.1),
-            },
-            false,
-        ));
-    }
-}
-
+// fn load_tiles(env: ResMut<LmdbEnv>, mut tiles: ResMut<Tiles>) {
+//     let tiles = &mut tiles.0;
+//
+//     if tiles.len() > 0 {
+//         return;
+//     }
+//
+//     time_test!("Loading");
+//
+//     let initial_pos = Position::new(60000, 60000, 0);
+//     let final_pos = Position::new(61100, 61100, 0);
+//
+//     let item_repository = ItemsFromHeedLmdb::new(env.0.clone().unwrap());
+//
+//     let lmdb_tiles = {
+//         // time_test!("Reading");
+//         item_repository
+//             .get_for_area(&initial_pos, &final_pos)
+//             .unwrap()
+//     };
+//
+//     for tile in lmdb_tiles {
+//         tiles.push((
+//             Tile {
+//                 position: Position::from_binary_key(&tile.0),
+//                 item: Some(tile.1),
+//             },
+//             false,
+//         ));
+//     }
+// }
 #[allow(clippy::too_many_arguments)]
 fn draw(
     mut commands: Commands,
