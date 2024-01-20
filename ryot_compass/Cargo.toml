@@ -78,8 +78,5 @@ ryot = { version = "0.1.0", path = "../ryot" }
 default = []
 lmdb = ["dep:heed"]
 
-[lints.rust]
-unsafe_code = "forbid"
-
 [lints.clippy]
 enum_glob_use = "deny"
