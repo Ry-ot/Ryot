@@ -7,13 +7,13 @@ use bevy::sprite::{Material2d, Material2dPlugin, MaterialMesh2dBundle};
 use bevy::window::PrimaryWindow;
 use bevy::winit::WinitWindows;
 use bevy::{input::common_conditions::input_toggle_active, prelude::*};
+use std::fmt::Debug;
 
 use bevy_egui::{EguiContexts, EguiPlugin};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use egui::load::SizedTexture;
 use egui::TextureId;
 use itertools::Itertools;
-use prost::Message;
 
 mod error_handling;
 mod helpers;
@@ -29,15 +29,37 @@ use ryot_compass::lmdb::LmdbEnv;
 
 use ryot_compass::{
     build, draw_palette_window, draw_sprite, load_sprites, normalize_tile_pos_to_sprite_pos,
-    AsyncEventsExtension, CipContent, ConfigExtension, DecompressedCache, EventSender, Palette,
-    PaletteState, Settings, TextureAtlasHandlers, Tile, TilesetCategory,
+    test_reload_config, Appearance, AppearanceAssetPlugin, AppearanceHandle, AsyncEventsExtension,
+    CipContent, ConfigExtension, DecompressedCache, EventSender, Palette, PaletteState, Settings,
+    TextureAtlasHandlers, Tile, TilesetCategory,
 };
 use winit::window::Icon;
 
 use bevy::asset::AssetMetaCheck;
 use rfd::AsyncFileDialog;
-use ryot::appearances::{get_full_file_buffer, Appearances, ContentType};
+use ryot::appearances::ContentType;
 use std::future::Future;
+
+// fn scroll_events(mut minimap: ResMut<Minimap>, mut scroll_evr: EventReader<MouseWheel>) {
+//     for ev in scroll_evr.read() {
+//         minimap.zoom += ev.y * 0.1;
+//         minimap.zoom = minimap.zoom.clamp(1.0, 25.0);
+//     }
+// }
+//
+// fn draw_tiles_on_minimap(
+//     mut minimap: ResMut<Minimap>,
+//     mut images: ResMut<Assets<Image>>,
+//     mut tiles: ResMut<Tiles>,
+// ) {
+//     let positions = tiles
+//         .0
+//         .iter()
+//         .map(|(tile, _)| UVec2::new(tile.position.x.into(), tile.position.y.into()))
+//         .collect::<Vec<_>>();
+//     minimap.update_texture(positions, &mut images);
+//     tiles.0.clear();
+// }
 
 #[derive(AsBindGroup, TypeUuid, Asset, TypePath, Debug, Clone)]
 #[uuid = "f229fdae-d598-45ac-8225-97e2a3f011e0"]
@@ -297,6 +319,24 @@ fn draw(
     // }
 }
 
+// fn decompress_all_sprites(settings: Res<Settings>, content: Res<CipContent>) {
+//     // time_test!("Decompressing");
+//     let DecompressedCache::Path(decompressed_path) = &settings.content.decompressed_cache else {
+//         return;
+//     };
+//
+//     std::fs::create_dir_all(decompressed_path).unwrap();
+//
+//     let ContentConfigs { sprite_sheet, .. } = read_content_configs("config/Content.toml");
+//
+//     decompress_sprite_sheets_from_content(
+//         &settings.content.path,
+//         decompressed_path,
+//         &content.raw_content,
+//         sprite_sheet,
+//     );
+// }
+
 // We need to keep the cursor position updated based on any `CursorMoved` events.
 pub fn update_cursor_pos(
     mut cursor_pos: ResMut<CursorPos>,
@@ -407,6 +447,21 @@ fn cursor_pos_to_tile_pos(cursor_pos: Vec2) -> Vec2 {
     )
 }
 
+// fn load_cip_content(
+//     path: &str,
+//     mut content: ResMut<CipContent>,
+//     mut error_state: ResMut<ErrorState>,
+// ) {
+//     match load_content(path) {
+//         Ok(raw_content) => content.raw_content = raw_content,
+//         Err(e) => {
+//             error!("Failed to load CIP content: {:?}", e);
+//             error_state.has_error = true;
+//             error_state.error_message = "Failed to load CIP content".to_string();
+//         }
+//     }
+// }
+
 fn ui_example(
     mut egui_ctx: EguiContexts,
     content: ResMut<CipContent>,
@@ -489,7 +544,7 @@ fn ui_example(
                         read_file(
                             AsyncFileDialog::new().add_filter(".json", &["json"]),
                             move |(file_name, loaded)| {
-                                info!("Loading content from file: {:?}", file_name);
+                                debug!("Loading content from file: {:?}", file_name);
                                 let Ok(raw_content) =
                                     serde_json::from_slice::<Vec<ContentType>>(&loaded)
                                 else {
@@ -590,6 +645,8 @@ pub fn print_appearances(
     settings: Res<Settings>,
     palette_state: ResMut<PaletteState>,
     asset_server: Res<AssetServer>,
+    appearances: Res<Assets<Appearance>>,
+    appearance_handle: Res<AppearanceHandle>,
     mut egui_ctx: EguiContexts,
     mut palettes: ResMut<Palette>,
     mut atlas_handlers: ResMut<TextureAtlasHandlers>,
@@ -606,6 +663,10 @@ pub fn print_appearances(
         .unwrap()
         .is_empty()
     {
+        if content.raw_content.is_empty() {
+            return;
+        }
+
         let mut egui_images: Vec<(u32, SheetGrid, egui::Image)> = vec![];
 
         let mut sprite_ids: Vec<u32> = if palette_state.category == TilesetCategory::Raw {
@@ -673,51 +734,41 @@ pub fn print_appearances(
 
     let mut total = 0;
 
-    content
-        .raw_content
-        .iter()
-        .for_each(|content| match content {
-            ContentType::Appearances { file, version: _ } => {
-                let buffer =
-                    get_full_file_buffer(&settings.content.build_content_file_path(file)).unwrap();
-                let appearances = Appearances::decode(&*buffer).unwrap();
-                appearances.outfit.iter().for_each(|outfit| {
-                    if outfit.id.is_none() {
-                        warn!("No-id {:?}", outfit);
-                    }
-                    total += 1;
-                });
-                appearances.object.iter().for_each(|object| {
-                    total += 1;
-
-                    let Some(frame_group) = object.frame_group.first() else {
-                        warn!("No-sprite {:?}", object);
-                        return;
-                    };
-
-                    let Some(sprite_info) = &frame_group.sprite_info else {
-                        warn!("No-sprite {:?}", object);
-                        return;
-                    };
-
-                    let Some(sprite_id) = sprite_info.sprite_id.first() else {
-                        warn!("No-sprite {:?}", object);
-                        return;
-                    };
-
-                    let category: TilesetCategory = object.into();
-                    palettes
-                        .tile_set
-                        .get_mut(&category)
-                        .unwrap()
-                        .push(*sprite_id);
-                });
+    if let Some(Appearance(appearances)) = appearances.get(appearance_handle.handle.clone()) {
+        appearances.outfit.iter().for_each(|outfit| {
+            if outfit.id.is_none() {
+                warn!("No-id {:?}", outfit);
             }
-            ContentType::StaticData { file: _ } => todo!(),
-            ContentType::StaticMapData { file: _ } => todo!(),
-            ContentType::Map { file: _ } => todo!(),
-            ContentType::Sprite(_) => todo!(),
+            total += 1;
         });
+
+        appearances.object.iter().for_each(|object| {
+            total += 1;
+
+            let Some(frame_group) = object.frame_group.first() else {
+                warn!("No-sprite {:?}", object);
+                return;
+            };
+
+            let Some(sprite_info) = &frame_group.sprite_info else {
+                warn!("No-sprite {:?}", object);
+                return;
+            };
+
+            let Some(sprite_id) = sprite_info.sprite_id.first() else {
+                warn!("No-sprite {:?}", object);
+                return;
+            };
+
+            let category: TilesetCategory = object.into();
+
+            palettes
+                .tile_set
+                .get_mut(&category)
+                .unwrap()
+                .push(*sprite_id);
+        });
+    };
 
     total = 0;
 
@@ -728,6 +779,26 @@ pub fn print_appearances(
     }
     debug!("Total: {}", total);
 }
+
+// fn set_window_icon(
+//     windows: NonSend<WinitWindows>,
+//     primary_window: Query<Entity, With<PrimaryWindow>>,
+// ) {
+//     let primary_entity = primary_window.single();
+//     let Some(primary) = windows.get_window(primary_entity) else {
+//         return;
+//     };
+//     let icon_buf = Cursor::new(include_bytes!(
+//         "../build/macos/AppIcon.iconset/icon_256x256.png"
+//     ));
+//     if let Ok(image) = image::load(icon_buf, image::ImageFormat::Png) {
+//         let image = image.into_rgba8();
+//         let (width, height) = image.dimensions();
+//         let rgba = image.into_raw();
+//         let icon = Icon::from_rgba(rgba, width, height).unwrap();
+//         primary.set_window_icon(Some(icon));
+//     };
+// }
 
 pub fn setup_window(
     mut egui_ctx: EguiContexts,
@@ -797,6 +868,7 @@ fn main() {
                 .set(ImagePlugin::default_nearest()),
             Material2dPlugin::<RainbowOutlineMaterial>::default(),
         ))
+        .add_plugins(AppearanceAssetPlugin::new())
         .insert_resource(ClearColor(Color::rgb(0.12, 0.12, 0.12)))
         .init_resource::<ErrorState>()
         .add_async_event::<ContentWasLoaded>()
@@ -834,6 +906,7 @@ fn main() {
         .add_systems(Update, check_for_exit)
         .add_systems(Update, update_cursor)
         .add_systems(Update, handle_content_loaded)
+        .add_systems(Update, test_reload_config::<ContentConfigs>)
         .run();
 }
 

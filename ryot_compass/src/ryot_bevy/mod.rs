@@ -7,20 +7,22 @@
  * Website: https://github.com/lgrossi/Ryot
  */
 use bevy::prelude::*;
-use std::path::PathBuf;
+use ryot::appearances::ContentType;
+use ryot::*;
 
-use crate::{DecompressedCache, Settings};
+use crate::Settings;
 
-mod palette;
-pub use palette::*;
+mod appearances;
+pub use appearances::*;
 
 mod async_events;
+pub use async_events::*;
+
 mod configs;
 pub use configs::*;
 
-pub use async_events::*;
-use ryot::appearances::ContentType;
-use ryot::*;
+mod palette;
+pub use palette::*;
 
 #[derive(Resource, Debug, Default)]
 pub struct CipContent {
@@ -52,7 +54,7 @@ pub fn load_sprites(
             let grid = get_sprite_grid_by_id(content, *sprite_id).ok()?;
             Some((
                 grid.clone(),
-                build_texture_atlas_from_sheet(&grid, settings, asset_server).ok()?,
+                build_texture_atlas_from_sheet(&grid, settings, asset_server).unwrap(),
             ))
         })
         .collect();
@@ -129,24 +131,28 @@ pub fn build_texture_atlas_from_sheet(
     settings: &Res<Settings>,
     asset_server: &Res<AssetServer>,
 ) -> Result<TextureAtlas, std::io::Error> {
-    let DecompressedCache::Path(decompressed_path) = &settings.content.decompressed_cache else {
-        return Err(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            "invalid path",
-        ));
-    };
-
-    std::fs::create_dir_all(decompressed_path)?;
-
-    let path = decompressed_path.join(PathBuf::from(&grid.file));
-    if !path.exists() {
-        decompress_sprite_sheet(
-            &grid.file,
-            &settings.content.path,
-            decompressed_path,
-            cip_sheet(),
-        );
-    }
+    // let DecompressedCache::Path(decompressed_path) = &settings.content.decompressed_cache else {
+    //     return Err(std::io::Error::new(
+    //         std::io::ErrorKind::Other,
+    //         "invalid path",
+    //     ));
+    // };
+    //
+    // #[cfg(not(target_arch = "wasm32"))]
+    // {
+    //     std::fs::create_dir_all(decompressed_path)?;
+    //
+    //     let path = decompressed_path.join(PathBuf::from(&grid.file));
+    //
+    //     if !path.exists() {
+    //         decompress_sprite_sheet(
+    //             &grid.file,
+    //             &settings.content.path,
+    //             decompressed_path,
+    //             cip_sheet(),
+    //         );
+    //     }
+    // }
 
     let image_handle: Handle<Image> =
         asset_server.load(settings.content.build_asset_path(&grid.file));

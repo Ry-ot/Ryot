@@ -53,6 +53,15 @@ pub struct ReloadConfig<T> {
     _marker: PhantomData<T>,
 }
 
+impl<T> Default for ReloadConfig<T> {
+    fn default() -> Self {
+        Self {
+            new_file: None,
+            _marker: PhantomData,
+        }
+    }
+}
+
 pub trait ConfigExtension {
     fn add_config<T: DeserializeOwned + Clone + Send + Sync + 'static>(
         &mut self,
@@ -107,6 +116,7 @@ fn reload_config<T: DeserializeOwned + Clone + Send + Sync + 'static>(
         }
 
         config.handle = asset_server.load(&config.source);
+        info!("Reloaded config '{}'", type_name::<T>());
     }
 }
 
@@ -116,5 +126,14 @@ pub fn print_config_system<T: Clone + Send + Sync + Debug + 'static>(
 ) {
     if let Some(config) = configs.get(config.handle.id()) {
         info!("Config '{}': {:?}", type_name::<T>(), config);
+    }
+}
+
+pub fn test_reload_config<T: Clone + Send + Sync + 'static>(
+    keyboard_input: Res<Input<KeyCode>>,
+    mut writer: EventWriter<ReloadConfig<T>>,
+) {
+    if keyboard_input.just_pressed(KeyCode::R) {
+        writer.send(ReloadConfig::<T>::default());
     }
 }

@@ -1,10 +1,12 @@
-use crate::appearances::is_path_within_root;
 use config::Config;
 use serde::Deserialize;
+use std::io::Read;
 use std::path::{Path, PathBuf};
-use std::result;
+use std::{fs, result};
 
+#[cfg(feature = "compression")]
 mod compression;
+#[cfg(feature = "compression")]
 pub use compression::{compress, decompress, Compression, Zstd};
 
 #[cfg(feature = "lmdb")]
@@ -28,11 +30,11 @@ pub struct ContentConfigs {
 #[allow(unused)]
 pub struct DirectoryConfigs {
     pub source_path: PathBuf,
-    #[serde(default = "default_destination_path")]
+    #[serde(default = "assets_root_path")]
     pub destination_path: PathBuf,
 }
 
-pub fn default_destination_path() -> PathBuf {
+pub fn assets_root_path() -> PathBuf {
     PathBuf::from("assets")
 }
 
@@ -56,6 +58,21 @@ pub fn read_content_configs(config_path: &str) -> ContentConfigs {
                 .expect("Failed to convert target path to str")
         ),
     }
+}
+
+pub fn is_path_within_root(
+    destination_path: &Path,
+    root_path: &Path,
+) -> std::result::Result<bool, std::io::Error> {
+    Ok(fs::canonicalize(destination_path)?.starts_with(&fs::canonicalize(root_path)?))
+}
+
+pub fn get_full_file_buffer(path: &PathBuf) -> crate::appearances::Result<Vec<u8>> {
+    let mut file = fs::File::open(path)?;
+    let mut buffer: Vec<u8> = Vec::new();
+    file.read_to_end(&mut buffer)?;
+
+    Ok(buffer)
 }
 
 type Result<T> = result::Result<T, config::ConfigError>;

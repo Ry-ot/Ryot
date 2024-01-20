@@ -8,8 +8,7 @@
  */
 
 use crate::TilesetCategory;
-use bevy::log::info;
-use bevy::prelude::{ResMut, Resource};
+use bevy::prelude::{debug, ResMut, Resource};
 use bevy_egui::EguiContexts;
 use egui::{Align, Ui};
 use ryot::*;
@@ -196,7 +195,7 @@ pub fn draw_palette_items(
 
                                         if ui_button.clicked() {
                                             palette_state.selected_tile = Some(*index);
-                                            info!("Tile: {:?} selected", index);
+                                            debug!("Tile: {:?} selected", index);
                                         }
 
                                         ui.add_space(row_padding);

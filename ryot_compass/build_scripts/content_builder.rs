@@ -7,14 +7,14 @@
  * Website: https://github.com/lgrossi/Ryot
  */
 use ryot::{
-    decompress_sprite_sheets, read_content_configs, ContentConfigs, SpriteSheetConfig,
-    CONTENT_CONFIG_PATH,
+    assets_root_path, decompress_sprite_sheets, read_content_configs, ContentConfigs,
+    SpriteSheetConfig, CONTENT_CONFIG_PATH,
 };
 use std::fs;
 use std::path::Path;
 
 pub fn run() -> Result<(), std::io::Error> {
-    let path = Path::new("assets").join(CONTENT_CONFIG_PATH);
+    let path = assets_root_path().join(CONTENT_CONFIG_PATH);
     let path = match path.to_str() {
         Some(path) => path,
         None => Err(std::io::Error::new(
@@ -57,6 +57,7 @@ pub fn run() -> Result<(), std::io::Error> {
         );
         return Ok(());
     }
+
     copy_appearances(&directories.source_path, &directories.destination_path)?;
     decompress_sprites(
         &directories.source_path,
