@@ -42,8 +42,8 @@ use ryot_compass::minimap::Minimap;
 
 use ryot_compass::{
     build, draw_palette_window, draw_sprite, load_sprites, normalize_tile_pos_to_sprite_pos,
-    AsyncEventsExtension, CipContent, DecompressedCache, EventSender, Palette, PaletteState,
-    Position, Settings, TextureAtlasHandlers, Tile, TilesetCategory,
+    AsyncEventsExtension, CipContent, ConfigExtension, DecompressedCache, EventSender, Palette,
+    PaletteState, Position, Settings, TextureAtlasHandlers, Tile, TilesetCategory,
 };
 use strum::{EnumCount, IntoEnumIterator};
 use winit::window::Icon;
@@ -348,7 +348,7 @@ fn decompress_all_sprites(settings: Res<Settings>, content: Res<CipContent>) {
 
     std::fs::create_dir_all(decompressed_path).unwrap();
 
-    let AssetsConfig { sprite_sheet, .. } = read_assets_configs("config/Assets.toml");
+    let ContentConfigs { sprite_sheet, .. } = read_content_configs("config/Content.toml");
 
     decompress_sprite_sheets_from_content(
         &settings.content.path,
@@ -892,6 +892,7 @@ fn main() {
         .insert_resource(ClearColor(Color::rgb(0.12, 0.12, 0.12)))
         .init_resource::<ErrorState>()
         .add_async_event::<ContentWasLoaded>()
+        .add_config::<ContentConfigs>(CONTENT_CONFIG_PATH)
         .insert_resource(build())
         // .init_resource::<LmdbEnv>()
         .init_resource::<Settings>()

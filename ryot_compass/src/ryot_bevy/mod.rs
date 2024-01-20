@@ -15,6 +15,9 @@ mod palette;
 pub use palette::*;
 
 mod async_events;
+mod configs;
+pub use configs::*;
+
 pub use async_events::*;
 use ryot::appearances::ContentType;
 use ryot::*;
