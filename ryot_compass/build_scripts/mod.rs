@@ -6,6 +6,6 @@
  * Contributors: https://github.com/lgrossi/Ryot/graphs/contributors
  * Website: https://github.com/lgrossi/Ryot
  */
-pub mod assets_builder;
+pub mod content_builder;
 
 pub mod build_target;

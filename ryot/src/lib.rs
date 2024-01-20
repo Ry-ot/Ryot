@@ -2,6 +2,7 @@ use crate::appearances::is_path_within_root;
 use config::Config;
 use serde::Deserialize;
 use std::path::{Path, PathBuf};
+use std::result;
 
 mod compression;
 pub use compression::{compress, decompress, Compression, Zstd};
@@ -14,16 +15,16 @@ pub mod appearances;
 mod sprites;
 pub use sprites::*;
 
-pub static CONFIG_PATH: &str = "config/Assets.toml";
+pub static CONTENT_CONFIG_PATH: &str = "config/Content.toml";
 pub static SPRITE_SHEET_FOLDER: &str = "sprite-sheets";
 
-#[derive(Debug, Deserialize)]
-pub struct AssetsConfig {
+#[derive(Debug, Clone, Deserialize)]
+pub struct ContentConfigs {
     pub directories: DirectoryConfigs,
     pub sprite_sheet: SpriteSheetConfig,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 #[allow(unused)]
 pub struct DirectoryConfigs {
     pub source_path: PathBuf,
@@ -35,12 +36,12 @@ pub fn default_destination_path() -> PathBuf {
     PathBuf::from("assets")
 }
 
-pub fn read_assets_configs(config_path: &str) -> AssetsConfig {
+pub fn read_content_configs(config_path: &str) -> ContentConfigs {
     let settings = Config::builder()
         .add_source(config::File::with_name(config_path))
         .build()
         .expect("Failed to build config")
-        .try_deserialize::<AssetsConfig>()
+        .try_deserialize::<ContentConfigs>()
         .expect("Failed to deserialize config");
 
     let dir_settings = &settings.directories;
@@ -55,4 +56,13 @@ pub fn read_assets_configs(config_path: &str) -> AssetsConfig {
                 .expect("Failed to convert target path to str")
         ),
     }
+}
+
+type Result<T> = result::Result<T, config::ConfigError>;
+
+pub fn config_from<'de, T: Deserialize<'de>>(config_path: &str) -> Result<T> {
+    Config::builder()
+        .add_source(config::File::with_name(config_path))
+        .build()?
+        .try_deserialize::<T>()
 }

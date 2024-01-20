@@ -6,18 +6,24 @@
  * Contributors: https://github.com/lgrossi/Ryot/graphs/contributors
  * Website: https://github.com/lgrossi/Ryot
  */
-use ryot::{decompress_sprite_sheets, read_assets_configs, AssetsConfig, SpriteSheetConfig};
+use ryot::{
+    decompress_sprite_sheets, read_content_configs, ContentConfigs, SpriteSheetConfig,
+    CONTENT_CONFIG_PATH,
+};
 use std::fs;
 use std::path::Path;
 
 pub fn run() -> Result<(), std::io::Error> {
-    // Tell Cargo to rerun this build script if the config file changes
-    println!("cargo:rerun-if-changed={}", ryot::CONFIG_PATH);
+    let path = Path::new("assets").join(CONTENT_CONFIG_PATH);
+    let path = path.to_str().unwrap();
 
-    let AssetsConfig {
+    // Tell Cargo to rerun this build script if the config file changes
+    println!("cargo:rerun-if-changed={}", path);
+
+    let ContentConfigs {
         directories,
         sprite_sheet,
-    } = read_assets_configs(ryot::CONFIG_PATH);
+    } = read_content_configs(path);
 
     // Tell Cargo to rerun this build script if our content folder changes
     println!(

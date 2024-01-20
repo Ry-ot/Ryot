@@ -1,3 +1,5 @@
+#![feature(let_chains)]
+
 use crate::item::ItemRepository;
 use bevy::prelude::*;
 

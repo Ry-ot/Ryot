@@ -13,5 +13,5 @@ fn main() {
     }
 
     build_target::run();
-    assets_builder::run().expect("Failed to build assets");
+    content_builder::run().expect("Failed to build assets");
 }
