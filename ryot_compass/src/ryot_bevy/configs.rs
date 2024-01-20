@@ -106,13 +106,19 @@ fn reload_config<T: DeserializeOwned + Clone + Send + Sync + 'static>(
     mut reader: EventReader<ReloadConfig<T>>,
 ) {
     for ReloadConfig { new_file, .. } in reader.read() {
-        if let Some(new_file) = &new_file && new_file != &config.source {
-            if configs.contains(config.handle.id()) {
-                configs.remove(config.handle.id());
-            }
+        if let Some(new_file) = &new_file {
+            if new_file != &config.source {
+                if configs.contains(config.handle.id()) {
+                    configs.remove(config.handle.id());
+                }
 
-            config.source = new_file.clone();
-            info!("Switched config '{}' file to '{}'", type_name::<T>(), new_file);
+                config.source = new_file.clone();
+                info!(
+                    "Switched config '{}' file to '{}'",
+                    type_name::<T>(),
+                    new_file
+                );
+            }
         }
 
         config.handle = asset_server.load(&config.source);
