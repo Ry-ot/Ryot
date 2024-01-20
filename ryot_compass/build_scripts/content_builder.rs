@@ -50,7 +50,13 @@ pub fn run() -> Result<(), std::io::Error> {
         )
     });
 
-    copy_catalog(&directories.source_path, &directories.destination_path)?;
+    if copy_catalog(&directories.source_path, &directories.destination_path).is_err() {
+        println!(
+            "cargo:warning=Catalog file not found in {}",
+            directories.source_path.display()
+        );
+        return Ok(());
+    }
     copy_appearances(&directories.source_path, &directories.destination_path)?;
     decompress_sprites(
         &directories.source_path,
