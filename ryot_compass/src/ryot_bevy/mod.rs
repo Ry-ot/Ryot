@@ -95,7 +95,7 @@ pub fn load_sprite(
 pub fn get_sprite_by_id(
     content: &[ContentType],
     sprite_id: u32,
-    atlas_handlers: &mut ResMut<TextureAtlasHandlers>,
+    atlas_handlers: &ResMut<TextureAtlasHandlers>,
 ) -> Option<LoadedSprite> {
     let grid = get_sprite_grid_by_id(content, sprite_id).ok()?;
     Some(LoadedSprite {

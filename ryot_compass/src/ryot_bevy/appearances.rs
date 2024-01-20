@@ -21,6 +21,12 @@ pub struct AppearanceHandle {
     pub handle: Handle<Appearance>,
 }
 
+impl Default for AppearanceAssetPlugin {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AppearanceAssetPlugin {
     pub fn new() -> Self {
         Self {}

@@ -6,21 +6,16 @@
  * Contributors: https://github.com/lgrossi/Ryot/graphs/contributors
  * Website: https://github.com/lgrossi/Ryot
  */
+use crate::item::ItemRepository;
 use crate::{build_map, Position};
 use bevy::log::{error, info};
 use bevy::prelude::{ResMut, Resource};
 use heed::Env;
-use ryot::{compress, decompress, Zstd};
+use ryot::{compress, decompress, lmdb, Zstd};
 use time_test::time_test;
 
-#[derive(Resource)]
+#[derive(Resource, Default)]
 pub struct LmdbEnv(pub Option<Env>);
-
-impl Default for LmdbEnv {
-    fn default() -> Self {
-        Self(None)
-    }
-}
 
 pub fn init_env(mut env: ResMut<LmdbEnv>) {
     info!("Setting up LMDB");
@@ -31,8 +26,7 @@ pub fn read_area(initial_pos: &Position, final_pos: &Position, env: ResMut<LmdbE
     match &env.0 {
         Some(env) => {
             time_test!("Reading");
-            let item_repository =
-                crate::item::items_from_heed_lmdb::ItemsFromHeedLmdb::new(env.clone());
+            let item_repository = crate::item::ItemsFromHeedLmdb::new(env.clone());
             let area = item_repository
                 .get_for_area(initial_pos, final_pos)
                 .unwrap();
@@ -46,7 +40,7 @@ pub fn read_area(initial_pos: &Position, final_pos: &Position, env: ResMut<LmdbE
 
 pub fn lmdb_example() -> std::result::Result<(), Box<dyn std::error::Error>> {
     let env = lmdb::create_env(lmdb::get_storage_path())?;
-    let item_repository = crate::item::items_from_heed_lmdb::ItemsFromHeedLmdb::new(env.clone());
+    let item_repository = crate::item::ItemsFromHeedLmdb::new(env.clone());
     let z_size = 15;
 
     let map = {

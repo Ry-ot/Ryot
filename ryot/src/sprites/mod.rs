@@ -46,8 +46,6 @@ impl SpriteLayout {
     }
 }
 
-
-
 #[derive(Debug, Clone)]
 pub struct SheetGrid {
     pub file: String,

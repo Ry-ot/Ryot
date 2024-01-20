@@ -64,7 +64,7 @@ pub fn is_path_within_root(
     destination_path: &Path,
     root_path: &Path,
 ) -> std::result::Result<bool, std::io::Error> {
-    Ok(fs::canonicalize(destination_path)?.starts_with(&fs::canonicalize(root_path)?))
+    Ok(fs::canonicalize(destination_path)?.starts_with(fs::canonicalize(root_path)?))
 }
 
 pub fn get_full_file_buffer(path: &PathBuf) -> crate::appearances::Result<Vec<u8>> {
