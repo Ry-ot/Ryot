@@ -183,7 +183,7 @@ impl Default for CursorPos {
 #[derive(Resource, Debug, Default)]
 pub struct Tiles(Vec<(Tile, bool)>);
 
-#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
+// #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
 // fn load_tiles(env: ResMut<LmdbEnv>, mut tiles: ResMut<Tiles>) {
 //     let tiles = &mut tiles.0;
 //
