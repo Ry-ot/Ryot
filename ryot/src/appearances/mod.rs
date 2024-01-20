@@ -6,7 +6,7 @@ use crate::SpriteLayout;
 use log::info;
 use serde::{Deserialize, Serialize};
 use std::io::Read;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
 pub enum Error {
@@ -79,7 +79,7 @@ pub fn load_content(path: &str) -> Result<Vec<ContentType>> {
     Ok(content)
 }
 
-pub fn get_full_file_buffer(path: &str) -> Result<Vec<u8>> {
+pub fn get_full_file_buffer(path: &PathBuf) -> Result<Vec<u8>> {
     let mut file = std::fs::File::open(path)?;
     let mut buffer: Vec<u8> = Vec::new();
     file.read_to_end(&mut buffer)?;
@@ -91,5 +91,5 @@ pub fn is_path_within_root(
     destination_path: &Path,
     root_path: &Path,
 ) -> std::result::Result<bool, std::io::Error> {
-    Ok(fs::canonicalize(destination_path)?.starts_with(&fs::canonicalize(root_path)?))
+    Ok(fs::canonicalize(destination_path)?.starts_with(fs::canonicalize(root_path)?))
 }

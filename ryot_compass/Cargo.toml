@@ -70,14 +70,6 @@ version = "0.22.0"
 default-features = true
 #optional = true
 
-# Enable a small amount of optimization in debug mode
-[profile.dev]
-opt-level = 1
-
-# Enable high optimizations for dependencies (incl. Bevy), but not for our code:
-[profile.dev.package."*"]
-opt-level = 3
-
 [build-dependencies]
 embed-resource = "2.4.1"
 ryot = { version = "0.1.0", path = "../ryot" }
@@ -85,3 +77,9 @@ ryot = { version = "0.1.0", path = "../ryot" }
 [features]
 default = []
 lmdb = ["dep:heed"]
+
+[lints.rust]
+unsafe_code = "forbid"
+
+[lints.clippy]
+enum_glob_use = "deny"

@@ -13,7 +13,7 @@ use bevy::{input::Input, math::Vec3, prelude::*, render::camera::Camera};
 #[allow(dead_code)]
 pub fn movement(
     time: Res<Time>,
-    mut windows: Query<&mut Window>,
+    windows: Query<&mut Window>,
     keyboard_input: Res<Input<KeyCode>>,
     mut query: Query<(&mut Transform, &mut OrthographicProjection), With<Camera>>,
 ) {
