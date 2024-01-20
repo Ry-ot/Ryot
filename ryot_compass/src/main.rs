@@ -180,6 +180,7 @@ impl Default for CursorPos {
     }
 }
 
+#[allow(dead_code)]
 #[derive(Resource, Debug, Default)]
 pub struct Tiles(Vec<(Tile, bool)>);
 
