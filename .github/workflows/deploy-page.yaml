@@ -26,7 +26,8 @@ jobs:
       - name: Add wasm target
         run: |
           rustup target add wasm32-unknown-unknown
-      - name: Build Release
+      - name: Build Compass Release
+        working-directory: ./ryot_compass
         run: |
           trunk build --release --public-url "${GITHUB_REPOSITORY#*/}"
       - name: optimize Wasm
