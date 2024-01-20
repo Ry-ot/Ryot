@@ -35,8 +35,5 @@ default = ["compression"]
 lmdb = ["dep:heed", "dep:postcard"]
 compression = ["dep:zstd"]
 
-[lints.rust]
-unsafe_code = "forbid"
-
 [lints.clippy]
 enum_glob_use = "deny"
