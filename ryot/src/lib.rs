@@ -7,7 +7,7 @@ use std::result;
 mod compression;
 pub use compression::{compress, decompress, Compression, Zstd};
 
-#[cfg(feature = "std")]
+#[cfg(feature = "lmdb")]
 pub mod lmdb;
 
 pub mod appearances;
