@@ -32,7 +32,7 @@ jobs:
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
         if: runner.os == 'linux'
       - name: Install dependencies
-        run: sudo apt-get install -y libgtk-3-dev protoc
+        run: sudo apt-get install -y libgtk-3-dev protobuf-compiler
         if: runner.os == 'linux'
       - name: Build & run tests
         run: cargo test
@@ -55,7 +55,7 @@ jobs:
       - name: Install alsa and udev
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
       - name: Install dependencies
-        run: sudo apt-get install -y libgtk-3-dev protoc
+        run: sudo apt-get install -y libgtk-3-dev protobuf-compiler
       - name: Run doc tests with all features (this also compiles README examples)
         run: cargo test --doc --all-features
   lint:
@@ -78,7 +78,7 @@ jobs:
       - name: Install alsa and udev
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
       - name: Install dependencies
-        run: sudo apt-get install -y libgtk-3-dev protoc
+        run: sudo apt-get install -y libgtk-3-dev protobuf-compiler
       - name: Run clippy
         run: cargo clippy --workspace --all-targets --all-features -- -Dwarnings
       - name: Check format
