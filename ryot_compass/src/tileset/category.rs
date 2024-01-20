@@ -121,7 +121,7 @@ impl From<&Appearance> for TilesetCategory {
 
 impl PartialOrd<Self> for TilesetCategory {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.get_label().partial_cmp(&other.get_label())
+        Some(self.cmp(other))
     }
 }
 
@@ -131,9 +131,9 @@ impl Ord for TilesetCategory {
     }
 }
 
-impl Into<WidgetText> for &TilesetCategory {
-    fn into(self) -> WidgetText {
-        WidgetText::from(self.get_label())
+impl From<&TilesetCategory> for WidgetText {
+    fn from(val: &TilesetCategory) -> Self {
+        WidgetText::from(val.get_label())
     }
 }
 

@@ -15,7 +15,13 @@ use std::path::Path;
 
 pub fn run() -> Result<(), std::io::Error> {
     let path = Path::new("assets").join(CONTENT_CONFIG_PATH);
-    let path = path.to_str().unwrap();
+    let path = match path.to_str() {
+        Some(path) => path,
+        None => Err(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "Failed to convert path to str",
+        ))?,
+    };
 
     // Tell Cargo to rerun this build script if the config file changes
     println!("cargo:rerun-if-changed={}", path);
@@ -28,22 +34,21 @@ pub fn run() -> Result<(), std::io::Error> {
     // Tell Cargo to rerun this build script if our content folder changes
     println!(
         "cargo:rerun-if-changed={}",
-        directories.source_path.to_str().unwrap()
+        directories.source_path.display()
     );
 
     // Tell Cargo to rerun this build script if our destination folder changes
     println!(
         "cargo:rerun-if-changed={}",
-        directories.destination_path.to_str().unwrap()
+        directories.destination_path.display()
     );
 
-    directories.source_path.try_exists().expect(
-        format!(
+    directories.source_path.try_exists().unwrap_or_else(|_| {
+        panic!(
             "Source path {} does not exist",
-            directories.source_path.to_str().unwrap()
+            directories.source_path.display()
         )
-        .as_str(),
-    );
+    });
 
     copy_catalog(&directories.source_path, &directories.destination_path)?;
     copy_appearances(&directories.source_path, &directories.destination_path)?;
@@ -60,15 +65,15 @@ pub fn is_path_within_root(
     destination_path: &Path,
     root_path: &Path,
 ) -> Result<bool, std::io::Error> {
-    Ok(fs::canonicalize(destination_path)?.starts_with(&fs::canonicalize(root_path)?))
+    Ok(fs::canonicalize(destination_path)?.starts_with(fs::canonicalize(root_path)?))
 }
 
 fn copy_catalog(source_path: &Path, destination_path: &Path) -> Result<u64, std::io::Error> {
     let file_name = "catalog-content.json";
 
     fs::copy(
-        &source_path.join(file_name),
-        &destination_path.join(file_name),
+        source_path.join(file_name),
+        destination_path.join(file_name),
     )
 }
 
@@ -86,7 +91,7 @@ fn copy_appearances(source_path: &Path, destination_path: &Path) -> Result<(), s
                 {
                     let new_path = destination_path.join("appearances.dat");
 
-                    fs::copy(&path, &new_path)?;
+                    fs::copy(&path, new_path)?;
 
                     break;
                 }
@@ -126,12 +131,7 @@ fn decompress_sprites(
         })
         .collect::<Vec<String>>();
 
-    decompress_sprite_sheets(
-        &source_path.to_str().unwrap(),
-        &sprite_sheet_path.to_str().unwrap(),
-        &files,
-        sheet_config,
-    );
+    decompress_sprite_sheets(source_path, &sprite_sheet_path, &files, sheet_config);
 
     Ok(())
 }

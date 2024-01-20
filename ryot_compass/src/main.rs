@@ -1,36 +1,25 @@
 use bevy::app::AppExit;
-use bevy::math::Vec4Swizzles;
+
 use bevy::reflect::TypeUuid;
 use bevy::render::mesh::{Indices, PrimitiveTopology};
 use bevy::render::render_resource::{AsBindGroup, ShaderRef};
 use bevy::sprite::{Material2d, Material2dPlugin, MaterialMesh2dBundle};
 use bevy::window::PrimaryWindow;
 use bevy::winit::WinitWindows;
-use bevy::{
-    ecs::system::Resource,
-    input::{common_conditions::input_toggle_active, mouse::MouseWheel},
-    prelude::*,
-};
-use std::io::{Cursor, Read, Seek};
+use bevy::{input::common_conditions::input_toggle_active, prelude::*};
 
 use bevy_egui::{EguiContexts, EguiPlugin};
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use egui::load::SizedTexture;
 use egui::TextureId;
-use image::Pixel;
 use itertools::Itertools;
 use prost::Message;
-use rand::prelude::{IteratorRandom, SliceRandom};
-use rand::Rng;
-use time_test::time_test;
 
 mod error_handling;
 mod helpers;
 use error_handling::{check_for_exit, display_error_window, ErrorState};
 use helpers::camera::movement as camera_movement;
-use rayon::prelude::*;
 use ryot::*;
-use ryot_compass::item::ItemRepository;
 
 #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
 use ryot_compass::item::ItemsFromHeedLmdb;
@@ -38,42 +27,17 @@ use ryot_compass::item::ItemsFromHeedLmdb;
 #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
 use ryot_compass::lmdb::LmdbEnv;
 
-use ryot_compass::minimap::Minimap;
-
 use ryot_compass::{
     build, draw_palette_window, draw_sprite, load_sprites, normalize_tile_pos_to_sprite_pos,
     AsyncEventsExtension, CipContent, ConfigExtension, DecompressedCache, EventSender, Palette,
-    PaletteState, Position, Settings, TextureAtlasHandlers, Tile, TilesetCategory,
+    PaletteState, Settings, TextureAtlasHandlers, Tile, TilesetCategory,
 };
-use strum::{EnumCount, IntoEnumIterator};
 use winit::window::Icon;
 
 use bevy::asset::AssetMetaCheck;
 use rfd::AsyncFileDialog;
-use ryot::appearances::{get_full_file_buffer, load_content, Appearances, ContentType};
-use ryot::decompress_sprite_sheets_from_content;
+use ryot::appearances::{get_full_file_buffer, Appearances, ContentType};
 use std::future::Future;
-
-fn scroll_events(mut minimap: ResMut<Minimap>, mut scroll_evr: EventReader<MouseWheel>) {
-    for ev in scroll_evr.read() {
-        minimap.zoom += ev.y * 0.1;
-        minimap.zoom = minimap.zoom.clamp(1.0, 25.0);
-    }
-}
-
-fn draw_tiles_on_minimap(
-    mut minimap: ResMut<Minimap>,
-    mut images: ResMut<Assets<Image>>,
-    mut tiles: ResMut<Tiles>,
-) {
-    let positions = tiles
-        .0
-        .iter()
-        .map(|(tile, _)| UVec2::new(tile.position.x.into(), tile.position.y.into()))
-        .collect::<Vec<_>>();
-    minimap.update_texture(positions, &mut images);
-    tiles.0.clear(); // TODO: replace this with a system that only adds new tiles
-}
 
 #[derive(AsBindGroup, TypeUuid, Asset, TypePath, Debug, Clone)]
 #[uuid = "f229fdae-d598-45ac-8225-97e2a3f011e0"]
@@ -193,16 +157,8 @@ impl Default for CursorPos {
     }
 }
 
-#[derive(Resource, Debug)]
+#[derive(Resource, Debug, Default)]
 pub struct Tiles(Vec<(Tile, bool)>);
-
-impl Default for Tiles {
-    fn default() -> Self {
-        // Initialize the cursor pos at some far away place. It will get updated
-        // correctly when the cursor moves.
-        Self(vec![])
-    }
-}
 
 #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
 fn load_tiles(env: ResMut<LmdbEnv>, mut tiles: ResMut<Tiles>) {
@@ -237,18 +193,19 @@ fn load_tiles(env: ResMut<LmdbEnv>, mut tiles: ResMut<Tiles>) {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn draw(
     mut commands: Commands,
     settings: Res<Settings>,
     mut egui_ctx: EguiContexts,
-    mut content: ResMut<CipContent>,
+    content: ResMut<CipContent>,
     asset_server: Res<AssetServer>,
     mut atlas_handlers: ResMut<TextureAtlasHandlers>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     cursor_pos: Res<CursorPos>,
     palette_state: Res<PaletteState>,
     mouse_button_input: Res<Input<MouseButton>>,
-    mut error_states: Res<ErrorState>,
+    error_states: Res<ErrorState>,
 ) {
     if egui_ctx.ctx_mut().is_pointer_over_area() {
         return;
@@ -258,7 +215,7 @@ fn draw(
         return;
     }
 
-    if content.raw_content.len() == 0 {
+    if content.raw_content.is_empty() {
         return;
     }
 
@@ -267,7 +224,7 @@ fn draw(
     };
 
     let sprites = load_sprites(
-        &vec![sprite_id],
+        &[sprite_id],
         &content.raw_content,
         &settings,
         &asset_server,
@@ -340,24 +297,6 @@ fn draw(
     // }
 }
 
-fn decompress_all_sprites(settings: Res<Settings>, content: Res<CipContent>) {
-    // time_test!("Decompressing");
-    let DecompressedCache::Path(decompressed_path) = &settings.content.decompressed_cache else {
-        return;
-    };
-
-    std::fs::create_dir_all(decompressed_path).unwrap();
-
-    let ContentConfigs { sprite_sheet, .. } = read_content_configs("config/Content.toml");
-
-    decompress_sprite_sheets_from_content(
-        &settings.content.path,
-        decompressed_path,
-        &content.raw_content,
-        sprite_sheet,
-    );
-}
-
 // We need to keep the cursor position updated based on any `CursorMoved` events.
 pub fn update_cursor_pos(
     mut cursor_pos: ResMut<CursorPos>,
@@ -377,6 +316,7 @@ pub fn update_cursor_pos(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn update_cursor(
     settings: Res<Settings>,
     content: Res<CipContent>,
@@ -397,7 +337,7 @@ fn update_cursor(
 ) {
     egui_ctx.ctx_mut().set_cursor_icon(egui::CursorIcon::None);
 
-    if content.raw_content.len() == 0 {
+    if content.raw_content.is_empty() {
         return;
     }
 
@@ -406,7 +346,7 @@ fn update_cursor(
     };
 
     let sprites = load_sprites(
-        &vec![sprite_id],
+        &[sprite_id],
         &content.raw_content,
         &settings,
         &asset_server,
@@ -467,25 +407,10 @@ fn cursor_pos_to_tile_pos(cursor_pos: Vec2) -> Vec2 {
     )
 }
 
-fn load_cip_content(
-    path: &str,
-    mut content: ResMut<CipContent>,
-    mut error_state: ResMut<ErrorState>,
-) {
-    match load_content(path) {
-        Ok(raw_content) => content.raw_content = raw_content,
-        Err(e) => {
-            error!("Failed to load CIP content: {:?}", e);
-            error_state.has_error = true;
-            error_state.error_message = "Failed to load CIP content".to_string();
-        }
-    }
-}
-
 fn ui_example(
     mut egui_ctx: EguiContexts,
-    mut content: ResMut<CipContent>,
-    mut settings: Res<Settings>,
+    content: ResMut<CipContent>,
+    settings: Res<Settings>,
     mut exit: EventWriter<AppExit>,
     content_sender: Res<EventSender<ContentWasLoaded>>,
     // error_state: ResMut<ErrorState>,
@@ -504,7 +429,7 @@ fn ui_example(
                 // Temporarily apply the style
                 ui.set_style(style);
 
-                let is_content_loaded = content.raw_content.len() > 0;
+                let is_content_loaded = !content.raw_content.is_empty();
 
                 // Load the image using `image-rs`
                 // let image_data = include_bytes!("path/to/your/image.png").to_vec();
@@ -608,14 +533,14 @@ fn ui_example(
                             return;
                         };
 
-                        if let Ok(_) = std::fs::remove_dir_all(decompressed_path) {
+                        if std::fs::remove_dir_all(decompressed_path).is_ok() {
                             // decompress_all_sprites(content);
                         }
                     }
 
                     ui.separator();
 
-                    if ui.button("⚙ Settings").clicked() {}
+                    ui.button("⚙ Settings").clicked();
 
                     ui.separator();
 
@@ -655,31 +580,31 @@ fn ui_example(
         });
 }
 
-pub fn print_settings(mut settings: Res<Settings>) {
+pub fn print_settings(settings: Res<Settings>) {
     debug!("{:?}", settings);
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn print_appearances(
     content: Res<CipContent>,
     settings: Res<Settings>,
-    mut palette_state: ResMut<PaletteState>,
+    palette_state: ResMut<PaletteState>,
     asset_server: Res<AssetServer>,
     mut egui_ctx: EguiContexts,
     mut palettes: ResMut<Palette>,
     mut atlas_handlers: ResMut<TextureAtlasHandlers>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    mut error_states: Res<ErrorState>,
+    error_states: Res<ErrorState>,
 ) {
     if error_states.has_error {
         return;
     }
 
-    if palettes
+    if !palettes
         .tile_set
         .get(&TilesetCategory::Terrains)
         .unwrap()
-        .len()
-        > 0
+        .is_empty()
     {
         let mut egui_images: Vec<(u32, SheetGrid, egui::Image)> = vec![];
 
@@ -754,10 +679,10 @@ pub fn print_appearances(
         .for_each(|content| match content {
             ContentType::Appearances { file, version: _ } => {
                 let buffer =
-                    get_full_file_buffer(&settings.content.build_content_file_path(&file)).unwrap();
+                    get_full_file_buffer(&settings.content.build_content_file_path(file)).unwrap();
                 let appearances = Appearances::decode(&*buffer).unwrap();
                 appearances.outfit.iter().for_each(|outfit| {
-                    if let None = outfit.id {
+                    if outfit.id.is_none() {
                         warn!("No-id {:?}", outfit);
                     }
                     total += 1;
@@ -788,7 +713,10 @@ pub fn print_appearances(
                         .push(*sprite_id);
                 });
             }
-            _ => (),
+            ContentType::StaticData { file: _ } => todo!(),
+            ContentType::StaticMapData { file: _ } => todo!(),
+            ContentType::Map { file: _ } => todo!(),
+            ContentType::Sprite(_) => todo!(),
         });
 
     total = 0;
@@ -799,26 +727,6 @@ pub fn print_appearances(
         total += ids.len();
     }
     debug!("Total: {}", total);
-}
-
-fn set_window_icon(
-    windows: NonSend<WinitWindows>,
-    primary_window: Query<Entity, With<PrimaryWindow>>,
-) {
-    let primary_entity = primary_window.single();
-    let Some(primary) = windows.get_window(primary_entity) else {
-        return;
-    };
-    let icon_buf = Cursor::new(include_bytes!(
-        "../build/macos/AppIcon.iconset/icon_256x256.png"
-    ));
-    if let Ok(image) = image::load(icon_buf, image::ImageFormat::Png) {
-        let image = image.into_rgba8();
-        let (width, height) = image.dimensions();
-        let rgba = image.into_raw();
-        let icon = Icon::from_rgba(rgba, width, height).unwrap();
-        primary.set_window_icon(Some(icon));
-    };
 }
 
 pub fn setup_window(

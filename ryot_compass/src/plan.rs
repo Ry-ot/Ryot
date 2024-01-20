@@ -27,13 +27,6 @@ impl Default for Plan {
 }
 
 impl Plan {
-    fn new(header: Header) -> Self {
-        Self {
-            header,
-            ..Default::default()
-        }
-    }
-
     pub fn add(&mut self, item: MapComponent) {
         match item {
             MapComponent::Tile(tile) => self.tiles.push(tile),
@@ -43,19 +36,10 @@ impl Plan {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Tile {
     pub position: Position,
     pub item: Option<Item>,
-}
-
-impl Default for Tile {
-    fn default() -> Self {
-        Self {
-            position: Default::default(),
-            item: None,
-        }
-    }
 }
 
 impl Tile {
@@ -77,6 +61,12 @@ pub struct Regions {
     pub waypoints: Vec<Waypoint>,
     pub zones: Vec<Zone>,
     pub houses: Vec<House>,
+}
+
+impl Default for Regions {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Regions {

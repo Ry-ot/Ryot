@@ -21,7 +21,9 @@ impl Rect {
 
 #[derive(Serialize_repr, Deserialize_repr, Debug, Clone)]
 #[repr(u32)]
+#[derive(Default)]
 pub enum SpriteLayout {
+    #[default]
     OneByOne = 0,
     OneByTwo = 1,
     TwoByOne = 2,
@@ -44,11 +46,7 @@ impl SpriteLayout {
     }
 }
 
-impl Default for SpriteLayout {
-    fn default() -> Self {
-        SpriteLayout::OneByOne
-    }
-}
+
 
 #[derive(Debug, Clone)]
 pub struct SheetGrid {

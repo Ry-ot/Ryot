@@ -38,7 +38,7 @@ impl Compression for Zstd {
     fn compress(source: &str, destination: &str, level: Option<i32>) -> io::Result<()> {
         let mut encoder = zstd::Encoder::new(
             File::create(destination)?,
-            level.unwrap_or(Self::default_level()),
+            level.unwrap_or_else(Self::default_level),
         )?;
 
         io::copy(&mut File::open(source)?, &mut encoder)?;

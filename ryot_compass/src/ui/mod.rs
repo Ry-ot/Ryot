@@ -12,7 +12,6 @@ use bevy::log::info;
 use bevy::prelude::{ResMut, Resource};
 use bevy_egui::EguiContexts;
 use egui::{Align, Ui};
-use itertools::Itertools;
 use ryot::*;
 use std::ops::Range;
 
@@ -95,16 +94,8 @@ pub fn draw_palette_bottom_panel(ui: &mut Ui, palette_state: &mut ResMut<Palette
                         .custom_formatter(|n, _| format!("{n}x{n}"))
                         .custom_parser(|s| {
                             let parts: Vec<&str> = s.split('x').collect();
-
-                            let Some(n) = parts.first() else {
-                                return None;
-                            };
-
-                            let Ok(n) = n.parse::<f64>() else {
-                                return None;
-                            };
-
-                            Some(n)
+                            let n = parts.first()?;
+                            n.parse::<f64>().ok()
                         }),
                 );
 
@@ -148,7 +139,7 @@ pub fn draw_palette_picker(
                     )
                     .clicked()
                 {
-                    palette_state.category = key.clone();
+                    palette_state.category = *key;
                 }
             }
         });

@@ -14,9 +14,12 @@ use log::{info, warn};
 use lzma_rs::lzma_decompress_with_options;
 use rayon::prelude::IntoParallelRefIterator;
 use rayon::prelude::*;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
-pub fn load_sprite_sheet_image(path: &str, sheet_config: SpriteSheetConfig) -> Result<RgbaImage> {
+pub fn load_sprite_sheet_image(
+    path: &PathBuf,
+    sheet_config: SpriteSheetConfig,
+) -> Result<RgbaImage> {
     let input_data = get_full_file_buffer(path)?;
 
     let Some(encryption_headers) = &sheet_config.encryption_headers else {
@@ -26,7 +29,7 @@ pub fn load_sprite_sheet_image(path: &str, sheet_config: SpriteSheetConfig) -> R
     // panic!("{}, {:?}", path, sheet_config);
 
     let decompressed = decompress_lzma_sprite_sheet(input_data, encryption_headers)?;
-    return create_image_from_data(decompressed, &sheet_config);
+    create_image_from_data(decompressed, &sheet_config)
 }
 
 /// CIP's sprite sheets have a 32 byte header that contains the following information:
@@ -91,8 +94,8 @@ pub fn create_image_from_data(
 }
 
 pub fn decompress_sprite_sheets_from_content(
-    path: &str,
-    destination_path: &str,
+    path: &Path,
+    destination_path: &Path,
     content: &Vec<ContentType>,
     sheet_config: SpriteSheetConfig,
 ) {
@@ -111,8 +114,8 @@ pub fn decompress_sprite_sheets_from_content(
 /// This is used to generate a decompressed cache of the sprite sheets, to optimize reading.
 /// Trade off here is that we use way more disk space in pro of faster sprite loading.
 pub fn decompress_sprite_sheets(
-    path: &str,
-    destination_path: &str,
+    path: &Path,
+    destination_path: &Path,
     files: &Vec<String>,
     sheet_config: SpriteSheetConfig,
 ) {
@@ -123,24 +126,28 @@ pub fn decompress_sprite_sheets(
 
 pub fn decompress_sprite_sheet(
     file: &str,
-    path: &str,
-    destination_path: &str,
+    path: &Path,
+    destination_path: &Path,
     sheet_config: SpriteSheetConfig,
 ) {
-    let destination_file = &format!("{}/{}", destination_path, get_decompressed_file_name(file));
+    let destination_file = &format!(
+        "{}/{}",
+        destination_path.display(),
+        get_decompressed_file_name(file)
+    );
 
     if PathBuf::from(destination_file).exists() {
         return;
     }
 
-    info!("Decompressing sprite sheet {} {}", path, file);
-    match load_sprite_sheet_image(&format!("{}/{}", path, file), sheet_config) {
+    info!("Decompressing sprite sheet {} {}", path.display(), file);
+    match load_sprite_sheet_image(&format!("{}/{}", path.display(), file).into(), sheet_config) {
         Ok(sheet) => sheet
             .save_with_format(destination_file, ImageFormat::Png)
             .map_err(|e| {
                 warn!("Failed to save sprite sheet {}: {}", destination_file, e);
             })
-            .unwrap(),
+            .expect("Failed to save sprite sheet"),
         Err(e) => panic!("{:?}", e),
     }
 }
