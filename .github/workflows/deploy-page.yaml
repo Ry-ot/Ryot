@@ -18,7 +18,7 @@ jobs:
         with:
           toolchain: nightly
       - name: Install Dependencies
-        run: sudo apt-get update; sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev
+        run: sudo apt-get update; sudo apt-get install pkg-config libx11-dev libasound2-dev libudev-dev libgtk-3-dev protobuf-compiler
       - name: Install trunk
         uses: jetli/trunk-action@v0.4.0
         with:
@@ -26,6 +26,14 @@ jobs:
       - name: Add wasm target
         run: |
           rustup target add wasm32-unknown-unknown
+      - name: Checkout Tibia Client Repository
+        uses: actions/checkout@v3
+        with:
+          repository: dudantas/tibia-client
+          path: tibia-client
+      - name: Copy Tibia Client Assets
+        run: |
+          cp -r tibia-client/assets ryot_compass/assets/cip-catalog
       - name: Build Compass Release
         working-directory: ./ryot_compass
         run: |
@@ -33,9 +41,13 @@ jobs:
       - name: optimize Wasm
         uses: NiklasEi/wasm-opt-action@v2
         with:
-          file: dist/*.wasm
+          file: ryot_compass/dist/*.wasm
+      - name: Copy generated assets to dist folder
+        working-directory: ./ryot_compass
+        run: |
+          cp -r assets/* dist/assets/
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4.2.5
         with:
           branch: gh-pages
-          folder: dist
+          folder: ryot_compass/dist
