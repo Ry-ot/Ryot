@@ -8,7 +8,7 @@
  */
 use crate::appearances::{ContentType, SpriteSheet};
 use crate::{
-    cip_sheet, error::*, get_full_file_buffer, EncryptionHeaders, Rect, SheetGrid,
+    cip_sheet, error::*, get_full_file_buffer, CompressionConfig, Rect, SheetGrid,
     SpriteSheetConfig,
 };
 use image::error::{LimitError, LimitErrorKind};
@@ -25,13 +25,11 @@ pub fn load_sprite_sheet_image(
 ) -> Result<RgbaImage> {
     let input_data = get_full_file_buffer(path)?;
 
-    let Some(encryption_headers) = &sheet_config.encryption_headers else {
+    let Some(compression_headers) = &sheet_config.compression_config else {
         return create_image_from_data(input_data, &sheet_config);
     };
 
-    // panic!("{}, {:?}", path, sheet_config);
-
-    let decompressed = decompress_lzma_sprite_sheet(input_data, encryption_headers)?;
+    let decompressed = decompress_lzma_sprite_sheet(input_data, compression_headers)?;
     create_image_from_data(decompressed, &sheet_config)
 }
 
@@ -52,11 +50,11 @@ pub fn load_sprite_sheet_image(
 /// getting the lclppb, lp and pb values and ignoring the size, so we don't need to do anything special here.
 pub fn decompress_lzma_sprite_sheet(
     buffer: Vec<u8>,
-    encryption_headers: &EncryptionHeaders,
+    compression_config: &CompressionConfig,
 ) -> Result<Vec<u8>> {
     let mut decompressed = Vec::new();
     lzma_decompress_with_options(
-        &mut &buffer[encryption_headers.lzma_header_size..],
+        &mut &buffer[compression_config.compressed_header_size..],
         &mut decompressed,
         &lzma_rs::decompress::Options {
             unpacked_size: lzma_rs::decompress::UnpackedSize::ReadHeaderButUseProvided(None),
@@ -76,9 +74,9 @@ pub fn create_image_from_data(
     data: Vec<u8>,
     sheet_config: &SpriteSheetConfig,
 ) -> Result<RgbaImage> {
-    let data = match &sheet_config.encryption_headers {
+    let data = match &sheet_config.compression_config {
         None => data,
-        Some(encryption_headers) => data[encryption_headers.sheet_header_size..].to_vec(),
+        Some(compression_config) => data[compression_config.content_header_size..].to_vec(),
     };
 
     let mut background_img = RgbaImage::from_raw(
@@ -205,13 +203,13 @@ pub fn get_decompressed_file_name(file_name: &str) -> String {
     file_name.replace(".bmp.lzma", ".png")
 }
 
+fn flip_vertically(img: &mut RgbaImage) {
+    *img = imageops::flip_vertical(img);
+}
+
 fn reverse_channels(img: &mut RgbaImage) {
     for pixel in img.pixels_mut() {
         let Rgba([r, g, b, a]) = *pixel;
         *pixel = Rgba([b, g, r, a]); // Swap Red and Blue channels
     }
-}
-
-fn flip_vertically(img: &mut RgbaImage) {
-    *img = imageops::flip_vertical(img);
 }

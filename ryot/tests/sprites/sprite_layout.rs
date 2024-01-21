@@ -47,7 +47,7 @@ fn test_layout_dimensions(#[case] tile_size: ryot::Rect) {
     let sheet_config = ryot::SpriteSheetConfig {
         tile_size,
         sheet_size: ryot::Rect::new(1024, 1024),
-        encryption_headers: None,
+        compression_config: None,
     };
 
     assert_eq!(

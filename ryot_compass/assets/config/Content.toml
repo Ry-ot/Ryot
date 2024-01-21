@@ -4,4 +4,4 @@ source_path = "assets/cip-catalog"
 [sprite_sheet]
 tile_size = { width = 32, height = 32 }
 sheet_size = { width = 384, height = 384 }
-encryption_headers = { lzma_header_size = 32, sheet_header_size = 122 }
+compression_config = { compressed_header_size = 32, content_header_size = 122 }
