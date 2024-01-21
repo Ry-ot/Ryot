@@ -882,7 +882,7 @@ fn main() {
                 .set(ImagePlugin::default_nearest()),
             Material2dPlugin::<RainbowOutlineMaterial>::default(),
         ))
-        .add_plugins(AppearanceAssetPlugin::new())
+        .add_plugins(AppearanceAssetPlugin)
         .insert_resource(ClearColor(Color::rgb(0.12, 0.12, 0.12)))
         .init_resource::<ErrorState>()
         .add_async_event::<ContentWasLoaded>()
