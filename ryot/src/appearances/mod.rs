@@ -1,49 +1,42 @@
 include!(concat!(env!("OUT_DIR"), "/appearances.rs"));
 
-use std::fs;
-
 use crate::SpriteLayout;
-use log::info;
 use serde::{Deserialize, Serialize};
-use std::io::Read;
-use std::path::{Path, PathBuf};
 
-#[derive(Debug)]
-pub enum Error {
-    Io(std::io::Error),
-    Serde(serde_json::Error),
-    Lzma(lzma_rs::error::Error),
-    Image(image::ImageError),
-    SpriteNotFound,
-}
-
-impl From<std::io::Error> for Error {
-    fn from(e: std::io::Error) -> Self {
-        Error::Io(e)
-    }
-}
-
-impl From<serde_json::Error> for Error {
-    fn from(e: serde_json::Error) -> Self {
-        Error::Serde(e)
-    }
-}
-
-impl From<lzma_rs::error::Error> for Error {
-    fn from(e: lzma_rs::error::Error) -> Self {
-        Error::Lzma(e)
-    }
-}
-
-impl From<image::ImageError> for Error {
-    fn from(e: image::ImageError) -> Self {
-        Error::Image(e)
-    }
-}
-
-pub type Result<T> = std::result::Result<T, Error>;
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
+/// Those are the available contents within the content-catalog.json file
+/// The content-catalog.json file is a list of all the files that the client needs to load.
+///
+/// Example:
+/// ```json
+/// [
+///    {
+///      "type": "appearances",
+///      "file": "appearances.dat",
+///      "version": 1
+///    },
+///    {
+///      "type": "staticdata",
+///      "file": "staticdata.dat"
+///    },
+///    {
+///      "type": "staticmapdata",
+///      "file": "staticmapdata.dat"
+///    },
+///    {
+///      "type": "map",
+///      "file": "map.otbm"
+///    },
+///    {
+///       "type": "sprite",
+///       "file": "spritesheet.png",
+///       "spritetype": 0,
+///       "firstspriteid": 100,
+///       "lastspriteid": 200,
+///       "area": 64
+///     }
+/// ]
+/// ```
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 #[serde(tag = "type")]
 pub enum ContentType {
     #[serde(rename = "appearances")]
@@ -58,7 +51,9 @@ pub enum ContentType {
     Sprite(SpriteSheet),
 }
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+/// This is the content of the Sprite ContentType. It contains the information needed
+/// to load the sprite sheet and individual sprites from it.
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
 pub struct SpriteSheet {
     pub file: String,
     #[serde(rename = "spritetype")]
@@ -68,28 +63,4 @@ pub struct SpriteSheet {
     #[serde(rename = "lastspriteid")]
     pub last_sprite_id: u32,
     pub area: u32,
-}
-
-pub fn load_content(path: &str) -> Result<Vec<ContentType>> {
-    info!("Loading content from {}", path);
-    let file = std::fs::File::open(path)?;
-    let reader = std::io::BufReader::new(file);
-    let content: Vec<ContentType> = serde_json::from_reader(reader)?;
-
-    Ok(content)
-}
-
-pub fn get_full_file_buffer(path: &PathBuf) -> Result<Vec<u8>> {
-    let mut file = std::fs::File::open(path)?;
-    let mut buffer: Vec<u8> = Vec::new();
-    file.read_to_end(&mut buffer)?;
-
-    Ok(buffer)
-}
-
-pub fn is_path_within_root(
-    destination_path: &Path,
-    root_path: &Path,
-) -> std::result::Result<bool, std::io::Error> {
-    Ok(fs::canonicalize(destination_path)?.starts_with(fs::canonicalize(root_path)?))
 }

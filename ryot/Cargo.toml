@@ -30,6 +30,9 @@ image = "0.24.7"
 prost = "0.12.3"
 prost-types = "0.12.3"
 
+[dev-dependencies]
+rstest = "0.18.2"
+
 [features]
 default = ["compression"]
 lmdb = ["dep:heed", "dep:postcard"]

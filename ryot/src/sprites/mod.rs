@@ -7,6 +7,8 @@ use serde_repr::{Deserialize_repr, Serialize_repr};
 mod sheet_loading;
 pub use sheet_loading::*;
 
+pub mod error;
+
 #[derive(Debug, Copy, Clone, Deserialize)]
 pub struct Rect {
     pub width: u32,
@@ -19,9 +21,8 @@ impl Rect {
     }
 }
 
-#[derive(Serialize_repr, Deserialize_repr, Debug, Clone)]
+#[derive(Serialize_repr, Deserialize_repr, Default, PartialEq, Debug, Clone)]
 #[repr(u32)]
-#[derive(Default)]
 pub enum SpriteLayout {
     #[default]
     OneByOne = 0,

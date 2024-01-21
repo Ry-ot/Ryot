@@ -6,9 +6,10 @@
  * Contributors: https://github.com/lgrossi/Ryot/graphs/contributors
  * Website: https://github.com/lgrossi/Ryot
  */
-use crate::appearances::{ContentType, Error, Result, SpriteSheet};
+use crate::appearances::{ContentType, SpriteSheet};
 use crate::{
-    cip_sheet, get_full_file_buffer, EncryptionHeaders, Rect, SheetGrid, SpriteSheetConfig,
+    cip_sheet, error::*, get_full_file_buffer, EncryptionHeaders, Rect, SheetGrid,
+    SpriteSheetConfig,
 };
 use image::error::{LimitError, LimitErrorKind};
 use image::{imageops, ImageFormat, Rgba, RgbaImage};
