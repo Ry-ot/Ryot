@@ -376,7 +376,13 @@ fn update_cursor(
     mut atlas_handlers: ResMut<TextureAtlasHandlers>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
-    egui_ctx.ctx_mut().set_cursor_icon(egui::CursorIcon::None);
+    if egui_ctx.ctx_mut().is_pointer_over_area() {
+        egui_ctx
+            .ctx_mut()
+            .set_cursor_icon(egui::CursorIcon::Default);
+        windows.single_mut().cursor.icon = CursorIcon::Default;
+        windows.single_mut().cursor.visible = true;
+    }
 
     if content.raw_content.is_empty() {
         return;
@@ -410,6 +416,10 @@ fn update_cursor(
             *visibility = Visibility::Hidden;
         } else {
             *visibility = Visibility::Visible;
+        }
+
+        if egui_ctx.ctx_mut().is_pointer_over_area() {
+            continue;
         }
 
         match *visibility {
@@ -691,8 +701,11 @@ pub fn print_appearances(
 
         sprite_ids.sort();
 
+        let begin = palette_state.begin().min(sprite_ids.len() - 5);
+        let end = palette_state.end().min(sprite_ids.len());
+
         for sprite in load_sprites(
-            &sprite_ids[palette_state.begin()..palette_state.end()],
+            &sprite_ids[begin..end],
             &content.raw_content,
             &settings,
             &asset_server,
