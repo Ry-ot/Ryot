@@ -63,11 +63,11 @@ pub fn read_content_configs(config_path: &str) -> ContentConfigs {
 pub fn is_path_within_root(
     destination_path: &Path,
     root_path: &Path,
-) -> std::result::Result<bool, std::io::Error> {
+) -> result::Result<bool, std::io::Error> {
     Ok(fs::canonicalize(destination_path)?.starts_with(fs::canonicalize(root_path)?))
 }
 
-pub fn get_full_file_buffer(path: &PathBuf) -> crate::appearances::Result<Vec<u8>> {
+pub fn get_full_file_buffer(path: &PathBuf) -> error::Result<Vec<u8>> {
     let mut file = fs::File::open(path)?;
     let mut buffer: Vec<u8> = Vec::new();
     file.read_to_end(&mut buffer)?;
