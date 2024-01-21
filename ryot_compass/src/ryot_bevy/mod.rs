@@ -169,7 +169,7 @@ pub fn build_texture_atlas_from_sheet(
 
 pub fn draw_sprite(pos: Vec3, sprite: &LoadedSprite, commands: &mut Commands) {
     match normalize_tile_pos_to_sprite_pos_with_z(pos) {
-        pos if pos.x > 0. && pos.y > 0. => commands.spawn(build_sprite_bundle(
+        pos if pos.truncate() != Vec2::ZERO => commands.spawn(build_sprite_bundle(
             sprite.atlas_texture_handle.clone(),
             pos,
             sprite.sprite_index,
