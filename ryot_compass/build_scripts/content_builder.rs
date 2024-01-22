@@ -1,6 +1,6 @@
 use ryot::{
     assets_root_path, decompress_sprite_sheets, read_content_configs, ContentConfigs,
-    SpriteSheetConfig, CONTENT_CONFIG_PATH,
+    CONTENT_CONFIG_PATH,
 };
 use std::fs;
 use std::path::Path;
@@ -18,10 +18,9 @@ pub fn run() -> Result<(), std::io::Error> {
     // Tell Cargo to rerun this build script if the config file changes
     println!("cargo:rerun-if-changed={}", path);
 
-    let ContentConfigs {
-        directories,
-        sprite_sheet,
-    } = read_content_configs(path);
+    let content_config = read_content_configs(path);
+
+    let ContentConfigs { directories, .. } = content_config.clone();
 
     // Tell Cargo to rerun this build script if our content folder changes
     println!(
@@ -51,11 +50,7 @@ pub fn run() -> Result<(), std::io::Error> {
     }
 
     copy_appearances(&directories.source_path, &directories.destination_path)?;
-    decompress_sprites(
-        &directories.source_path,
-        &directories.destination_path,
-        sprite_sheet,
-    )?;
+    decompress_sprites(content_config)?;
 
     Ok(())
 }
@@ -101,16 +96,10 @@ fn copy_appearances(source_path: &Path, destination_path: &Path) -> Result<(), s
     Ok(())
 }
 
-fn decompress_sprites(
-    source_path: &Path,
-    destination_path: &Path,
-    sheet_config: SpriteSheetConfig,
-) -> Result<(), std::io::Error> {
-    let sprite_sheet_path = destination_path.join(ryot::SPRITE_SHEET_FOLDER);
+fn decompress_sprites(content_configs: ContentConfigs) -> Result<(), std::io::Error> {
+    let ContentConfigs { directories, .. } = content_configs.clone();
 
-    fs::create_dir_all(sprite_sheet_path.clone()).expect("Failed to create sprite sheets folder");
-
-    let files = fs::read_dir(source_path)?
+    let files = fs::read_dir(directories.source_path)?
         .filter_map(|e| {
             if let Ok(entry) = e {
                 let path = entry.path();
@@ -130,7 +119,7 @@ fn decompress_sprites(
         })
         .collect::<Vec<String>>();
 
-    decompress_sprite_sheets(source_path, &sprite_sheet_path, &files, sheet_config);
+    decompress_sprite_sheets(content_configs, &files);
 
     Ok(())
 }

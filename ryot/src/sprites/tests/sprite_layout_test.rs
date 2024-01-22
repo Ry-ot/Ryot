@@ -41,6 +41,7 @@ fn test_layout_dimensions(#[case] tile_size: UVec2) {
         tile_size,
         sheet_size: UVec2::new(1024, 1024),
         compression_config: None,
+        encoding_config: None,
     };
 
     assert_eq!(SpriteLayout::OneByOne.get_width(&sheet_config), tile_size.x);

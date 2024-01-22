@@ -1,6 +1,6 @@
 use crate::appearances::{ContentType, SpriteSheet};
 use crate::{
-    cip_sheet, error::*, get_full_file_buffer, CompressionConfig, SheetGrid, SpriteSheetConfig,
+    error::*, get_full_file_buffer, CompressionConfig, ContentConfigs, SheetGrid, SpriteSheetConfig,
 };
 use glam::UVec2;
 use image::error::{LimitError, LimitErrorKind};
@@ -9,6 +9,7 @@ use log::{info, warn};
 use lzma_rs::lzma_decompress_with_options;
 use rayon::prelude::IntoParallelRefIterator;
 use rayon::prelude::*;
+use std::fs;
 use std::path::{Path, PathBuf};
 
 pub fn load_sprite_sheet_image(
@@ -34,18 +35,27 @@ pub fn create_image_from_data(
     data: Vec<u8>,
     sheet_config: &SpriteSheetConfig,
 ) -> Result<RgbaImage> {
-    let data = match &sheet_config.compression_config {
-        None => data,
-        Some(compression_config) => data[compression_config.content_header_size..].to_vec(),
+    let mut background_img = match &sheet_config.compression_config {
+        None => image::load_from_memory_with_format(&data, ImageFormat::Png)?.to_rgba8(),
+        Some(compression_config) => RgbaImage::from_raw(
+            sheet_config.sheet_size.x,
+            sheet_config.sheet_size.y,
+            data[compression_config.content_header_size..].to_vec(),
+        )
+        .ok_or(image::ImageError::Limits(LimitError::from_kind(
+            LimitErrorKind::DimensionError,
+        )))?,
     };
 
-    let mut background_img =
-        RgbaImage::from_raw(sheet_config.sheet_size.x, sheet_config.sheet_size.y, data).ok_or(
-            image::ImageError::Limits(LimitError::from_kind(LimitErrorKind::DimensionError)),
-        )?;
+    if let Some(encoding_config) = &sheet_config.encoding_config {
+        if encoding_config.vertically_flipped {
+            flip_vertically(&mut background_img);
+        }
 
-    flip_vertically(&mut background_img);
-    reverse_channels(&mut background_img);
+        if encoding_config.reversed_r_b_channels {
+            reverse_channels(&mut background_img);
+        }
+    }
 
     Ok(background_img)
 }
@@ -85,14 +95,21 @@ pub fn decompress_lzma_sprite_sheet(
 /// Decompress and save the plain sprite sheets to the given destination path.
 /// This is used to generate a decompressed cache of the sprite sheets, to optimize reading.
 /// Trade off here is that we use way more disk space in pro of faster sprite loading.
-pub fn decompress_sprite_sheets(
-    path: &Path,
-    destination_path: &Path,
-    files: &Vec<String>,
-    sheet_config: SpriteSheetConfig,
-) {
+pub fn decompress_sprite_sheets(content_configs: ContentConfigs, files: &Vec<String>) {
+    let sprite_sheet_path = content_configs
+        .directories
+        .destination_path
+        .join(crate::SPRITE_SHEET_FOLDER);
+
+    fs::create_dir_all(sprite_sheet_path.clone()).expect("Failed to create sprite sheets folder");
+
     files.par_iter().for_each(|file| {
-        decompress_sprite_sheet(file, path, destination_path, sheet_config);
+        decompress_sprite_sheet(
+            file,
+            &content_configs.directories.source_path,
+            &sprite_sheet_path,
+            content_configs.sprite_sheet,
+        );
     });
 }
 
@@ -147,7 +164,7 @@ pub fn get_sprite_index_by_id(content: &[ContentType], id: u32) -> Result<usize>
 }
 
 pub fn get_sprite_grid_by_id(content: &[ContentType], id: u32) -> Result<SheetGrid> {
-    let sheet_config = cip_sheet();
+    let sheet_config = SpriteSheetConfig::cip_sheet();
     if let Some(sheet) = get_sheet_by_sprite_id(content, id) {
         let tile_size = UVec2 {
             x: sheet.layout.get_width(&sheet_config),
@@ -188,6 +205,8 @@ fn reverse_channels(img: &mut RgbaImage) {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::SpriteLayout;
+    use rstest::{fixture, rstest};
 
     #[test]
     fn test_get_decompressed_file_name() {
@@ -212,5 +231,82 @@ mod tests {
         let mut img = RgbaImage::from_raw(1, 1, vec![1, 2, 3, 4]).unwrap();
         reverse_channels(&mut img);
         assert_eq!(img, RgbaImage::from_raw(1, 1, vec![3, 2, 1, 4]).unwrap());
+    }
+
+    #[rstest]
+    fn test_get_sheet_by_sprite_id(#[from(content_fixture)] content: Vec<ContentType>) {
+        for i in [100, 150, 200].iter() {
+            assert_eq!(
+                get_sheet_by_sprite_id(&content, *i),
+                Some(SpriteSheet {
+                    file: "spritesheet.png".to_string(),
+                    layout: SpriteLayout::default(),
+                    first_sprite_id: 100,
+                    last_sprite_id: 200,
+                    area: 64,
+                })
+            );
+        }
+
+        for i in [300, 350, 400].iter() {
+            assert_eq!(
+                get_sheet_by_sprite_id(&content, *i),
+                Some(SpriteSheet {
+                    file: "spritesheet2.png".to_string(),
+                    layout: SpriteLayout::default(),
+                    first_sprite_id: 300,
+                    last_sprite_id: 400,
+                    area: 64,
+                })
+            );
+        }
+
+        for i in [0, 99, 201, 299, 401].iter() {
+            assert_eq!(get_sheet_by_sprite_id(&content, *i), None);
+        }
+    }
+
+    #[rstest]
+    fn test_get_sprite_index_by_id(#[from(content_fixture)] content: Vec<ContentType>) {
+        for i in [100, 150, 200].iter() {
+            assert_eq!(
+                get_sprite_index_by_id(&content, *i).unwrap(),
+                (*i - 100) as usize
+            );
+        }
+
+        for i in [300, 350, 400].iter() {
+            assert_eq!(
+                get_sprite_index_by_id(&content, *i).unwrap(),
+                (*i - 300) as usize
+            );
+        }
+
+        for i in [0, 99, 201, 299, 401].iter() {
+            match get_sprite_index_by_id(&content, *i) {
+                Err(Error::SpriteNotFound) => { /* expected */ }
+                _ => panic!("Expected SpriteNotFound error"),
+            }
+        }
+    }
+
+    #[fixture]
+    fn content_fixture() -> Vec<ContentType> {
+        vec![
+            ContentType::Sprite(SpriteSheet {
+                file: "spritesheet.png".to_string(),
+                layout: SpriteLayout::default(),
+                first_sprite_id: 100,
+                last_sprite_id: 200,
+                area: 64,
+            }),
+            ContentType::Sprite(SpriteSheet {
+                file: "spritesheet2.png".to_string(),
+                layout: SpriteLayout::default(),
+                first_sprite_id: 300,
+                last_sprite_id: 400,
+                area: 64,
+            }),
+        ]
     }
 }
