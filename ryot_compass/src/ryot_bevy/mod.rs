@@ -1,8 +1,7 @@
 use bevy::prelude::*;
 use ryot::appearances::ContentType;
 use ryot::*;
-
-use crate::Settings;
+use std::path::PathBuf;
 
 mod appearances;
 pub use appearances::*;
@@ -36,7 +35,6 @@ pub struct LoadedSprite {
 pub fn load_sprites(
     sprite_ids: &[u32],
     content: &[ContentType],
-    settings: &Res<Settings>,
     asset_server: &Res<AssetServer>,
     atlas_handlers: &mut ResMut<TextureAtlasHandlers>,
     texture_atlases: &mut ResMut<Assets<TextureAtlas>>,
@@ -47,7 +45,7 @@ pub fn load_sprites(
             let grid = get_sprite_grid_by_id(content, *sprite_id).ok()?;
             Some((
                 grid.clone(),
-                build_texture_atlas_from_sheet(&grid, settings, asset_server).unwrap(),
+                build_texture_atlas_from_sheet(&grid, asset_server).unwrap(),
             ))
         })
         .collect();
@@ -73,13 +71,12 @@ pub fn load_sprites(
 pub fn load_sprite(
     sprite_id: u32,
     content: &[ContentType],
-    settings: &Res<Settings>,
     asset_server: &Res<AssetServer>,
     atlas_handlers: &mut ResMut<TextureAtlasHandlers>,
     texture_atlases: &mut ResMut<Assets<TextureAtlas>>,
 ) {
     if let Ok(grid) = get_sprite_grid_by_id(content, sprite_id) {
-        let atlas = build_texture_atlas_from_sheet(&grid, settings, asset_server)
+        let atlas = build_texture_atlas_from_sheet(&grid, asset_server)
             .expect("Failed to build texture atlas");
         build_atlas_handler(&grid, atlas, atlas_handlers, texture_atlases);
     }
@@ -121,34 +118,10 @@ pub fn build_atlas_handler(
 
 pub fn build_texture_atlas_from_sheet(
     grid: &SheetGrid,
-    settings: &Res<Settings>,
     asset_server: &Res<AssetServer>,
 ) -> Result<TextureAtlas, std::io::Error> {
-    // let DecompressedCache::Path(decompressed_path) = &settings.content.decompressed_cache else {
-    //     return Err(std::io::Error::new(
-    //         std::io::ErrorKind::Other,
-    //         "invalid path",
-    //     ));
-    // };
-    //
-    // #[cfg(not(target_arch = "wasm32"))]
-    // {
-    //     std::fs::create_dir_all(decompressed_path)?;
-    //
-    //     let path = decompressed_path.join(PathBuf::from(&grid.file));
-    //
-    //     if !path.exists() {
-    //         decompress_sprite_sheet(
-    //             &grid.file,
-    //             &settings.content.path,
-    //             decompressed_path,
-    //             cip_sheet(),
-    //         );
-    //     }
-    // }
-
-    let image_handle: Handle<Image> =
-        asset_server.load(settings.content.build_asset_path(&grid.file));
+    let image_handle: Handle<Image> = asset_server
+        .load(PathBuf::from(SPRITE_SHEET_FOLDER).join(get_decompressed_file_name(&grid.file)));
 
     Ok(TextureAtlas::from_grid(
         image_handle,

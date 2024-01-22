@@ -28,10 +28,9 @@ use ryot::*;
 // use ryot_compass::lmdb::LmdbEnv;
 
 use ryot_compass::{
-    build, draw_palette_window, draw_sprite, load_sprites, test_reload_config, Appearance,
+    draw_palette_window, draw_sprite, load_sprites, test_reload_config, Appearance,
     AppearanceAssetPlugin, AppearanceHandle, AsyncEventsExtension, CipContent, ConfigExtension,
-    DecompressedCache, EventSender, Palette, PaletteState, Settings, TextureAtlasHandlers, Tile,
-    TilesetCategory,
+    EventSender, Palette, PaletteState, TextureAtlasHandlers, Tile, TilesetCategory,
 };
 use winit::window::Icon;
 
@@ -227,7 +226,6 @@ pub struct Tiles(Vec<(Tile, bool)>);
 #[allow(clippy::too_many_arguments)]
 fn draw(
     mut commands: Commands,
-    settings: Res<Settings>,
     mut egui_ctx: EguiContexts,
     content: ResMut<CipContent>,
     asset_server: Res<AssetServer>,
@@ -257,7 +255,6 @@ fn draw(
     let sprites = load_sprites(
         &[sprite_id],
         &content.raw_content,
-        &settings,
         &asset_server,
         &mut atlas_handlers,
         &mut texture_atlases,
@@ -284,7 +281,6 @@ fn draw(
                 let sprites = load_sprites(
                     &sprites,
                     &content.raw_content,
-                    &settings,
                     &asset_server,
                     &mut atlas_handlers,
                     &mut texture_atlases,
@@ -328,24 +324,6 @@ fn draw(
     // }
 }
 
-// fn decompress_all_sprites(settings: Res<Settings>, content: Res<CipContent>) {
-//     // time_test!("Decompressing");
-//     let DecompressedCache::Path(decompressed_path) = &settings.content.decompressed_cache else {
-//         return;
-//     };
-//
-//     std::fs::create_dir_all(decompressed_path).unwrap();
-//
-//     let ContentConfigs { sprite_sheet, .. } = read_content_configs("config/Content.toml");
-//
-//     decompress_sprite_sheets_from_content(
-//         &settings.content.path,
-//         decompressed_path,
-//         &content.raw_content,
-//         sprite_sheet,
-//     );
-// }
-
 // We need to keep the cursor position updated based on any `CursorMoved` events.
 pub fn update_cursor_pos(
     mut cursor_pos: ResMut<CursorPos>,
@@ -367,7 +345,6 @@ pub fn update_cursor_pos(
 
 #[allow(clippy::too_many_arguments)]
 fn update_cursor(
-    settings: Res<Settings>,
     content: Res<CipContent>,
     cursor_pos: Res<CursorPos>,
     asset_server: Res<AssetServer>,
@@ -403,7 +380,6 @@ fn update_cursor(
     let sprites = load_sprites(
         &[sprite_id],
         &content.raw_content,
-        &settings,
         &asset_server,
         &mut atlas_handlers,
         &mut texture_atlases,
@@ -482,7 +458,6 @@ fn spawn_cursor(mut commands: Commands) {
 fn ui_example(
     mut egui_ctx: EguiContexts,
     content: ResMut<CipContent>,
-    settings: Res<Settings>,
     mut exit: EventWriter<AppExit>,
     content_sender: Res<EventSender<ContentWasLoaded>>,
     // error_state: ResMut<ErrorState>,
@@ -595,20 +570,8 @@ fn ui_example(
                         // debug!("Content loaded!");
                     }
 
-                    if ui
-                        .add_enabled(is_content_loaded, egui::Button::new("🔃 Refresh Content"))
-                        .clicked()
-                    {
-                        let DecompressedCache::Path(decompressed_path) =
-                            &settings.content.decompressed_cache
-                        else {
-                            return;
-                        };
-
-                        if std::fs::remove_dir_all(decompressed_path).is_ok() {
-                            // decompress_all_sprites(content);
-                        }
-                    }
+                    ui.add_enabled(is_content_loaded, egui::Button::new("🔃 Refresh Content"))
+                        .clicked();
 
                     ui.separator();
 
@@ -652,14 +615,9 @@ fn ui_example(
         });
 }
 
-pub fn print_settings(settings: Res<Settings>) {
-    debug!("{:?}", settings);
-}
-
 #[allow(clippy::too_many_arguments)]
 pub fn print_appearances(
     content: Res<CipContent>,
-    settings: Res<Settings>,
     palette_state: ResMut<PaletteState>,
     asset_server: Res<AssetServer>,
     appearances: Res<Assets<Appearance>>,
@@ -713,7 +671,6 @@ pub fn print_appearances(
         for sprite in load_sprites(
             &sprite_ids[begin..end],
             &content.raw_content,
-            &settings,
             &asset_server,
             &mut atlas_handlers,
             &mut texture_atlases,
@@ -893,9 +850,7 @@ fn main() {
         .init_resource::<ErrorState>()
         .add_async_event::<ContentWasLoaded>()
         .add_config::<ContentConfigs>(CONTENT_CONFIG_PATH)
-        .insert_resource(build())
         // .init_resource::<LmdbEnv>()
-        .init_resource::<Settings>()
         .init_resource::<Palette>()
         .init_resource::<AboutMeOpened>()
         .init_resource::<TextureAtlasHandlers>()
@@ -921,7 +876,6 @@ fn main() {
         // .add_systems(Update, scroll_events)
         .add_systems(Update, ui_example)
         .add_systems(Update, print_appearances)
-        .add_systems(Update, print_settings)
         .add_systems(Update, display_error_window)
         .add_systems(Update, check_for_exit)
         .add_systems(Update, update_cursor)

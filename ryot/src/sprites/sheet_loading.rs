@@ -25,6 +25,31 @@ pub fn load_sprite_sheet_image(
     create_image_from_data(decompressed, &sheet_config)
 }
 
+/// Creates a sprite sheet image from a given CIP decompressed bmp and saves it to the given output path.
+/// The sprite sheet is expected to have 384x384 pixels and 4 channels (RGBA).
+/// The data is expected to be in the BGRA format.
+/// The data is expected to be flipped vertically.
+/// The data is expected to have a 122 byte header that we need to skip
+pub fn create_image_from_data(
+    data: Vec<u8>,
+    sheet_config: &SpriteSheetConfig,
+) -> Result<RgbaImage> {
+    let data = match &sheet_config.compression_config {
+        None => data,
+        Some(compression_config) => data[compression_config.content_header_size..].to_vec(),
+    };
+
+    let mut background_img =
+        RgbaImage::from_raw(sheet_config.sheet_size.x, sheet_config.sheet_size.y, data).ok_or(
+            image::ImageError::Limits(LimitError::from_kind(LimitErrorKind::DimensionError)),
+        )?;
+
+    flip_vertically(&mut background_img);
+    reverse_channels(&mut background_img);
+
+    Ok(background_img)
+}
+
 /// CIP's sprite sheets have a 32 byte header that contains the following information:
 ///  [0..X]    - Variable number of place holder NULL (0x00) bytes. X varies according to the sheet decompressed size.
 ///  [X..X+5]  - 5 bytes with the constant byte sequence [0x70 0x0A 0xFA 0x80 0x24].
@@ -55,48 +80,6 @@ pub fn decompress_lzma_sprite_sheet(
     )?;
 
     Ok(decompressed)
-}
-
-/// Creates a sprite sheet image from a given CIP decompressed bmp and saves it to the given output path.
-/// The sprite sheet is expected to have 384x384 pixels and 4 channels (RGBA).
-/// The data is expected to be in the BGRA format.
-/// The data is expected to be flipped vertically.
-/// The data is expected to have a 122 byte header that we need to skip
-pub fn create_image_from_data(
-    data: Vec<u8>,
-    sheet_config: &SpriteSheetConfig,
-) -> Result<RgbaImage> {
-    let data = match &sheet_config.compression_config {
-        None => data,
-        Some(compression_config) => data[compression_config.content_header_size..].to_vec(),
-    };
-
-    let mut background_img =
-        RgbaImage::from_raw(sheet_config.sheet_size.x, sheet_config.sheet_size.y, data).ok_or(
-            image::ImageError::Limits(LimitError::from_kind(LimitErrorKind::DimensionError)),
-        )?;
-
-    flip_vertically(&mut background_img);
-    reverse_channels(&mut background_img);
-
-    Ok(background_img)
-}
-
-pub fn decompress_sprite_sheets_from_content(
-    path: &Path,
-    destination_path: &Path,
-    content: &Vec<ContentType>,
-    sheet_config: SpriteSheetConfig,
-) {
-    let files = content
-        .par_iter()
-        .filter_map(|c| match c {
-            ContentType::Sprite(sheet) => Some(sheet.file.clone()),
-            _ => None,
-        })
-        .collect::<Vec<String>>();
-
-    decompress_sprite_sheets(path, destination_path, &files, sheet_config);
 }
 
 /// Decompress and save the plain sprite sheets to the given destination path.

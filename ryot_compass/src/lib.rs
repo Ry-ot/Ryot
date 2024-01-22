@@ -33,6 +33,3 @@ pub use tileset::*;
 
 mod ui;
 pub use ui::*;
-
-mod config;
-pub use config::*;
