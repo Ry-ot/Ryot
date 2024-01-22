@@ -1,8 +1,8 @@
 use crate::appearances::{ContentType, SpriteSheet};
 use crate::{
-    cip_sheet, error::*, get_full_file_buffer, CompressionConfig, Rect, SheetGrid,
-    SpriteSheetConfig,
+    cip_sheet, error::*, get_full_file_buffer, CompressionConfig, SheetGrid, SpriteSheetConfig,
 };
+use glam::UVec2;
 use image::error::{LimitError, LimitErrorKind};
 use image::{imageops, ImageFormat, Rgba, RgbaImage};
 use log::{info, warn};
@@ -71,14 +71,10 @@ pub fn create_image_from_data(
         Some(compression_config) => data[compression_config.content_header_size..].to_vec(),
     };
 
-    let mut background_img = RgbaImage::from_raw(
-        sheet_config.sheet_size.width,
-        sheet_config.sheet_size.height,
-        data,
-    )
-    .ok_or(image::ImageError::Limits(LimitError::from_kind(
-        LimitErrorKind::DimensionError,
-    )))?;
+    let mut background_img =
+        RgbaImage::from_raw(sheet_config.sheet_size.x, sheet_config.sheet_size.y, data).ok_or(
+            image::ImageError::Limits(LimitError::from_kind(LimitErrorKind::DimensionError)),
+        )?;
 
     flip_vertically(&mut background_img);
     reverse_channels(&mut background_img);
@@ -170,13 +166,13 @@ pub fn get_sprite_index_by_id(content: &[ContentType], id: u32) -> Result<usize>
 pub fn get_sprite_grid_by_id(content: &[ContentType], id: u32) -> Result<SheetGrid> {
     let sheet_config = cip_sheet();
     if let Some(sheet) = get_sheet_by_sprite_id(content, id) {
-        let tile_size = Rect {
-            width: sheet.layout.get_width(&sheet_config),
-            height: sheet.layout.get_height(&sheet_config),
+        let tile_size = UVec2 {
+            x: sheet.layout.get_width(&sheet_config),
+            y: sheet.layout.get_height(&sheet_config),
         };
 
-        let columns = (sheet_config.sheet_size.width / tile_size.width) as usize;
-        let rows = (sheet_config.sheet_size.height / tile_size.height) as usize;
+        let columns = (sheet_config.sheet_size.x / tile_size.x) as usize;
+        let rows = (sheet_config.sheet_size.y / tile_size.y) as usize;
 
         let grid = SheetGrid {
             file: sheet.file,
