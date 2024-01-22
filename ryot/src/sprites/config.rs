@@ -8,6 +8,22 @@ pub struct SpriteSheetConfig {
     pub sheet_size: UVec2,
     #[serde(default)]
     pub compression_config: Option<CompressionConfig>,
+    #[serde(default)]
+    pub encoding_config: Option<EncodingConfig>,
+}
+
+impl SpriteSheetConfig {
+    pub fn cip_sheet() -> SpriteSheetConfig {
+        SpriteSheetConfig {
+            tile_size: UVec2::new(32, 32),
+            sheet_size: UVec2::new(384, 384),
+            compression_config: Some(CompressionConfig {
+                compressed_header_size: 32,
+                content_header_size: 122,
+            }),
+            encoding_config: Some(EncodingConfig::default()),
+        }
+    }
 }
 
 #[derive(Debug, Copy, Clone, Deserialize)]
@@ -16,13 +32,17 @@ pub struct CompressionConfig {
     pub content_header_size: usize,
 }
 
-pub fn cip_sheet() -> SpriteSheetConfig {
-    SpriteSheetConfig {
-        tile_size: UVec2::new(32, 32),
-        sheet_size: UVec2::new(384, 384),
-        compression_config: Some(CompressionConfig {
-            compressed_header_size: 32,
-            content_header_size: 122,
-        }),
+#[derive(Debug, Copy, Clone, Deserialize)]
+pub struct EncodingConfig {
+    pub vertically_flipped: bool,
+    pub reversed_r_b_channels: bool,
+}
+
+impl Default for EncodingConfig {
+    fn default() -> Self {
+        EncodingConfig {
+            vertically_flipped: true,
+            reversed_r_b_channels: true,
+        }
     }
 }
