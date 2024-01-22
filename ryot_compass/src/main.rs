@@ -28,10 +28,10 @@ use ryot::*;
 // use ryot_compass::lmdb::LmdbEnv;
 
 use ryot_compass::{
-    build, draw_palette_window, draw_sprite, load_sprites, normalize_tile_pos_to_sprite_pos,
-    test_reload_config, Appearance, AppearanceAssetPlugin, AppearanceHandle, AsyncEventsExtension,
-    CipContent, ConfigExtension, DecompressedCache, EventSender, Palette, PaletteState, Settings,
-    TextureAtlasHandlers, Tile, TilesetCategory,
+    build, draw_palette_window, draw_sprite, load_sprites, test_reload_config, Appearance,
+    AppearanceAssetPlugin, AppearanceHandle, AsyncEventsExtension, CipContent, ConfigExtension,
+    DecompressedCache, EventSender, Palette, PaletteState, Settings, TextureAtlasHandlers, Tile,
+    TilesetCategory,
 };
 use winit::window::Icon;
 
@@ -39,6 +39,7 @@ use bevy::asset::AssetMetaCheck;
 use rfd::AsyncFileDialog;
 use ryot::appearances::ContentType;
 
+use ryot::tile_grid::TileGrid;
 use std::future::Future;
 
 // fn scroll_events(mut minimap: ResMut<Minimap>, mut scroll_evr: EventReader<MouseWheel>) {
@@ -90,22 +91,29 @@ fn spawn_camera(
     mut materials: ResMut<Assets<ColorMaterial>>,
     // mut rb_materials: ResMut<Assets<RainbowOutlineMaterial>>,
 ) {
-    let area_size = u16::MAX as f32; // Size of the square
-    let grid_size = 32.0; // Size of each grid cell
+    let TileGrid {
+        columns,
+        rows,
+        tile_size,
+    } = TileGrid::default();
 
     let mut positions = Vec::new();
     let mut colors = Vec::new();
     let mut indices = Vec::new();
 
+    let width = (columns * tile_size.x as u16) as f32;
+    let height = (rows * tile_size.y as u16) as f32;
+
     // Create vertices for the grid
-    for i in 0..=((area_size / grid_size) as u32) {
-        let offset = i as f32 * grid_size;
+    for i in 0..=columns {
+        let offset = (i * tile_size.x as u16) as f32;
+
         // Horizontal line
         positions.push([0.0, -offset, 0.0]);
-        positions.push([area_size, -offset, 0.0]);
+        positions.push([width, -offset, 0.0]);
         // Vertical line
         positions.push([offset, 0.0, 0.0]);
-        positions.push([offset, -area_size, 0.0]);
+        positions.push([offset, -height, 0.0]);
 
         // Add colors (white for grid lines)
         colors.extend(vec![Color::WHITE.as_rgba_f32(); 4]);
@@ -119,7 +127,7 @@ fn spawn_camera(
     let mut mesh = Mesh::new(PrimitiveTopology::LineList);
     mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
     mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, colors);
-    mesh.set_indices(Some(Indices::U32(indices)));
+    mesh.set_indices(Some(Indices::U16(indices)));
 
     let mesh_handle: Handle<Mesh> = meshes.add(mesh);
 
@@ -130,10 +138,10 @@ fn spawn_camera(
     commands.spawn(SpriteBundle {
         sprite: Sprite {
             color: Color::rgba(255., 255., 255., 0.01),
-            custom_size: Some(Vec2::new(area_size, area_size)),
+            custom_size: Some(Vec2::new(width, height)),
             ..Default::default()
         },
-        transform: Transform::from_xyz(area_size / 2., area_size / -2., 0.), // Slightly in front to cover the white border
+        transform: Transform::from_xyz(width / 2., height / -2., 0.), // Slightly in front to cover the white border
         ..Default::default()
     });
 
@@ -148,8 +156,8 @@ fn spawn_camera(
     commands.spawn(SpriteBundle {
         texture: asset_server.load("ryot_mascot.png"),
         transform: Transform::from_translation(Vec3::new(
-            (u16::MAX / 2) as f32,
-            (u16::MAX / 2) as f32,
+            (columns / 2) as f32,
+            (rows / 2) as f32,
             1.,
         ))
         .with_scale(Vec3::splat(16.)),
@@ -260,7 +268,7 @@ fn draw(
     };
 
     if mouse_button_input.pressed(MouseButton::Left) {
-        let pos = cursor_pos_to_tile_pos(cursor_pos.0);
+        let pos = TileGrid::default().get_tile_pos_from_display_pos_vec2(cursor_pos.0);
         draw_sprite(Vec3::new(pos.x, pos.y, 1.1), sprite, &mut commands);
         debug!("Tile: {:?} drawn", pos);
     }
@@ -409,7 +417,13 @@ fn update_cursor(
     {
         *atlas_handle = new_sprite.atlas_texture_handle.clone();
         sprite.index = new_sprite.sprite_index;
-        let cursor_pos = normalize_tile_pos_to_sprite_pos(cursor_pos_to_tile_pos(cursor_pos.0));
+
+        let tile_grid = TileGrid::default();
+        let tile_pos = tile_grid.get_tile_pos_from_display_pos_vec2(cursor_pos.0);
+        let Some(cursor_pos) = tile_grid.get_display_position_from_tile_pos_vec2(tile_pos) else {
+            return;
+        };
+
         transform.translation = Vec3::from((cursor_pos, 128.));
 
         if cursor_pos == Vec2::ZERO {
@@ -448,14 +462,6 @@ fn spawn_cursor(mut commands: Commands) {
             atlas: None,
         },
     ));
-}
-
-fn cursor_pos_to_tile_pos(cursor_pos: Vec2) -> Vec2 {
-    // Tiles are 32x32 and grows from left top to right bottom.
-    Vec2::new(
-        (cursor_pos.x / 32.) as i32 as f32,
-        (-cursor_pos.y / 32.) as i32 as f32,
-    )
 }
 
 // fn load_cip_content(

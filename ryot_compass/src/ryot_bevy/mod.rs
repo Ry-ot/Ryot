@@ -15,6 +15,7 @@ pub use configs::*;
 
 mod palette;
 pub use palette::*;
+use ryot::tile_grid::TileGrid;
 
 #[derive(Resource, Debug, Default)]
 pub struct CipContent {
@@ -160,41 +161,15 @@ pub fn build_texture_atlas_from_sheet(
 }
 
 pub fn draw_sprite(pos: Vec3, sprite: &LoadedSprite, commands: &mut Commands) {
-    match normalize_tile_pos_to_sprite_pos_with_z(pos) {
-        pos if pos.truncate() != Vec2::ZERO => commands.spawn(build_sprite_bundle(
-            sprite.atlas_texture_handle.clone(),
-            pos,
-            sprite.sprite_index,
-        )),
-        _ => return,
+    let Some(tile_pos) = TileGrid::default().get_display_position_from_tile_pos_vec3(pos) else {
+        return;
     };
-}
 
-pub fn normalize_tile_pos_to_sprite_pos(tile_pos: Vec2) -> Vec2 {
-    if tile_pos.x < 0. || tile_pos.y < 0. {
-        return Vec2::ZERO;
-    }
-
-    if tile_pos.x > u16::MAX as f32 || tile_pos.y > u16::MAX as f32 {
-        return Vec2::ZERO;
-    }
-
-    // X grows the same for both tile and camera, so we just add the offset of half tile.
-    // Y grows in opposite directions, so we need to invert Y and add the offset.
-    let x = tile_pos.x * 32. + (32. / 2.);
-    let y = -tile_pos.y * 32. - (32. / 2.);
-
-    Vec2::new(x, y)
-}
-
-pub fn normalize_tile_pos_to_sprite_pos_with_z(tile_pos: Vec3) -> Vec3 {
-    let pos = normalize_tile_pos_to_sprite_pos(tile_pos.truncate());
-
-    // z for 2d sprites define the rendering order, for 45 degrees top-down
-    // perspective we always want right bottom items to be drawn on top.
-    let z = tile_pos.z + (pos.x - pos.y) / u16::MAX as f32;
-
-    Vec3::from((pos, z))
+    commands.spawn(build_sprite_bundle(
+        sprite.atlas_texture_handle.clone(),
+        tile_pos,
+        sprite.sprite_index,
+    ));
 }
 
 pub fn build_sprite_bundle(
