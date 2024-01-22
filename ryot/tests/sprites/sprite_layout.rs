@@ -1,3 +1,4 @@
+use glam::UVec2;
 use rstest::rstest;
 use ryot::SpriteLayout;
 use serde_json::to_string;
@@ -29,52 +30,46 @@ fn test_deserialize_invalid() {
 }
 
 #[rstest]
-#[case(ryot::Rect::new(16, 16))]
-#[case(ryot::Rect::new(32, 32))]
-#[case(ryot::Rect::new(64, 64))]
-#[case(ryot::Rect::new(128, 128))]
-#[case(ryot::Rect::new(256, 256))]
-#[case(ryot::Rect::new(512, 512))]
-fn test_layout_dimensions(#[case] tile_size: ryot::Rect) {
+#[case(UVec2::new(16, 16))]
+#[case(UVec2::new(32, 32))]
+#[case(UVec2::new(64, 64))]
+#[case(UVec2::new(128, 128))]
+#[case(UVec2::new(256, 256))]
+#[case(UVec2::new(512, 512))]
+fn test_layout_dimensions(#[case] tile_size: UVec2) {
     let sheet_config = ryot::SpriteSheetConfig {
         tile_size,
-        sheet_size: ryot::Rect::new(1024, 1024),
+        sheet_size: UVec2::new(1024, 1024),
         compression_config: None,
     };
 
-    assert_eq!(
-        SpriteLayout::OneByOne.get_width(&sheet_config),
-        tile_size.width
-    );
+    assert_eq!(SpriteLayout::OneByOne.get_width(&sheet_config), tile_size.x);
     assert_eq!(
         SpriteLayout::OneByOne.get_height(&sheet_config),
-        tile_size.height
+        tile_size.y
     );
 
-    assert_eq!(
-        SpriteLayout::OneByTwo.get_width(&sheet_config),
-        tile_size.width
-    );
+    assert_eq!(SpriteLayout::OneByTwo.get_width(&sheet_config), tile_size.x);
     assert_eq!(
         SpriteLayout::OneByTwo.get_height(&sheet_config),
-        2 * tile_size.height
+        2 * tile_size.y
     );
 
     assert_eq!(
         SpriteLayout::TwoByOne.get_width(&sheet_config),
-        2 * tile_size.width
+        2 * tile_size.x
     );
     assert_eq!(
         SpriteLayout::TwoByOne.get_height(&sheet_config),
-        tile_size.height
+        tile_size.y
     );
 
     assert_eq!(
         SpriteLayout::TwoByTwo.get_width(&sheet_config),
-        2 * tile_size.width
+        2 * tile_size.x
     );
     assert_eq!(
         SpriteLayout::TwoByTwo.get_height(&sheet_config),
-        2 * tile_size.height
+        2 * tile_size.y
     );
 }
