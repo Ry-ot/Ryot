@@ -151,7 +151,7 @@ pub fn build_texture_atlas_from_sheet(
 
     Ok(TextureAtlas::from_grid(
         image_handle,
-        Vec2::new(grid.tile_size.width as f32, grid.tile_size.height as f32),
+        Vec2::new(grid.tile_size.x as f32, grid.tile_size.y as f32),
         grid.columns,
         grid.rows,
         None,

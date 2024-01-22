@@ -1,25 +1,15 @@
-mod config;
-
-pub use config::*;
-use serde::Deserialize;
+use glam::UVec2;
 use serde_repr::{Deserialize_repr, Serialize_repr};
+
+mod config;
+pub use config::*;
 
 mod sheet_loading;
 pub use sheet_loading::*;
 
+pub mod tile_grid;
+
 pub mod error;
-
-#[derive(Debug, Copy, Clone, Deserialize)]
-pub struct Rect {
-    pub width: u32,
-    pub height: u32,
-}
-
-impl Rect {
-    pub fn new(width: u32, height: u32) -> Self {
-        Rect { width, height }
-    }
-}
 
 #[derive(Serialize_repr, Deserialize_repr, Default, PartialEq, Debug, Clone)]
 #[repr(u32)]
@@ -34,15 +24,15 @@ pub enum SpriteLayout {
 impl SpriteLayout {
     pub fn get_width(&self, sheet_config: &SpriteSheetConfig) -> u32 {
         match self {
-            SpriteLayout::OneByOne | SpriteLayout::OneByTwo => sheet_config.tile_size.width,
-            SpriteLayout::TwoByOne | SpriteLayout::TwoByTwo => sheet_config.tile_size.width * 2,
+            SpriteLayout::OneByOne | SpriteLayout::OneByTwo => sheet_config.tile_size.x,
+            SpriteLayout::TwoByOne | SpriteLayout::TwoByTwo => sheet_config.tile_size.x * 2,
         }
     }
 
     pub fn get_height(&self, sheet_config: &SpriteSheetConfig) -> u32 {
         match self {
-            SpriteLayout::OneByOne | SpriteLayout::TwoByOne => sheet_config.tile_size.height,
-            SpriteLayout::OneByTwo | SpriteLayout::TwoByTwo => sheet_config.tile_size.height * 2,
+            SpriteLayout::OneByOne | SpriteLayout::TwoByOne => sheet_config.tile_size.y,
+            SpriteLayout::OneByTwo | SpriteLayout::TwoByTwo => sheet_config.tile_size.y * 2,
         }
     }
 }
@@ -50,7 +40,7 @@ impl SpriteLayout {
 #[derive(Debug, Clone)]
 pub struct SheetGrid {
     pub file: String,
-    pub tile_size: Rect,
+    pub tile_size: UVec2,
     pub columns: usize,
     pub rows: usize,
 }

@@ -192,8 +192,7 @@ pub fn draw_palette_items(
                                         ui.add_space(row_padding);
                                     });
 
-                                    let ratio =
-                                        grid.tile_size.height as f32 / grid.tile_size.width as f32;
+                                    let ratio = grid.tile_size.x as f32 / grid.tile_size.y as f32;
 
                                     if i == palette_state.get_chunk_size() - 1 {
                                         return;
