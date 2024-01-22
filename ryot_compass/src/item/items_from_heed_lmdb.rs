@@ -1,11 +1,3 @@
-/*
- * Ryot - A free and open-source MMORPG server emulator
- * Copyright (©) 2023 Lucas Grossi <lucas.ggrossi@gmail.com>
- * Repository: https://github.com/lgrossi/Ryot
- * License: https://github.com/lgrossi/Ryot/blob/main/LICENSE
- * Contributors: https://github.com/lgrossi/Ryot/graphs/contributors
- * Website: https://github.com/lgrossi/Ryot
- */
 use crate::item::{build_keys_for_area, ItemRepository};
 use crate::{get_chunks_per_z, GetKey, Item, Position, Tile};
 use heed::types::Bytes;
