@@ -1,4 +1,5 @@
 use bevy::{input::Input, math::Vec3, prelude::*, render::camera::Camera};
+use ryot::tile_grid::TileGrid;
 
 // A simple camera system for moving and zooming the camera.
 #[allow(dead_code)]
@@ -38,8 +39,9 @@ pub fn movement(
         ortho.scale = ortho.scale.clamp(0.25, 5.0);
 
         let z = transform.translation.z;
-        let normalize_dimension =
-            |dimension: f32, tile_size: f32| (dimension / tile_size).round() * tile_size;
+        let normalize_dimension = |dimension: f32, tile_size: u32| {
+            (dimension / tile_size as f32).round() * tile_size as f32
+        };
 
         transform.translation += time.delta_seconds() * direction * 5_000.;
 
@@ -51,15 +53,19 @@ pub fn movement(
             ortho.scale
         };
 
-        transform.translation.x = normalize_dimension(transform.translation.x, 32.);
+        let tile_grid = TileGrid::default();
+
+        transform.translation.x =
+            normalize_dimension(transform.translation.x, tile_grid.tile_size.x);
         transform.translation.x = transform.translation.x.clamp(
             ortho.scale * (window.width() / 2. - 50. / scale_balance),
-            u16::MAX as f32,
+            tile_grid.columns as f32,
         );
 
-        transform.translation.y = normalize_dimension(transform.translation.y, 32.);
+        transform.translation.y =
+            normalize_dimension(transform.translation.y, tile_grid.tile_size.x);
         transform.translation.y = transform.translation.y.clamp(
-            -(u16::MAX as f32),
+            -(tile_grid.rows as f32),
             -ortho.scale * (window.height() / 2. - 90. / scale_balance),
         );
 
