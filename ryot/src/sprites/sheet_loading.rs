@@ -201,3 +201,33 @@ fn reverse_channels(img: &mut RgbaImage) {
         *pixel = Rgba([b, g, r, a]); // Swap Red and Blue channels
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_get_decompressed_file_name() {
+        assert_eq!(
+            get_decompressed_file_name("1.bmp.lzma"),
+            "1.png".to_string()
+        );
+    }
+
+    #[test]
+    fn test_flip_vertically() {
+        let mut img = RgbaImage::from_raw(1, 2, vec![1, 2, 3, 4, 5, 6, 7, 8]).unwrap();
+        flip_vertically(&mut img);
+        assert_eq!(
+            img,
+            RgbaImage::from_raw(1, 2, vec![5, 6, 7, 8, 1, 2, 3, 4]).unwrap()
+        );
+    }
+
+    #[test]
+    fn test_reverse_channels() {
+        let mut img = RgbaImage::from_raw(1, 1, vec![1, 2, 3, 4]).unwrap();
+        reverse_channels(&mut img);
+        assert_eq!(img, RgbaImage::from_raw(1, 1, vec![3, 2, 1, 4]).unwrap());
+    }
+}
