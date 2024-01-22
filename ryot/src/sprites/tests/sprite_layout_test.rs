@@ -1,6 +1,6 @@
+use super::super::*;
 use glam::UVec2;
 use rstest::rstest;
-use ryot::SpriteLayout;
 use serde_json::to_string;
 
 #[rstest]
@@ -37,7 +37,7 @@ fn test_deserialize_invalid() {
 #[case(UVec2::new(256, 256))]
 #[case(UVec2::new(512, 512))]
 fn test_layout_dimensions(#[case] tile_size: UVec2) {
-    let sheet_config = ryot::SpriteSheetConfig {
+    let sheet_config = SpriteSheetConfig {
         tile_size,
         sheet_size: UVec2::new(1024, 1024),
         compression_config: None,
