@@ -44,3 +44,6 @@ pub struct SheetGrid {
     pub columns: usize,
     pub rows: usize,
 }
+
+#[cfg(test)]
+mod tests;

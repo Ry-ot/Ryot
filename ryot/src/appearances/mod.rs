@@ -64,3 +64,6 @@ pub struct SpriteSheet {
     pub last_sprite_id: u32,
     pub area: u32,
 }
+
+#[cfg(test)]
+mod tests;
