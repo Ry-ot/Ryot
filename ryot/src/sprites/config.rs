@@ -1,7 +1,7 @@
 use glam::UVec2;
 use serde::Deserialize;
 
-#[derive(Debug, Copy, Clone, Deserialize)]
+#[derive(Debug, Copy, Clone, Default, Deserialize)]
 #[allow(unused)]
 pub struct SpriteSheetConfig {
     pub tile_size: UVec2,

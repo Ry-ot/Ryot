@@ -34,7 +34,7 @@ egui_extras = { version = "0.24.1", features = ["all_loaders"] }
 uuid = "1.6.1"
 futures = "0.3.30"
 wasm-bindgen-futures = "0.4.40"
-bevy_common_assets = { version = "0.9.0", features = ["toml"] }
+bevy_common_assets = { version = "0.9.0", features = ["toml", "json"] }
 thiserror = "1.0.56"
 color-eyre = "0.6.2"
 

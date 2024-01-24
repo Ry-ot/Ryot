@@ -1,4 +1,4 @@
-use crate::appearances::{ContentType, SpriteSheet};
+use crate::appearances::SpriteSheetSet;
 use crate::{
     error::*, get_full_file_buffer, CompressionConfig, ContentConfigs, SheetGrid, SpriteSheetConfig,
 };
@@ -140,31 +140,9 @@ pub fn decompress_sprite_sheet(
     }
 }
 
-pub fn get_sheet_by_sprite_id(content: &[ContentType], id: u32) -> Option<SpriteSheet> {
-    content
-        .iter()
-        .filter_map(|content| {
-            if let ContentType::Sprite(sheet) = content {
-                if sheet.has_sprite(id) {
-                    return Some(sheet.clone());
-                }
-            }
-            None
-        })
-        .next()
-}
-
-pub fn get_sprite_index_by_id(content: &[ContentType], id: u32) -> Result<usize> {
-    let Some(sheet) = get_sheet_by_sprite_id(content, id) else {
-        return Err(Error::SpriteNotFound);
-    };
-
-    Ok(sheet.get_sprite_index(id).unwrap() as usize)
-}
-
-pub fn get_sprite_grid_by_id(content: &[ContentType], id: u32) -> Result<SheetGrid> {
+pub fn get_sprite_grid_by_id(sprite_sheets: &SpriteSheetSet, id: u32) -> Result<SheetGrid> {
     let sheet_config = SpriteSheetConfig::cip_sheet();
-    if let Some(sheet) = get_sheet_by_sprite_id(content, id) {
+    if let Some(sheet) = sprite_sheets.get_by_sprite_id(id) {
         Ok(SheetGrid {
             file: sheet.file.clone(),
             tile_size: sheet.get_tile_size(&sheet_config),
@@ -194,8 +172,6 @@ fn reverse_channels(img: &mut RgbaImage) {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::SpriteLayout;
-    use rstest::{fixture, rstest};
 
     #[test]
     fn test_get_decompressed_file_name() {
@@ -220,82 +196,5 @@ mod tests {
         let mut img = RgbaImage::from_raw(1, 1, vec![1, 2, 3, 4]).unwrap();
         reverse_channels(&mut img);
         assert_eq!(img, RgbaImage::from_raw(1, 1, vec![3, 2, 1, 4]).unwrap());
-    }
-
-    #[rstest]
-    fn test_get_sheet_by_sprite_id(#[from(content_fixture)] content: Vec<ContentType>) {
-        for i in [100, 150, 200].iter() {
-            assert_eq!(
-                get_sheet_by_sprite_id(&content, *i),
-                Some(SpriteSheet {
-                    file: "spritesheet.png".to_string(),
-                    layout: SpriteLayout::default(),
-                    first_sprite_id: 100,
-                    last_sprite_id: 200,
-                    area: 64,
-                })
-            );
-        }
-
-        for i in [300, 350, 400].iter() {
-            assert_eq!(
-                get_sheet_by_sprite_id(&content, *i),
-                Some(SpriteSheet {
-                    file: "spritesheet2.png".to_string(),
-                    layout: SpriteLayout::default(),
-                    first_sprite_id: 300,
-                    last_sprite_id: 400,
-                    area: 64,
-                })
-            );
-        }
-
-        for i in [0, 99, 201, 299, 401].iter() {
-            assert_eq!(get_sheet_by_sprite_id(&content, *i), None);
-        }
-    }
-
-    #[rstest]
-    fn test_get_sprite_index_by_id(#[from(content_fixture)] content: Vec<ContentType>) {
-        for i in [100, 150, 200].iter() {
-            assert_eq!(
-                get_sprite_index_by_id(&content, *i).unwrap(),
-                (*i - 100) as usize
-            );
-        }
-
-        for i in [300, 350, 400].iter() {
-            assert_eq!(
-                get_sprite_index_by_id(&content, *i).unwrap(),
-                (*i - 300) as usize
-            );
-        }
-
-        for i in [0, 99, 201, 299, 401].iter() {
-            match get_sprite_index_by_id(&content, *i) {
-                Err(Error::SpriteNotFound) => { /* expected */ }
-                _ => panic!("Expected SpriteNotFound error"),
-            }
-        }
-    }
-
-    #[fixture]
-    fn content_fixture() -> Vec<ContentType> {
-        vec![
-            ContentType::Sprite(SpriteSheet {
-                file: "spritesheet.png".to_string(),
-                layout: SpriteLayout::default(),
-                first_sprite_id: 100,
-                last_sprite_id: 200,
-                area: 64,
-            }),
-            ContentType::Sprite(SpriteSheet {
-                file: "spritesheet2.png".to_string(),
-                layout: SpriteLayout::default(),
-                first_sprite_id: 300,
-                last_sprite_id: 400,
-                area: 64,
-            }),
-        ]
     }
 }

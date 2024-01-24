@@ -71,9 +71,9 @@ impl SpriteSheet {
         self.first_sprite_id <= sprite_id && self.last_sprite_id >= sprite_id
     }
 
-    pub fn get_sprite_index(&self, sprite_id: u32) -> Option<u32> {
+    pub fn get_sprite_index(&self, sprite_id: u32) -> Option<usize> {
         if self.has_sprite(sprite_id) {
-            Some(sprite_id - self.first_sprite_id)
+            Some((sprite_id - self.first_sprite_id) as usize)
         } else {
             None
         }
@@ -96,12 +96,33 @@ impl SpriteSheet {
     }
 }
 
+#[derive(Debug, Default, Clone)]
 pub struct SpriteSheetSet {
-    pub sheet_config: SpriteSheetConfig,
     pub sprite_sheets: Vec<SpriteSheet>,
+    pub sheet_config: SpriteSheetConfig,
 }
 
 impl SpriteSheetSet {
+    pub fn is_empty(&self) -> bool {
+        self.sprite_sheets.is_empty()
+    }
+
+    pub fn from_content(content: &[ContentType], sheet_config: &SpriteSheetConfig) -> Self {
+        let sprite_sheets = content
+            .iter()
+            .filter_map(|content_type| match content_type {
+                ContentType::Sprite(sprite_sheet) => Some(sprite_sheet),
+                _ => None,
+            })
+            .cloned()
+            .collect::<Vec<_>>();
+
+        Self {
+            sprite_sheets,
+            sheet_config: *sheet_config,
+        }
+    }
+
     pub fn has_sprite(&self, sprite_id: u32) -> bool {
         self.sprite_sheets
             .iter()
@@ -114,7 +135,7 @@ impl SpriteSheetSet {
             .find(|sheet| sheet.has_sprite(sprite_id))
     }
 
-    pub fn get_sprite_index_by_id(&self, sprite_id: u32) -> Option<u32> {
+    pub fn get_sprite_index_by_id(&self, sprite_id: u32) -> Option<usize> {
         self.get_by_sprite_id(sprite_id)?
             .get_sprite_index(sprite_id)
     }
