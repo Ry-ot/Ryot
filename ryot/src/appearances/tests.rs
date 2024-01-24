@@ -67,6 +67,100 @@ fn sprite_sheet_fixture() -> SpriteSheet {
 }
 
 #[rstest]
+fn test_from_content(#[from(sprite_sheet_set_fixture)] sprite_sheet_set: SpriteSheetSet) {
+    assert_eq!(2, sprite_sheet_set.sprite_sheets.len());
+    assert_eq!(100, sprite_sheet_set.sprite_sheets[0].first_sprite_id);
+    assert_eq!(200, sprite_sheet_set.sprite_sheets[0].last_sprite_id);
+    assert_eq!(300, sprite_sheet_set.sprite_sheets[1].first_sprite_id);
+    assert_eq!(400, sprite_sheet_set.sprite_sheets[1].last_sprite_id);
+}
+
+#[rstest]
+fn test_set_has_sprite(#[from(sprite_sheet_set_fixture)] sprite_sheet_set: SpriteSheetSet) {
+    assert!(sprite_sheet_set.has_sprite(100));
+    assert!(sprite_sheet_set.has_sprite(200));
+    assert!(sprite_sheet_set.has_sprite(300));
+    assert!(sprite_sheet_set.has_sprite(400));
+    assert!(!sprite_sheet_set.has_sprite(99));
+    assert!(!sprite_sheet_set.has_sprite(201));
+    assert!(!sprite_sheet_set.has_sprite(299));
+    assert!(!sprite_sheet_set.has_sprite(401));
+}
+
+#[rstest]
+fn test_set_get_by_sprite_id(#[from(sprite_sheet_set_fixture)] sprite_sheet_set: SpriteSheetSet) {
+    assert_eq!(
+        100,
+        sprite_sheet_set
+            .get_by_sprite_id(100)
+            .unwrap()
+            .first_sprite_id
+    );
+    assert_eq!(
+        200,
+        sprite_sheet_set
+            .get_by_sprite_id(200)
+            .unwrap()
+            .last_sprite_id
+    );
+    assert_eq!(
+        300,
+        sprite_sheet_set
+            .get_by_sprite_id(300)
+            .unwrap()
+            .first_sprite_id
+    );
+    assert_eq!(
+        400,
+        sprite_sheet_set
+            .get_by_sprite_id(400)
+            .unwrap()
+            .last_sprite_id
+    );
+    assert_eq!(None, sprite_sheet_set.get_by_sprite_id(99));
+    assert_eq!(None, sprite_sheet_set.get_by_sprite_id(201));
+    assert_eq!(None, sprite_sheet_set.get_by_sprite_id(299));
+    assert_eq!(None, sprite_sheet_set.get_by_sprite_id(401));
+}
+
+#[rstest]
+fn test_set_get_sprite_index_by_id(
+    #[from(sprite_sheet_set_fixture)] sprite_sheet_set: SpriteSheetSet,
+) {
+    assert_eq!(0, sprite_sheet_set.get_sprite_index_by_id(100).unwrap());
+    assert_eq!(100, sprite_sheet_set.get_sprite_index_by_id(200).unwrap());
+    assert_eq!(0, sprite_sheet_set.get_sprite_index_by_id(300).unwrap());
+    assert_eq!(100, sprite_sheet_set.get_sprite_index_by_id(400).unwrap());
+    assert_eq!(None, sprite_sheet_set.get_sprite_index_by_id(0));
+    assert_eq!(None, sprite_sheet_set.get_sprite_index_by_id(99));
+    assert_eq!(None, sprite_sheet_set.get_sprite_index_by_id(201));
+    assert_eq!(None, sprite_sheet_set.get_sprite_index_by_id(299));
+    assert_eq!(None, sprite_sheet_set.get_sprite_index_by_id(401));
+}
+
+#[fixture]
+fn sprite_sheet_set_fixture() -> SpriteSheetSet {
+    let vec = vec![
+        ContentType::Sprite(SpriteSheet {
+            file: "spritesheet.png".to_string(),
+            layout: SpriteLayout::default(),
+            first_sprite_id: 100,
+            last_sprite_id: 200,
+            area: 64,
+        }),
+        ContentType::Sprite(SpriteSheet {
+            file: "spritesheet2.png".to_string(),
+            layout: SpriteLayout::default(),
+            first_sprite_id: 300,
+            last_sprite_id: 400,
+            area: 64,
+        }),
+    ];
+
+    SpriteSheetSet::from_content(&vec, &SpriteSheetConfig::cip_sheet())
+}
+
+#[rstest]
 #[case(
         ContentType::Appearances { file: "appearances.dat".to_string(), version: 1 },
         r#"{"type":"appearances","file":"appearances.dat","version":1}"#

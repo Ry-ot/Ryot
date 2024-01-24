@@ -1,6 +1,8 @@
 use bevy::prelude::*;
-use ryot::appearances::ContentType;
+use ryot::appearances::{ContentType, SpriteSheet, SpriteSheetSet};
 use ryot::*;
+use std::collections::HashMap;
+use std::marker::PhantomData;
 use std::path::PathBuf;
 
 mod appearances;
@@ -12,74 +14,84 @@ pub use async_events::*;
 mod configs;
 pub use configs::*;
 
+pub mod content;
+
 mod palette;
 pub use palette::*;
 use ryot::tile_grid::TileGrid;
 
-#[derive(Resource, Debug, Default)]
-pub struct CipContent {
-    pub raw_content: Vec<ContentType>,
+#[derive(Debug, Clone, Event)]
+pub struct LoadCommand<T> {
+    pub path: String,
+    _marker: PhantomData<T>,
+}
+
+#[derive(Debug)]
+pub struct LoadedSprite {
+    pub sprite_id: u32,
+    pub sprite_sheet: SpriteSheet,
+    pub config: SpriteSheetConfig,
+    pub atlas_texture_handle: Handle<TextureAtlas>,
 }
 
 #[derive(Resource, Default)]
 pub struct TextureAtlasHandlers(pub bevy::utils::HashMap<String, Handle<TextureAtlas>>);
 
-#[derive(Debug)]
-pub struct LoadedSprite {
-    pub sprite_id: u32,
-    pub sprite_index: usize,
-    pub atlas_grid: SheetGrid,
-    pub atlas_texture_handle: Handle<TextureAtlas>,
+impl LoadedSprite {
+    pub fn new(
+        sprite_id: u32,
+        sprite_sheets: &SpriteSheetSet,
+        atlas_handlers: &ResMut<TextureAtlasHandlers>,
+    ) -> Option<Self> {
+        let sprite_sheet = sprite_sheets.get_by_sprite_id(sprite_id)?;
+
+        Some(Self {
+            sprite_id,
+            sprite_sheet: sprite_sheet.clone(),
+            config: sprite_sheets.sheet_config,
+            atlas_texture_handle: atlas_handlers.0.get(&sprite_sheet.file)?.clone(),
+        })
+    }
+
+    pub fn get_sprite_index(&self) -> usize {
+        self.sprite_sheet
+            .get_sprite_index(self.sprite_id)
+            .expect("Sprite must exist in sheet")
+    }
 }
 
 pub fn load_sprites(
     sprite_ids: &[u32],
-    content: &[ContentType],
+    sprite_sheets: &SpriteSheetSet,
     asset_server: &Res<AssetServer>,
     atlas_handlers: &mut ResMut<TextureAtlasHandlers>,
     texture_atlases: &mut ResMut<Assets<TextureAtlas>>,
 ) -> Vec<LoadedSprite> {
-    let unsaved_sprites: Vec<(SheetGrid, TextureAtlas)> = sprite_ids
+    let unsaved_sprites: Vec<(&SpriteSheet, TextureAtlas)> = sprite_ids
         .iter()
         .filter_map(|sprite_id| {
-            let grid = get_sprite_grid_by_id(content, *sprite_id).ok()?;
+            let sprite_sheet = sprite_sheets.get_by_sprite_id(*sprite_id)?;
+
             Some((
-                grid.clone(),
-                build_texture_atlas_from_sheet(&grid, asset_server).unwrap(),
+                sprite_sheet,
+                build_texture_atlas_from_sheet(*sprite_id, sprite_sheets, asset_server).unwrap(),
             ))
         })
         .collect();
 
-    unsaved_sprites.iter().for_each(|(grid, atlas)| {
-        build_atlas_handler(grid, atlas.clone(), atlas_handlers, texture_atlases);
+    unsaved_sprites.iter().for_each(|(sprite_sheet, atlas)| {
+        build_atlas_handler(
+            sprite_sheet.file.clone(),
+            atlas.clone(),
+            atlas_handlers,
+            texture_atlases,
+        );
     });
 
     sprite_ids
         .iter()
-        .filter_map(|sprite_id| {
-            let grid = get_sprite_grid_by_id(content, *sprite_id).ok()?;
-            Some(LoadedSprite {
-                sprite_id: *sprite_id,
-                sprite_index: get_sprite_index_by_id(content, *sprite_id).ok()?,
-                atlas_grid: grid.clone(),
-                atlas_texture_handle: atlas_handlers.0.get(&grid.file)?.clone(),
-            })
-        })
+        .filter_map(|sprite_id| LoadedSprite::new(*sprite_id, sprite_sheets, atlas_handlers))
         .collect::<Vec<_>>()
-}
-
-pub fn load_sprite(
-    sprite_id: u32,
-    content: &[ContentType],
-    asset_server: &Res<AssetServer>,
-    atlas_handlers: &mut ResMut<TextureAtlasHandlers>,
-    texture_atlases: &mut ResMut<Assets<TextureAtlas>>,
-) {
-    if let Ok(grid) = get_sprite_grid_by_id(content, sprite_id) {
-        let atlas = build_texture_atlas_from_sheet(&grid, asset_server)
-            .expect("Failed to build texture atlas");
-        build_atlas_handler(&grid, atlas, atlas_handlers, texture_atlases);
-    }
 }
 
 pub fn get_sprite_by_id(
@@ -87,29 +99,45 @@ pub fn get_sprite_by_id(
     sprite_id: u32,
     atlas_handlers: &ResMut<TextureAtlasHandlers>,
 ) -> Option<LoadedSprite> {
-    let grid = get_sprite_grid_by_id(content, sprite_id).ok()?;
-    Some(LoadedSprite {
-        sprite_id,
-        sprite_index: get_sprite_index_by_id(content, sprite_id).ok()?,
-        atlas_grid: grid.clone(),
-        atlas_texture_handle: atlas_handlers.0.get(&grid.file)?.clone(),
-    })
+    let sprite_sheets = SpriteSheetSet::from_content(content, &SpriteSheetConfig::cip_sheet());
+
+    LoadedSprite::new(sprite_id, &sprite_sheets, atlas_handlers)
+}
+
+#[derive(Debug, Clone, Event)]
+pub struct AtlasesWereLoaded {
+    pub atlases: HashMap<String, TextureAtlas>,
+}
+
+pub fn build_atlas(
+    mut reader: EventReader<AtlasesWereLoaded>,
+    mut atlas_handlers: ResMut<TextureAtlasHandlers>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+) {
+    for AtlasesWereLoaded { atlases } in reader.read() {
+        for (file, texture_atlas) in atlases {
+            if !atlas_handlers.0.contains_key(file) {
+                let atlas_handle = texture_atlases.add(texture_atlas.clone());
+                atlas_handlers.0.insert(file.clone(), atlas_handle);
+            }
+        }
+    }
 }
 
 pub fn build_atlas_handler(
-    grid: &SheetGrid,
+    file: String,
     texture_atlas: TextureAtlas,
     atlas_handlers: &mut ResMut<TextureAtlasHandlers>,
     texture_atlases: &mut ResMut<Assets<TextureAtlas>>,
 ) -> Handle<TextureAtlas> {
-    if !atlas_handlers.0.contains_key(&grid.file) {
+    if !atlas_handlers.0.contains_key(&file) {
         let atlas_handle = texture_atlases.add(texture_atlas);
-        atlas_handlers.0.insert(grid.file.clone(), atlas_handle);
+        atlas_handlers.0.insert(file.clone(), atlas_handle);
     }
 
     atlas_handlers
         .0
-        .get(&grid.file)
+        .get(&file)
         .expect(
             "Failed to get atlas handler, this should never happen, please report this as a bug",
         )
@@ -117,17 +145,25 @@ pub fn build_atlas_handler(
 }
 
 pub fn build_texture_atlas_from_sheet(
-    grid: &SheetGrid,
+    sprite_id: u32,
+    sprite_sheets: &SpriteSheetSet,
     asset_server: &Res<AssetServer>,
 ) -> Result<TextureAtlas, std::io::Error> {
-    let image_handle: Handle<Image> = asset_server
-        .load(PathBuf::from(SPRITE_SHEET_FOLDER).join(get_decompressed_file_name(&grid.file)));
+    let sprite_sheet = sprite_sheets.get_by_sprite_id(sprite_id).expect(
+        "Sprite must exist in sheet, this should never happen, please report this as a bug",
+    );
+
+    let image_handle: Handle<Image> = asset_server.load(
+        PathBuf::from(SPRITE_SHEET_FOLDER).join(get_decompressed_file_name(&sprite_sheet.file)),
+    );
 
     Ok(TextureAtlas::from_grid(
         image_handle,
-        Vec2::new(grid.tile_size.x as f32, grid.tile_size.y as f32),
-        grid.columns,
-        grid.rows,
+        sprite_sheet
+            .get_tile_size(&sprite_sheets.sheet_config)
+            .as_vec2(),
+        sprite_sheet.get_columns_count(&sprite_sheets.sheet_config),
+        sprite_sheet.get_rows_count(&sprite_sheets.sheet_config),
         None,
         None,
     ))
@@ -141,7 +177,7 @@ pub fn draw_sprite(pos: Vec3, sprite: &LoadedSprite, commands: &mut Commands) {
     commands.spawn(build_sprite_bundle(
         sprite.atlas_texture_handle.clone(),
         tile_pos,
-        sprite.sprite_index,
+        sprite.get_sprite_index(),
     ));
 }
 

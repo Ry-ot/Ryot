@@ -29,16 +29,16 @@ use ryot::*;
 
 use ryot_compass::{
     draw_palette_window, draw_sprite, load_sprites, test_reload_config, Appearance,
-    AppearanceAssetPlugin, AppearanceHandle, AsyncEventsExtension, CipContent, ConfigExtension,
-    EventSender, Palette, PaletteState, TextureAtlasHandlers, Tile, TilesetCategory,
+    AppearanceAssetPlugin, AppearanceHandle, ConfigExtension, EventSender, LoadedSprite, Palette,
+    PaletteState, TextureAtlasHandlers, Tile, TilesetCategory,
 };
 use winit::window::Icon;
 
 use bevy::asset::AssetMetaCheck;
 use rfd::AsyncFileDialog;
-use ryot::appearances::ContentType;
 
 use ryot::tile_grid::TileGrid;
+use ryot_compass::content::{ContentPlugin, ContentWasLoaded, Sprites};
 use std::future::Future;
 
 // fn scroll_events(mut minimap: ResMut<Minimap>, mut scroll_evr: EventReader<MouseWheel>) {
@@ -100,12 +100,12 @@ fn spawn_camera(
     let mut colors = Vec::new();
     let mut indices = Vec::new();
 
-    let width = (columns * tile_size.x as u16) as f32;
-    let height = (rows * tile_size.y as u16) as f32;
+    let width = (columns * tile_size.x) as f32;
+    let height = (rows * tile_size.y) as f32;
 
     // Create vertices for the grid
     for i in 0..=columns {
-        let offset = (i * tile_size.x as u16) as f32;
+        let offset = (i * tile_size.x) as f32;
 
         // Horizontal line
         positions.push([0.0, -offset, 0.0]);
@@ -126,7 +126,7 @@ fn spawn_camera(
     let mut mesh = Mesh::new(PrimitiveTopology::LineList);
     mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
     mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, colors);
-    mesh.set_indices(Some(Indices::U16(indices)));
+    mesh.set_indices(Some(Indices::U32(indices)));
 
     let mesh_handle: Handle<Mesh> = meshes.add(mesh);
 
@@ -223,11 +223,26 @@ pub struct Tiles(Vec<(Tile, bool)>);
 //         ));
 //     }
 // }
+
+// fn aaa(
+//     mut commands: Commands,
+//     mut egui_ctx: EguiContexts,
+//     sprites: ResMut<Sprites>,
+//     asset_server: Res<AssetServer>,
+//     mut atlas_handlers: ResMut<TextureAtlasHandlers>,
+//     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+//     cursor_pos: Res<CursorPos>,
+//     palette_state: Res<PaletteState>,
+//     mouse_button_input: Res<Input<MouseButton>>,
+//     error_states: Res<ErrorState>,
+// ) {
+// }
+
 #[allow(clippy::too_many_arguments)]
 fn draw(
     mut commands: Commands,
     mut egui_ctx: EguiContexts,
-    content: ResMut<CipContent>,
+    sprites: Res<Sprites>,
     asset_server: Res<AssetServer>,
     mut atlas_handlers: ResMut<TextureAtlasHandlers>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
@@ -244,9 +259,9 @@ fn draw(
         return;
     }
 
-    if content.raw_content.is_empty() {
+    let Some(sprite_sheets) = &sprites.sheets else {
         return;
-    }
+    };
 
     let Some(sprite_id) = palette_state.selected_tile else {
         return;
@@ -254,7 +269,7 @@ fn draw(
 
     let sprites = load_sprites(
         &[sprite_id],
-        &content.raw_content,
+        sprite_sheets,
         &asset_server,
         &mut atlas_handlers,
         &mut texture_atlases,
@@ -280,7 +295,7 @@ fn draw(
 
                 let sprites = load_sprites(
                     &sprites,
-                    &content.raw_content,
+                    sprite_sheets,
                     &asset_server,
                     &mut atlas_handlers,
                     &mut texture_atlases,
@@ -345,7 +360,7 @@ pub fn update_cursor_pos(
 
 #[allow(clippy::too_many_arguments)]
 fn update_cursor(
-    content: Res<CipContent>,
+    sprites: Res<Sprites>,
     cursor_pos: Res<CursorPos>,
     asset_server: Res<AssetServer>,
     palette_state: Res<PaletteState>,
@@ -369,9 +384,9 @@ fn update_cursor(
         windows.single_mut().cursor.visible = true;
     }
 
-    if content.raw_content.is_empty() {
+    let Some(sprite_sheets) = &sprites.sheets else {
         return;
-    }
+    };
 
     let Some(sprite_id) = palette_state.selected_tile else {
         return;
@@ -379,7 +394,7 @@ fn update_cursor(
 
     let sprites = load_sprites(
         &[sprite_id],
-        &content.raw_content,
+        sprite_sheets,
         &asset_server,
         &mut atlas_handlers,
         &mut texture_atlases,
@@ -392,7 +407,7 @@ fn update_cursor(
     for (mut transform, mut visibility, mut sprite, mut atlas_handle, _) in cursor_query.iter_mut()
     {
         *atlas_handle = new_sprite.atlas_texture_handle.clone();
-        sprite.index = new_sprite.sprite_index;
+        sprite.index = new_sprite.get_sprite_index();
 
         let tile_grid = TileGrid::default();
         let tile_pos = tile_grid.get_tile_pos_from_display_pos_vec2(cursor_pos.0);
@@ -440,27 +455,11 @@ fn spawn_cursor(mut commands: Commands) {
     ));
 }
 
-// fn load_cip_content(
-//     path: &str,
-//     mut content: ResMut<CipContent>,
-//     mut error_state: ResMut<ErrorState>,
-// ) {
-//     match load_content(path) {
-//         Ok(raw_content) => content.raw_content = raw_content,
-//         Err(e) => {
-//             error!("Failed to load CIP content: {:?}", e);
-//             error_state.has_error = true;
-//             error_state.error_message = "Failed to load CIP content".to_string();
-//         }
-//     }
-// }
-
 fn ui_example(
     mut egui_ctx: EguiContexts,
-    content: ResMut<CipContent>,
+    sprites: Res<Sprites>,
     mut exit: EventWriter<AppExit>,
     content_sender: Res<EventSender<ContentWasLoaded>>,
-    // error_state: ResMut<ErrorState>,
     mut about_me: ResMut<AboutMeOpened>,
 ) {
     egui::TopBottomPanel::top("top_panel").show(egui_ctx.ctx_mut(), |ui| {
@@ -476,7 +475,7 @@ fn ui_example(
                 // Temporarily apply the style
                 ui.set_style(style);
 
-                let is_content_loaded = !content.raw_content.is_empty();
+                let is_content_loaded = sprites.sheets.is_some();
 
                 // Load the image using `image-rs`
                 // let image_data = include_bytes!("path/to/your/image.png").to_vec();
@@ -537,37 +536,18 @@ fn ui_example(
                             AsyncFileDialog::new().add_filter(".json", &["json"]),
                             move |(file_name, loaded)| {
                                 debug!("Loading content from file: {:?}", file_name);
-                                let Ok(raw_content) =
-                                    serde_json::from_slice::<Vec<ContentType>>(&loaded)
+                                let Some(content_was_loaded) =
+                                    ContentWasLoaded::from_bytes(file_name.clone(), loaded.clone())
                                 else {
-                                    error!("Failed to load content from file: {:?}", file_name);
+                                    warn!("Failed to load content from file: {:?}", file_name);
                                     return;
                                 };
 
                                 sender
-                                    .send(ContentWasLoaded {
-                                        file_name,
-                                        raw_content,
-                                    })
-                                    .expect("TODO: panic message");
-                                // content.raw_content = deserialized;
+                                    .send(content_was_loaded)
+                                    .expect("Failed to send content loaded event");
                             },
                         );
-
-                        // let Some(path) = path else {
-                        //     return;
-                        // };
-                        //
-                        // debug!("{:?}", path.file_name().unwrap());
-                        // debug!("{:?}", path.parent().unwrap());
-                        //
-                        // let Some(path) = path.to_str() else {
-                        //     return;
-                        // };
-                        //
-                        // debug!("Loading cip content");
-                        // load_cip_content(path, content, error_state);
-                        // debug!("Content loaded!");
                     }
 
                     ui.add_enabled(is_content_loaded, egui::Button::new("🔃 Refresh Content"))
@@ -617,7 +597,7 @@ fn ui_example(
 
 #[allow(clippy::too_many_arguments)]
 pub fn print_appearances(
-    content: Res<CipContent>,
+    sprites: Res<Sprites>,
     palette_state: ResMut<PaletteState>,
     asset_server: Res<AssetServer>,
     appearances: Res<Assets<Appearance>>,
@@ -638,11 +618,11 @@ pub fn print_appearances(
         .unwrap()
         .is_empty()
     {
-        if content.raw_content.is_empty() {
+        let Some(sprite_sheets) = &sprites.sheets else {
             return;
-        }
+        };
 
-        let mut egui_images: Vec<(u32, SheetGrid, egui::Image)> = vec![];
+        let mut egui_images: Vec<(LoadedSprite, egui::Image)> = vec![];
 
         let mut sprite_ids: Vec<u32> = if palette_state.category == TilesetCategory::Raw {
             let mut sprite_ids = vec![];
@@ -670,16 +650,16 @@ pub fn print_appearances(
 
         for sprite in load_sprites(
             &sprite_ids[begin..end],
-            &content.raw_content,
+            sprite_sheets,
             &asset_server,
             &mut atlas_handlers,
             &mut texture_atlases,
         ) {
-            let Some(atlas) = texture_atlases.get(sprite.atlas_texture_handle) else {
+            let Some(atlas) = texture_atlases.get(sprite.atlas_texture_handle.clone()) else {
                 continue;
             };
 
-            let Some(rect) = atlas.textures.get(sprite.sprite_index) else {
+            let Some(rect) = atlas.textures.get(sprite.get_sprite_index()) else {
                 continue;
             };
 
@@ -692,8 +672,7 @@ pub fn print_appearances(
                 egui::Vec2::new(rect.max.x - rect.min.x, rect.max.y - rect.min.y);
             let tex: TextureId = egui_ctx.add_image(atlas.texture.clone_weak());
             egui_images.push((
-                sprite.sprite_id,
-                sprite.atlas_grid,
+                sprite,
                 egui::Image::new(SizedTexture::new(tex, rect_vec2)).uv(uv),
             ));
         }
@@ -807,22 +786,6 @@ pub struct SelectedTile {
     pub atlas: Option<Handle<TextureAtlas>>,
 }
 
-#[derive(Event, Debug, Clone, Default)]
-pub struct ContentWasLoaded {
-    file_name: String,
-    raw_content: Vec<ContentType>,
-}
-
-fn handle_content_loaded(
-    mut events: EventReader<ContentWasLoaded>,
-    mut content: ResMut<CipContent>,
-) {
-    for event in events.read() {
-        debug!("Handling loaded content from file: {:?}", event.file_name);
-        content.raw_content = event.raw_content.clone(); // Modify content
-    }
-}
-
 fn main() {
     App::new()
         .add_event::<AppExit>()
@@ -846,15 +809,14 @@ fn main() {
             Material2dPlugin::<RainbowOutlineMaterial>::default(),
         ))
         .add_plugins(AppearanceAssetPlugin)
+        .add_plugins(ContentPlugin)
         .insert_resource(ClearColor(Color::rgb(0.12, 0.12, 0.12)))
         .init_resource::<ErrorState>()
-        .add_async_event::<ContentWasLoaded>()
         .add_config::<ContentConfigs>(CONTENT_CONFIG_PATH)
         // .init_resource::<LmdbEnv>()
         .init_resource::<Palette>()
         .init_resource::<AboutMeOpened>()
         .init_resource::<TextureAtlasHandlers>()
-        .init_resource::<CipContent>()
         .init_resource::<CursorPos>()
         .init_resource::<Tiles>()
         .init_resource::<PaletteState>()
@@ -879,7 +841,6 @@ fn main() {
         .add_systems(Update, display_error_window)
         .add_systems(Update, check_for_exit)
         .add_systems(Update, update_cursor)
-        .add_systems(Update, handle_content_loaded)
         .add_systems(Update, test_reload_config::<ContentConfigs>)
         .run();
 }
@@ -889,8 +850,7 @@ struct AboutMeOpened(bool);
 
 #[cfg(not(target_arch = "wasm32"))]
 fn execute<F: Future<Output = ()> + Send + 'static>(f: F) {
-    // this is stupid... use any executor of your choice instead
-    std::thread::spawn(move || futures::executor::block_on(f));
+    async_std::task::spawn(f);
 }
 
 #[cfg(target_arch = "wasm32")]

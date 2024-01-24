@@ -1,25 +1,25 @@
 use glam::{UVec2, Vec2, Vec3};
 
-/// A grid of tiles, columns and rows are capped at u16::MAX because of performance reasons.
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct TileGrid {
-    pub columns: u16,
-    pub rows: u16,
+    pub columns: u32,
+    pub rows: u32,
     pub tile_size: UVec2,
 }
 
+/// A grid of tiles, columns and rows are capped at u16::MAX because of performance reasons.
 impl Default for TileGrid {
     fn default() -> Self {
         TileGrid {
-            columns: u16::MAX,
-            rows: u16::MAX,
+            columns: u16::MAX as u32,
+            rows: u16::MAX as u32,
             tile_size: UVec2::new(32, 32),
         }
     }
 }
 
 impl TileGrid {
-    pub fn from_grid_size(columns: u16, rows: u16) -> Self {
+    pub fn from_grid_size(columns: u32, rows: u32) -> Self {
         TileGrid {
             columns,
             rows,
@@ -34,7 +34,7 @@ impl TileGrid {
         }
     }
 
-    pub fn with_grid_size(mut self, columns: u16, rows: u16) -> Self {
+    pub fn with_grid_size(mut self, columns: u32, rows: u32) -> Self {
         self.columns = columns;
         self.rows = rows;
         self
@@ -46,7 +46,7 @@ impl TileGrid {
     }
 
     pub fn get_tile_count(&self) -> u32 {
-        self.columns as u32 * self.rows as u32
+        self.columns * self.rows
     }
 
     /// Gets the projected position in the tile pos from a 2d display position.

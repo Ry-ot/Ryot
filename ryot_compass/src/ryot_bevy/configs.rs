@@ -93,17 +93,12 @@ impl ConfigExtension for App {
 
 fn reload_config<T: DeserializeOwned + Clone + Send + Sync + 'static>(
     mut config: ResMut<Config<T>>,
-    mut configs: ResMut<Assets<ConfigAsset<T>>>,
     asset_server: Res<AssetServer>,
     mut reader: EventReader<ReloadConfig<T>>,
 ) {
     for ReloadConfig { new_file, .. } in reader.read() {
         if let Some(new_file) = &new_file {
             if new_file != &config.source {
-                if configs.contains(config.handle.id()) {
-                    configs.remove(config.handle.id());
-                }
-
                 config.source = new_file.clone();
                 info!(
                     "Switched config '{}' file to '{}'",

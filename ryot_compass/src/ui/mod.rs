@@ -1,8 +1,7 @@
-use crate::TilesetCategory;
+use crate::{LoadedSprite, TilesetCategory};
 use bevy::prelude::{debug, ResMut, Resource};
 use bevy_egui::EguiContexts;
 use egui::{Align, Ui};
-use ryot::*;
 use std::ops::Range;
 
 #[derive(Resource, Debug)]
@@ -57,7 +56,7 @@ impl PaletteState {
 pub fn draw_palette_window(
     items_count: usize,
     categories: Vec<&TilesetCategory>,
-    egui_images: Vec<(u32, SheetGrid, egui::Image)>,
+    egui_images: Vec<(LoadedSprite, egui::Image)>,
     mut egui_ctx: EguiContexts,
     mut palette_state: ResMut<PaletteState>,
 ) {
@@ -138,7 +137,7 @@ pub fn draw_palette_picker(
 pub fn draw_palette_items(
     ui: &mut Ui,
     items_count: usize,
-    egui_images: Vec<(u32, SheetGrid, egui::Image)>,
+    egui_images: Vec<(LoadedSprite, egui::Image)>,
     mut palette_state: ResMut<PaletteState>,
 ) {
     let row_padding = 3.;
@@ -157,53 +156,51 @@ pub fn draw_palette_items(
                     .chunks(palette_state.get_chunk_size())
                     .for_each(|chunk| {
                         ui.horizontal(|ui| {
-                            chunk
-                                .iter()
-                                .enumerate()
-                                .for_each(|(i, (index, grid, image))| {
-                                    let spacing = (palette_state.width
-                                        - palette_state.get_tile_size()
-                                            * palette_state.get_chunk_size() as f32)
-                                        / (palette_state.get_chunk_size() - 1) as f32;
-                                    let size = palette_state.grid_size as f32;
+                            chunk.iter().enumerate().for_each(|(i, (sprite, image))| {
+                                let spacing = (palette_state.width
+                                    - palette_state.get_tile_size()
+                                        * palette_state.get_chunk_size() as f32)
+                                    / (palette_state.get_chunk_size() - 1) as f32;
+                                let size = palette_state.grid_size as f32;
 
-                                    ui.vertical(|ui| {
-                                        let tile = image
-                                            .clone()
-                                            .fit_to_exact_size(egui::Vec2::new(size, size));
+                                ui.vertical(|ui| {
+                                    let tile = image
+                                        .clone()
+                                        .fit_to_exact_size(egui::Vec2::new(size, size));
 
-                                        let selected = match palette_state.selected_tile {
-                                            Some(selected_index) => selected_index == *index,
-                                            _ => false,
-                                        };
+                                    let selected = match palette_state.selected_tile {
+                                        Some(selected_index) => selected_index == sprite.sprite_id,
+                                        _ => false,
+                                    };
 
-                                        let ui_button =
-                                            ui.add(egui::ImageButton::new(tile).selected(selected));
+                                    let ui_button =
+                                        ui.add(egui::ImageButton::new(tile).selected(selected));
 
-                                        let ui_button = ui_button
-                                            .on_hover_text(format!("{}", index))
-                                            .on_hover_cursor(egui::CursorIcon::PointingHand);
+                                    let ui_button = ui_button
+                                        .on_hover_text(format!("{}", sprite.sprite_id))
+                                        .on_hover_cursor(egui::CursorIcon::PointingHand);
 
-                                        if ui_button.clicked() {
-                                            palette_state.selected_tile = Some(*index);
-                                            debug!("Tile: {:?} selected", index);
-                                        }
-
-                                        ui.add_space(row_padding);
-                                    });
-
-                                    let ratio = grid.tile_size.x as f32 / grid.tile_size.y as f32;
-
-                                    if i == palette_state.get_chunk_size() - 1 {
-                                        return;
+                                    if ui_button.clicked() {
+                                        palette_state.selected_tile = Some(sprite.sprite_id);
+                                        debug!("Tile: {:?} selected", sprite.sprite_id);
                                     }
 
-                                    ui.add_space(spacing);
-
-                                    if ratio > 1.0 && i < palette_state.get_chunk_size() - 1 {
-                                        ui.add_space(size / 2.);
-                                    }
+                                    ui.add_space(row_padding);
                                 });
+
+                                let tile_size = sprite.sprite_sheet.get_tile_size(&sprite.config);
+                                let ratio = tile_size.x as f32 / tile_size.y as f32;
+
+                                if i == palette_state.get_chunk_size() - 1 {
+                                    return;
+                                }
+
+                                ui.add_space(spacing);
+
+                                if ratio > 1.0 && i < palette_state.get_chunk_size() - 1 {
+                                    ui.add_space(size / 2.);
+                                }
+                            });
                         });
                     });
             },
