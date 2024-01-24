@@ -2,7 +2,6 @@ use crate::appearances::{ContentType, SpriteSheet};
 use crate::{
     error::*, get_full_file_buffer, CompressionConfig, ContentConfigs, SheetGrid, SpriteSheetConfig,
 };
-use glam::UVec2;
 use image::error::{LimitError, LimitErrorKind};
 use image::{imageops, ImageFormat, Rgba, RgbaImage};
 use log::{info, warn};
@@ -146,8 +145,8 @@ pub fn get_sheet_by_sprite_id(content: &[ContentType], id: u32) -> Option<Sprite
         .iter()
         .filter_map(|content| {
             if let ContentType::Sprite(sheet) = content {
-                if id >= sheet.first_sprite_id && id <= sheet.last_sprite_id {
-                    return Some(sheet.clone()); // Assuming you have a way to convert Sprite to SpriteSheet
+                if sheet.has_sprite(id) {
+                    return Some(sheet.clone());
                 }
             }
             None
@@ -156,32 +155,22 @@ pub fn get_sheet_by_sprite_id(content: &[ContentType], id: u32) -> Option<Sprite
 }
 
 pub fn get_sprite_index_by_id(content: &[ContentType], id: u32) -> Result<usize> {
-    if let Some(sheet) = get_sheet_by_sprite_id(content, id) {
-        Ok((id - sheet.first_sprite_id) as usize)
-    } else {
-        Err(Error::SpriteNotFound)
-    }
+    let Some(sheet) = get_sheet_by_sprite_id(content, id) else {
+        return Err(Error::SpriteNotFound);
+    };
+
+    Ok(sheet.get_sprite_index(id).unwrap() as usize)
 }
 
 pub fn get_sprite_grid_by_id(content: &[ContentType], id: u32) -> Result<SheetGrid> {
     let sheet_config = SpriteSheetConfig::cip_sheet();
     if let Some(sheet) = get_sheet_by_sprite_id(content, id) {
-        let tile_size = UVec2 {
-            x: sheet.layout.get_width(&sheet_config),
-            y: sheet.layout.get_height(&sheet_config),
-        };
-
-        let columns = (sheet_config.sheet_size.x / tile_size.x) as usize;
-        let rows = (sheet_config.sheet_size.y / tile_size.y) as usize;
-
-        let grid = SheetGrid {
-            file: sheet.file,
-            tile_size,
-            columns,
-            rows,
-        };
-
-        Ok(grid)
+        Ok(SheetGrid {
+            file: sheet.file.clone(),
+            tile_size: sheet.get_tile_size(&sheet_config),
+            columns: sheet.get_columns_count(&sheet_config),
+            rows: sheet.get_rows_count(&sheet_config),
+        })
     } else {
         Err(Error::SpriteNotFound)
     }
