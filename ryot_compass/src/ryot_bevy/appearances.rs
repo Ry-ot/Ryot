@@ -13,12 +13,19 @@ pub struct AppearanceHandle {
     pub handle: Handle<Appearance>,
 }
 
+#[derive(Debug, Clone, Event)]
+pub struct LoadAppearances {
+    path: String,
+}
+
 impl Plugin for AppearanceAssetPlugin {
     fn build(&self, app: &mut App) {
         app.init_asset::<Appearance>()
             .register_asset_loader(AppearanceAssetLoader {})
             .init_resource::<AppearanceHandle>()
-            .add_systems(Startup, init_appearances);
+            .add_event::<LoadAppearances>()
+            .add_systems(Startup, init_appearances)
+            .add_systems(Update, load_appearances);
     }
 }
 
@@ -65,6 +72,18 @@ impl AssetLoader for AppearanceAssetLoader {
     }
 }
 
-pub fn init_appearances(asset_server: Res<AssetServer>, mut appearance: ResMut<AppearanceHandle>) {
-    appearance.handle = asset_server.load("appearances.dat");
+pub fn init_appearances(mut event_writer: EventWriter<LoadAppearances>) {
+    event_writer.send(LoadAppearances {
+        path: "appearances.dat".to_string(),
+    });
+}
+
+fn load_appearances(
+    asset_server: Res<AssetServer>,
+    mut appearance: ResMut<AppearanceHandle>,
+    mut reader: EventReader<LoadAppearances>,
+) {
+    for LoadAppearances { path } in reader.read() {
+        appearance.handle = asset_server.load(path);
+    }
 }
