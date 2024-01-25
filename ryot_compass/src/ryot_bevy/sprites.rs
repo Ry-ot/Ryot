@@ -176,8 +176,8 @@ fn atlas_handler_system(
     }
 }
 
-pub fn draw_sprite(pos: Vec3, sprite: &LoadedSprite, commands: &mut Commands) {
-    let Some(tile_pos) = TileGrid::default().get_display_position_from_tile_pos_vec3(pos) else {
+pub fn draw_sprite(pos: Vec3, sprite: &LoadedSprite, commands: &mut Commands, tile_grid: TileGrid) {
+    let Some(tile_pos) = tile_grid.get_display_position_from_tile_pos_vec3(pos) else {
         return;
     };
 

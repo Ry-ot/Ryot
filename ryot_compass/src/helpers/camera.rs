@@ -1,5 +1,6 @@
+use crate::{ConfigAsset, ConfigHandle, DefaultConfig};
 use bevy::{input::Input, math::Vec3, prelude::*, render::camera::Camera};
-use ryot::tile_grid::TileGrid;
+use ryot::ContentConfigs;
 
 // A simple camera system for moving and zooming the camera.
 #[allow(dead_code)]
@@ -7,6 +8,8 @@ pub fn movement(
     time: Res<Time>,
     windows: Query<&mut Window>,
     keyboard_input: Res<Input<KeyCode>>,
+    config: Res<ConfigHandle<ContentConfigs>>,
+    configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
     mut query: Query<(&mut Transform, &mut OrthographicProjection), With<Camera>>,
 ) {
     for (mut transform, mut ortho) in query.iter_mut() {
@@ -53,7 +56,7 @@ pub fn movement(
             ortho.scale
         };
 
-        let tile_grid = TileGrid::default();
+        let tile_grid = configs.get(config.handle.id()).or_default().grid;
 
         transform.translation.x =
             normalize_dimension(transform.translation.x, tile_grid.tile_size.x);

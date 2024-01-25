@@ -15,6 +15,7 @@ pub mod lmdb;
 pub mod appearances;
 
 mod sprites;
+use crate::tile_grid::TileGrid;
 pub use sprites::*;
 
 pub static CONTENT_CONFIG_PATH: &str = "config/.content.toml";
@@ -24,6 +25,7 @@ pub static SPRITE_SHEET_FOLDER: &str = "sprite-sheets";
 pub struct ContentConfigs {
     pub directories: DirectoryConfigs,
     pub sprite_sheet: SpriteSheetConfig,
+    pub grid: TileGrid,
 }
 
 #[derive(Debug, Clone, Deserialize)]
