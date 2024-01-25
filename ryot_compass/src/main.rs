@@ -28,9 +28,8 @@ use ryot::*;
 // use ryot_compass::lmdb::LmdbEnv;
 
 use ryot_compass::{
-    draw_palette_window, draw_sprite, load_sprites, test_reload_config, Appearance,
-    AppearanceAssetPlugin, AppearanceHandle, ConfigExtension, EventSender, LoadedSprite, Palette,
-    PaletteState, TextureAtlasHandlers, Tile, TilesetCategory,
+    draw_palette_window, test_reload_config, Appearance, AppearanceAssetPlugin, AppearanceHandle,
+    ConfigExtension, EventSender, Palette, PaletteState, Tile, TilesetCategory,
 };
 use winit::window::Icon;
 
@@ -39,6 +38,10 @@ use rfd::AsyncFileDialog;
 
 use ryot::tile_grid::TileGrid;
 use ryot_compass::content::{ContentPlugin, ContentWasLoaded, Sprites};
+use ryot_compass::sprites::{
+    draw_sprite, load_sprites, LoadSpriteSheetTextureCommand, LoadedSprite, SpritesPlugin,
+    TextureAtlasHandlers,
+};
 use std::future::Future;
 
 // fn scroll_events(mut minimap: ResMut<Minimap>, mut scroll_evr: EventReader<MouseWheel>) {
@@ -243,13 +246,12 @@ fn draw(
     mut commands: Commands,
     mut egui_ctx: EguiContexts,
     sprites: Res<Sprites>,
-    asset_server: Res<AssetServer>,
-    mut atlas_handlers: ResMut<TextureAtlasHandlers>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    atlas_handlers: ResMut<TextureAtlasHandlers>,
     cursor_pos: Res<CursorPos>,
     palette_state: Res<PaletteState>,
     mouse_button_input: Res<Input<MouseButton>>,
     error_states: Res<ErrorState>,
+    build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
 ) {
     if egui_ctx.ctx_mut().is_pointer_over_area() {
         return;
@@ -259,7 +261,7 @@ fn draw(
         return;
     }
 
-    let Some(sprite_sheets) = &sprites.sheets else {
+    if sprites.sheets.is_none() {
         return;
     };
 
@@ -269,10 +271,9 @@ fn draw(
 
     let sprites = load_sprites(
         &[sprite_id],
-        sprite_sheets,
-        &asset_server,
-        &mut atlas_handlers,
-        &mut texture_atlases,
+        sprites,
+        atlas_handlers,
+        build_spr_sheet_texture_cmd,
     );
 
     let Some(sprite) = sprites.first() else {
@@ -293,21 +294,21 @@ fn draw(
                     sprites.push(91267);
                 }
 
-                let sprites = load_sprites(
-                    &sprites,
-                    sprite_sheets,
-                    &asset_server,
-                    &mut atlas_handlers,
-                    &mut texture_atlases,
-                );
-
-                for (i, sprite) in sprites.iter().enumerate() {
-                    draw_sprite(
-                        Vec3::new(x as f32, y as f32, 1. + i as f32),
-                        sprite,
-                        &mut commands,
-                    );
-                }
+                // let sprites = load_sprites_2(
+                //     &sprites,
+                //     sprite_sheets,
+                //     &asset_server,
+                //     &mut atlas_handlers,
+                //     &mut texture_atlases,
+                // );
+                //
+                // for (i, sprite) in sprites.iter().enumerate() {
+                //     draw_sprite(
+                //         Vec3::new(x as f32, y as f32, 1. + i as f32),
+                //         sprite,
+                //         &mut commands,
+                //     );
+                // }
             }
         }
     }
@@ -362,7 +363,6 @@ pub fn update_cursor_pos(
 fn update_cursor(
     sprites: Res<Sprites>,
     cursor_pos: Res<CursorPos>,
-    asset_server: Res<AssetServer>,
     palette_state: Res<PaletteState>,
     mut egui_ctx: EguiContexts,
     mut windows: Query<&mut Window>,
@@ -373,8 +373,8 @@ fn update_cursor(
         &mut Handle<TextureAtlas>,
         &SelectedTile,
     )>,
-    mut atlas_handlers: ResMut<TextureAtlasHandlers>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    atlas_handlers: ResMut<TextureAtlasHandlers>,
+    build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
 ) {
     if egui_ctx.ctx_mut().is_pointer_over_area() {
         egui_ctx
@@ -383,8 +383,7 @@ fn update_cursor(
         windows.single_mut().cursor.icon = CursorIcon::Default;
         windows.single_mut().cursor.visible = true;
     }
-
-    let Some(sprite_sheets) = &sprites.sheets else {
+    if sprites.sheets.is_none() {
         return;
     };
 
@@ -394,10 +393,9 @@ fn update_cursor(
 
     let sprites = load_sprites(
         &[sprite_id],
-        sprite_sheets,
-        &asset_server,
-        &mut atlas_handlers,
-        &mut texture_atlases,
+        sprites,
+        atlas_handlers,
+        build_spr_sheet_texture_cmd,
     );
 
     let Some(new_sprite) = sprites.first() else {
@@ -599,13 +597,13 @@ fn ui_example(
 pub fn print_appearances(
     sprites: Res<Sprites>,
     palette_state: ResMut<PaletteState>,
-    asset_server: Res<AssetServer>,
     appearances: Res<Assets<Appearance>>,
     appearance_handle: Res<AppearanceHandle>,
     mut egui_ctx: EguiContexts,
     mut palettes: ResMut<Palette>,
-    mut atlas_handlers: ResMut<TextureAtlasHandlers>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    atlas_handlers: ResMut<TextureAtlasHandlers>,
+    texture_atlases: ResMut<Assets<TextureAtlas>>,
+    build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
     error_states: Res<ErrorState>,
 ) {
     if error_states.has_error {
@@ -618,7 +616,7 @@ pub fn print_appearances(
         .unwrap()
         .is_empty()
     {
-        let Some(sprite_sheets) = &sprites.sheets else {
+        if sprites.sheets.is_none() {
             return;
         };
 
@@ -650,10 +648,9 @@ pub fn print_appearances(
 
         for sprite in load_sprites(
             &sprite_ids[begin..end],
-            sprite_sheets,
-            &asset_server,
-            &mut atlas_handlers,
-            &mut texture_atlases,
+            sprites,
+            atlas_handlers,
+            build_spr_sheet_texture_cmd,
         ) {
             let Some(atlas) = texture_atlases.get(sprite.atlas_texture_handle.clone()) else {
                 continue;
@@ -810,13 +807,13 @@ fn main() {
         ))
         .add_plugins(AppearanceAssetPlugin)
         .add_plugins(ContentPlugin)
+        .add_plugins(SpritesPlugin)
         .insert_resource(ClearColor(Color::rgb(0.12, 0.12, 0.12)))
         .init_resource::<ErrorState>()
         .add_config::<ContentConfigs>(CONTENT_CONFIG_PATH)
         // .init_resource::<LmdbEnv>()
         .init_resource::<Palette>()
         .init_resource::<AboutMeOpened>()
-        .init_resource::<TextureAtlasHandlers>()
         .init_resource::<CursorPos>()
         .init_resource::<Tiles>()
         .init_resource::<PaletteState>()

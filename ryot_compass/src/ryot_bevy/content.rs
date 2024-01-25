@@ -1,4 +1,4 @@
-use crate::{AsyncEventsExtension, Config, ConfigAsset, LoadCommand};
+use crate::{AsyncEventsExtension, Config, ConfigAsset, LoadAssetCommand};
 use bevy::asset::Assets;
 use bevy::prelude::*;
 use bevy_common_assets::json::JsonAssetPlugin;
@@ -39,7 +39,7 @@ impl ContentWasLoaded {
 impl Plugin for ContentPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Sprites>()
-            .add_event::<LoadCommand<Content>>()
+            .add_event::<LoadAssetCommand<Content>>()
             .add_async_event::<ContentWasLoaded>()
             .add_plugins(JsonAssetPlugin::<Content>::new(&["json"]))
             .add_systems(Startup, init_content)
@@ -48,8 +48,8 @@ impl Plugin for ContentPlugin {
     }
 }
 
-pub fn init_content(mut event_writer: EventWriter<LoadCommand<Content>>) {
-    event_writer.send(LoadCommand {
+pub fn init_content(mut event_writer: EventWriter<LoadAssetCommand<Content>>) {
+    event_writer.send(LoadAssetCommand {
         path: "catalog-content.json".to_string(),
         _marker: PhantomData,
     });
@@ -58,9 +58,9 @@ pub fn init_content(mut event_writer: EventWriter<LoadCommand<Content>>) {
 pub fn load_content(
     asset_server: Res<AssetServer>,
     mut sprites: ResMut<Sprites>,
-    mut reader: EventReader<LoadCommand<Content>>,
+    mut reader: EventReader<LoadAssetCommand<Content>>,
 ) {
-    for LoadCommand { path, .. } in reader.read() {
+    for LoadAssetCommand { path, .. } in reader.read() {
         sprites.content_handle = asset_server.load(path.clone());
     }
 }

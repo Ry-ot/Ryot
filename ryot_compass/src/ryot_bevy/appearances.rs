@@ -1,4 +1,4 @@
-use crate::LoadCommand;
+use crate::LoadAssetCommand;
 use bevy::asset::io::Reader;
 use bevy::asset::{Asset, AssetLoader, AsyncReadExt, BoxedFuture, LoadContext};
 use bevy::prelude::*;
@@ -20,7 +20,7 @@ impl Plugin for AppearanceAssetPlugin {
         app.init_asset::<Appearance>()
             .register_asset_loader(AppearanceAssetLoader {})
             .init_resource::<AppearanceHandle>()
-            .add_event::<LoadCommand<Appearance>>()
+            .add_event::<LoadAssetCommand<Appearance>>()
             .add_systems(Startup, init_appearances)
             .add_systems(Update, load_appearances);
     }
@@ -69,8 +69,8 @@ impl AssetLoader for AppearanceAssetLoader {
     }
 }
 
-pub fn init_appearances(mut event_writer: EventWriter<LoadCommand<Appearance>>) {
-    event_writer.send(LoadCommand {
+pub fn init_appearances(mut event_writer: EventWriter<LoadAssetCommand<Appearance>>) {
+    event_writer.send(LoadAssetCommand {
         path: "appearances.dat".to_string(),
         _marker: PhantomData,
     });
@@ -79,9 +79,9 @@ pub fn init_appearances(mut event_writer: EventWriter<LoadCommand<Appearance>>) 
 fn load_appearances(
     asset_server: Res<AssetServer>,
     mut appearance: ResMut<AppearanceHandle>,
-    mut reader: EventReader<LoadCommand<Appearance>>,
+    mut reader: EventReader<LoadAssetCommand<Appearance>>,
 ) {
-    for LoadCommand { path, .. } in reader.read() {
+    for LoadAssetCommand { path, .. } in reader.read() {
         appearance.handle = asset_server.load(path);
     }
 }

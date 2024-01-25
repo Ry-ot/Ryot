@@ -1,4 +1,3 @@
-use glam::UVec2;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
 mod config;
@@ -35,14 +34,6 @@ impl SpriteLayout {
             SpriteLayout::OneByTwo | SpriteLayout::TwoByTwo => sheet_config.tile_size.y * 2,
         }
     }
-}
-
-#[derive(Debug, Clone)]
-pub struct SheetGrid {
-    pub file: String,
-    pub tile_size: UVec2,
-    pub columns: usize,
-    pub rows: usize,
 }
 
 #[cfg(test)]
