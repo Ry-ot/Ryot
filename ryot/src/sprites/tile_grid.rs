@@ -1,6 +1,7 @@
 use glam::{UVec2, Vec2, Vec3};
+use serde::Deserialize;
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Deserialize)]
 pub struct TileGrid {
     pub columns: u32,
     pub rows: u32,

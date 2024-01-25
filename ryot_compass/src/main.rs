@@ -29,7 +29,8 @@ use ryot::*;
 
 use ryot_compass::{
     draw_palette_window, test_reload_config, Appearance, AppearanceAssetPlugin, AppearanceHandle,
-    ConfigApp, EventSender, Palette, PaletteState, Tile, TilesetCategory,
+    ConfigApp, ConfigAsset, ConfigHandle, DefaultConfig, EventSender, Palette, PaletteState, Tile,
+    TilesetCategory,
 };
 use winit::window::Icon;
 
@@ -88,17 +89,18 @@ impl Material2d for RainbowOutlineMaterial {
 }
 
 fn spawn_camera(
-    mut commands: Commands,
     asset_server: Res<AssetServer>,
+    config: Res<ConfigHandle<ContentConfigs>>,
+    configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
+    mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    // mut rb_materials: ResMut<Assets<RainbowOutlineMaterial>>,
 ) {
     let TileGrid {
         columns,
         rows,
         tile_size,
-    } = TileGrid::default();
+    } = configs.get(config.handle.id()).or_default().grid;
 
     let mut positions = Vec::new();
     let mut colors = Vec::new();
@@ -253,6 +255,8 @@ fn draw(
     mouse_button_input: Res<Input<MouseButton>>,
     error_states: Res<ErrorState>,
     build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
+    config: Res<ConfigHandle<ContentConfigs>>,
+    configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
 ) {
     if egui_ctx.ctx_mut().is_pointer_over_area() {
         return;
@@ -282,8 +286,16 @@ fn draw(
     };
 
     if mouse_button_input.pressed(MouseButton::Left) {
-        let pos = TileGrid::default().get_tile_pos_from_display_pos_vec2(cursor_pos.0);
-        draw_sprite(Vec3::new(pos.x, pos.y, 1.1), sprite, &mut commands);
+        let tile_grid = configs.get(config.handle.id()).or_default().grid;
+
+        let pos = tile_grid.get_tile_pos_from_display_pos_vec2(cursor_pos.0);
+
+        draw_sprite(
+            Vec3::new(pos.x, pos.y, 1.1),
+            sprite,
+            &mut commands,
+            tile_grid,
+        );
         debug!("Tile: {:?} drawn", pos);
     }
 
@@ -376,6 +388,8 @@ fn update_cursor(
     )>,
     atlas_handlers: ResMut<TextureAtlasHandlers>,
     build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
+    config: Res<ConfigHandle<ContentConfigs>>,
+    configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
 ) {
     if egui_ctx.ctx_mut().is_pointer_over_area() {
         egui_ctx
@@ -408,7 +422,8 @@ fn update_cursor(
         *atlas_handle = new_sprite.atlas_texture_handle.clone();
         sprite.index = new_sprite.get_sprite_index();
 
-        let tile_grid = TileGrid::default();
+        let tile_grid = configs.get(config.handle.id()).or_default().grid;
+
         let tile_pos = tile_grid.get_tile_pos_from_display_pos_vec2(cursor_pos.0);
         let Some(cursor_pos) = tile_grid.get_display_position_from_tile_pos_vec2(tile_pos) else {
             return;

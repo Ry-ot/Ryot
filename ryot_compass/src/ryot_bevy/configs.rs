@@ -33,13 +33,10 @@ impl<T: Configurable> Plugin for ConfigPlugin<T> {
     }
 }
 
-#[derive(Asset, Clone, Debug)]
-pub struct ConfigAsset<T: Clone + Send + Sync + 'static>(pub T);
+#[derive(Asset, Clone, Debug, Default)]
+pub struct ConfigAsset<T: Configurable>(pub T);
 
-impl<'de, T: Clone + Send + Sync + 'static> Deserialize<'de> for ConfigAsset<T>
-where
-    T: Deserialize<'de>,
-{
+impl<'de, T: Configurable> Deserialize<'de> for ConfigAsset<T> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
@@ -50,7 +47,20 @@ where
     }
 }
 
-impl<T: Clone + Send + Sync + 'static> TypePath for ConfigAsset<T> {
+pub trait DefaultConfig<'a, T: Default + Clone> {
+    fn or_default(self) -> T;
+}
+
+impl<'a, T: Configurable> DefaultConfig<'a, T> for Option<&'a ConfigAsset<T>> {
+    fn or_default(self) -> T {
+        match self {
+            Some(ConfigAsset(config)) => config.clone(),
+            None => T::default(),
+        }
+    }
+}
+
+impl<T: Configurable> TypePath for ConfigAsset<T> {
     fn type_path() -> &'static str {
         "configs::ConfigWrapper<T>"
     }
@@ -61,7 +71,7 @@ impl<T: Clone + Send + Sync + 'static> TypePath for ConfigAsset<T> {
 }
 
 #[derive(Resource, Clone, Debug, Default)]
-pub struct ConfigHandle<T: Clone + Send + Sync + 'static> {
+pub struct ConfigHandle<T: Configurable> {
     pub source: Option<String>,
     pub handle: Handle<ConfigAsset<T>>,
 }
@@ -173,7 +183,7 @@ fn load_config<T: Configurable>(
     }
 }
 
-pub fn print_config_system<T: Clone + Send + Sync + Debug + 'static>(
+pub fn print_config_system<T: Configurable + Debug>(
     config: Res<ConfigHandle<T>>,
     configs: Res<Assets<ConfigAsset<T>>>,
 ) {
@@ -182,7 +192,7 @@ pub fn print_config_system<T: Clone + Send + Sync + Debug + 'static>(
     }
 }
 
-pub fn test_reload_config<T: Default + Clone + Send + Sync + 'static>(
+pub fn test_reload_config<T: Configurable>(
     keyboard_input: Res<Input<KeyCode>>,
     mut writer: EventWriter<LoadConfigCommand<T>>,
 ) {
