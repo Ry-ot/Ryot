@@ -29,7 +29,7 @@ use ryot::*;
 
 use ryot_compass::{
     draw_palette_window, test_reload_config, Appearance, AppearanceAssetPlugin, AppearanceHandle,
-    ConfigExtension, EventSender, Palette, PaletteState, Tile, TilesetCategory,
+    ConfigApp, EventSender, Palette, PaletteState, Tile, TilesetCategory,
 };
 use winit::window::Icon;
 
@@ -42,6 +42,7 @@ use ryot_compass::sprites::{
     draw_sprite, load_sprites, LoadSpriteSheetTextureCommand, LoadedSprite, SpritesPlugin,
     TextureAtlasHandlers,
 };
+
 use std::future::Future;
 
 // fn scroll_events(mut minimap: ResMut<Minimap>, mut scroll_evr: EventReader<MouseWheel>) {

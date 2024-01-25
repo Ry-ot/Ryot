@@ -12,6 +12,10 @@ pub mod content;
 pub mod sprites;
 
 mod palette;
+
+#[cfg(test)]
+mod tests;
+
 pub use palette::*;
 
 use bevy::prelude::Event;

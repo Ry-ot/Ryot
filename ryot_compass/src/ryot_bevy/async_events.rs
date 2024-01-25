@@ -9,11 +9,11 @@ pub struct EventSender<T>(pub Sender<T>);
 #[derive(Resource, Deref, DerefMut)]
 struct EventReceiver<T>(Mutex<Receiver<T>>);
 
-pub trait AsyncEventsExtension {
+pub trait AsyncEventApp {
     fn add_async_event<T: Event>(&mut self) -> &mut Self;
 }
 
-impl AsyncEventsExtension for App {
+impl AsyncEventApp for App {
     fn add_async_event<T: Event>(&mut self) -> &mut Self {
         let (sender, receiver) = channel::<T>();
 
