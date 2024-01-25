@@ -1,4 +1,4 @@
-use crate::{AsyncEventsExtension, Config, ConfigAsset, LoadAssetCommand};
+use crate::{AsyncEventApp, ConfigAsset, ConfigHandle, Configurable, LoadAssetCommand};
 use bevy::asset::Assets;
 use bevy::prelude::*;
 use bevy_common_assets::json::JsonAssetPlugin;
@@ -7,6 +7,24 @@ use ryot::ContentConfigs;
 use std::marker::PhantomData;
 
 pub struct ContentPlugin;
+
+impl Plugin for ContentPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<Sprites>()
+            .add_event::<LoadAssetCommand<Content>>()
+            .add_async_event::<ContentWasLoaded>()
+            .add_plugins(JsonAssetPlugin::<Content>::new(&["json"]))
+            .add_systems(Startup, init_content)
+            .add_systems(Update, load_content)
+            .add_systems(Update, handle_content_loaded);
+    }
+}
+
+impl Configurable for ContentConfigs {
+    fn extensions() -> Vec<&'static str> {
+        vec!["content.toml"]
+    }
+}
 
 #[derive(Resource, Debug, Default)]
 pub struct Sprites {
@@ -36,18 +54,6 @@ impl ContentWasLoaded {
     }
 }
 
-impl Plugin for ContentPlugin {
-    fn build(&self, app: &mut App) {
-        app.init_resource::<Sprites>()
-            .add_event::<LoadAssetCommand<Content>>()
-            .add_async_event::<ContentWasLoaded>()
-            .add_plugins(JsonAssetPlugin::<Content>::new(&["json"]))
-            .add_systems(Startup, init_content)
-            .add_systems(Update, load_content)
-            .add_systems(Update, handle_content_loaded);
-    }
-}
-
 pub fn init_content(mut event_writer: EventWriter<LoadAssetCommand<Content>>) {
     event_writer.send(LoadAssetCommand {
         path: "catalog-content.json".to_string(),
@@ -61,13 +67,13 @@ pub fn load_content(
     mut reader: EventReader<LoadAssetCommand<Content>>,
 ) {
     for LoadAssetCommand { path, .. } in reader.read() {
-        sprites.content_handle = asset_server.load(path.clone());
+        sprites.content_handle = asset_server.load::<Content>(path.clone());
     }
 }
 
 fn handle_content_loaded(
     contents: ResMut<Assets<Content>>,
-    config: Res<Config<ContentConfigs>>,
+    config: Res<ConfigHandle<ContentConfigs>>,
     configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
     mut sprites: ResMut<Sprites>,
     mut ev_asset: EventReader<AssetEvent<Content>>,

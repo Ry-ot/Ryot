@@ -17,10 +17,10 @@ pub mod appearances;
 mod sprites;
 pub use sprites::*;
 
-pub static CONTENT_CONFIG_PATH: &str = "config/Content.toml";
+pub static CONTENT_CONFIG_PATH: &str = "config/.content.toml";
 pub static SPRITE_SHEET_FOLDER: &str = "sprite-sheets";
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Deserialize, Default)]
 pub struct ContentConfigs {
     pub directories: DirectoryConfigs,
     pub sprite_sheet: SpriteSheetConfig,
@@ -32,6 +32,15 @@ pub struct DirectoryConfigs {
     pub source_path: PathBuf,
     #[serde(default = "assets_root_path")]
     pub destination_path: PathBuf,
+}
+
+impl Default for DirectoryConfigs {
+    fn default() -> Self {
+        Self {
+            source_path: assets_root_path(),
+            destination_path: assets_root_path(),
+        }
+    }
 }
 
 pub fn assets_root_path() -> PathBuf {
