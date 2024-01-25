@@ -1,7 +1,4 @@
-use crate::appearances::SpriteSheetSet;
-use crate::{
-    error::*, get_full_file_buffer, CompressionConfig, ContentConfigs, SheetGrid, SpriteSheetConfig,
-};
+use crate::{error::*, get_full_file_buffer, CompressionConfig, ContentConfigs, SpriteSheetConfig};
 use image::error::{LimitError, LimitErrorKind};
 use image::{imageops, ImageFormat, Rgba, RgbaImage};
 use log::{info, warn};
@@ -137,20 +134,6 @@ pub fn decompress_sprite_sheet(
             })
             .expect("Failed to save sprite sheet"),
         Err(e) => panic!("{:?}", e),
-    }
-}
-
-pub fn get_sprite_grid_by_id(sprite_sheets: &SpriteSheetSet, id: u32) -> Result<SheetGrid> {
-    let sheet_config = SpriteSheetConfig::cip_sheet();
-    if let Some(sheet) = sprite_sheets.get_by_sprite_id(id) {
-        Ok(SheetGrid {
-            file: sheet.file.clone(),
-            tile_size: sheet.get_tile_size(&sheet_config),
-            columns: sheet.get_columns_count(&sheet_config),
-            rows: sheet.get_rows_count(&sheet_config),
-        })
-    } else {
-        Err(Error::SpriteNotFound)
     }
 }
 

@@ -1,4 +1,5 @@
-use crate::{LoadedSprite, TilesetCategory};
+use crate::sprites::LoadedSprite;
+use crate::TilesetCategory;
 use bevy::prelude::{debug, ResMut, Resource};
 use bevy_egui::EguiContexts;
 use egui::{Align, Ui};
