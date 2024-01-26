@@ -1,23 +1,22 @@
 use bevy::app::AppExit;
 
+use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
 use bevy::render::mesh::{Indices, PrimitiveTopology};
 use bevy::render::render_resource::{AsBindGroup, ShaderRef};
-use bevy::sprite::{Material2d, Material2dPlugin, MaterialMesh2dBundle};
+use bevy::sprite::{Material2d, MaterialMesh2dBundle};
 use bevy::window::PrimaryWindow;
 use bevy::winit::WinitWindows;
-use bevy::{input::common_conditions::input_toggle_active, prelude::*};
 use std::fmt::Debug;
 
 use bevy_egui::{EguiContexts, EguiPlugin};
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use egui::load::SizedTexture;
 use egui::TextureId;
 use itertools::Itertools;
 
 mod error_handling;
 mod helpers;
-use error_handling::{check_for_exit, display_error_window, ErrorState};
+use error_handling::ErrorState;
 use helpers::camera::movement as camera_movement;
 use ryot::*;
 
@@ -28,22 +27,21 @@ use ryot::*;
 // use ryot_compass::lmdb::LmdbEnv;
 
 use ryot_compass::{
-    draw_palette_window, test_reload_config, Appearance, AppearanceAssetPlugin, AppearanceHandle,
-    ConfigApp, ConfigAsset, ConfigHandle, DefaultConfig, EventSender, Palette, PaletteState, Tile,
-    TilesetCategory,
+    draw_palette_window, AppPlugin, AppStates, Appearance, ConfigAsset, DefaultConfig,
+    OptionalPlugin, Palette, PaletteState, Tile, TilesetCategory,
 };
 use winit::window::Icon;
 
-use bevy::asset::AssetMetaCheck;
 use rfd::AsyncFileDialog;
 
 use ryot::tile_grid::TileGrid;
-use ryot_compass::content::{ContentPlugin, ContentWasLoaded, Sprites};
 use ryot_compass::sprites::{
-    draw_sprite, load_sprites, LoadSpriteSheetTextureCommand, LoadedSprite, SpritesPlugin,
+    draw_sprite, load_sprites, LoadSpriteSheetTextureCommand, LoadedSprite, SpriteAssets,
     TextureAtlasHandlers,
 };
+use ryot_compass::{ContentAssets, Sprites};
 
+use crate::error_handling::ErrorPlugin;
 use std::future::Future;
 
 // fn scroll_events(mut minimap: ResMut<Minimap>, mut scroll_evr: EventReader<MouseWheel>) {
@@ -89,8 +87,8 @@ impl Material2d for RainbowOutlineMaterial {
 }
 
 fn spawn_camera(
-    asset_server: Res<AssetServer>,
-    config: Res<ConfigHandle<ContentConfigs>>,
+    sprite: Res<SpriteAssets>,
+    content: Res<ContentAssets>,
     configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -100,7 +98,7 @@ fn spawn_camera(
         columns,
         rows,
         tile_size,
-    } = configs.get(config.handle.id()).or_default().grid;
+    } = configs.get(content.config.id()).or_default().grid;
 
     let mut positions = Vec::new();
     let mut colors = Vec::new();
@@ -109,23 +107,34 @@ fn spawn_camera(
     let width = (columns * tile_size.x) as f32;
     let height = (rows * tile_size.y) as f32;
 
-    // Create vertices for the grid
-    for i in 0..=columns {
-        let offset = (i * tile_size.x) as f32;
+    // Create vertices for the vertical lines (columns)
+    for col in 0..=columns {
+        let x_offset = (col * tile_size.x) as f32;
 
-        // Horizontal line
-        positions.push([0.0, -offset, 0.0]);
-        positions.push([width, -offset, 0.0]);
-        // Vertical line
-        positions.push([offset, 0.0, 0.0]);
-        positions.push([offset, -height, 0.0]);
+        positions.push([x_offset, 0.0, 0.0]);
+        positions.push([x_offset, -height, 0.0]);
 
         // Add colors (white for grid lines)
-        colors.extend(vec![Color::WHITE.as_rgba_f32(); 4]);
+        colors.extend(vec![Color::WHITE.as_rgba_f32(); 2]);
 
-        // Add indices
-        let idx = i * 4;
-        indices.extend_from_slice(&[idx, idx + 1, idx + 2, idx + 3]);
+        // Add indices for the line
+        let idx = col * 2;
+        indices.extend_from_slice(&[idx, idx + 1]);
+    }
+
+    // Create vertices for the horizontal lines (rows)
+    for row in 0..=rows {
+        let y_offset = (row * tile_size.y) as f32;
+
+        positions.push([0.0, -y_offset, 0.0]);
+        positions.push([width, -y_offset, 0.0]);
+
+        // Add colors (white for grid lines)
+        colors.extend(vec![Color::WHITE.as_rgba_f32(); 2]);
+
+        // Add indices for the line
+        let idx = (columns + 1) * 2 + row * 2; // Offset by the number of vertices added for columns
+        indices.extend_from_slice(&[idx, idx + 1]);
     }
 
     // Create the mesh
@@ -159,27 +168,10 @@ fn spawn_camera(
     });
 
     commands.spawn(SpriteBundle {
-        texture: asset_server.load("ryot_mascot.png"),
-        transform: Transform::from_translation(Vec3::new(
-            (columns / 2) as f32,
-            (rows / 2) as f32,
-            1.,
-        ))
-        .with_scale(Vec3::splat(16.)),
+        texture: sprite.mascot.clone(),
+        transform: Transform::from_translation(Vec3::new(0., 0., 1.)).with_scale(Vec3::splat(0.2)),
         ..Default::default()
     });
-
-    // commands.spawn(MaterialMesh2dBundle {
-    //     mesh: meshes.add(Mesh::from(shape::Quad::default())).into(),
-    //     transform: Transform::from_translation(Vec3::new(64., 75., 0.))
-    //         .with_scale(Vec3::splat(128.)),
-    //     material: rb_materials.add(RainbowOutlineMaterial {
-    //         thickness: 0.01,
-    //         frequency: 1.0,
-    //         texture: asset_server.load("ryot_mascot.png"),
-    //     }),
-    //     ..default()
-    // });
 }
 
 #[derive(Resource, Debug)]
@@ -255,7 +247,7 @@ fn draw(
     mouse_button_input: Res<Input<MouseButton>>,
     error_states: Res<ErrorState>,
     build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
-    config: Res<ConfigHandle<ContentConfigs>>,
+    content: Res<ContentAssets>,
     configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
 ) {
     if egui_ctx.ctx_mut().is_pointer_over_area() {
@@ -286,7 +278,7 @@ fn draw(
     };
 
     if mouse_button_input.pressed(MouseButton::Left) {
-        let tile_grid = configs.get(config.handle.id()).or_default().grid;
+        let tile_grid = configs.get(content.config.id()).or_default().grid;
 
         let pos = tile_grid.get_tile_pos_from_display_pos_vec2(cursor_pos.0);
 
@@ -388,7 +380,7 @@ fn update_cursor(
     )>,
     atlas_handlers: ResMut<TextureAtlasHandlers>,
     build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
-    config: Res<ConfigHandle<ContentConfigs>>,
+    content: Res<ContentAssets>,
     configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
 ) {
     if egui_ctx.ctx_mut().is_pointer_over_area() {
@@ -422,7 +414,7 @@ fn update_cursor(
         *atlas_handle = new_sprite.atlas_texture_handle.clone();
         sprite.index = new_sprite.get_sprite_index();
 
-        let tile_grid = configs.get(config.handle.id()).or_default().grid;
+        let tile_grid = configs.get(content.config.id()).or_default().grid;
 
         let tile_pos = tile_grid.get_tile_pos_from_display_pos_vec2(cursor_pos.0);
         let Some(cursor_pos) = tile_grid.get_display_position_from_tile_pos_vec2(tile_pos) else {
@@ -473,7 +465,7 @@ fn ui_example(
     mut egui_ctx: EguiContexts,
     sprites: Res<Sprites>,
     mut exit: EventWriter<AppExit>,
-    content_sender: Res<EventSender<ContentWasLoaded>>,
+    // content_sender: Res<EventSender<ContentWasLoaded>>,
     mut about_me: ResMut<AboutMeOpened>,
 ) {
     egui::TopBottomPanel::top("top_panel").show(egui_ctx.ctx_mut(), |ui| {
@@ -544,22 +536,22 @@ fn ui_example(
 
                     // #[cfg(not(target_arch = "wasm32"))]
                     if ui.button("Load Content").clicked() {
-                        let sender = content_sender.0.clone();
+                        // let sender = content_sender.0.clone();
 
                         read_file(
                             AsyncFileDialog::new().add_filter(".json", &["json"]),
-                            move |(file_name, loaded)| {
+                            move |(file_name, _loaded)| {
                                 debug!("Loading content from file: {:?}", file_name);
-                                let Some(content_was_loaded) =
-                                    ContentWasLoaded::from_bytes(file_name.clone(), loaded.clone())
-                                else {
-                                    warn!("Failed to load content from file: {:?}", file_name);
-                                    return;
-                                };
+                                // let Some(content_was_loaded) =
+                                //     ContentWasLoaded::from_bytes(file_name.clone(), loaded.clone())
+                                // else {
+                                //     warn!("Failed to load content from file: {:?}", file_name);
+                                //     return;
+                                // };
 
-                                sender
-                                    .send(content_was_loaded)
-                                    .expect("Failed to send content loaded event");
+                                // sender
+                                //     .send(content_was_loaded)
+                                //     .expect("Failed to send content loaded event");
                             },
                         );
                     }
@@ -614,17 +606,17 @@ pub fn print_appearances(
     sprites: Res<Sprites>,
     palette_state: ResMut<PaletteState>,
     appearances: Res<Assets<Appearance>>,
-    appearance_handle: Res<AppearanceHandle>,
+    static_assets: Res<ContentAssets>,
     mut egui_ctx: EguiContexts,
     mut palettes: ResMut<Palette>,
     atlas_handlers: ResMut<TextureAtlasHandlers>,
     texture_atlases: ResMut<Assets<TextureAtlas>>,
     build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
-    error_states: Res<ErrorState>,
+    // error_states: Res<ErrorState>,
 ) {
-    if error_states.has_error {
-        return;
-    }
+    // if error_states.has_error {
+    //     return;
+    // }
 
     if !palettes
         .tile_set
@@ -703,7 +695,7 @@ pub fn print_appearances(
 
     let mut total = 0;
 
-    if let Some(Appearance(appearances)) = appearances.get(appearance_handle.handle.clone()) {
+    if let Some(Appearance(appearances)) = appearances.get(static_assets.appearances.clone()) {
         appearances.outfit.iter().for_each(|outfit| {
             if outfit.id.is_none() {
                 warn!("No-id {:?}", outfit);
@@ -799,62 +791,55 @@ pub struct SelectedTile {
     pub atlas: Option<Handle<TextureAtlas>>,
 }
 
+pub struct CameraPlugin;
+
+impl Plugin for CameraPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<CursorPos>()
+            .add_systems(
+                OnExit(AppStates::PreparingSprites),
+                (spawn_camera, spawn_cursor).chain(),
+            )
+            .add_systems(
+                Update,
+                (camera_movement, update_cursor_pos, update_cursor)
+                    .chain()
+                    .run_if(in_state(AppStates::Ready)),
+            );
+    }
+}
+
+pub struct UIPlugin;
+
+impl Plugin for UIPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_optional_plugin(EguiPlugin)
+            .init_resource::<AboutMeOpened>()
+            .init_resource::<Palette>()
+            .init_resource::<PaletteState>()
+            .add_systems(
+                Update,
+                (draw, ui_example, print_appearances)
+                    .chain()
+                    .run_if(in_state(AppStates::Ready)),
+            );
+    }
+}
+
 fn main() {
     App::new()
-        .add_event::<AppExit>()
-        .insert_resource(AssetMetaCheck::Never)
-        .add_plugins((
-            DefaultPlugins
-                .set(WindowPlugin {
-                    primary_window: Some(Window {
-                        title: "Compass".to_string(),
-                        // Bind to canvas included in `index.html`
-                        canvas: Some("#bevy".to_owned()),
-                        // The canvas size is constrained in index.html and build/web/styles.css
-                        fit_canvas_to_parent: true,
-                        // Tells wasm not to override default event handling, like F5 and Ctrl+R
-                        prevent_default_event_handling: false,
-                        ..default()
-                    }),
-                    ..default()
-                })
-                .set(ImagePlugin::default_nearest()),
-            Material2dPlugin::<RainbowOutlineMaterial>::default(),
-        ))
-        .add_plugins(AppearanceAssetPlugin)
-        .add_plugins(ContentPlugin)
-        .add_plugins(SpritesPlugin)
-        .insert_resource(ClearColor(Color::rgb(0.12, 0.12, 0.12)))
-        .init_resource::<ErrorState>()
-        .add_config::<ContentConfigs>(CONTENT_CONFIG_PATH)
+        .add_plugins(AppPlugin)
+        .add_plugins(CameraPlugin)
+        .add_plugins(UIPlugin)
+        .add_plugins(ErrorPlugin)
         // .init_resource::<LmdbEnv>()
-        .init_resource::<Palette>()
-        .init_resource::<AboutMeOpened>()
-        .init_resource::<CursorPos>()
-        .init_resource::<Tiles>()
-        .init_resource::<PaletteState>()
-        .add_plugins((
-            EguiPlugin,
-            WorldInspectorPlugin::default().run_if(input_toggle_active(true, KeyCode::Escape)),
-            // MinimapPlugin,
-        ))
-        .add_systems(Startup, spawn_camera)
+        // .init_resource::<Tiles>()
         // .add_systems(Startup, setup_window)
         // .add_systems(Startup, init_env.before(load_tiles))
-        .add_systems(Startup, spawn_cursor)
         // .add_systems(Startup, load_tiles)
         // .add_systems(Startup, decompress_all_sprites)
-        .add_systems(First, (camera_movement, update_cursor_pos).chain())
-        // .add_systems(Update, decompress_all_sprites)
-        .add_systems(Update, draw)
         // .add_systems(Update, draw_tiles_on_minimap)
         // .add_systems(Update, scroll_events)
-        .add_systems(Update, ui_example)
-        .add_systems(Update, print_appearances)
-        .add_systems(Update, display_error_window)
-        .add_systems(Update, check_for_exit)
-        .add_systems(Update, update_cursor)
-        .add_systems(Update, test_reload_config::<ContentConfigs>)
         .run();
 }
 

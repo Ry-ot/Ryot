@@ -16,6 +16,7 @@ pub fn run() -> Result<(), std::io::Error> {
     };
 
     // Tell Cargo to rerun this build script if the config file changes
+    #[cfg(feature = "content_rebuild_on_change")]
     println!("cargo:rerun-if-changed={}", path);
 
     let content_config = read_content_configs(path);
@@ -23,12 +24,14 @@ pub fn run() -> Result<(), std::io::Error> {
     let ContentConfigs { directories, .. } = content_config.clone();
 
     // Tell Cargo to rerun this build script if our content folder changes
+    #[cfg(feature = "content_rebuild_on_change")]
     println!(
         "cargo:rerun-if-changed={}",
         directories.source_path.display()
     );
 
     // Tell Cargo to rerun this build script if our destination folder changes
+    #[cfg(feature = "content_rebuild_on_change")]
     println!(
         "cargo:rerun-if-changed={}",
         directories.destination_path.display()

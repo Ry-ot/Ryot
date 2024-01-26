@@ -1,6 +1,6 @@
 include!(concat!(env!("OUT_DIR"), "/appearances.rs"));
 
-use crate::{SpriteLayout, SpriteSheetConfig};
+use crate::{get_decompressed_file_name, SpriteLayout, SpriteSheetConfig};
 use glam::UVec2;
 use serde::{Deserialize, Serialize};
 
@@ -138,6 +138,12 @@ impl SpriteSheetSet {
     pub fn get_sprite_index_by_id(&self, sprite_id: u32) -> Option<usize> {
         self.get_by_sprite_id(sprite_id)?
             .get_sprite_index(sprite_id)
+    }
+
+    pub fn get_for_file(&self, file: &str) -> Option<&SpriteSheet> {
+        self.sprite_sheets
+            .iter()
+            .find(|sprite_sheet| get_decompressed_file_name(&sprite_sheet.file) == *file)
     }
 }
 

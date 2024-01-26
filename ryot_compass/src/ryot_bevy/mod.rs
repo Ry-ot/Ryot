@@ -7,7 +7,8 @@ pub use async_events::*;
 mod configs;
 pub use configs::*;
 
-pub mod content;
+mod content;
+pub use content::*;
 
 pub mod sprites;
 

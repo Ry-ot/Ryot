@@ -1,11 +1,44 @@
-use crate::content::Sprites;
+use crate::Sprites;
 use bevy::prelude::*;
+use bevy::utils::HashMap;
+use bevy_asset_loader::asset_collection::AssetCollection;
 use ryot::appearances::{SpriteSheet, SpriteSheetSet};
 use ryot::tile_grid::TileGrid;
 use ryot::*;
 use std::path::PathBuf;
 
+use crate::AppStates;
+use bevy_asset_loader::prelude::*;
+
 pub struct SpritesPlugin;
+
+impl Plugin for SpritesPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<TextureAtlasHandlers>();
+
+        app.add_loading_state(
+            LoadingState::new(AppStates::LoadingSprites)
+                .continue_to_state(AppStates::PreparingSprites)
+                .load_collection::<SpriteAssets>(),
+        )
+        .add_systems(OnEnter(AppStates::PreparingSprites), sprites_preparer);
+
+        app.add_event::<LoadSpriteSheetTextureCommand>()
+            .add_event::<SpriteSheetTextureWasLoaded>()
+            .init_resource::<TextureAtlasHandlers>()
+            .add_systems(Update, sprite_sheet_loader_system)
+            .add_systems(Update, atlas_handler_system);
+    }
+}
+
+#[derive(AssetCollection, Resource)]
+pub struct SpriteAssets {
+    #[cfg(feature = "pre_loaded_sprites")]
+    #[asset(path = "sprite-sheets", collection(typed, mapped))]
+    pub sprite_sheets: HashMap<String, Handle<Image>>,
+    #[asset(path = "ryot_mascot.png")]
+    pub mascot: Handle<Image>,
+}
 
 #[derive(Debug, Clone, Event)]
 pub struct LoadSpriteSheetTextureCommand {
@@ -18,22 +51,20 @@ struct SpriteSheetTextureWasLoaded {
     pub atlas: TextureAtlas,
 }
 
-impl Plugin for SpritesPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_event::<LoadSpriteSheetTextureCommand>()
-            .add_event::<SpriteSheetTextureWasLoaded>()
-            .init_resource::<TextureAtlasHandlers>()
-            .add_systems(Update, sprite_sheet_loader_system)
-            .add_systems(Update, atlas_handler_system);
-    }
-}
-
 #[derive(Resource, Default)]
-pub struct TextureAtlasHandlers(pub bevy::utils::HashMap<String, Handle<TextureAtlas>>);
+pub struct TextureAtlasHandlers(HashMap<String, Handle<TextureAtlas>>);
 
 impl TextureAtlasHandlers {
     pub fn get(&self, file: &str) -> Option<&Handle<TextureAtlas>> {
-        self.0.get(file)
+        self.0.get(&get_decompressed_file_name(file))
+    }
+
+    pub fn insert(
+        &mut self,
+        file: &str,
+        handle: Handle<TextureAtlas>,
+    ) -> Option<Handle<TextureAtlas>> {
+        self.0.insert(get_decompressed_file_name(file), handle)
     }
 }
 
@@ -75,6 +106,7 @@ pub fn load_sprites(
     mut build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
 ) -> Vec<LoadedSprite> {
     let Some(sprite_sheets) = &sprites.sheets else {
+        warn!("No sprite sheets loaded");
         return vec![];
     };
 
@@ -170,9 +202,7 @@ fn atlas_handler_system(
         }
 
         let atlas_handle = texture_atlases.add(atlas.clone());
-        atlas_handlers
-            .0
-            .insert(sprite_sheet.file.clone(), atlas_handle);
+        atlas_handlers.insert(&sprite_sheet.file, atlas_handle);
     }
 }
 
@@ -202,4 +232,55 @@ pub fn build_sprite_bundle(
         texture_atlas: handle,
         ..default()
     }
+}
+
+#[allow(dead_code)]
+fn sprites_preparer(
+    sprites: Res<Sprites>,
+    sprite_assets: Res<SpriteAssets>,
+    mut state: ResMut<NextState<AppStates>>,
+    mut atlas_handlers: ResMut<TextureAtlasHandlers>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+) {
+    info!("Preparing sprites");
+
+    #[cfg(feature = "pre_loaded_sprites")]
+    {
+        let Some(sheets) = &sprites.sheets else {
+            panic!("Sprite sheets configs were not setup.");
+        };
+
+        for (file, handle) in &sprite_assets.sprite_sheets {
+            let file = match file.strip_prefix("sprite-sheets/") {
+                Some(file) => file,
+                None => file,
+            };
+
+            if atlas_handlers.get(file).is_some() {
+                warn!("Skipping file {}: it's already loaded", file);
+                continue;
+            }
+
+            let Some(sprite_sheet) = &sheets.get_for_file(file) else {
+                warn!("Skipping file {}: it's not in sprite sheets", file);
+                continue;
+            };
+
+            let atlas = TextureAtlas::from_grid(
+                handle.clone(),
+                sprite_sheet.get_tile_size(&sheets.sheet_config).as_vec2(),
+                sprite_sheet.get_columns_count(&sheets.sheet_config),
+                sprite_sheet.get_rows_count(&sheets.sheet_config),
+                None,
+                None,
+            );
+
+            let atlas_handle = texture_atlases.add(atlas.clone());
+            atlas_handlers.insert(&sprite_sheet.file, atlas_handle);
+        }
+    }
+
+    state.set(AppStates::Ready);
+
+    info!("Finished preparing sprites");
 }

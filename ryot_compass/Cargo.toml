@@ -35,6 +35,7 @@ uuid = "1.6.1"
 futures = "0.3.30"
 wasm-bindgen-futures = "0.4.40"
 bevy_common_assets = { version = "0.9.0", features = ["toml", "json"] }
+bevy_asset_loader = { version = "0.19.1", features = ["2d"] }
 thiserror = "1.0.56"
 color-eyre = "0.6.2"
 rstest = "0.18.2"
@@ -80,6 +81,8 @@ ryot = { version = "0.1.0", path = "../ryot" }
 [features]
 default = []
 lmdb = ["dep:heed"]
+pre_loaded_sprites = []
+content_rebuild_on_change = []
 
 [lints.clippy]
 enum_glob_use = "deny"
