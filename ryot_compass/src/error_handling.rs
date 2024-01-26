@@ -1,6 +1,18 @@
+use crate::AppStates;
 use bevy::app::AppExit;
 use bevy::prelude::*;
 use bevy_egui::EguiContexts;
+
+pub struct ErrorPlugin;
+
+impl Plugin for ErrorPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<ErrorState>().add_systems(
+            Update,
+            (display_error_window, check_for_exit).run_if(in_state(AppStates::Ready)),
+        );
+    }
+}
 
 #[derive(Resource, Default)]
 pub struct ErrorState {
@@ -9,6 +21,7 @@ pub struct ErrorState {
     pub close_requested: bool,
 }
 
+#[allow(dead_code)]
 impl ErrorState {
     pub fn new(error_message: String) -> Self {
         Self {

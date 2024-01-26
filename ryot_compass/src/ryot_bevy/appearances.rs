@@ -1,28 +1,17 @@
-use crate::LoadAssetCommand;
 use bevy::asset::io::Reader;
 use bevy::asset::{Asset, AssetLoader, AsyncReadExt, BoxedFuture, LoadContext};
 use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
 use prost::Message;
 use ryot::appearances::Appearances;
-use std::marker::PhantomData;
 use thiserror::Error;
 
 pub struct AppearanceAssetPlugin;
 
-#[derive(Debug, Default, Resource)]
-pub struct AppearanceHandle {
-    pub handle: Handle<Appearance>,
-}
-
 impl Plugin for AppearanceAssetPlugin {
     fn build(&self, app: &mut App) {
         app.init_asset::<Appearance>()
-            .register_asset_loader(AppearanceAssetLoader {})
-            .init_resource::<AppearanceHandle>()
-            .add_event::<LoadAssetCommand<Appearance>>()
-            .add_systems(Startup, init_appearances)
-            .add_systems(Update, load_appearances);
+            .register_asset_loader(AppearanceAssetLoader {});
     }
 }
 
@@ -66,22 +55,5 @@ impl AssetLoader for AppearanceAssetLoader {
 
     fn extensions(&self) -> &[&str] {
         &["dat"]
-    }
-}
-
-pub fn init_appearances(mut event_writer: EventWriter<LoadAssetCommand<Appearance>>) {
-    event_writer.send(LoadAssetCommand {
-        path: "appearances.dat".to_string(),
-        _marker: PhantomData,
-    });
-}
-
-fn load_appearances(
-    asset_server: Res<AssetServer>,
-    mut appearance: ResMut<AppearanceHandle>,
-    mut reader: EventReader<LoadAssetCommand<Appearance>>,
-) {
-    for LoadAssetCommand { path, .. } in reader.read() {
-        appearance.handle = asset_server.load(path);
     }
 }

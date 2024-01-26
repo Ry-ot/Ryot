@@ -8,6 +8,6 @@ compression_config = { compressed_header_size = 32, content_header_size = 122 }
 encoding_config = { vertically_flipped = true, reversed_r_b_channels = true }
 
 [grid]
-rows = 65535
-columns = 65535
+rows = 256
+columns = 256
 tile_size = [32,32]

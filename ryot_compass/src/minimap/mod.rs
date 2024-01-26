@@ -1,3 +1,4 @@
+use crate::OptionalPlugin;
 use bevy::asset::Handle;
 use bevy::prelude::*;
 use bevy::render::render_resource::{
@@ -18,13 +19,8 @@ pub struct MinimapPlugin;
 
 impl Plugin for MinimapPlugin {
     fn build(&self, app: &mut App) {
-        if !app.is_plugin_added::<EguiPlugin>() {
-            println!("Adding EguiPlugin {}", app.is_plugin_added::<EguiPlugin>());
-            app.add_plugins(EguiPlugin);
-            println!("Added EguiPlugin {}", app.is_plugin_added::<EguiPlugin>());
-        }
-
-        app.init_resource::<Minimap>()
+        app.add_optional_plugin(EguiPlugin)
+            .init_resource::<Minimap>()
             .add_systems(Startup, setup_default_texture)
             .add_systems(Update, draw_minimap_window);
     }
