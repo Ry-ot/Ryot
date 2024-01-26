@@ -3,7 +3,8 @@ use crate::{build_map, Position};
 use bevy::log::{error, info};
 use bevy::prelude::{ResMut, Resource};
 use heed::Env;
-use ryot::prelude::{compress, decompress, lmdb, Zstd};
+use ryot::lmdb;
+use ryot::prelude::{compress, decompress, Zstd};
 use time_test::time_test;
 
 #[derive(Resource, Default)]
