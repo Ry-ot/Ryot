@@ -1,5 +1,5 @@
 use egui::WidgetText;
-use ryot::prelude::{Appearance, AppearanceFlags, ItemCategory};
+use ryot::appearances::{Appearance, AppearanceFlags, ItemCategory};
 use std::cmp::Ordering;
 use strum_macros::{EnumCount, EnumIter};
 

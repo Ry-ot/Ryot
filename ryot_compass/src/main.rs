@@ -26,22 +26,16 @@ use ryot::prelude::*;
 // #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
 // use ryot_compass::lmdb::LmdbEnv;
 
-use ryot_compass::{
-    draw_palette_window, AppPlugin, AppStates, Appearance, ConfigAsset, DefaultConfig,
-    OptionalPlugin, Palette, PaletteState, Tile, TilesetCategory,
-};
+use ryot_compass::{draw_palette_window, AppPlugin, Palette, PaletteState, Tile, TilesetCategory};
 use winit::window::Icon;
 
 use rfd::AsyncFileDialog;
 
-use ryot::prelude::tile_grid::TileGrid;
-use ryot_compass::sprites::{
-    draw_sprite, load_sprites, LoadSpriteSheetTextureCommand, LoadedSprite, SpriteAssets,
-    TextureAtlasHandlers,
-};
-use ryot_compass::{ContentAssets, Sprites};
-
 use crate::error_handling::ErrorPlugin;
+use ryot::bevy_ryot::sprites::SpriteAssets;
+use ryot::prelude::sprites::load_sprites;
+use ryot::prelude::sprites::*;
+use ryot::tile_grid::TileGrid;
 use std::future::Future;
 
 // fn scroll_events(mut minimap: ResMut<Minimap>, mut scroll_evr: EventReader<MouseWheel>) {
@@ -797,14 +791,14 @@ impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<CursorPos>()
             .add_systems(
-                OnExit(AppStates::PreparingSprites),
+                OnExit(RyotSetupStates::PreparingSprites),
                 (spawn_camera, spawn_cursor).chain(),
             )
             .add_systems(
                 Update,
                 (camera_movement, update_cursor_pos, update_cursor)
                     .chain()
-                    .run_if(in_state(AppStates::Ready)),
+                    .run_if(in_state(RyotSetupStates::Ready)),
             );
     }
 }
@@ -821,7 +815,7 @@ impl Plugin for UIPlugin {
                 Update,
                 (draw, ui_example, print_appearances)
                     .chain()
-                    .run_if(in_state(AppStates::Ready)),
+                    .run_if(in_state(RyotSetupStates::Ready)),
             );
     }
 }

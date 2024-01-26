@@ -1,4 +1,4 @@
-use crate::AppStates;
+use crate::RyotSetupStates;
 use bevy::app::AppExit;
 use bevy::prelude::*;
 use bevy_egui::EguiContexts;
@@ -9,7 +9,7 @@ impl Plugin for ErrorPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ErrorState>().add_systems(
             Update,
-            (display_error_window, check_for_exit).run_if(in_state(AppStates::Ready)),
+            (display_error_window, check_for_exit).run_if(in_state(RyotSetupStates::Ready)),
         );
     }
 }
