@@ -1,9 +1,9 @@
+use crate::appearances::Appearances;
 use bevy::asset::io::Reader;
 use bevy::asset::{Asset, AssetLoader, AsyncReadExt, BoxedFuture, LoadContext};
 use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
 use prost::Message;
-use ryot::prelude::Appearances;
 use thiserror::Error;
 
 pub struct AppearanceAssetPlugin;

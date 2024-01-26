@@ -2,6 +2,15 @@
 name = "ryot"
 version = "0.1.0"
 edition = "2021"
+authors = ["Lucas Grossi <lucas.ggrosis@gmail.com>"]
+license = "MIT OR Apache-2.0"
+description = "MMORPG library based on the concepts of open tibia written in rust and bevy."
+repository = "https://github.com/opentibiabr/Ryot/tree/main/ryot"
+homepage = "https://github.com/opentibiabr/Ryot"
+documentation = "https://docs.rs/ryot/"
+keywords = ["gamedev", "assets", "ryot", "otbr", "bevy"]
+categories = ["game-development"]
+readme = "../README.md"
 
 [build-dependencies]
 prost-build = "0.12.3"

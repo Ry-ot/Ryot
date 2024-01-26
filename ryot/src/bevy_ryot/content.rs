@@ -1,9 +1,8 @@
-use crate::{AppStates, Appearance, AppearanceAssetPlugin, ConfigAsset, ConfigPlugin};
+use crate::appearances::{ContentType, SpriteSheetSet};
+use crate::prelude::*;
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
 use bevy_common_assets::json::JsonAssetPlugin;
-use ryot::prelude::ContentConfigs;
-use ryot::prelude::{ContentType, SpriteSheetSet};
 
 pub struct ContentPlugin;
 
@@ -16,11 +15,11 @@ impl Plugin for ContentPlugin {
             .add_plugins(ConfigPlugin::<ContentConfigs>::default());
 
         app.add_loading_state(
-            LoadingState::new(AppStates::LoadingContent)
-                .continue_to_state(AppStates::PreparingContent)
+            LoadingState::new(RyotSetupStates::LoadingContent)
+                .continue_to_state(RyotSetupStates::PreparingContent)
                 .load_collection::<ContentAssets>(),
         )
-        .add_systems(OnEnter(AppStates::PreparingContent), prepare_content);
+        .add_systems(OnEnter(RyotSetupStates::PreparingContent), prepare_content);
     }
 }
 
@@ -38,7 +37,7 @@ pub struct Catalog {
 #[derive(AssetCollection, Resource)]
 pub struct ContentAssets {
     #[asset(path = "appearances.dat")]
-    pub appearances: Handle<Appearance>,
+    pub appearances: Handle<crate::bevy_ryot::Appearance>,
     #[asset(path = "catalog-content.json")]
     pub catalog_content: Handle<Catalog>,
     #[asset(path = "config/.content.toml")]
@@ -50,7 +49,7 @@ fn prepare_content(
     static_assets: Res<ContentAssets>,
     configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
     mut sprites: ResMut<Sprites>,
-    mut state: ResMut<NextState<AppStates>>,
+    mut state: ResMut<NextState<RyotSetupStates>>,
 ) {
     info!("Preparing content");
     let Some(ConfigAsset(configs)) = configs.get(static_assets.config.id()) else {
@@ -66,7 +65,7 @@ fn prepare_content(
         &configs.sprite_sheet,
     ));
 
-    state.set(AppStates::LoadingSprites);
+    state.set(RyotSetupStates::LoadingSprites);
 
     info!("Finished preparing content");
 }

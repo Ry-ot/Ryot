@@ -14,11 +14,10 @@ pub use content::*;
 #[cfg(feature = "lmdb")]
 pub mod lmdb;
 
-mod sprites;
+pub mod sprites;
 pub use sprites::*;
 
 pub mod prelude {
-    pub use crate::appearances::*;
     #[cfg(feature = "bevy")]
     pub use crate::bevy_ryot::*;
     #[cfg(feature = "compression")]

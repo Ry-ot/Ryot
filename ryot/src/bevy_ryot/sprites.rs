@@ -1,13 +1,12 @@
-use crate::Sprites;
+use crate::appearances::{SpriteSheet, SpriteSheetSet};
+use crate::prelude::tile_grid::TileGrid;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use bevy_asset_loader::asset_collection::AssetCollection;
-use ryot::prelude::tile_grid::TileGrid;
-use ryot::prelude::*;
-use ryot::prelude::{SpriteSheet, SpriteSheetSet};
 use std::path::PathBuf;
 
-use crate::AppStates;
+use crate::bevy_ryot::{RyotSetupStates, Sprites};
+use crate::{get_decompressed_file_name, SpriteSheetConfig, SPRITE_SHEET_FOLDER};
 use bevy_asset_loader::prelude::*;
 
 pub struct SpritesPlugin;
@@ -17,11 +16,11 @@ impl Plugin for SpritesPlugin {
         app.init_resource::<TextureAtlasHandlers>();
 
         app.add_loading_state(
-            LoadingState::new(AppStates::LoadingSprites)
-                .continue_to_state(AppStates::PreparingSprites)
+            LoadingState::new(RyotSetupStates::LoadingSprites)
+                .continue_to_state(RyotSetupStates::PreparingSprites)
                 .load_collection::<SpriteAssets>(),
         )
-        .add_systems(OnEnter(AppStates::PreparingSprites), sprites_preparer);
+        .add_systems(OnEnter(RyotSetupStates::PreparingSprites), sprites_preparer);
 
         app.add_event::<LoadSpriteSheetTextureCommand>()
             .add_event::<SpriteSheetTextureWasLoaded>()
@@ -184,7 +183,7 @@ fn sprite_sheet_loader_system(
 }
 
 fn atlas_handler_system(
-    sprites: Res<Sprites>,
+    sprites: Res<crate::bevy_ryot::Sprites>,
     mut atlas_handlers: ResMut<TextureAtlasHandlers>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     mut sprite_sheet_texture_was_loaded: EventReader<SpriteSheetTextureWasLoaded>,
@@ -236,11 +235,11 @@ pub fn build_sprite_bundle(
 
 #[allow(dead_code)]
 fn sprites_preparer(
-    sprites: Res<Sprites>,
-    sprite_assets: Res<SpriteAssets>,
-    mut state: ResMut<NextState<AppStates>>,
-    mut atlas_handlers: ResMut<TextureAtlasHandlers>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    _sprites: Res<Sprites>,
+    _sprite_assets: Res<SpriteAssets>,
+    mut state: ResMut<NextState<RyotSetupStates>>,
+    _atlas_handlers: ResMut<TextureAtlasHandlers>,
+    _texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
     info!("Preparing sprites");
 
@@ -280,7 +279,7 @@ fn sprites_preparer(
         }
     }
 
-    state.set(AppStates::Ready);
+    state.set(RyotSetupStates::Ready);
 
     info!("Finished preparing sprites");
 }
