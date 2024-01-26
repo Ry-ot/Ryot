@@ -2,8 +2,8 @@ use crate::{AppStates, Appearance, AppearanceAssetPlugin, ConfigAsset, ConfigPlu
 use bevy::prelude::*;
 use bevy_asset_loader::prelude::*;
 use bevy_common_assets::json::JsonAssetPlugin;
-use ryot::appearances::{ContentType, SpriteSheetSet};
-use ryot::ContentConfigs;
+use ryot::prelude::ContentConfigs;
+use ryot::prelude::{ContentType, SpriteSheetSet};
 
 pub struct ContentPlugin;
 

@@ -3,8 +3,8 @@ use crate::{get_chunks_per_z, GetKey, Item, Position, Tile};
 use heed::types::Bytes;
 use log::debug;
 use rayon::prelude::*;
-use ryot::lmdb;
-use ryot::lmdb::{DatabaseName, SerdePostcard};
+use ryot::prelude::lmdb;
+use ryot::prelude::{DatabaseName, SerdePostcard};
 
 #[derive(Clone)]
 pub struct ItemsFromHeedLmdb {

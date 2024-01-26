@@ -1,5 +1,5 @@
 use bevy::{input::Input, math::Vec3, prelude::*, render::camera::Camera};
-use ryot::tile_grid::TileGrid;
+use ryot::prelude::tile_grid::TileGrid;
 
 // A simple camera system for moving and zooming the camera.
 #[allow(dead_code)]

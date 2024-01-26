@@ -1,7 +1,7 @@
 use image::RgbaImage;
 use rstest::{fixture, rstest};
-use ryot::tile_grid::TileGrid;
-use ryot::{
+use ryot::prelude::tile_grid::TileGrid;
+use ryot::prelude::{
     decompress_sprite_sheet, decompress_sprite_sheets, load_sprite_sheet_image, ContentConfigs,
     SpriteSheetConfig, SPRITE_SHEET_FOLDER,
 };
@@ -56,7 +56,7 @@ fn test_decompress_sprite_sheet(#[from(image_fixture)] expected: RgbaImage) {
 #[rstest]
 fn test_decompress_sprite_sheets(#[from(image_fixture)] expected: RgbaImage) {
     let content_config = ContentConfigs {
-        directories: ryot::DirectoryConfigs {
+        directories: ryot::prelude::DirectoryConfigs {
             source_path: PathBuf::from("tests/fixtures"),
             destination_path: PathBuf::from("tests/fixtures"),
         },

@@ -18,7 +18,7 @@ mod error_handling;
 mod helpers;
 use error_handling::ErrorState;
 use helpers::camera::movement as camera_movement;
-use ryot::*;
+use ryot::prelude::*;
 
 // #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
 // use ryot_compass::item::ItemsFromHeedLmdb;
@@ -34,7 +34,7 @@ use winit::window::Icon;
 
 use rfd::AsyncFileDialog;
 
-use ryot::tile_grid::TileGrid;
+use ryot::prelude::tile_grid::TileGrid;
 use ryot_compass::sprites::{
     draw_sprite, load_sprites, LoadSpriteSheetTextureCommand, LoadedSprite, SpriteAssets,
     TextureAtlasHandlers,
