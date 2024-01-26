@@ -1,4 +1,4 @@
-use ryot::{
+use ryot::prelude::{
     assets_root_path, decompress_sprite_sheets, read_content_configs, ContentConfigs,
     CONTENT_CONFIG_PATH,
 };

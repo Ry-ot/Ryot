@@ -3,7 +3,7 @@ use bevy::asset::{Asset, AssetLoader, AsyncReadExt, BoxedFuture, LoadContext};
 use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
 use prost::Message;
-use ryot::appearances::Appearances;
+use ryot::prelude::Appearances;
 use thiserror::Error;
 
 pub struct AppearanceAssetPlugin;

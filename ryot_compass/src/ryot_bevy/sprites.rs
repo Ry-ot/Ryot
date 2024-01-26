@@ -2,9 +2,9 @@ use crate::Sprites;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use bevy_asset_loader::asset_collection::AssetCollection;
-use ryot::appearances::{SpriteSheet, SpriteSheetSet};
-use ryot::tile_grid::TileGrid;
-use ryot::*;
+use ryot::prelude::tile_grid::TileGrid;
+use ryot::prelude::*;
+use ryot::prelude::{SpriteSheet, SpriteSheetSet};
 use std::path::PathBuf;
 
 use crate::AppStates;

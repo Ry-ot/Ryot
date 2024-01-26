@@ -1,6 +1,6 @@
 use bevy::prelude::*;
 use bevy_common_assets::toml::TomlAssetPlugin;
-use ryot::ContentConfigs;
+use ryot::prelude::ContentConfigs;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Deserializer};
 use std::fmt::Debug;
