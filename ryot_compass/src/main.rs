@@ -26,7 +26,10 @@ use ryot::prelude::*;
 // #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
 // use ryot_compass::lmdb::LmdbEnv;
 
-use ryot_compass::{draw_palette_window, AppPlugin, Palette, PaletteState, Tile, TilesetCategory};
+use ryot_compass::{
+    draw_palette_window, AppPlugin, CompassContentAssets, Palette, PaletteState, Tile,
+    TilesetCategory,
+};
 use winit::window::Icon;
 
 use rfd::AsyncFileDialog;
@@ -82,7 +85,7 @@ impl Material2d for RainbowOutlineMaterial {
 
 fn spawn_camera(
     sprite: Res<SpriteAssets>,
-    content: Res<ContentAssets>,
+    content: Res<CompassContentAssets>,
     configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -92,7 +95,7 @@ fn spawn_camera(
         columns,
         rows,
         tile_size,
-    } = configs.get(content.config.id()).or_default().grid;
+    } = configs.get(content.config().id()).or_default().grid;
 
     let mut positions = Vec::new();
     let mut colors = Vec::new();
@@ -241,7 +244,7 @@ fn draw(
     mouse_button_input: Res<Input<MouseButton>>,
     error_states: Res<ErrorState>,
     build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
-    content: Res<ContentAssets>,
+    content: Res<CompassContentAssets>,
     configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
 ) {
     if egui_ctx.ctx_mut().is_pointer_over_area() {
@@ -272,7 +275,7 @@ fn draw(
     };
 
     if mouse_button_input.pressed(MouseButton::Left) {
-        let tile_grid = configs.get(content.config.id()).or_default().grid;
+        let tile_grid = configs.get(content.config().id()).or_default().grid;
 
         let pos = tile_grid.get_tile_pos_from_display_pos_vec2(cursor_pos.0);
 
@@ -374,7 +377,7 @@ fn update_cursor(
     )>,
     atlas_handlers: ResMut<TextureAtlasHandlers>,
     build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
-    content: Res<ContentAssets>,
+    content: Res<CompassContentAssets>,
     configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
 ) {
     if egui_ctx.ctx_mut().is_pointer_over_area() {
@@ -408,7 +411,7 @@ fn update_cursor(
         *atlas_handle = new_sprite.atlas_texture_handle.clone();
         sprite.index = new_sprite.get_sprite_index();
 
-        let tile_grid = configs.get(content.config.id()).or_default().grid;
+        let tile_grid = configs.get(content.config().id()).or_default().grid;
 
         let tile_pos = tile_grid.get_tile_pos_from_display_pos_vec2(cursor_pos.0);
         let Some(cursor_pos) = tile_grid.get_display_position_from_tile_pos_vec2(tile_pos) else {
@@ -601,7 +604,7 @@ pub fn print_appearances(
     sprites: Res<Sprites>,
     palette_state: ResMut<PaletteState>,
     appearances: Res<Assets<Appearance>>,
-    static_assets: Res<ContentAssets>,
+    static_assets: Res<CompassContentAssets>,
     mut egui_ctx: EguiContexts,
     mut palettes: ResMut<Palette>,
     atlas_handlers: ResMut<TextureAtlasHandlers>,
@@ -690,7 +693,7 @@ pub fn print_appearances(
 
     let mut total = 0;
 
-    if let Some(Appearance(appearances)) = appearances.get(static_assets.appearances.clone()) {
+    if let Some(Appearance(appearances)) = appearances.get(static_assets.appearances().clone()) {
         appearances.outfit.iter().for_each(|outfit| {
             if outfit.id.is_none() {
                 warn!("No-id {:?}", outfit);
