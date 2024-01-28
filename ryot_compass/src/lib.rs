@@ -33,8 +33,8 @@ pub mod helpers;
 
 pub mod minimap;
 
-mod ryot_bevy;
-pub use ryot_bevy::*;
+mod bevy_compass;
+pub use bevy_compass::*;
 
 mod tileset;
 pub use tileset::*;
