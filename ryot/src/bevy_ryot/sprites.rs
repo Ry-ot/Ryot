@@ -5,7 +5,7 @@ use bevy::utils::HashMap;
 use bevy_asset_loader::asset_collection::AssetCollection;
 use std::path::PathBuf;
 
-use crate::bevy_ryot::{RyotSetupStates, Sprites};
+use crate::bevy_ryot::{InternalContentState, Sprites};
 use crate::{get_decompressed_file_name, SpriteSheetConfig, SPRITE_SHEET_FOLDER};
 use bevy_asset_loader::prelude::*;
 
@@ -16,11 +16,14 @@ impl Plugin for SpritesPlugin {
         app.init_resource::<TextureAtlasHandlers>();
 
         app.add_loading_state(
-            LoadingState::new(RyotSetupStates::LoadingSprites)
-                .continue_to_state(RyotSetupStates::PreparingSprites)
+            LoadingState::new(InternalContentState::LoadingSprites)
+                .continue_to_state(InternalContentState::PreparingSprites)
                 .load_collection::<SpriteAssets>(),
         )
-        .add_systems(OnEnter(RyotSetupStates::PreparingSprites), sprites_preparer);
+        .add_systems(
+            OnEnter(InternalContentState::PreparingSprites),
+            sprites_preparer,
+        );
 
         app.add_event::<LoadSpriteSheetTextureCommand>()
             .add_event::<SpriteSheetTextureWasLoaded>()
@@ -237,7 +240,7 @@ pub fn build_sprite_bundle(
 fn sprites_preparer(
     _sprites: Res<Sprites>,
     _sprite_assets: Res<SpriteAssets>,
-    mut state: ResMut<NextState<RyotSetupStates>>,
+    mut state: ResMut<NextState<InternalContentState>>,
     _atlas_handlers: ResMut<TextureAtlasHandlers>,
     _texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
@@ -279,7 +282,7 @@ fn sprites_preparer(
         }
     }
 
-    state.set(RyotSetupStates::Ready);
+    state.set(InternalContentState::Ready);
 
     info!("Finished preparing sprites");
 }

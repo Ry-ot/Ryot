@@ -32,12 +32,12 @@ impl<T: ContentAssets> Plugin for ContentPlugin<T> {
             .add_plugins(ConfigPlugin::<ContentConfigs>::default());
 
         app.add_loading_state(
-            LoadingState::new(RyotSetupStates::LoadingContent)
-                .continue_to_state(RyotSetupStates::PreparingContent)
+            LoadingState::new(InternalContentState::LoadingContent)
+                .continue_to_state(InternalContentState::PreparingContent)
                 .load_collection::<T>(),
         )
         .add_systems(
-            OnEnter(RyotSetupStates::PreparingContent),
+            OnEnter(InternalContentState::PreparingContent),
             prepare_content::<T>,
         );
     }
@@ -59,7 +59,7 @@ fn prepare_content<T: ContentAssets>(
     content_assets: Res<T>,
     configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
     mut sprites: ResMut<Sprites>,
-    mut state: ResMut<NextState<RyotSetupStates>>,
+    mut state: ResMut<NextState<InternalContentState>>,
 ) {
     info!("Preparing content");
     let Some(ConfigAsset(configs)) = configs.get(content_assets.config().id()) else {
@@ -75,7 +75,7 @@ fn prepare_content<T: ContentAssets>(
         &configs.sprite_sheet,
     ));
 
-    state.set(RyotSetupStates::LoadingSprites);
+    state.set(InternalContentState::LoadingSprites);
 
     info!("Finished preparing content");
 }

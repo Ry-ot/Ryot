@@ -19,7 +19,7 @@ use bevy::app::{App, Plugin};
 use bevy::prelude::{default, States, Window, WindowPlugin};
 
 #[derive(States, Default, Clone, Eq, PartialEq, Debug, Hash)]
-pub enum RyotSetupStates {
+pub enum InternalContentState {
     #[default]
     LoadingContent,
     PreparingContent,

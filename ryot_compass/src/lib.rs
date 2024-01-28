@@ -46,7 +46,7 @@ pub struct AppPlugin;
 
 impl Plugin for AppPlugin {
     fn build(&self, app: &mut App) {
-        app.add_state::<RyotSetupStates>()
+        app.add_state::<InternalContentState>()
             .add_event::<AppExit>()
             .insert_resource(AssetMetaCheck::Never)
             .add_plugins((

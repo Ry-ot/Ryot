@@ -795,14 +795,14 @@ impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<CursorPos>()
             .add_systems(
-                OnExit(RyotSetupStates::PreparingSprites),
+                OnExit(InternalContentState::PreparingSprites),
                 (spawn_camera, spawn_cursor).chain(),
             )
             .add_systems(
                 Update,
                 (camera_movement, update_cursor_pos, update_cursor)
                     .chain()
-                    .run_if(in_state(RyotSetupStates::Ready)),
+                    .run_if(in_state(InternalContentState::Ready)),
             );
     }
 }
@@ -819,7 +819,7 @@ impl Plugin for UIPlugin {
                 Update,
                 (draw, ui_example, print_appearances)
                     .chain()
-                    .run_if(in_state(RyotSetupStates::Ready)),
+                    .run_if(in_state(InternalContentState::Ready)),
             );
     }
 }
