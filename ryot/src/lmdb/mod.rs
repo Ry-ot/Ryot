@@ -18,9 +18,9 @@ impl DatabaseName {
     }
 }
 
-pub const MDB_FILE_NAME: &'static str = "data.mdb";
+pub const MDB_FILE_NAME: &str = "data.mdb";
 pub fn create_env(path: PathBuf) -> heed::Result<Env> {
-    fs::create_dir_all(&path)?;
+    fs::create_dir_all(path)?;
 
     let env = EnvOpenOptions::new()
         .max_dbs(20)

@@ -1,0 +1,46 @@
+<!--
+  ~ Ryot - A free and open-source MMORPG server emulator
+  ~ Copyright (©) 2023 Lucas Grossi <lucas.ggrossi@gmail.com>
+  ~ Repository: https://github.com/lgrossi/Ryot
+  ~ License: https://github.com/lgrossi/Ryot/blob/main/LICENSE
+  ~ Contributors: https://github.com/lgrossi/Ryot/graphs/contributors
+  ~ Website: https://github.com/lgrossi/Ryot
+  -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <title>Compass</title>
+    <link data-trunk rel="copy-dir" href="assets"/>
+    <link data-trunk rel="copy-file" href="build/windows/icon.ico"/>
+    <link rel="icon" href="icon.ico">
+    <link data-trunk rel="inline" href="build/web/styles.css"/>
+</head>
+<body>
+<div class="game-container">
+    <div class="lds-dual-ring"></div>
+    <canvas id="bevy">
+        Javascript and support for canvas is required
+    </canvas>
+</div>
+</body>
+<script>
+    function resizeCanvas() {
+        const canvas = document.getElementById('bevy');
+        const maxWidth = window.innerWidth;
+        const maxHeight = window.innerHeight;
+
+        // Set canvas dimensions within the maximum width and height
+        canvas.style.width = `${maxWidth}px`;
+        canvas.style.height = `${maxHeight}px`;
+    }
+
+    // Resize the canvas when the window is resized
+    window.addEventListener('resize', resizeCanvas);
+
+    // Initial resize
+    resizeCanvas();
+</script>
+</html>

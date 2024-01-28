@@ -1,68 +1,63 @@
 use bevy::app::AppExit;
-use bevy::math::Vec4Swizzles;
+
+use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
 use bevy::render::mesh::{Indices, PrimitiveTopology};
 use bevy::render::render_resource::{AsBindGroup, ShaderRef};
-use bevy::sprite::{Material2d, Material2dPlugin, MaterialMesh2dBundle};
+use bevy::sprite::{Material2d, MaterialMesh2dBundle};
 use bevy::window::PrimaryWindow;
 use bevy::winit::WinitWindows;
-use bevy::{
-    ecs::system::Resource,
-    input::{common_conditions::input_toggle_active, mouse::MouseWheel},
-    prelude::*,
-};
-use std::io::{Read, Seek};
+use std::fmt::Debug;
 
 use bevy_egui::{EguiContexts, EguiPlugin};
-use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use egui::load::SizedTexture;
 use egui::TextureId;
-use image::Pixel;
 use itertools::Itertools;
-use prost::Message;
-use rand::prelude::{IteratorRandom, SliceRandom};
-use rand::Rng;
-use time_test::time_test;
 
 mod error_handling;
 mod helpers;
-use error_handling::{check_for_exit, display_error_window, ErrorState};
+use error_handling::ErrorState;
 use helpers::camera::movement as camera_movement;
-use rayon::prelude::*;
-use ryot::cip_content::{
-    decompress_all_sprite_sheets, get_full_file_buffer, load_content, Appearances, ContentType,
-    SheetGrid,
-};
-use ryot_compass::item::{ItemRepository, ItemsFromHeedLmdb};
-use ryot_compass::minimap::{Minimap, MinimapPlugin};
-use ryot_compass::{
-    build, draw_palette_window, draw_sprite, init_env, load_sprites,
-    normalize_tile_pos_to_sprite_pos, CipContent, DecompressedCache, LmdbEnv, Palette,
-    PaletteState, Position, Settings, TextureAtlasHandlers, Tile, TilesetCategory,
-};
-use strum::{EnumCount, IntoEnumIterator};
+use ryot::prelude::*;
+
+// #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
+// use ryot_compass::item::ItemsFromHeedLmdb;
+
+// #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
+// use ryot_compass::lmdb::LmdbEnv;
+
+use ryot_compass::{draw_palette_window, AppPlugin, Palette, PaletteState, Tile, TilesetCategory};
 use winit::window::Icon;
 
-fn scroll_events(mut minimap: ResMut<Minimap>, mut scroll_evr: EventReader<MouseWheel>) {
-    for ev in scroll_evr.read() {
-        minimap.zoom += ev.y * 0.1;
-        minimap.zoom = minimap.zoom.clamp(1.0, 25.0);
-    }
-}
+use rfd::AsyncFileDialog;
 
-fn draw_tiles_on_minimap(
-    mut minimap: ResMut<Minimap>,
-    mut images: ResMut<Assets<Image>>,
-    mut tiles: ResMut<Tiles>,
-) {
-    let positions = tiles
-        .0
-        .iter()
-        .map(|(tile, _)| UVec2::new(tile.position.x.into(), tile.position.y.into()))
-        .collect::<Vec<_>>();
-    minimap.update_texture(positions, &mut images);
-    tiles.0.clear(); // TODO: replace this with a system that only adds new tiles
-}
+use crate::error_handling::ErrorPlugin;
+use ryot::bevy_ryot::sprites::SpriteAssets;
+use ryot::prelude::sprites::load_sprites;
+use ryot::prelude::sprites::*;
+use ryot::tile_grid::TileGrid;
+use std::future::Future;
+
+// fn scroll_events(mut minimap: ResMut<Minimap>, mut scroll_evr: EventReader<MouseWheel>) {
+//     for ev in scroll_evr.read() {
+//         minimap.zoom += ev.y * 0.1;
+//         minimap.zoom = minimap.zoom.clamp(1.0, 25.0);
+//     }
+// }
+//
+// fn draw_tiles_on_minimap(
+//     mut minimap: ResMut<Minimap>,
+//     mut images: ResMut<Assets<Image>>,
+//     mut tiles: ResMut<Tiles>,
+// ) {
+//     let positions = tiles
+//         .0
+//         .iter()
+//         .map(|(tile, _)| UVec2::new(tile.position.x.into(), tile.position.y.into()))
+//         .collect::<Vec<_>>();
+//     minimap.update_texture(positions, &mut images);
+//     tiles.0.clear();
+// }
 
 #[derive(AsBindGroup, TypeUuid, Asset, TypePath, Debug, Clone)]
 #[uuid = "f229fdae-d598-45ac-8225-97e2a3f011e0"]
@@ -86,35 +81,54 @@ impl Material2d for RainbowOutlineMaterial {
 }
 
 fn spawn_camera(
+    sprite: Res<SpriteAssets>,
+    content: Res<ContentAssets>,
+    configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
     mut commands: Commands,
-    asset_server: Res<AssetServer>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
-    mut rb_materials: ResMut<Assets<RainbowOutlineMaterial>>,
 ) {
-    let area_size = u16::MAX as f32; // Size of the square
-    let grid_size = 32.0; // Size of each grid cell
+    let TileGrid {
+        columns,
+        rows,
+        tile_size,
+    } = configs.get(content.config.id()).or_default().grid;
 
     let mut positions = Vec::new();
     let mut colors = Vec::new();
     let mut indices = Vec::new();
 
-    // Create vertices for the grid
-    for i in 0..=((area_size / grid_size) as u32) {
-        let offset = i as f32 * grid_size;
-        // Horizontal line
-        positions.push([0.0, -offset, 0.0]);
-        positions.push([area_size, -offset, 0.0]);
-        // Vertical line
-        positions.push([offset, 0.0, 0.0]);
-        positions.push([offset, -area_size, 0.0]);
+    let width = (columns * tile_size.x) as f32;
+    let height = (rows * tile_size.y) as f32;
+
+    // Create vertices for the vertical lines (columns)
+    for col in 0..=columns {
+        let x_offset = (col * tile_size.x) as f32;
+
+        positions.push([x_offset, 0.0, 0.0]);
+        positions.push([x_offset, -height, 0.0]);
 
         // Add colors (white for grid lines)
-        colors.extend(vec![Color::WHITE.as_rgba_f32(); 4]);
+        colors.extend(vec![Color::WHITE.as_rgba_f32(); 2]);
 
-        // Add indices
-        let idx = i * 4;
-        indices.extend_from_slice(&[idx, idx + 1, idx + 2, idx + 3]);
+        // Add indices for the line
+        let idx = col * 2;
+        indices.extend_from_slice(&[idx, idx + 1]);
+    }
+
+    // Create vertices for the horizontal lines (rows)
+    for row in 0..=rows {
+        let y_offset = (row * tile_size.y) as f32;
+
+        positions.push([0.0, -y_offset, 0.0]);
+        positions.push([width, -y_offset, 0.0]);
+
+        // Add colors (white for grid lines)
+        colors.extend(vec![Color::WHITE.as_rgba_f32(); 2]);
+
+        // Add indices for the line
+        let idx = (columns + 1) * 2 + row * 2; // Offset by the number of vertices added for columns
+        indices.extend_from_slice(&[idx, idx + 1]);
     }
 
     // Create the mesh
@@ -132,10 +146,10 @@ fn spawn_camera(
     commands.spawn(SpriteBundle {
         sprite: Sprite {
             color: Color::rgba(255., 255., 255., 0.01),
-            custom_size: Some(Vec2::new(area_size, area_size)),
+            custom_size: Some(Vec2::new(width, height)),
             ..Default::default()
         },
-        transform: Transform::from_xyz(area_size / 2., area_size / -2., 0.), // Slightly in front to cover the white border
+        transform: Transform::from_xyz(width / 2., height / -2., 0.), // Slightly in front to cover the white border
         ..Default::default()
     });
 
@@ -147,16 +161,10 @@ fn spawn_camera(
         ..default()
     });
 
-    commands.spawn(MaterialMesh2dBundle {
-        mesh: meshes.add(Mesh::from(shape::Quad::default())).into(),
-        transform: Transform::from_translation(Vec3::new(64., 75., 0.))
-            .with_scale(Vec3::splat(128.)),
-        material: rb_materials.add(RainbowOutlineMaterial {
-            thickness: 0.01,
-            frequency: 1.0,
-            texture: asset_server.load("ryot_mascot.png"),
-        }),
-        ..default()
+    commands.spawn(SpriteBundle {
+        texture: sprite.mascot.clone(),
+        transform: Transform::from_translation(Vec3::new(0., 0., 1.)).with_scale(Vec3::splat(0.2)),
+        ..Default::default()
     });
 }
 
@@ -171,61 +179,70 @@ impl Default for CursorPos {
     }
 }
 
-#[derive(Resource, Debug)]
+#[allow(dead_code)]
+#[derive(Resource, Debug, Default)]
 pub struct Tiles(Vec<(Tile, bool)>);
 
-impl Default for Tiles {
-    fn default() -> Self {
-        // Initialize the cursor pos at some far away place. It will get updated
-        // correctly when the cursor moves.
-        Self(vec![])
-    }
-}
+// #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
+// fn load_tiles(env: ResMut<LmdbEnv>, mut tiles: ResMut<Tiles>) {
+//     let tiles = &mut tiles.0;
+//
+//     if tiles.len() > 0 {
+//         return;
+//     }
+//
+//     time_test!("Loading");
+//
+//     let initial_pos = Position::new(60000, 60000, 0);
+//     let final_pos = Position::new(61100, 61100, 0);
+//
+//     let item_repository = ItemsFromHeedLmdb::new(env.0.clone().unwrap());
+//
+//     let lmdb_tiles = {
+//         // time_test!("Reading");
+//         item_repository
+//             .get_for_area(&initial_pos, &final_pos)
+//             .unwrap()
+//     };
+//
+//     for tile in lmdb_tiles {
+//         tiles.push((
+//             Tile {
+//                 position: Position::from_binary_key(&tile.0),
+//                 item: Some(tile.1),
+//             },
+//             false,
+//         ));
+//     }
+// }
 
-fn load_tiles(env: ResMut<LmdbEnv>, mut tiles: ResMut<Tiles>) {
-    let tiles = &mut tiles.0;
+// fn aaa(
+//     mut commands: Commands,
+//     mut egui_ctx: EguiContexts,
+//     sprites: ResMut<Sprites>,
+//     asset_server: Res<AssetServer>,
+//     mut atlas_handlers: ResMut<TextureAtlasHandlers>,
+//     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+//     cursor_pos: Res<CursorPos>,
+//     palette_state: Res<PaletteState>,
+//     mouse_button_input: Res<Input<MouseButton>>,
+//     error_states: Res<ErrorState>,
+// ) {
+// }
 
-    if tiles.len() > 0 {
-        return;
-    }
-
-    time_test!("Loading");
-
-    let initial_pos = Position::new(60000, 60000, 0);
-    let final_pos = Position::new(61100, 61100, 0);
-
-    let item_repository = ItemsFromHeedLmdb::new(env.0.clone().unwrap());
-
-    let lmdb_tiles = {
-        time_test!("Reading");
-        item_repository
-            .get_for_area(&initial_pos, &final_pos)
-            .unwrap()
-    };
-
-    for tile in lmdb_tiles {
-        tiles.push((
-            Tile {
-                position: Position::from_binary_key(&tile.0),
-                item: Some(tile.1),
-            },
-            false,
-        ));
-    }
-}
-
+#[allow(clippy::too_many_arguments)]
 fn draw(
     mut commands: Commands,
-    settings: Res<Settings>,
     mut egui_ctx: EguiContexts,
-    mut content: ResMut<CipContent>,
-    asset_server: Res<AssetServer>,
-    mut atlas_handlers: ResMut<TextureAtlasHandlers>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    sprites: Res<Sprites>,
+    atlas_handlers: ResMut<TextureAtlasHandlers>,
     cursor_pos: Res<CursorPos>,
     palette_state: Res<PaletteState>,
     mouse_button_input: Res<Input<MouseButton>>,
-    mut error_states: Res<ErrorState>,
+    error_states: Res<ErrorState>,
+    build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
+    content: Res<ContentAssets>,
+    configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
 ) {
     if egui_ctx.ctx_mut().is_pointer_over_area() {
         return;
@@ -235,21 +252,19 @@ fn draw(
         return;
     }
 
-    if content.raw_content.len() == 0 {
+    if sprites.sheets.is_none() {
         return;
-    }
+    };
 
     let Some(sprite_id) = palette_state.selected_tile else {
         return;
     };
 
     let sprites = load_sprites(
-        &vec![sprite_id],
-        &content.raw_content,
-        &settings,
-        &asset_server,
-        &mut atlas_handlers,
-        &mut texture_atlases,
+        &[sprite_id],
+        sprites,
+        atlas_handlers,
+        build_spr_sheet_texture_cmd,
     );
 
     let Some(sprite) = sprites.first() else {
@@ -257,8 +272,16 @@ fn draw(
     };
 
     if mouse_button_input.pressed(MouseButton::Left) {
-        let pos = cursor_pos_to_tile_pos(cursor_pos.0);
-        draw_sprite(Vec3::new(pos.x, pos.y, 1.1), sprite, &mut commands);
+        let tile_grid = configs.get(content.config.id()).or_default().grid;
+
+        let pos = tile_grid.get_tile_pos_from_display_pos_vec2(cursor_pos.0);
+
+        draw_sprite(
+            Vec3::new(pos.x, pos.y, 1.1),
+            sprite,
+            &mut commands,
+            tile_grid,
+        );
         debug!("Tile: {:?} drawn", pos);
     }
 
@@ -270,22 +293,21 @@ fn draw(
                     sprites.push(91267);
                 }
 
-                let sprites = load_sprites(
-                    &sprites,
-                    &content.raw_content,
-                    &settings,
-                    &asset_server,
-                    &mut atlas_handlers,
-                    &mut texture_atlases,
-                );
-
-                for (i, sprite) in sprites.iter().enumerate() {
-                    draw_sprite(
-                        Vec3::new(x as f32, y as f32, 1. + i as f32),
-                        sprite,
-                        &mut commands,
-                    );
-                }
+                // let sprites = load_sprites_2(
+                //     &sprites,
+                //     sprite_sheets,
+                //     &asset_server,
+                //     &mut atlas_handlers,
+                //     &mut texture_atlases,
+                // );
+                //
+                // for (i, sprite) in sprites.iter().enumerate() {
+                //     draw_sprite(
+                //         Vec3::new(x as f32, y as f32, 1. + i as f32),
+                //         sprite,
+                //         &mut commands,
+                //     );
+                // }
             }
         }
     }
@@ -317,21 +339,6 @@ fn draw(
     // }
 }
 
-fn decompress_all_sprites(settings: Res<Settings>, content: Res<CipContent>) {
-    // time_test!("Decompressing");
-    let DecompressedCache::Path(decompressed_path) = &settings.content.decompressed_cache else {
-        return;
-    };
-
-    std::fs::create_dir_all(decompressed_path).unwrap();
-
-    decompress_all_sprite_sheets(
-        &content.raw_content,
-        &settings.content.path,
-        decompressed_path,
-    );
-}
-
 // We need to keep the cursor position updated based on any `CursorMoved` events.
 pub fn update_cursor_pos(
     mut cursor_pos: ResMut<CursorPos>,
@@ -351,11 +358,10 @@ pub fn update_cursor_pos(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn update_cursor(
-    settings: Res<Settings>,
-    content: Res<CipContent>,
+    sprites: Res<Sprites>,
     cursor_pos: Res<CursorPos>,
-    asset_server: Res<AssetServer>,
     palette_state: Res<PaletteState>,
     mut egui_ctx: EguiContexts,
     mut windows: Query<&mut Window>,
@@ -366,26 +372,31 @@ fn update_cursor(
         &mut Handle<TextureAtlas>,
         &SelectedTile,
     )>,
-    mut atlas_handlers: ResMut<TextureAtlasHandlers>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    atlas_handlers: ResMut<TextureAtlasHandlers>,
+    build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
+    content: Res<ContentAssets>,
+    configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
 ) {
-    egui_ctx.ctx_mut().set_cursor_icon(egui::CursorIcon::None);
-
-    if content.raw_content.len() == 0 {
-        return;
+    if egui_ctx.ctx_mut().is_pointer_over_area() {
+        egui_ctx
+            .ctx_mut()
+            .set_cursor_icon(egui::CursorIcon::Default);
+        windows.single_mut().cursor.icon = CursorIcon::Default;
+        windows.single_mut().cursor.visible = true;
     }
+    if sprites.sheets.is_none() {
+        return;
+    };
 
     let Some(sprite_id) = palette_state.selected_tile else {
         return;
     };
 
     let sprites = load_sprites(
-        &vec![sprite_id],
-        &content.raw_content,
-        &settings,
-        &asset_server,
-        &mut atlas_handlers,
-        &mut texture_atlases,
+        &[sprite_id],
+        sprites,
+        atlas_handlers,
+        build_spr_sheet_texture_cmd,
     );
 
     let Some(new_sprite) = sprites.first() else {
@@ -395,14 +406,25 @@ fn update_cursor(
     for (mut transform, mut visibility, mut sprite, mut atlas_handle, _) in cursor_query.iter_mut()
     {
         *atlas_handle = new_sprite.atlas_texture_handle.clone();
-        sprite.index = new_sprite.sprite_index;
-        let cursor_pos = normalize_tile_pos_to_sprite_pos(cursor_pos_to_tile_pos(cursor_pos.0));
+        sprite.index = new_sprite.get_sprite_index();
+
+        let tile_grid = configs.get(content.config.id()).or_default().grid;
+
+        let tile_pos = tile_grid.get_tile_pos_from_display_pos_vec2(cursor_pos.0);
+        let Some(cursor_pos) = tile_grid.get_display_position_from_tile_pos_vec2(tile_pos) else {
+            return;
+        };
+
         transform.translation = Vec3::from((cursor_pos, 128.));
 
         if cursor_pos == Vec2::ZERO {
             *visibility = Visibility::Hidden;
         } else {
             *visibility = Visibility::Visible;
+        }
+
+        if egui_ctx.ctx_mut().is_pointer_over_area() {
+            continue;
         }
 
         match *visibility {
@@ -433,35 +455,11 @@ fn spawn_cursor(mut commands: Commands) {
     ));
 }
 
-fn cursor_pos_to_tile_pos(cursor_pos: Vec2) -> Vec2 {
-    // Tiles are 32x32 and grows from left top to right bottom.
-    Vec2::new(
-        (cursor_pos.x / 32.) as i32 as f32,
-        (-cursor_pos.y / 32.) as i32 as f32,
-    )
-}
-
-fn load_cip_content(
-    path: &str,
-    mut content: ResMut<CipContent>,
-    mut error_state: ResMut<ErrorState>,
-) {
-    match load_content(path) {
-        Ok(raw_content) => content.raw_content = raw_content,
-        Err(e) => {
-            error!("Failed to load CIP content: {:?}", e);
-            error_state.has_error = true;
-            error_state.error_message = "Failed to load CIP content".to_string();
-        }
-    }
-}
-
 fn ui_example(
     mut egui_ctx: EguiContexts,
-    mut content: ResMut<CipContent>,
-    mut settings: Res<Settings>,
+    sprites: Res<Sprites>,
     mut exit: EventWriter<AppExit>,
-    error_state: ResMut<ErrorState>,
+    // content_sender: Res<EventSender<ContentWasLoaded>>,
     mut about_me: ResMut<AboutMeOpened>,
     mut _windows: NonSend<WinitWindows>,
 ) {
@@ -478,7 +476,7 @@ fn ui_example(
                 // Temporarily apply the style
                 ui.set_style(style);
 
-                let is_content_loaded = content.raw_content.len() > 0;
+                let is_content_loaded = sprites.sheets.is_some();
 
                 // Load the image using `image-rs`
                 // let image_data = include_bytes!("path/to/your/image.png").to_vec();
@@ -490,23 +488,34 @@ fn ui_example(
                 //     egui::ColorImage::from_rgba_unmultiplied(size, &image_data)
                 // );
 
-                let img = egui::include_image!("../assets/icons/compass_2.png");
-
-                ui.image(img);
+                // let img = egui::include_image!("../assets/icons/compass_2.png");
+                //
+                // ui.image(img);
 
                 egui::menu::menu_button(ui, "File", |ui| {
+                    // #[cfg(not(target_arch = "wasm32"))]
                     if ui
                         .add_enabled(is_content_loaded, egui::Button::new("🗁 Open"))
                         .clicked()
                     {
-                        let path = rfd::FileDialog::new()
-                            .add_filter(".mdb, .otbm", &["mdb", "otbm"])
-                            .pick_file();
+                        read_file(
+                            AsyncFileDialog::new().add_filter(".mdb, .otbm", &["mdb", "otbm"]),
+                            |(file_name, content)| {
+                                debug!("Loading map from file: {:?}", file_name);
+                                debug!("Content: {:?}", content);
+                                debug!("Current dir: {:?}", std::env::current_dir());
+                            },
+                        );
 
-                        debug!("Loading map from file: {:?}", path);
-                        debug!("Current dir: {:?}", std::env::current_dir());
+                        // let path = rfd::FileDialog::new()
+                        //     .add_filter(".mdb, .otbm", &["mdb", "otbm"])
+                        //     .pick_file();
+                        //
+                        // debug!("Loading map from file: {:?}", path);
+                        // debug!("Current dir: {:?}", std::env::current_dir());
                     }
 
+                    #[cfg(not(target_arch = "wasm32"))]
                     if ui
                         .add_enabled(is_content_loaded, egui::Button::new("💾 Save"))
                         .clicked()
@@ -520,45 +529,34 @@ fn ui_example(
 
                     ui.separator();
 
+                    // #[cfg(not(target_arch = "wasm32"))]
                     if ui.button("Load Content").clicked() {
-                        let path = rfd::FileDialog::new()
-                            .add_filter(".json", &["json"])
-                            .pick_file();
+                        // let sender = content_sender.0.clone();
 
-                        let Some(path) = path else {
-                            return;
-                        };
+                        read_file(
+                            AsyncFileDialog::new().add_filter(".json", &["json"]),
+                            move |(file_name, _loaded)| {
+                                debug!("Loading content from file: {:?}", file_name);
+                                // let Some(content_was_loaded) =
+                                //     ContentWasLoaded::from_bytes(file_name.clone(), loaded.clone())
+                                // else {
+                                //     warn!("Failed to load content from file: {:?}", file_name);
+                                //     return;
+                                // };
 
-                        debug!("{:?}", path.file_name().unwrap());
-                        debug!("{:?}", path.parent().unwrap());
-
-                        let Some(path) = path.to_str() else {
-                            return;
-                        };
-
-                        debug!("Loading cip content");
-                        load_cip_content(path, content, error_state);
-                        debug!("Content loaded!");
+                                // sender
+                                //     .send(content_was_loaded)
+                                //     .expect("Failed to send content loaded event");
+                            },
+                        );
                     }
 
-                    if ui
-                        .add_enabled(is_content_loaded, egui::Button::new("🔃 Refresh Content"))
-                        .clicked()
-                    {
-                        let DecompressedCache::Path(decompressed_path) =
-                            &settings.content.decompressed_cache
-                        else {
-                            return;
-                        };
-
-                        if let Ok(_) = std::fs::remove_dir_all(decompressed_path) {
-                            // decompress_all_sprites(content);
-                        }
-                    }
+                    ui.add_enabled(is_content_loaded, egui::Button::new("🔃 Refresh Content"))
+                        .clicked();
 
                     ui.separator();
 
-                    if ui.button("⚙ Settings").clicked() {}
+                    ui.button("⚙ Settings").clicked();
 
                     ui.separator();
 
@@ -598,33 +596,34 @@ fn ui_example(
         });
 }
 
-pub fn print_settings(mut settings: Res<Settings>) {
-    debug!("{:?}", settings);
-}
-
+#[allow(clippy::too_many_arguments)]
 pub fn print_appearances(
-    content: Res<CipContent>,
-    settings: Res<Settings>,
-    mut palette_state: ResMut<PaletteState>,
-    asset_server: Res<AssetServer>,
+    sprites: Res<Sprites>,
+    palette_state: ResMut<PaletteState>,
+    appearances: Res<Assets<Appearance>>,
+    static_assets: Res<ContentAssets>,
     mut egui_ctx: EguiContexts,
     mut palettes: ResMut<Palette>,
-    mut atlas_handlers: ResMut<TextureAtlasHandlers>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
-    mut error_states: Res<ErrorState>,
+    atlas_handlers: ResMut<TextureAtlasHandlers>,
+    texture_atlases: ResMut<Assets<TextureAtlas>>,
+    build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
+    // error_states: Res<ErrorState>,
 ) {
-    if error_states.has_error {
-        return;
-    }
+    // if error_states.has_error {
+    //     return;
+    // }
 
-    if palettes
+    if !palettes
         .tile_set
         .get(&TilesetCategory::Terrains)
         .unwrap()
-        .len()
-        > 0
+        .is_empty()
     {
-        let mut egui_images: Vec<(u32, SheetGrid, egui::Image)> = vec![];
+        if sprites.sheets.is_none() {
+            return;
+        };
+
+        let mut egui_images: Vec<(LoadedSprite, egui::Image)> = vec![];
 
         let mut sprite_ids: Vec<u32> = if palette_state.category == TilesetCategory::Raw {
             let mut sprite_ids = vec![];
@@ -647,19 +646,20 @@ pub fn print_appearances(
 
         sprite_ids.sort();
 
+        let begin = palette_state.begin().min(sprite_ids.len() - 5);
+        let end = palette_state.end().min(sprite_ids.len());
+
         for sprite in load_sprites(
-            &sprite_ids[palette_state.begin()..palette_state.end()],
-            &content.raw_content,
-            &settings,
-            &asset_server,
-            &mut atlas_handlers,
-            &mut texture_atlases,
+            &sprite_ids[begin..end],
+            sprites,
+            atlas_handlers,
+            build_spr_sheet_texture_cmd,
         ) {
-            let Some(atlas) = texture_atlases.get(sprite.atlas_texture_handle) else {
+            let Some(atlas) = texture_atlases.get(sprite.atlas_texture_handle.clone()) else {
                 continue;
             };
 
-            let Some(rect) = atlas.textures.get(sprite.sprite_index) else {
+            let Some(rect) = atlas.textures.get(sprite.get_sprite_index()) else {
                 continue;
             };
 
@@ -672,8 +672,7 @@ pub fn print_appearances(
                 egui::Vec2::new(rect.max.x - rect.min.x, rect.max.y - rect.min.y);
             let tex: TextureId = egui_ctx.add_image(atlas.texture.clone_weak());
             egui_images.push((
-                sprite.sprite_id,
-                sprite.atlas_grid,
+                sprite,
                 egui::Image::new(SizedTexture::new(tex, rect_vec2)).uv(uv),
             ));
         }
@@ -691,48 +690,41 @@ pub fn print_appearances(
 
     let mut total = 0;
 
-    content
-        .raw_content
-        .iter()
-        .for_each(|content| match content {
-            ContentType::Appearances { file, version: _ } => {
-                let buffer =
-                    get_full_file_buffer(&settings.content.build_content_file_path(&file)).unwrap();
-                let appearances = Appearances::decode(&*buffer).unwrap();
-                appearances.outfit.iter().for_each(|outfit| {
-                    if let None = outfit.id {
-                        warn!("No-id {:?}", outfit);
-                    }
-                    total += 1;
-                });
-                appearances.object.iter().for_each(|object| {
-                    total += 1;
-
-                    let Some(frame_group) = object.frame_group.first() else {
-                        warn!("No-sprite {:?}", object);
-                        return;
-                    };
-
-                    let Some(sprite_info) = &frame_group.sprite_info else {
-                        warn!("No-sprite {:?}", object);
-                        return;
-                    };
-
-                    let Some(sprite_id) = sprite_info.sprite_id.first() else {
-                        warn!("No-sprite {:?}", object);
-                        return;
-                    };
-
-                    let category: TilesetCategory = object.into();
-                    palettes
-                        .tile_set
-                        .get_mut(&category)
-                        .unwrap()
-                        .push(*sprite_id);
-                });
+    if let Some(Appearance(appearances)) = appearances.get(static_assets.appearances.clone()) {
+        appearances.outfit.iter().for_each(|outfit| {
+            if outfit.id.is_none() {
+                warn!("No-id {:?}", outfit);
             }
-            _ => (),
+            total += 1;
         });
+
+        appearances.object.iter().for_each(|object| {
+            total += 1;
+
+            let Some(frame_group) = object.frame_group.first() else {
+                warn!("No-sprite {:?}", object);
+                return;
+            };
+
+            let Some(sprite_info) = &frame_group.sprite_info else {
+                warn!("No-sprite {:?}", object);
+                return;
+            };
+
+            let Some(sprite_id) = sprite_info.sprite_id.first() else {
+                warn!("No-sprite {:?}", object);
+                return;
+            };
+
+            let category: TilesetCategory = object.into();
+
+            palettes
+                .tile_set
+                .get_mut(&category)
+                .unwrap()
+                .push(*sprite_id);
+        });
+    };
 
     total = 0;
 
@@ -743,6 +735,26 @@ pub fn print_appearances(
     }
     debug!("Total: {}", total);
 }
+
+// fn set_window_icon(
+//     windows: NonSend<WinitWindows>,
+//     primary_window: Query<Entity, With<PrimaryWindow>>,
+// ) {
+//     let primary_entity = primary_window.single();
+//     let Some(primary) = windows.get_window(primary_entity) else {
+//         return;
+//     };
+//     let icon_buf = Cursor::new(include_bytes!(
+//         "../build/macos/AppIcon.iconset/icon_256x256.png"
+//     ));
+//     if let Ok(image) = image::load(icon_buf, image::ImageFormat::Png) {
+//         let image = image.into_rgba8();
+//         let (width, height) = image.dimensions();
+//         let rgba = image.into_raw();
+//         let icon = Icon::from_rgba(rgba, width, height).unwrap();
+//         primary.set_window_icon(Some(icon));
+//     };
+// }
 
 pub fn setup_window(
     mut egui_ctx: EguiContexts,
@@ -755,7 +767,7 @@ pub fn setup_window(
     let primary_window = windows.get_window(primary_window_entity).unwrap();
 
     let (icon_rgba, icon_width, icon_height) = {
-        let image = image::open("assets/icons/compass_2.png")
+        let image = image::open("assets/icons/compass_4.png")
             .expect("Failed to open icon path")
             .into_rgba8();
         let (width, height) = image.dimensions();
@@ -774,57 +786,82 @@ pub struct SelectedTile {
     pub atlas: Option<Handle<TextureAtlas>>,
 }
 
+pub struct CameraPlugin;
+
+impl Plugin for CameraPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<CursorPos>()
+            .add_systems(
+                OnExit(RyotSetupStates::PreparingSprites),
+                (spawn_camera, spawn_cursor).chain(),
+            )
+            .add_systems(
+                Update,
+                (camera_movement, update_cursor_pos, update_cursor)
+                    .chain()
+                    .run_if(in_state(RyotSetupStates::Ready)),
+            );
+    }
+}
+
+pub struct UIPlugin;
+
+impl Plugin for UIPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_optional_plugin(EguiPlugin)
+            .init_resource::<AboutMeOpened>()
+            .init_resource::<Palette>()
+            .init_resource::<PaletteState>()
+            .add_systems(
+                Update,
+                (draw, ui_example, print_appearances)
+                    .chain()
+                    .run_if(in_state(RyotSetupStates::Ready)),
+            );
+    }
+}
+
 fn main() {
     App::new()
-        .add_event::<AppExit>()
-        .add_plugins((
-            DefaultPlugins
-                .set(WindowPlugin {
-                    primary_window: Some(Window {
-                        title: String::from("Ryot Compass"),
-                        ..Default::default()
-                    }),
-                    ..default()
-                })
-                .set(ImagePlugin::default_nearest()),
-            Material2dPlugin::<RainbowOutlineMaterial>::default(),
-        ))
-        .insert_resource(ClearColor(Color::rgb(0.12, 0.12, 0.12)))
-        .init_resource::<ErrorState>()
-        .insert_resource(build())
-        .init_resource::<LmdbEnv>()
-        .init_resource::<Settings>()
-        .init_resource::<Palette>()
-        .init_resource::<AboutMeOpened>()
-        .init_resource::<TextureAtlasHandlers>()
-        .init_resource::<CipContent>()
-        .init_resource::<CursorPos>()
-        .init_resource::<Tiles>()
-        .init_resource::<PaletteState>()
-        .add_plugins((
-            EguiPlugin,
-            WorldInspectorPlugin::default().run_if(input_toggle_active(true, KeyCode::Escape)),
-            MinimapPlugin,
-        ))
-        .add_systems(Startup, spawn_camera)
-        .add_systems(Startup, setup_window)
-        .add_systems(Startup, init_env.before(load_tiles))
-        .add_systems(Startup, spawn_cursor)
+        .add_plugins(AppPlugin)
+        .add_plugins(CameraPlugin)
+        .add_plugins(UIPlugin)
+        .add_plugins(ErrorPlugin)
+        // .init_resource::<LmdbEnv>()
+        // .init_resource::<Tiles>()
+        // .add_systems(Startup, setup_window)
+        // .add_systems(Startup, init_env.before(load_tiles))
         // .add_systems(Startup, load_tiles)
         // .add_systems(Startup, decompress_all_sprites)
-        .add_systems(First, (camera_movement, update_cursor_pos).chain())
-        // .add_systems(Update, decompress_all_sprites)
-        .add_systems(Update, draw)
-        .add_systems(Update, draw_tiles_on_minimap)
-        .add_systems(Update, scroll_events)
-        .add_systems(Update, ui_example)
-        .add_systems(Update, print_appearances)
-        .add_systems(Update, print_settings)
-        .add_systems(Update, display_error_window)
-        .add_systems(Update, check_for_exit)
-        .add_systems(Update, update_cursor)
+        // .add_systems(Update, draw_tiles_on_minimap)
+        // .add_systems(Update, scroll_events)
         .run();
 }
 
 #[derive(Resource, Default)]
 struct AboutMeOpened(bool);
+
+#[cfg(not(target_arch = "wasm32"))]
+fn execute<F: Future<Output = ()> + Send + 'static>(f: F) {
+    async_std::task::spawn(f);
+}
+
+#[cfg(target_arch = "wasm32")]
+fn execute<F: Future<Output = ()> + 'static>(f: F) {
+    wasm_bindgen_futures::spawn_local(f);
+}
+
+fn read_file(
+    async_rfd: AsyncFileDialog,
+    callback: impl FnOnce((String, Vec<u8>)) + 'static + Send,
+) {
+    let task = async_rfd.pick_file();
+
+    execute(async {
+        let file = task.await;
+
+        if let Some(file) = file {
+            callback((file.file_name(), file.read().await));
+        }
+    });
+}

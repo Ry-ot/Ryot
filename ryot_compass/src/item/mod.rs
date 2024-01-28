@@ -1,14 +1,9 @@
-/*
- * Ryot - A free and open-source MMORPG server emulator
- * Copyright (©) 2023 Lucas Grossi <lucas.ggrossi@gmail.com>
- * Repository: https://github.com/lgrossi/Ryot
- * License: https://github.com/lgrossi/Ryot/blob/main/LICENSE
- * Contributors: https://github.com/lgrossi/Ryot/graphs/contributors
- * Website: https://github.com/lgrossi/Ryot
- */
 use crate::{GetKey, Item, Position, Tile};
 
+#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
 mod items_from_heed_lmdb;
+
+#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
 pub use items_from_heed_lmdb::ItemsFromHeedLmdb;
 
 pub trait ItemRepository {

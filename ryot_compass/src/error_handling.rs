@@ -1,15 +1,18 @@
-/*
- * Ryot - A free and open-source MMORPG server emulator
- * Copyright (©) 2023 Lucas Grossi <lucas.ggrossi@gmail.com>
- * Repository: https://github.com/lgrossi/Ryot
- * License: https://github.com/lgrossi/Ryot/blob/main/LICENSE
- * Contributors: https://github.com/lgrossi/Ryot/graphs/contributors
- * Website: https://github.com/lgrossi/Ryot
- */
-
+use crate::RyotSetupStates;
 use bevy::app::AppExit;
 use bevy::prelude::*;
 use bevy_egui::EguiContexts;
+
+pub struct ErrorPlugin;
+
+impl Plugin for ErrorPlugin {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<ErrorState>().add_systems(
+            Update,
+            (display_error_window, check_for_exit).run_if(in_state(RyotSetupStates::Ready)),
+        );
+    }
+}
 
 #[derive(Resource, Default)]
 pub struct ErrorState {
@@ -18,6 +21,7 @@ pub struct ErrorState {
     pub close_requested: bool,
 }
 
+#[allow(dead_code)]
 impl ErrorState {
     pub fn new(error_message: String) -> Self {
         Self {

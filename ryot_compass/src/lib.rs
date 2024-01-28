@@ -1,10 +1,17 @@
-use crate::item::{ItemRepository, ItemsFromHeedLmdb};
+use crate::sprites::SpritesPlugin;
+use bevy::app::{App, AppExit, Plugin};
+use bevy::asset::AssetMetaCheck;
+use bevy::input::common_conditions::input_toggle_active;
 use bevy::prelude::*;
-use heed::Env;
-use ryot::{compress, decompress, lmdb, Zstd};
-use time_test::time_test;
+use bevy::DefaultPlugins;
+use bevy_inspector_egui::quick::WorldInspectorPlugin;
 
 pub mod item;
+
+#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
+pub mod lmdb;
+#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
+pub use lmdb::*;
 
 mod generator;
 pub use generator::{build_map, get_chunks_per_z};
@@ -20,6 +27,7 @@ pub use error::*;
 
 mod error_handling;
 pub use error_handling::*;
+use ryot::prelude::*;
 
 pub mod helpers;
 
@@ -34,83 +42,21 @@ pub use tileset::*;
 mod ui;
 pub use ui::*;
 
-mod config;
-pub use config::*;
+pub struct AppPlugin;
 
-#[derive(Resource)]
-pub struct LmdbEnv(pub Option<Env>);
-
-impl Default for LmdbEnv {
-    fn default() -> Self {
-        Self(None)
+impl Plugin for AppPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_state::<RyotSetupStates>()
+            .add_event::<AppExit>()
+            .insert_resource(AssetMetaCheck::Never)
+            .add_plugins((
+                DefaultPlugins
+                    .set(entitled_window("Compass".to_string()))
+                    .set(ImagePlugin::default_nearest()),
+                ContentPlugin,
+                SpritesPlugin,
+                WorldInspectorPlugin::default().run_if(input_toggle_active(true, KeyCode::Escape)),
+            ))
+            .insert_resource(ClearColor(Color::rgb(0.12, 0.12, 0.12)));
     }
-}
-
-pub fn init_env(mut env: ResMut<LmdbEnv>) {
-    info!("Setting up LMDB");
-    env.0 = Some(lmdb::create_env(lmdb::get_storage_path()).unwrap());
-}
-
-pub fn read_area(initial_pos: &Position, final_pos: &Position, env: ResMut<LmdbEnv>) {
-    match &env.0 {
-        Some(env) => {
-            time_test!("Reading");
-            let item_repository = ItemsFromHeedLmdb::new(env.clone());
-            let area = item_repository
-                .get_for_area(initial_pos, final_pos)
-                .unwrap();
-            println!("Count: {:?}", area.len());
-        }
-        None => {
-            error!("No LMDB env");
-        }
-    }
-}
-
-pub fn lmdb_example() -> std::result::Result<(), Box<dyn std::error::Error>> {
-    let env = lmdb::create_env(lmdb::get_storage_path())?;
-    let item_repository = ItemsFromHeedLmdb::new(env.clone());
-    let z_size = 15;
-
-    let map = {
-        time_test!("Building ryot_compass");
-        build_map(z_size)
-    };
-
-    {
-        time_test!("Writing");
-        item_repository.save_from_tiles(map.tiles)?;
-    }
-
-    let initial_pos = Position::new(60000, 60000, 0);
-    let final_pos = Position::new(61000, 61000, z_size - 1);
-
-    {
-        time_test!("Reading");
-        let area = item_repository.get_for_area(&initial_pos, &final_pos)?;
-        println!("Count: {}", area.len());
-    }
-
-    // env.prepare_for_closing().wait();
-    // lmdb::compact()?;
-
-    {
-        time_test!("Compressing");
-        compress::<Zstd>(
-            lmdb::get_storage_path().join("data.mdb").to_str().unwrap(),
-            Some(3),
-        )?;
-    }
-
-    {
-        time_test!("Decompressing");
-        decompress::<Zstd>(
-            lmdb::get_storage_path()
-                .join("data.mdb.snp")
-                .to_str()
-                .unwrap(),
-        )?;
-    }
-
-    Ok(())
 }

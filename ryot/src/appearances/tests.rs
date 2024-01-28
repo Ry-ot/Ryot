@@ -1,0 +1,223 @@
+use super::*;
+use rstest::{fixture, rstest};
+use serde_json::{from_str, to_string};
+
+#[rstest]
+fn test_has_sprite(#[from(sprite_sheet_fixture)] sprite_sheet: SpriteSheet) {
+    assert!(sprite_sheet.has_sprite(100));
+    assert!(sprite_sheet.has_sprite(200));
+    assert!(!sprite_sheet.has_sprite(99));
+    assert!(!sprite_sheet.has_sprite(201));
+}
+
+#[rstest]
+fn test_get_sprite_index(#[from(sprite_sheet_fixture)] sprite_sheet: SpriteSheet) {
+    assert_eq!(Some(0), sprite_sheet.get_sprite_index(100));
+    assert_eq!(Some(99), sprite_sheet.get_sprite_index(199));
+    assert_eq!(Some(100), sprite_sheet.get_sprite_index(200));
+    assert_eq!(None, sprite_sheet.get_sprite_index(99));
+    assert_eq!(None, sprite_sheet.get_sprite_index(201));
+}
+
+#[rstest]
+#[case(SpriteLayout::OneByOne, UVec2::new(32, 32))]
+#[case(SpriteLayout::OneByTwo, UVec2::new(32, 64))]
+#[case(SpriteLayout::TwoByOne, UVec2::new(64, 32))]
+#[case(SpriteLayout::TwoByTwo, UVec2::new(64, 64))]
+fn test_get_tile_size(#[case] layout: SpriteLayout, #[case] expected: UVec2) {
+    let sprite_sheet = SpriteSheet {
+        file: "spritesheet.png".to_string(),
+        layout,
+        first_sprite_id: 100,
+        last_sprite_id: 200,
+        area: 64,
+    };
+
+    assert_eq!(
+        expected,
+        sprite_sheet.get_tile_size(&SpriteSheetConfig::cip_sheet())
+    );
+}
+
+#[rstest]
+fn test_get_columns_count(#[from(sprite_sheet_fixture)] sprite_sheet: SpriteSheet) {
+    assert_eq!(
+        12,
+        sprite_sheet.get_columns_count(&SpriteSheetConfig::cip_sheet())
+    );
+}
+
+#[rstest]
+fn test_get_rows_count(#[from(sprite_sheet_fixture)] sprite_sheet: SpriteSheet) {
+    assert_eq!(
+        12,
+        sprite_sheet.get_rows_count(&SpriteSheetConfig::cip_sheet())
+    );
+}
+
+#[fixture]
+fn sprite_sheet_fixture() -> SpriteSheet {
+    SpriteSheet {
+        file: "spritesheet.png".to_string(),
+        layout: SpriteLayout::OneByOne,
+        first_sprite_id: 100,
+        last_sprite_id: 200,
+        area: 64,
+    }
+}
+
+#[rstest]
+fn test_from_content(#[from(sprite_sheet_set_fixture)] sprite_sheet_set: SpriteSheetSet) {
+    assert_eq!(2, sprite_sheet_set.sprite_sheets.len());
+    assert_eq!(100, sprite_sheet_set.sprite_sheets[0].first_sprite_id);
+    assert_eq!(200, sprite_sheet_set.sprite_sheets[0].last_sprite_id);
+    assert_eq!(300, sprite_sheet_set.sprite_sheets[1].first_sprite_id);
+    assert_eq!(400, sprite_sheet_set.sprite_sheets[1].last_sprite_id);
+}
+
+#[rstest]
+fn test_set_has_sprite(#[from(sprite_sheet_set_fixture)] sprite_sheet_set: SpriteSheetSet) {
+    assert!(sprite_sheet_set.has_sprite(100));
+    assert!(sprite_sheet_set.has_sprite(200));
+    assert!(sprite_sheet_set.has_sprite(300));
+    assert!(sprite_sheet_set.has_sprite(400));
+    assert!(!sprite_sheet_set.has_sprite(99));
+    assert!(!sprite_sheet_set.has_sprite(201));
+    assert!(!sprite_sheet_set.has_sprite(299));
+    assert!(!sprite_sheet_set.has_sprite(401));
+}
+
+#[rstest]
+fn test_set_get_by_sprite_id(#[from(sprite_sheet_set_fixture)] sprite_sheet_set: SpriteSheetSet) {
+    assert_eq!(
+        100,
+        sprite_sheet_set
+            .get_by_sprite_id(100)
+            .unwrap()
+            .first_sprite_id
+    );
+    assert_eq!(
+        200,
+        sprite_sheet_set
+            .get_by_sprite_id(200)
+            .unwrap()
+            .last_sprite_id
+    );
+    assert_eq!(
+        300,
+        sprite_sheet_set
+            .get_by_sprite_id(300)
+            .unwrap()
+            .first_sprite_id
+    );
+    assert_eq!(
+        400,
+        sprite_sheet_set
+            .get_by_sprite_id(400)
+            .unwrap()
+            .last_sprite_id
+    );
+    assert_eq!(None, sprite_sheet_set.get_by_sprite_id(99));
+    assert_eq!(None, sprite_sheet_set.get_by_sprite_id(201));
+    assert_eq!(None, sprite_sheet_set.get_by_sprite_id(299));
+    assert_eq!(None, sprite_sheet_set.get_by_sprite_id(401));
+}
+
+#[rstest]
+fn test_set_get_sprite_index_by_id(
+    #[from(sprite_sheet_set_fixture)] sprite_sheet_set: SpriteSheetSet,
+) {
+    assert_eq!(0, sprite_sheet_set.get_sprite_index_by_id(100).unwrap());
+    assert_eq!(100, sprite_sheet_set.get_sprite_index_by_id(200).unwrap());
+    assert_eq!(0, sprite_sheet_set.get_sprite_index_by_id(300).unwrap());
+    assert_eq!(100, sprite_sheet_set.get_sprite_index_by_id(400).unwrap());
+    assert_eq!(None, sprite_sheet_set.get_sprite_index_by_id(0));
+    assert_eq!(None, sprite_sheet_set.get_sprite_index_by_id(99));
+    assert_eq!(None, sprite_sheet_set.get_sprite_index_by_id(201));
+    assert_eq!(None, sprite_sheet_set.get_sprite_index_by_id(299));
+    assert_eq!(None, sprite_sheet_set.get_sprite_index_by_id(401));
+}
+
+#[fixture]
+fn sprite_sheet_set_fixture() -> SpriteSheetSet {
+    let vec = vec![
+        ContentType::Sprite(SpriteSheet {
+            file: "spritesheet.png".to_string(),
+            layout: SpriteLayout::default(),
+            first_sprite_id: 100,
+            last_sprite_id: 200,
+            area: 64,
+        }),
+        ContentType::Sprite(SpriteSheet {
+            file: "spritesheet2.png".to_string(),
+            layout: SpriteLayout::default(),
+            first_sprite_id: 300,
+            last_sprite_id: 400,
+            area: 64,
+        }),
+    ];
+
+    SpriteSheetSet::from_content(&vec, &SpriteSheetConfig::cip_sheet())
+}
+
+#[rstest]
+#[case(
+        ContentType::Appearances { file: "appearances.dat".to_string(), version: 1 },
+        r#"{"type":"appearances","file":"appearances.dat","version":1}"#
+    )]
+#[case(
+        ContentType::StaticData { file: "staticdata.dat".to_string() },
+        r#"{"type":"staticdata","file":"staticdata.dat"}"#
+    )]
+#[case(
+        ContentType::StaticMapData { file: "staticmapdata.dat".to_string() },
+        r#"{"type":"staticmapdata","file":"staticmapdata.dat"}"#
+    )]
+#[case(
+        ContentType::Map { file: "map.otbm".to_string() },
+        r#"{"type":"map","file":"map.otbm"}"#
+    )]
+#[case(
+        ContentType::Sprite(SpriteSheet {
+            file: "spritesheet.png".to_string(),
+            layout: SpriteLayout::OneByOne,
+            first_sprite_id: 100,
+            last_sprite_id: 200,
+            area: 64,
+        }),
+        r#"{"type":"sprite","file":"spritesheet.png","spritetype":0,"firstspriteid":100,"lastspriteid":200,"area":64}"#
+    )]
+fn test_serialize_content_type(#[case] content: ContentType, #[case] expected_json: &str) {
+    assert_eq!(to_string(&content).unwrap(), expected_json);
+}
+
+#[rstest]
+#[case(
+        r#"{"type":"appearances","file":"appearances.dat","version":1}"#,
+        ContentType::Appearances { file: "appearances.dat".to_string(), version: 1 }
+    )]
+#[case(
+        r#"{"type":"staticdata","file":"staticdata.dat"}"#,
+        ContentType::StaticData { file: "staticdata.dat".to_string() }
+    )]
+#[case(
+        r#"{"type":"staticmapdata","file":"staticmapdata.dat"}"#,
+        ContentType::StaticMapData { file: "staticmapdata.dat".to_string() }
+    )]
+#[case(
+        r#"{"type":"map","file":"map.otbm"}"#,
+        ContentType::Map { file: "map.otbm".to_string() }
+    )]
+#[case(
+        r#"{"type":"sprite","file":"spritesheet.png","spritetype":0,"firstspriteid":100,"lastspriteid":200,"area":64}"#,
+        ContentType::Sprite(SpriteSheet {
+            file: "spritesheet.png".to_string(),
+            layout: SpriteLayout::OneByOne,
+            first_sprite_id: 100,
+            last_sprite_id: 200,
+            area: 64,
+        })
+    )]
+fn test_deserialize_content_type(#[case] json: &str, #[case] expected_content: ContentType) {
+    assert_eq!(from_str::<ContentType>(json).unwrap(), expected_content);
+}

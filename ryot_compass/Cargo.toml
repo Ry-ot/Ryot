@@ -2,20 +2,20 @@
 name = "ryot_compass"
 version = "0.1.0"
 edition = "2021"
+exclude = ["dist", "build", "assets", "credits"]
 
 [dependencies]
 ryot = { version = "0.1.0", path = "../ryot" }
 bevy_egui = "0.24.0"
-bevy_ecs_tilemap = { git = "https://github.com/divark/bevy_ecs_tilemap.git", branch = "0.12-fixes" }
 egui = { version = "0.24.1", default-features = false, features = ["bytemuck"] }
 rand = "0.8.5"
-serde = "1.0.193"
+serde = { version = "1.0.193", features = ["derive"] }
 serde_json = "1.0.108"
 async-std = "1.12.0"
 rayon = "1.8.0"
 log = "0.4.20"
 time-test = "0.2.3"
-heed = { version = "0.20.0-alpha.9", features = ["serde-rmp"] }
+heed = { version = "0.20.0-alpha.9", features = ["serde-rmp"], optional = true }
 zstd = "0.13.0"
 postcard = { version = "1.0.8", features = ["alloc"] }
 bytes = "1.5.0"
@@ -31,6 +31,13 @@ egui_dock = "0.10.0"
 winit = "0.28.7"
 egui_extras = { version = "0.24.1", features = ["all_loaders"] }
 uuid = "1.6.1"
+futures = "0.3.30"
+wasm-bindgen-futures = "0.4.40"
+bevy_common_assets = { version = "0.9.0", features = ["toml", "json"] }
+bevy_asset_loader = { version = "0.19.1", features = ["2d"] }
+thiserror = "1.0.56"
+color-eyre = "0.6.2"
+rstest = "0.18.2"
 
 [dependencies.bevy]
 version = "0.12.1"
@@ -66,10 +73,15 @@ version = "0.22.0"
 default-features = true
 #optional = true
 
-# Enable a small amount of optimization in debug mode
-[profile.dev]
-opt-level = 1
+[build-dependencies]
+embed-resource = "2.4.1"
+ryot = { version = "0.1.0", path = "../ryot" }
 
-# Enable high optimizations for dependencies (incl. Bevy), but not for our code:
-[profile.dev.package."*"]
-opt-level = 3
+[features]
+default = []
+lmdb = ["dep:heed"]
+pre_loaded_sprites = []
+content_rebuild_on_change = []
+
+[lints.clippy]
+enum_glob_use = "deny"

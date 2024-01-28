@@ -1,13 +1,5 @@
-/*
- * Ryot - A free and open-source MMORPG server emulator
- * Copyright (©) 2023 Lucas Grossi <lucas.ggrossi@gmail.com>
- * Repository: https://github.com/lgrossi/Ryot
- * License: https://github.com/lgrossi/Ryot/blob/main/LICENSE
- * Contributors: https://github.com/lgrossi/Ryot/graphs/contributors
- * Website: https://github.com/lgrossi/Ryot
- */
 use egui::WidgetText;
-use ryot::cip_content::{Appearance, AppearanceFlags, ItemCategory};
+use ryot::appearances::{Appearance, AppearanceFlags, ItemCategory};
 use std::cmp::Ordering;
 use strum_macros::{EnumCount, EnumIter};
 
@@ -121,7 +113,7 @@ impl From<&Appearance> for TilesetCategory {
 
 impl PartialOrd<Self> for TilesetCategory {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.get_label().partial_cmp(&other.get_label())
+        Some(self.cmp(other))
     }
 }
 
@@ -131,9 +123,9 @@ impl Ord for TilesetCategory {
     }
 }
 
-impl Into<WidgetText> for &TilesetCategory {
-    fn into(self) -> WidgetText {
-        WidgetText::from(self.get_label())
+impl From<&TilesetCategory> for WidgetText {
+    fn from(val: &TilesetCategory) -> Self {
+        WidgetText::from(val.get_label())
     }
 }
 
