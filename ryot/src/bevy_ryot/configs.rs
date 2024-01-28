@@ -1,4 +1,3 @@
-use crate::prelude::ContentConfigs;
 use bevy::prelude::*;
 use bevy_common_assets::toml::TomlAssetPlugin;
 use serde::de::DeserializeOwned;
@@ -53,12 +52,6 @@ impl<'a, T: Configurable> DefaultConfig<'a, T> for Option<&'a ConfigAsset<T>> {
             Some(ConfigAsset(config)) => config.clone(),
             None => T::default(),
         }
-    }
-}
-
-impl Configurable for ContentConfigs {
-    fn extensions() -> Vec<&'static str> {
-        vec!["content.toml"]
     }
 }
 

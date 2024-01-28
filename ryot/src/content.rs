@@ -1,3 +1,4 @@
+use crate::bevy_ryot::Configurable;
 use crate::tile_grid::TileGrid;
 use crate::{error, SpriteSheetConfig};
 use config::Config;
@@ -14,6 +15,12 @@ pub struct ContentConfigs {
     pub directories: DirectoryConfigs,
     pub sprite_sheet: SpriteSheetConfig,
     pub grid: TileGrid,
+}
+
+impl Configurable for ContentConfigs {
+    fn extensions() -> Vec<&'static str> {
+        vec!["content.toml"]
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
