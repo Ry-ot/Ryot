@@ -58,7 +58,7 @@ pub enum ContentType {
     #[serde(rename = "map")]
     Map { file: String },
     #[serde(rename = "sprite")]
-    Sprite(SpriteSheet),
+    Sprite(SpriteSheetData),
 }
 
 /// This is the content of the Sprite ContentType. It contains the information needed
@@ -68,7 +68,7 @@ pub enum ContentType {
 /// - a sprite layout (1:1, 1:2, 2:1 or 2:2)
 /// - the ids of first and last sprites in the sheet, to determine which sprites are in the sheet
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct SpriteSheet {
+pub struct SpriteSheetData {
     pub file: String,
     #[serde(rename = "spritetype")]
     pub layout: SpriteLayout,
@@ -79,7 +79,7 @@ pub struct SpriteSheet {
     pub area: u32,
 }
 
-impl SpriteSheet {
+impl SpriteSheetData {
     /// Checks if the sprite sheet contains the given sprite id
     pub fn has_sprite(&self, sprite_id: u32) -> bool {
         self.first_sprite_id <= sprite_id && self.last_sprite_id >= sprite_id
@@ -125,14 +125,18 @@ impl SpriteSheet {
 /// The sprite sheet config is used to calculate the position and size of a sprite in the sprite
 /// sheet.
 #[derive(Debug, Default, Clone)]
-pub struct SpriteSheetSet {
-    pub sprite_sheets: Vec<SpriteSheet>,
-    pub sheet_config: SpriteSheetConfig,
+pub struct SpriteSheetDataSet {
+    pub data: Vec<SpriteSheetData>,
+    pub config: SpriteSheetConfig,
 }
 
-impl SpriteSheetSet {
+impl SpriteSheetDataSet {
+    pub fn iter(&self) -> impl Iterator<Item = &SpriteSheetData> {
+        self.data.iter()
+    }
+
     pub fn is_empty(&self) -> bool {
-        self.sprite_sheets.is_empty()
+        self.data.is_empty()
     }
 
     /// Creates a new SpriteSheetSet from a list of ContentType and a SpriteSheetConfig.
@@ -150,8 +154,8 @@ impl SpriteSheetSet {
             .collect::<Vec<_>>();
 
         Self {
-            sprite_sheets,
-            sheet_config: *sheet_config,
+            data: sprite_sheets,
+            config: *sheet_config,
         }
     }
 
@@ -159,17 +163,13 @@ impl SpriteSheetSet {
     /// Returns true if the sprite id is in any of the sprite sheets.
     /// Returns false if the sprite id is not in any of the sprite sheets.
     pub fn has_sprite(&self, sprite_id: u32) -> bool {
-        self.sprite_sheets
-            .iter()
-            .any(|sheet| sheet.has_sprite(sprite_id))
+        self.data.iter().any(|sheet| sheet.has_sprite(sprite_id))
     }
 
     /// Returns the sprite sheet that contains the given sprite id.
     /// Returns None if the sprite id is not in any of the sprite sheets.
-    pub fn get_by_sprite_id(&self, sprite_id: u32) -> Option<&SpriteSheet> {
-        self.sprite_sheets
-            .iter()
-            .find(|sheet| sheet.has_sprite(sprite_id))
+    pub fn get_by_sprite_id(&self, sprite_id: u32) -> Option<&SpriteSheetData> {
+        self.data.iter().find(|sheet| sheet.has_sprite(sprite_id))
     }
 
     /// Returns the index of a given sprite id in one of the sprite sheets.
@@ -185,8 +185,8 @@ impl SpriteSheetSet {
     /// The file parameter is always a decompressed file name (*.png).
     /// We use get_decompressed_file_name against it to make sure we cover cases
     /// where the file name stored is compressed (*.png.lzma).
-    pub fn get_for_file(&self, file: &str) -> Option<&SpriteSheet> {
-        self.sprite_sheets
+    pub fn get_for_file(&self, file: &str) -> Option<&SpriteSheetData> {
+        self.data
             .iter()
             .find(|sprite_sheet| get_decompressed_file_name(&sprite_sheet.file) == *file)
     }

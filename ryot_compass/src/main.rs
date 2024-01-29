@@ -27,8 +27,8 @@ use ryot::prelude::*;
 // use ryot_compass::lmdb::LmdbEnv;
 
 use ryot_compass::{
-    draw_palette_window, AppPlugin, CompassContentAssets, CompassSpriteAssets, Palette,
-    PaletteState, Tile, TilesetCategory,
+    draw_palette_window, AppPlugin, CompassContentAssets, Palette, PaletteState, Tile,
+    TilesetCategory,
 };
 use winit::window::Icon;
 
@@ -39,6 +39,7 @@ use ryot::prelude::sprites::load_sprites;
 use ryot::prelude::sprites::*;
 use ryot::tile_grid::TileGrid;
 use std::future::Future;
+use std::marker::PhantomData;
 
 // fn scroll_events(mut minimap: ResMut<Minimap>, mut scroll_evr: EventReader<MouseWheel>) {
 //     for ev in scroll_evr.read() {
@@ -83,7 +84,6 @@ impl Material2d for RainbowOutlineMaterial {
 }
 
 fn spawn_camera(
-    sprite: Res<CompassSpriteAssets>,
     content: Res<CompassContentAssets>,
     configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
     mut commands: Commands,
@@ -164,7 +164,7 @@ fn spawn_camera(
     });
 
     commands.spawn(SpriteBundle {
-        texture: sprite.mascot.clone(),
+        texture: content.mascot.clone(),
         transform: Transform::from_translation(Vec3::new(0., 0., 1.)).with_scale(Vec3::splat(0.2)),
         ..Default::default()
     });
@@ -233,11 +233,10 @@ pub struct Tiles(Vec<(Tile, bool)>);
 // }
 
 #[allow(clippy::too_many_arguments)]
-fn draw<T: SpriteAssets>(
+fn draw<C: ContentAssets>(
     mut commands: Commands,
     mut egui_ctx: EguiContexts,
-    sprites: Res<Sprites>,
-    sprite_assets: ResMut<T>,
+    content_assets: Res<C>,
     cursor_pos: Res<CursorPos>,
     palette_state: Res<PaletteState>,
     mouse_button_input: Res<Input<MouseButton>>,
@@ -254,7 +253,7 @@ fn draw<T: SpriteAssets>(
         return;
     }
 
-    if sprites.sheets.is_none() {
+    if content_assets.sprite_sheet_data_set().is_none() {
         return;
     };
 
@@ -262,12 +261,7 @@ fn draw<T: SpriteAssets>(
         return;
     };
 
-    let sprites = load_sprites(
-        &[sprite_id],
-        sprites,
-        sprite_assets,
-        build_spr_sheet_texture_cmd,
-    );
+    let sprites = load_sprites(&[sprite_id], content_assets, build_spr_sheet_texture_cmd);
 
     let Some(sprite) = sprites.first() else {
         return;
@@ -361,8 +355,7 @@ pub fn update_cursor_pos(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn update_cursor<T: SpriteAssets>(
-    sprites: Res<Sprites>,
+fn update_cursor<C: ContentAssets>(
     cursor_pos: Res<CursorPos>,
     palette_state: Res<PaletteState>,
     mut egui_ctx: EguiContexts,
@@ -374,7 +367,7 @@ fn update_cursor<T: SpriteAssets>(
         &mut Handle<TextureAtlas>,
         &SelectedTile,
     )>,
-    sprite_assets: ResMut<T>,
+    content_assets: Res<C>,
     build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
     content: Res<CompassContentAssets>,
     configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
@@ -386,7 +379,7 @@ fn update_cursor<T: SpriteAssets>(
         windows.single_mut().cursor.icon = CursorIcon::Default;
         windows.single_mut().cursor.visible = true;
     }
-    if sprites.sheets.is_none() {
+    if content_assets.sprite_sheet_data_set().is_none() {
         return;
     };
 
@@ -394,12 +387,7 @@ fn update_cursor<T: SpriteAssets>(
         return;
     };
 
-    let sprites = load_sprites(
-        &[sprite_id],
-        sprites,
-        sprite_assets,
-        build_spr_sheet_texture_cmd,
-    );
+    let sprites = load_sprites(&[sprite_id], content_assets, build_spr_sheet_texture_cmd);
 
     let Some(new_sprite) = sprites.first() else {
         return;
@@ -457,9 +445,9 @@ fn spawn_cursor(mut commands: Commands) {
     ));
 }
 
-fn ui_example(
+fn ui_example<C: ContentAssets>(
+    content_assets: Res<C>,
     mut egui_ctx: EguiContexts,
-    sprites: Res<Sprites>,
     mut exit: EventWriter<AppExit>,
     // content_sender: Res<EventSender<ContentWasLoaded>>,
     mut about_me: ResMut<AboutMeOpened>,
@@ -478,7 +466,7 @@ fn ui_example(
                 // Temporarily apply the style
                 ui.set_style(style);
 
-                let is_content_loaded = sprites.sheets.is_some();
+                let is_content_loaded = content_assets.sprite_sheet_data_set().is_some();
 
                 // Load the image using `image-rs`
                 // let image_data = include_bytes!("path/to/your/image.png").to_vec();
@@ -599,14 +587,13 @@ fn ui_example(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn print_appearances<T: SpriteAssets>(
-    sprites: Res<Sprites>,
+pub fn print_appearances<C: ContentAssets>(
     palette_state: ResMut<PaletteState>,
     appearances: Res<Assets<Appearance>>,
     static_assets: Res<CompassContentAssets>,
     mut egui_ctx: EguiContexts,
     mut palettes: ResMut<Palette>,
-    sprite_assets: ResMut<T>,
+    content_assets: Res<C>,
     texture_atlases: ResMut<Assets<TextureAtlas>>,
     build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
     // error_states: Res<ErrorState>,
@@ -621,7 +608,7 @@ pub fn print_appearances<T: SpriteAssets>(
         .unwrap()
         .is_empty()
     {
-        if sprites.sheets.is_none() {
+        if content_assets.sprite_sheet_data_set().is_none() {
             return;
         };
 
@@ -653,8 +640,7 @@ pub fn print_appearances<T: SpriteAssets>(
 
         for sprite in load_sprites(
             &sprite_ids[begin..end],
-            sprites,
-            sprite_assets,
+            content_assets,
             build_spr_sheet_texture_cmd,
         ) {
             let Some(atlas) = texture_atlases.get(sprite.atlas_texture_handle.clone()) else {
@@ -802,7 +788,7 @@ impl Plugin for CameraPlugin {
                 (
                     camera_movement,
                     update_cursor_pos,
-                    update_cursor::<CompassSpriteAssets>,
+                    update_cursor::<CompassContentAssets>,
                 )
                     .chain()
                     .run_if(in_state(InternalContentState::Ready)),
@@ -810,21 +796,21 @@ impl Plugin for CameraPlugin {
     }
 }
 
-pub struct UIPlugin<T: SpriteAssets>(std::marker::PhantomData<T>);
+pub struct UIPlugin<C: ContentAssets>(PhantomData<C>);
 
-impl<T: SpriteAssets> UIPlugin<T> {
+impl<C: ContentAssets> UIPlugin<C> {
     pub fn new() -> Self {
-        Self(std::marker::PhantomData)
+        Self(PhantomData)
     }
 }
 
-impl<T: SpriteAssets> Default for UIPlugin<T> {
+impl<C: ContentAssets> Default for UIPlugin<C> {
     fn default() -> Self {
-        Self(std::marker::PhantomData)
+        Self::new()
     }
 }
 
-impl<T: SpriteAssets> Plugin for UIPlugin<T> {
+impl<C: ContentAssets> Plugin for UIPlugin<C> {
     fn build(&self, app: &mut App) {
         app.add_optional_plugin(EguiPlugin)
             .init_resource::<AboutMeOpened>()
@@ -832,7 +818,7 @@ impl<T: SpriteAssets> Plugin for UIPlugin<T> {
             .init_resource::<PaletteState>()
             .add_systems(
                 Update,
-                (draw::<T>, ui_example, print_appearances::<T>)
+                (draw::<C>, ui_example::<C>, print_appearances::<C>)
                     .chain()
                     .run_if(in_state(InternalContentState::Ready)),
             );
@@ -843,7 +829,7 @@ fn main() {
     App::new()
         .add_plugins(AppPlugin)
         .add_plugins(CameraPlugin)
-        .add_plugins(UIPlugin::<CompassSpriteAssets>::new())
+        .add_plugins(UIPlugin::<CompassContentAssets>::new())
         .add_plugins(ErrorPlugin)
         // .init_resource::<LmdbEnv>()
         // .init_resource::<Tiles>()
