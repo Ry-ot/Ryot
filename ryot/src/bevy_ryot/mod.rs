@@ -4,7 +4,9 @@
 //! It provides common ways of dealing with OT content, such as loading sprites and appearances,
 //! configuring the game, and handling asynchronous events.
 mod appearances;
+
 pub use appearances::*;
+use std::marker::PhantomData;
 
 mod async_events;
 pub use async_events::*;
@@ -12,16 +14,26 @@ pub use async_events::*;
 mod configs;
 pub use configs::*;
 
-mod content;
-pub use content::*;
-
 pub mod sprites;
 
 #[cfg(test)]
 mod tests;
 
-use bevy::app::{App, Plugin};
-use bevy::prelude::{default, States, Window, WindowPlugin};
+use crate::appearances::{ContentType, SpriteSheetDataSet};
+use crate::bevy_ryot::sprites::LoadSpriteSheetTextureCommand;
+use crate::ContentConfigs;
+use bevy::app::{App, Plugin, Update};
+use bevy::asset::{Asset, Assets, Handle};
+use bevy::log::info;
+use bevy::prelude::{
+    default, Image, NextState, OnEnter, Res, ResMut, Resource, States, TextureAtlas, TypePath,
+    Window, WindowPlugin,
+};
+use bevy::utils::HashMap;
+use bevy_asset_loader::asset_collection::AssetCollection;
+use bevy_asset_loader::loading_state::{LoadingState, LoadingStateAppExt};
+use bevy_asset_loader::prelude::*;
+use bevy_common_assets::json::JsonAssetPlugin;
 
 /// The states that the content loading process can be in.
 /// This is used to track the progress of the content loading process.
@@ -33,9 +45,115 @@ pub enum InternalContentState {
     #[default]
     LoadingContent,
     PreparingContent,
-    LoadingSprites,
     PreparingSprites,
     Ready,
+}
+
+/// An asset that holds a collection of raw content configs.
+#[derive(serde::Deserialize, Asset, TypePath)]
+#[serde(transparent)]
+pub struct Catalog {
+    pub content: Vec<ContentType>,
+}
+
+/// A trait that represents the content assets of a game.
+/// It expects the type to implement AssetCollection and Resource.
+/// It's a Bevy resource that holds the handles to the assets loaded by bevy_asset_loader.
+///
+/// Assets contains appearances (loaded from a *.dat file), a catalog (loaded from a *.json file),
+/// a config (loaded from a *.toml file) and a map of sprite sheets images and textures (loaded
+/// from *.png files).
+pub trait ContentAssets: Resource + AssetCollection + Send + Sync + 'static {
+    // Config related assets
+    fn appearances(&self) -> &Handle<Appearance>;
+    fn catalog_content(&self) -> &Handle<Catalog>;
+    fn config(&self) -> &Handle<ConfigAsset<ContentConfigs>>;
+
+    // Sprite related assets
+    fn sprite_sheets(&self) -> &HashMap<String, Handle<Image>>;
+    fn sprite_sheet_data_set(&self) -> &Option<SpriteSheetDataSet>;
+    fn set_sprite_sheets_data(&mut self, sprite_sheet_set: SpriteSheetDataSet);
+
+    // Atlas related assets
+    fn atlas_handles(&self) -> &HashMap<String, Handle<TextureAtlas>>;
+    fn insert_atlas_handle(&mut self, file: &str, handle: Handle<TextureAtlas>);
+    fn get_atlas_handle(&self, file: &str) -> Option<&Handle<TextureAtlas>>;
+}
+
+/// A plugin that registers implementations of ContentAssets and loads them.
+/// It inits the necessary resources and adds the necessary systems and plugins to load
+/// the content assets.
+///
+/// It also manages the loading state of the content assets, the lifecycle of the content
+/// and the events that allow lazy loading of sprites.
+pub struct ContentPlugin<T: ContentAssets>(PhantomData<T>);
+
+impl<T: ContentAssets> ContentPlugin<T> {
+    pub fn new() -> Self {
+        Self(PhantomData)
+    }
+}
+
+impl<T: ContentAssets> Default for ContentPlugin<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<C: ContentAssets + Default> Plugin for ContentPlugin<C> {
+    fn build(&self, app: &mut App) {
+        app.init_resource::<C>()
+            .add_plugins(JsonAssetPlugin::<Catalog>::new(&["json"]))
+            .add_plugins(AppearanceAssetPlugin)
+            .add_plugins(ConfigPlugin::<ContentConfigs>::default())
+            .add_loading_state(
+                LoadingState::new(InternalContentState::LoadingContent)
+                    .continue_to_state(InternalContentState::PreparingContent)
+                    .load_collection::<C>(),
+            )
+            .add_systems(
+                OnEnter(InternalContentState::PreparingContent),
+                prepare_content::<C>,
+            )
+            .add_systems(
+                OnEnter(InternalContentState::PreparingSprites),
+                sprites::sprites_preparer::<C>,
+            )
+            .add_event::<LoadSpriteSheetTextureCommand>()
+            .add_event::<sprites::SpriteSheetTextureWasLoaded>()
+            .add_systems(Update, sprites::load_sprite_sheets_from_command::<C>)
+            .add_systems(Update, sprites::store_atlases_assets_after_loading::<C>);
+    }
+}
+
+/// A system that prepares the content assets for use in the game.
+/// It transforms the raw content configs into sprite sheet sets and stores them in
+/// a way that the game can use them.
+///
+/// This is the last step of the content loading process, triggering the sprite loading process.
+fn prepare_content<T: ContentAssets>(
+    contents: Res<Assets<Catalog>>,
+    mut content_assets: ResMut<T>,
+    configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
+    mut state: ResMut<NextState<InternalContentState>>,
+) {
+    info!("Preparing content");
+    let Some(ConfigAsset(configs)) = configs.get(content_assets.config().id()) else {
+        panic!("No config found for content");
+    };
+
+    let Some(catalog) = contents.get(content_assets.catalog_content().id()) else {
+        panic!("No catalog loaded");
+    };
+
+    content_assets.set_sprite_sheets_data(SpriteSheetDataSet::from_content(
+        &catalog.content,
+        &configs.sprite_sheet,
+    ));
+
+    state.set(InternalContentState::PreparingSprites);
+
+    info!("Finished preparing content");
 }
 
 /// Quick way to create WASM compatible windows with a title.

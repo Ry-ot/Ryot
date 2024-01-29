@@ -8,11 +8,9 @@
 //! of games that intend to use CIP-like contents/assets formats, as well as some
 //! game mechanics.
 //!
-//! It provides two major components:
+//! It provides a major components:
 //! * [Content](crate::bevy_ryot::ContentAssets) - A collection of content assets that
-//!   can be loaded into the game, including appearances.dat, catalog and configs.
-//! * [Sprites](crate::bevy_ryot::sprites::SpriteAssets) - A collection of sprite assets that can be
-//!   loaded into the game (compressed or decompressed).
+//!   can be loaded into the game, including appearances.dat, catalog, sprites and configs.
 //!
 //! It also provides some utilities:
 //! * [Appearance](crate::bevy_ryot::Appearance) - A collection of structs and utilities used to

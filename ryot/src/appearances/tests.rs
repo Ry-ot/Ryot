@@ -3,7 +3,7 @@ use rstest::{fixture, rstest};
 use serde_json::{from_str, to_string};
 
 #[rstest]
-fn test_has_sprite(#[from(sprite_sheet_fixture)] sprite_sheet: SpriteSheet) {
+fn test_has_sprite(#[from(sprite_sheet_fixture)] sprite_sheet: SpriteSheetData) {
     assert!(sprite_sheet.has_sprite(100));
     assert!(sprite_sheet.has_sprite(200));
     assert!(!sprite_sheet.has_sprite(99));
@@ -11,7 +11,7 @@ fn test_has_sprite(#[from(sprite_sheet_fixture)] sprite_sheet: SpriteSheet) {
 }
 
 #[rstest]
-fn test_get_sprite_index(#[from(sprite_sheet_fixture)] sprite_sheet: SpriteSheet) {
+fn test_get_sprite_index(#[from(sprite_sheet_fixture)] sprite_sheet: SpriteSheetData) {
     assert_eq!(Some(0), sprite_sheet.get_sprite_index(100));
     assert_eq!(Some(99), sprite_sheet.get_sprite_index(199));
     assert_eq!(Some(100), sprite_sheet.get_sprite_index(200));
@@ -25,7 +25,7 @@ fn test_get_sprite_index(#[from(sprite_sheet_fixture)] sprite_sheet: SpriteSheet
 #[case(SpriteLayout::TwoByOne, UVec2::new(64, 32))]
 #[case(SpriteLayout::TwoByTwo, UVec2::new(64, 64))]
 fn test_get_tile_size(#[case] layout: SpriteLayout, #[case] expected: UVec2) {
-    let sprite_sheet = SpriteSheet {
+    let sprite_sheet = SpriteSheetData {
         file: "spritesheet.png".to_string(),
         layout,
         first_sprite_id: 100,
@@ -40,7 +40,7 @@ fn test_get_tile_size(#[case] layout: SpriteLayout, #[case] expected: UVec2) {
 }
 
 #[rstest]
-fn test_get_columns_count(#[from(sprite_sheet_fixture)] sprite_sheet: SpriteSheet) {
+fn test_get_columns_count(#[from(sprite_sheet_fixture)] sprite_sheet: SpriteSheetData) {
     assert_eq!(
         12,
         sprite_sheet.get_columns_count(&SpriteSheetConfig::cip_sheet())
@@ -48,7 +48,7 @@ fn test_get_columns_count(#[from(sprite_sheet_fixture)] sprite_sheet: SpriteShee
 }
 
 #[rstest]
-fn test_get_rows_count(#[from(sprite_sheet_fixture)] sprite_sheet: SpriteSheet) {
+fn test_get_rows_count(#[from(sprite_sheet_fixture)] sprite_sheet: SpriteSheetData) {
     assert_eq!(
         12,
         sprite_sheet.get_rows_count(&SpriteSheetConfig::cip_sheet())
@@ -56,8 +56,8 @@ fn test_get_rows_count(#[from(sprite_sheet_fixture)] sprite_sheet: SpriteSheet) 
 }
 
 #[fixture]
-fn sprite_sheet_fixture() -> SpriteSheet {
-    SpriteSheet {
+fn sprite_sheet_fixture() -> SpriteSheetData {
+    SpriteSheetData {
         file: "spritesheet.png".to_string(),
         layout: SpriteLayout::OneByOne,
         first_sprite_id: 100,
@@ -67,16 +67,16 @@ fn sprite_sheet_fixture() -> SpriteSheet {
 }
 
 #[rstest]
-fn test_from_content(#[from(sprite_sheet_set_fixture)] sprite_sheet_set: SpriteSheetSet) {
-    assert_eq!(2, sprite_sheet_set.sprite_sheets.len());
-    assert_eq!(100, sprite_sheet_set.sprite_sheets[0].first_sprite_id);
-    assert_eq!(200, sprite_sheet_set.sprite_sheets[0].last_sprite_id);
-    assert_eq!(300, sprite_sheet_set.sprite_sheets[1].first_sprite_id);
-    assert_eq!(400, sprite_sheet_set.sprite_sheets[1].last_sprite_id);
+fn test_from_content(#[from(sprite_sheet_set_fixture)] sprite_sheet_set: SpriteSheetDataSet) {
+    assert_eq!(2, sprite_sheet_set.data.len());
+    assert_eq!(100, sprite_sheet_set.data[0].first_sprite_id);
+    assert_eq!(200, sprite_sheet_set.data[0].last_sprite_id);
+    assert_eq!(300, sprite_sheet_set.data[1].first_sprite_id);
+    assert_eq!(400, sprite_sheet_set.data[1].last_sprite_id);
 }
 
 #[rstest]
-fn test_set_has_sprite(#[from(sprite_sheet_set_fixture)] sprite_sheet_set: SpriteSheetSet) {
+fn test_set_has_sprite(#[from(sprite_sheet_set_fixture)] sprite_sheet_set: SpriteSheetDataSet) {
     assert!(sprite_sheet_set.has_sprite(100));
     assert!(sprite_sheet_set.has_sprite(200));
     assert!(sprite_sheet_set.has_sprite(300));
@@ -88,7 +88,9 @@ fn test_set_has_sprite(#[from(sprite_sheet_set_fixture)] sprite_sheet_set: Sprit
 }
 
 #[rstest]
-fn test_set_get_by_sprite_id(#[from(sprite_sheet_set_fixture)] sprite_sheet_set: SpriteSheetSet) {
+fn test_set_get_by_sprite_id(
+    #[from(sprite_sheet_set_fixture)] sprite_sheet_set: SpriteSheetDataSet,
+) {
     assert_eq!(
         100,
         sprite_sheet_set
@@ -125,7 +127,7 @@ fn test_set_get_by_sprite_id(#[from(sprite_sheet_set_fixture)] sprite_sheet_set:
 
 #[rstest]
 fn test_set_get_sprite_index_by_id(
-    #[from(sprite_sheet_set_fixture)] sprite_sheet_set: SpriteSheetSet,
+    #[from(sprite_sheet_set_fixture)] sprite_sheet_set: SpriteSheetDataSet,
 ) {
     assert_eq!(0, sprite_sheet_set.get_sprite_index_by_id(100).unwrap());
     assert_eq!(100, sprite_sheet_set.get_sprite_index_by_id(200).unwrap());
@@ -139,16 +141,16 @@ fn test_set_get_sprite_index_by_id(
 }
 
 #[fixture]
-fn sprite_sheet_set_fixture() -> SpriteSheetSet {
+fn sprite_sheet_set_fixture() -> SpriteSheetDataSet {
     let vec = vec![
-        ContentType::Sprite(SpriteSheet {
+        ContentType::Sprite(SpriteSheetData {
             file: "spritesheet.png".to_string(),
             layout: SpriteLayout::default(),
             first_sprite_id: 100,
             last_sprite_id: 200,
             area: 64,
         }),
-        ContentType::Sprite(SpriteSheet {
+        ContentType::Sprite(SpriteSheetData {
             file: "spritesheet2.png".to_string(),
             layout: SpriteLayout::default(),
             first_sprite_id: 300,
@@ -157,7 +159,7 @@ fn sprite_sheet_set_fixture() -> SpriteSheetSet {
         }),
     ];
 
-    SpriteSheetSet::from_content(&vec, &SpriteSheetConfig::cip_sheet())
+    SpriteSheetDataSet::from_content(&vec, &SpriteSheetConfig::cip_sheet())
 }
 
 #[rstest]
@@ -178,7 +180,7 @@ fn sprite_sheet_set_fixture() -> SpriteSheetSet {
         r#"{"type":"map","file":"map.otbm"}"#
     )]
 #[case(
-        ContentType::Sprite(SpriteSheet {
+        ContentType::Sprite(SpriteSheetData {
             file: "spritesheet.png".to_string(),
             layout: SpriteLayout::OneByOne,
             first_sprite_id: 100,
@@ -210,7 +212,7 @@ fn test_serialize_content_type(#[case] content: ContentType, #[case] expected_js
     )]
 #[case(
         r#"{"type":"sprite","file":"spritesheet.png","spritetype":0,"firstspriteid":100,"lastspriteid":200,"area":64}"#,
-        ContentType::Sprite(SpriteSheet {
+        ContentType::Sprite(SpriteSheetData {
             file: "spritesheet.png".to_string(),
             layout: SpriteLayout::OneByOne,
             first_sprite_id: 100,

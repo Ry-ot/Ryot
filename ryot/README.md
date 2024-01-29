@@ -13,11 +13,9 @@ Ryot is design to integrate with OpenTibia concepts, facilitating the creation
 of games that intend to use CIP-like contents/assets formats, as well as some
 game mechanics.
 
-It provides two major components:
-* [Content](src/bevy_ryot/content.rs) - A collection of content assets that
+It provides a major component:
+* [ContentAssets](src/bevy_ryot/mod.rs) - A collection of content assets that
   can be loaded into the game, including appearances.dat, catalog and configs.
-* [Sprites](src/bevy_ryot/sprites.rs) - A collection of sprite assets that can be
-  loaded into the game (compressed or decompressed).
 
 It also provides some utilities:
 * [Appearance](src/bevy_ryot/appearances.rs) - A collection of structs and utilities used to
