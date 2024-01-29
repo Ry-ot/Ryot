@@ -23,6 +23,12 @@ impl<T: ContentAssets> ContentPlugin<T> {
     }
 }
 
+impl<T: ContentAssets> Default for ContentPlugin<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T: ContentAssets> Plugin for ContentPlugin<T> {
     fn build(&self, app: &mut App) {
         app.init_resource::<Sprites>()
