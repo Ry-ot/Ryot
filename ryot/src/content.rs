@@ -44,9 +44,9 @@ pub fn assets_root_path() -> PathBuf {
     PathBuf::from("assets")
 }
 
-pub fn read_content_configs(config_path: &str) -> ContentConfigs {
+pub fn read_content_configs(config_path: PathBuf) -> ContentConfigs {
     let settings = Config::builder()
-        .add_source(config::File::with_name(config_path))
+        .add_source(config::File::from(config_path))
         .build()
         .expect("Failed to build config")
         .try_deserialize::<ContentConfigs>()
