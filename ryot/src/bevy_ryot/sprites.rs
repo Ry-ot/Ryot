@@ -1,3 +1,4 @@
+//! Sprite loading and drawing.
 use crate::appearances::{SpriteSheet, SpriteSheetSet};
 use crate::prelude::tile_grid::TileGrid;
 use bevy::prelude::*;
@@ -10,10 +11,23 @@ use crate::bevy_ryot::{InternalContentState, Sprites};
 use crate::{get_decompressed_file_name, SpriteSheetConfig, SPRITE_SHEET_FOLDER};
 use bevy_asset_loader::prelude::*;
 
+/// A trait that represents the sprite assets of a game.
+/// It expects the type to implement AssetCollection and Resource.
+/// It's a Bevy resource that holds the handles to the assets loaded by bevy_asset_loader.
+///
+/// Assets contains a map of sprite sheets (loaded from a *.png file) with the sprite sheet name
+/// as key and the handle to the sprite sheet image as value.
 pub trait SpriteAssets: Resource + AssetCollection + Send + Sync + 'static {
     fn sprite_sheets(&self) -> &HashMap<String, Handle<Image>>;
 }
 
+/// A plugin that registers implementations of SpriteAssets and loads them.
+/// It inits the necessary resources and adds the necessary systems and plugins to load
+/// the sprite assets.
+///
+/// It also manages the loading state of the sprite assets and the lifecycle of the sprites.
+///
+/// It also adds the necessary systems to draw sprites.
 pub struct SpritesPlugin<T: SpriteAssets> {
     _marker: PhantomData<T>,
 }
@@ -54,11 +68,14 @@ impl<T: SpriteAssets> Plugin for SpritesPlugin<T> {
     }
 }
 
+/// A command that is sent as a bevy event to trigger the loading of the sprite sheets
+/// for a given set of sprite ids.
 #[derive(Debug, Clone, Event)]
 pub struct LoadSpriteSheetTextureCommand {
     pub sprite_ids: Vec<u32>,
 }
 
+/// An event that is sent when a sprite sheet texture loading is completed.
 #[derive(Debug, Clone, Event)]
 struct SpriteSheetTextureWasLoaded {
     pub sprite_id: u32,
@@ -82,6 +99,9 @@ impl TextureAtlasHandlers {
     }
 }
 
+/// A struct that holds the information needed to draw a sprite.
+/// It's a wrapper around a sprite sheet and a sprite id, that also holds the
+/// handle to the texture atlas.
 #[derive(Debug)]
 pub struct LoadedSprite {
     pub sprite_id: u32,
@@ -113,6 +133,9 @@ impl LoadedSprite {
     }
 }
 
+/// A system that gets the LoadedSprite from the resources.
+/// If the sprite sheet is not loaded yet, it sends a LoadSpriteSheetTextureCommand event.
+/// It returns only the loaded sprites.
 pub fn load_sprites(
     sprite_ids: &[u32],
     sprites: Res<Sprites>,
@@ -153,6 +176,8 @@ pub fn load_sprites(
     loaded
 }
 
+/// A system that listens to the LoadSpriteSheetTextureCommand event, loads the sprite sheet
+/// from the '.png' files and sends the SpriteSheetTextureWasLoaded event once it's done.
 fn sprite_sheet_loader_system(
     sprites: Res<Sprites>,
     asset_server: Res<AssetServer>,
@@ -197,8 +222,11 @@ fn sprite_sheet_loader_system(
     }
 }
 
+/// A system that handles the loading of sprite sheets.
+/// It listens to the SpriteSheetTextureWasLoaded event, adds the loaded texture atlas to the   
+/// atlas handlers resource and stores the handle to the atlas.
 fn atlas_handler_system(
-    sprites: Res<crate::bevy_ryot::Sprites>,
+    sprites: Res<Sprites>,
     mut atlas_handlers: ResMut<TextureAtlasHandlers>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     mut sprite_sheet_texture_was_loaded: EventReader<SpriteSheetTextureWasLoaded>,
@@ -220,6 +248,7 @@ fn atlas_handler_system(
     }
 }
 
+/// Primitive draw function, to be replaced with a more sophisticated drawing system.
 pub fn draw_sprite(pos: Vec3, sprite: &LoadedSprite, commands: &mut Commands, tile_grid: TileGrid) {
     let Some(tile_pos) = tile_grid.get_display_position_from_tile_pos_vec3(pos) else {
         return;
@@ -232,6 +261,7 @@ pub fn draw_sprite(pos: Vec3, sprite: &LoadedSprite, commands: &mut Commands, ti
     ));
 }
 
+/// A helper function to build a sprite bundle from a sprite sheet handle, a translation and a sprite index.
 pub fn build_sprite_bundle(
     handle: Handle<TextureAtlas>,
     translation: Vec3,
@@ -248,7 +278,9 @@ pub fn build_sprite_bundle(
     }
 }
 
-#[allow(dead_code)]
+/// A system that prepares the sprite assets for use in the game.
+/// It loads the sprite sheets as atlases and stores their handles.
+/// It also determines the loading as completed and sets the internal state to Ready.
 fn sprites_preparer<T: SpriteAssets>(
     sprites: Res<Sprites>,
     sprite_assets: Res<T>,

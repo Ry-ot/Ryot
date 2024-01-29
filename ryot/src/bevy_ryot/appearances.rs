@@ -1,3 +1,7 @@
+//! # Appearances
+//! This module contains the code to load the appearances.dat file.
+//! This file contains the information needed to load sprites and other content.
+
 use crate::appearances::Appearances;
 use bevy::asset::io::Reader;
 use bevy::asset::{Asset, AssetLoader, AsyncReadExt, BoxedFuture, LoadContext};
@@ -6,6 +10,7 @@ use bevy::reflect::TypeUuid;
 use prost::Message;
 use thiserror::Error;
 
+/// A plugin to register the Appearance asset and its loader.
 pub struct AppearanceAssetPlugin;
 
 impl Plugin for AppearanceAssetPlugin {
@@ -15,10 +20,14 @@ impl Plugin for AppearanceAssetPlugin {
     }
 }
 
+/// Wrapper around the Appearances struct to make it an asset.
 #[derive(Debug, TypeUuid, Asset, TypePath)]
 #[uuid = "b34dd6e4-23de-4bd2-8375-ce64cc8ca9fd"]
 pub struct Appearance(pub Appearances);
 
+/// The loader for the Appearance asset.
+/// It reads the file and decodes it from protobuf.
+/// See ryot::appearances::Appearances for more information.
 #[derive(Default)]
 pub struct AppearanceAssetLoader;
 
