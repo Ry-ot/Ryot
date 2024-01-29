@@ -2,6 +2,13 @@ use crate::prelude::*;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+/// Builder for content.
+/// Builds the necessary content for the game to run from the original content folder.
+/// It does the necessary transformations (like decompressing sprite sheets) and copies the
+/// necessary files to the correct asset folder.
+///
+/// It also tells Cargo to rerun (or not) the build script if the content folder changes
+/// based on the `rebuild_on_change` flag.
 #[derive(Debug, Default)]
 pub struct ContentBuild {
     pub rebuild_on_change: bool,
