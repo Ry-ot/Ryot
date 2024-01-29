@@ -17,6 +17,9 @@ use bevy_asset_loader::prelude::*;
 ///
 /// Assets contains a map of sprite sheets (loaded from a *.png file) with the sprite sheet name
 /// as key and the handle to the sprite sheet image as value.
+///
+/// Also contains a map of texture atlases, built from the loaded images and needed by Bevy to
+/// efficiently deal with sprite-sheet based textures.
 pub trait SpriteAssets: Resource + AssetCollection + Send + Sync + 'static {
     fn sprite_sheets(&self) -> &HashMap<String, Handle<Image>>;
     fn atlas_handles(&self) -> &HashMap<String, Handle<TextureAtlas>>;
