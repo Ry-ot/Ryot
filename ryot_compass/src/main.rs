@@ -461,6 +461,7 @@ fn ui_example(
     mut exit: EventWriter<AppExit>,
     // content_sender: Res<EventSender<ContentWasLoaded>>,
     mut about_me: ResMut<AboutMeOpened>,
+    mut _windows: NonSend<WinitWindows>,
 ) {
     egui::TopBottomPanel::top("top_panel").show(egui_ctx.ctx_mut(), |ui| {
         egui::menu::bar(ui, |ui| {
