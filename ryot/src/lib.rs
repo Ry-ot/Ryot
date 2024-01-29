@@ -30,6 +30,8 @@
 //!   contents, including configuring and loading them.
 pub mod appearances;
 
+pub mod drawing;
+
 #[cfg(feature = "bevy")]
 pub mod bevy_ryot;
 
