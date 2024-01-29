@@ -41,8 +41,9 @@ impl<T: ContentAssets> Default for ContentPlugin<T> {
     }
 }
 
-impl<T: ContentAssets> Plugin for ContentPlugin<T> {
+impl<T: ContentAssets + Default> Plugin for ContentPlugin<T> {
     fn build(&self, app: &mut App) {
+        app.init_resource::<T>();
         app.init_resource::<Sprites>()
             .add_plugins(JsonAssetPlugin::<Catalog>::new(&["json"]));
 

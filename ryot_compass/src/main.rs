@@ -233,11 +233,11 @@ pub struct Tiles(Vec<(Tile, bool)>);
 // }
 
 #[allow(clippy::too_many_arguments)]
-fn draw(
+fn draw<T: SpriteAssets>(
     mut commands: Commands,
     mut egui_ctx: EguiContexts,
     sprites: Res<Sprites>,
-    atlas_handlers: ResMut<TextureAtlasHandlers>,
+    sprite_assets: ResMut<T>,
     cursor_pos: Res<CursorPos>,
     palette_state: Res<PaletteState>,
     mouse_button_input: Res<Input<MouseButton>>,
@@ -265,7 +265,7 @@ fn draw(
     let sprites = load_sprites(
         &[sprite_id],
         sprites,
-        atlas_handlers,
+        sprite_assets,
         build_spr_sheet_texture_cmd,
     );
 
@@ -361,7 +361,7 @@ pub fn update_cursor_pos(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn update_cursor(
+fn update_cursor<T: SpriteAssets>(
     sprites: Res<Sprites>,
     cursor_pos: Res<CursorPos>,
     palette_state: Res<PaletteState>,
@@ -374,7 +374,7 @@ fn update_cursor(
         &mut Handle<TextureAtlas>,
         &SelectedTile,
     )>,
-    atlas_handlers: ResMut<TextureAtlasHandlers>,
+    sprite_assets: ResMut<T>,
     build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
     content: Res<CompassContentAssets>,
     configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
@@ -397,7 +397,7 @@ fn update_cursor(
     let sprites = load_sprites(
         &[sprite_id],
         sprites,
-        atlas_handlers,
+        sprite_assets,
         build_spr_sheet_texture_cmd,
     );
 
@@ -599,14 +599,14 @@ fn ui_example(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn print_appearances(
+pub fn print_appearances<T: SpriteAssets>(
     sprites: Res<Sprites>,
     palette_state: ResMut<PaletteState>,
     appearances: Res<Assets<Appearance>>,
     static_assets: Res<CompassContentAssets>,
     mut egui_ctx: EguiContexts,
     mut palettes: ResMut<Palette>,
-    atlas_handlers: ResMut<TextureAtlasHandlers>,
+    sprite_assets: ResMut<T>,
     texture_atlases: ResMut<Assets<TextureAtlas>>,
     build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
     // error_states: Res<ErrorState>,
@@ -654,7 +654,7 @@ pub fn print_appearances(
         for sprite in load_sprites(
             &sprite_ids[begin..end],
             sprites,
-            atlas_handlers,
+            sprite_assets,
             build_spr_sheet_texture_cmd,
         ) {
             let Some(atlas) = texture_atlases.get(sprite.atlas_texture_handle.clone()) else {
@@ -799,16 +799,32 @@ impl Plugin for CameraPlugin {
             )
             .add_systems(
                 Update,
-                (camera_movement, update_cursor_pos, update_cursor)
+                (
+                    camera_movement,
+                    update_cursor_pos,
+                    update_cursor::<CompassSpriteAssets>,
+                )
                     .chain()
                     .run_if(in_state(InternalContentState::Ready)),
             );
     }
 }
 
-pub struct UIPlugin;
+pub struct UIPlugin<T: SpriteAssets>(std::marker::PhantomData<T>);
 
-impl Plugin for UIPlugin {
+impl<T: SpriteAssets> UIPlugin<T> {
+    pub fn new() -> Self {
+        Self(std::marker::PhantomData)
+    }
+}
+
+impl<T: SpriteAssets> Default for UIPlugin<T> {
+    fn default() -> Self {
+        Self(std::marker::PhantomData)
+    }
+}
+
+impl<T: SpriteAssets> Plugin for UIPlugin<T> {
     fn build(&self, app: &mut App) {
         app.add_optional_plugin(EguiPlugin)
             .init_resource::<AboutMeOpened>()
@@ -816,7 +832,7 @@ impl Plugin for UIPlugin {
             .init_resource::<PaletteState>()
             .add_systems(
                 Update,
-                (draw, ui_example, print_appearances)
+                (draw::<T>, ui_example, print_appearances::<T>)
                     .chain()
                     .run_if(in_state(InternalContentState::Ready)),
             );
@@ -827,7 +843,7 @@ fn main() {
     App::new()
         .add_plugins(AppPlugin)
         .add_plugins(CameraPlugin)
-        .add_plugins(UIPlugin)
+        .add_plugins(UIPlugin::<CompassSpriteAssets>::new())
         .add_plugins(ErrorPlugin)
         // .init_resource::<LmdbEnv>()
         // .init_resource::<Tiles>()

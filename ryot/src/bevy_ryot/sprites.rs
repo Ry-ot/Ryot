@@ -19,6 +19,9 @@ use bevy_asset_loader::prelude::*;
 /// as key and the handle to the sprite sheet image as value.
 pub trait SpriteAssets: Resource + AssetCollection + Send + Sync + 'static {
     fn sprite_sheets(&self) -> &HashMap<String, Handle<Image>>;
+    fn atlas_handles(&self) -> &HashMap<String, Handle<TextureAtlas>>;
+    fn insert_atlas_handle(&mut self, file: &str, handle: Handle<TextureAtlas>);
+    fn get_atlas_handle(&self, file: &str) -> Option<&Handle<TextureAtlas>>;
 }
 
 /// A plugin that registers implementations of SpriteAssets and loads them.
@@ -46,10 +49,9 @@ impl<T: SpriteAssets> Default for SpritesPlugin<T> {
     }
 }
 
-impl<T: SpriteAssets> Plugin for SpritesPlugin<T> {
+impl<T: SpriteAssets + Default> Plugin for SpritesPlugin<T> {
     fn build(&self, app: &mut App) {
-        app.init_resource::<TextureAtlasHandlers>();
-
+        app.init_resource::<T>();
         app.add_loading_state(
             LoadingState::new(InternalContentState::LoadingSprites)
                 .continue_to_state(InternalContentState::PreparingSprites)
@@ -62,9 +64,8 @@ impl<T: SpriteAssets> Plugin for SpritesPlugin<T> {
 
         app.add_event::<LoadSpriteSheetTextureCommand>()
             .add_event::<SpriteSheetTextureWasLoaded>()
-            .init_resource::<TextureAtlasHandlers>()
-            .add_systems(Update, sprite_sheet_loader_system)
-            .add_systems(Update, atlas_handler_system);
+            .add_systems(Update, load_sprite_sheets_from_command::<T>)
+            .add_systems(Update, store_atlases_assets_after_loading::<T>);
     }
 }
 
@@ -82,23 +83,6 @@ struct SpriteSheetTextureWasLoaded {
     pub atlas: TextureAtlas,
 }
 
-#[derive(Resource, Default)]
-pub struct TextureAtlasHandlers(HashMap<String, Handle<TextureAtlas>>);
-
-impl TextureAtlasHandlers {
-    pub fn get(&self, file: &str) -> Option<&Handle<TextureAtlas>> {
-        self.0.get(&get_decompressed_file_name(file))
-    }
-
-    pub fn insert(
-        &mut self,
-        file: &str,
-        handle: Handle<TextureAtlas>,
-    ) -> Option<Handle<TextureAtlas>> {
-        self.0.insert(get_decompressed_file_name(file), handle)
-    }
-}
-
 /// A struct that holds the information needed to draw a sprite.
 /// It's a wrapper around a sprite sheet and a sprite id, that also holds the
 /// handle to the texture atlas.
@@ -114,7 +98,7 @@ impl LoadedSprite {
     pub fn new(
         sprite_id: u32,
         sprite_sheets: &SpriteSheetSet,
-        atlas_handlers: &ResMut<TextureAtlasHandlers>,
+        atlas_handles: &HashMap<String, Handle<TextureAtlas>>,
     ) -> Option<Self> {
         let sprite_sheet = sprite_sheets.get_by_sprite_id(sprite_id)?;
 
@@ -122,7 +106,7 @@ impl LoadedSprite {
             sprite_id,
             sprite_sheet: sprite_sheet.clone(),
             config: sprite_sheets.sheet_config,
-            atlas_texture_handle: atlas_handlers.0.get(&sprite_sheet.file)?.clone(),
+            atlas_texture_handle: atlas_handles.get(&sprite_sheet.file)?.clone(),
         })
     }
 
@@ -136,10 +120,10 @@ impl LoadedSprite {
 /// A system that gets the LoadedSprite from the resources.
 /// If the sprite sheet is not loaded yet, it sends a LoadSpriteSheetTextureCommand event.
 /// It returns only the loaded sprites.
-pub fn load_sprites(
+pub fn load_sprites<T: SpriteAssets>(
     sprite_ids: &[u32],
     sprites: Res<Sprites>,
-    atlas_handlers: ResMut<TextureAtlasHandlers>,
+    sprite_assets: ResMut<T>,
     mut build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
 ) -> Vec<LoadedSprite> {
     let Some(sprite_sheets) = &sprites.sheets else {
@@ -156,7 +140,7 @@ pub fn load_sprites(
             continue;
         };
 
-        let Some(handle) = atlas_handlers.get(sprite_sheet.file.as_str()) else {
+        let Some(handle) = sprite_assets.get_atlas_handle(sprite_sheet.file.as_str()) else {
             to_be_loaded.push(*sprite_id);
             continue;
         };
@@ -178,10 +162,10 @@ pub fn load_sprites(
 
 /// A system that listens to the LoadSpriteSheetTextureCommand event, loads the sprite sheet
 /// from the '.png' files and sends the SpriteSheetTextureWasLoaded event once it's done.
-fn sprite_sheet_loader_system(
+fn load_sprite_sheets_from_command<T: SpriteAssets>(
     sprites: Res<Sprites>,
+    sprite_assets: ResMut<T>,
     asset_server: Res<AssetServer>,
-    atlas_handlers: ResMut<TextureAtlasHandlers>,
     mut sprite_sheet_texture_was_loaded: EventWriter<SpriteSheetTextureWasLoaded>,
     mut build_spr_sheet_texture_cmd: EventReader<LoadSpriteSheetTextureCommand>,
 ) {
@@ -196,7 +180,10 @@ fn sprite_sheet_loader_system(
                 continue;
             };
 
-            if atlas_handlers.get(sprite_sheet.file.as_str()).is_some() {
+            if sprite_assets
+                .get_atlas_handle(sprite_sheet.file.as_str())
+                .is_some()
+            {
                 continue;
             }
 
@@ -224,10 +211,10 @@ fn sprite_sheet_loader_system(
 
 /// A system that handles the loading of sprite sheets.
 /// It listens to the SpriteSheetTextureWasLoaded event, adds the loaded texture atlas to the   
-/// atlas handlers resource and stores the handle to the atlas.
-fn atlas_handler_system(
+/// atlas handles resource and stores the handle to the atlas.
+fn store_atlases_assets_after_loading<T: SpriteAssets>(
     sprites: Res<Sprites>,
-    mut atlas_handlers: ResMut<TextureAtlasHandlers>,
+    mut sprite_assets: ResMut<T>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     mut sprite_sheet_texture_was_loaded: EventReader<SpriteSheetTextureWasLoaded>,
 ) {
@@ -239,12 +226,15 @@ fn atlas_handler_system(
             .get_by_sprite_id(*sprite_id)
             .expect("Sprite must exist in sheet");
 
-        if atlas_handlers.get(sprite_sheet.file.as_str()).is_some() {
+        if sprite_assets
+            .get_atlas_handle(sprite_sheet.file.as_str())
+            .is_some()
+        {
             continue;
         }
 
         let atlas_handle = texture_atlases.add(atlas.clone());
-        atlas_handlers.insert(&sprite_sheet.file, atlas_handle);
+        sprite_assets.insert_atlas_handle(&sprite_sheet.file, atlas_handle);
     }
 }
 
@@ -283,9 +273,8 @@ pub fn build_sprite_bundle(
 /// It also determines the loading as completed and sets the internal state to Ready.
 fn sprites_preparer<T: SpriteAssets>(
     sprites: Res<Sprites>,
-    sprite_assets: Res<T>,
+    mut sprite_assets: ResMut<T>,
     mut state: ResMut<NextState<InternalContentState>>,
-    mut atlas_handlers: ResMut<TextureAtlasHandlers>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
     info!("Preparing sprites");
@@ -295,13 +284,13 @@ fn sprites_preparer<T: SpriteAssets>(
             panic!("Sprite sheets configs were not setup.");
         };
 
-        for (file, handle) in sprite_assets.sprite_sheets() {
+        for (file, handle) in sprite_assets.sprite_sheets().clone() {
             let file = match file.strip_prefix("sprite-sheets/") {
                 Some(file) => file,
-                None => file,
+                None => &file,
             };
 
-            if atlas_handlers.get(file).is_some() {
+            if sprite_assets.get_atlas_handle(file).is_some() {
                 warn!("Skipping file {}: it's already loaded", file);
                 continue;
             }
@@ -321,7 +310,7 @@ fn sprites_preparer<T: SpriteAssets>(
             );
 
             let atlas_handle = texture_atlases.add(atlas.clone());
-            atlas_handlers.insert(&sprite_sheet.file, atlas_handle);
+            sprite_assets.insert_atlas_handle(&sprite_sheet.file, atlas_handle);
         }
     }
 

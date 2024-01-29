@@ -1,12 +1,12 @@
 use bevy::asset::Handle;
-use bevy::prelude::{Image, Resource};
+use bevy::prelude::{Image, Resource, TextureAtlas};
 use bevy::utils::HashMap;
 use bevy_asset_loader::asset_collection::AssetCollection;
 use ryot::bevy_ryot::sprites::SpriteAssets;
 use ryot::bevy_ryot::{Appearance, Catalog, ConfigAsset, ContentAssets};
 use ryot::ContentConfigs;
 
-#[derive(AssetCollection, Resource)]
+#[derive(AssetCollection, Resource, Default)]
 pub struct CompassContentAssets {
     #[asset(path = "appearances.dat")]
     appearances: Handle<Appearance>,
@@ -30,7 +30,7 @@ impl ContentAssets for CompassContentAssets {
     }
 }
 
-#[derive(AssetCollection, Resource)]
+#[derive(AssetCollection, Resource, Default)]
 pub struct CompassSpriteAssets {
     #[cfg(feature = "pre_loaded_sprites")]
     #[asset(path = "sprite-sheets", collection(typed, mapped))]
@@ -39,10 +39,23 @@ pub struct CompassSpriteAssets {
     sprite_sheets: HashMap<String, Handle<Image>>,
     #[asset(path = "ryot_mascot.png")]
     pub mascot: Handle<Image>,
+    pub atlas_handles: HashMap<String, Handle<TextureAtlas>>,
 }
 
 impl SpriteAssets for CompassSpriteAssets {
     fn sprite_sheets(&self) -> &HashMap<String, Handle<Image>> {
         &self.sprite_sheets
+    }
+
+    fn atlas_handles(&self) -> &HashMap<String, Handle<TextureAtlas>> {
+        &self.atlas_handles
+    }
+
+    fn insert_atlas_handle(&mut self, file: &str, handle: Handle<TextureAtlas>) {
+        self.atlas_handles.insert(file.to_string(), handle);
+    }
+
+    fn get_atlas_handle(&self, file: &str) -> Option<&Handle<TextureAtlas>> {
+        self.atlas_handles.get(file)
     }
 }
