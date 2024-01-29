@@ -1,4 +1,4 @@
-//! A library for writing OpenTibia based games.
+//! MMORPG library based on the concepts of open tibia.
 //!
 //! Ryot is an event-driven library that provides simple utilities for building OT based games.
 //! It is designed to be used with the [Bevy](https://bevyengine.org/) game engine.
@@ -8,7 +8,7 @@
 //! of games that intend to use CIP-like contents/assets formats, as well as some
 //! game mechanics.
 //!
-//! It provides a two major components:
+//! It provides two major components:
 //! * [Content](crate::bevy_ryot::ContentAssets) - A collection of content assets that
 //!   can be loaded into the game, including appearances.dat, catalog and configs.
 //! * [Sprites](crate::bevy_ryot::sprites::SpriteAssets) - A collection of sprite assets that can be
