@@ -3,26 +3,47 @@ use crate::prelude::tile_grid::TileGrid;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use bevy_asset_loader::asset_collection::AssetCollection;
+use std::marker::PhantomData;
 use std::path::PathBuf;
 
 use crate::bevy_ryot::{InternalContentState, Sprites};
 use crate::{get_decompressed_file_name, SpriteSheetConfig, SPRITE_SHEET_FOLDER};
 use bevy_asset_loader::prelude::*;
 
-pub struct SpritesPlugin;
+pub trait SpriteAssets: Resource + AssetCollection + Send + Sync + 'static {
+    fn sprite_sheets(&self) -> &HashMap<String, Handle<Image>>;
+}
 
-impl Plugin for SpritesPlugin {
+pub struct SpritesPlugin<T: SpriteAssets> {
+    _marker: PhantomData<T>,
+}
+
+impl<T: SpriteAssets> SpritesPlugin<T> {
+    pub fn new() -> Self {
+        Self {
+            _marker: PhantomData,
+        }
+    }
+}
+
+impl<T: SpriteAssets> Default for SpritesPlugin<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<T: SpriteAssets> Plugin for SpritesPlugin<T> {
     fn build(&self, app: &mut App) {
         app.init_resource::<TextureAtlasHandlers>();
 
         app.add_loading_state(
             LoadingState::new(InternalContentState::LoadingSprites)
                 .continue_to_state(InternalContentState::PreparingSprites)
-                .load_collection::<SpriteAssets>(),
+                .load_collection::<T>(),
         )
         .add_systems(
             OnEnter(InternalContentState::PreparingSprites),
-            sprites_preparer,
+            sprites_preparer::<T>,
         );
 
         app.add_event::<LoadSpriteSheetTextureCommand>()
@@ -31,15 +52,6 @@ impl Plugin for SpritesPlugin {
             .add_systems(Update, sprite_sheet_loader_system)
             .add_systems(Update, atlas_handler_system);
     }
-}
-
-#[derive(AssetCollection, Resource)]
-pub struct SpriteAssets {
-    #[cfg(feature = "pre_loaded_sprites")]
-    #[asset(path = "sprite-sheets", collection(typed, mapped))]
-    pub sprite_sheets: HashMap<String, Handle<Image>>,
-    #[asset(path = "ryot_mascot.png")]
-    pub mascot: Handle<Image>,
 }
 
 #[derive(Debug, Clone, Event)]
@@ -237,22 +249,21 @@ pub fn build_sprite_bundle(
 }
 
 #[allow(dead_code)]
-fn sprites_preparer(
-    _sprites: Res<Sprites>,
-    _sprite_assets: Res<SpriteAssets>,
+fn sprites_preparer<T: SpriteAssets>(
+    sprites: Res<Sprites>,
+    sprite_assets: Res<T>,
     mut state: ResMut<NextState<InternalContentState>>,
-    _atlas_handlers: ResMut<TextureAtlasHandlers>,
-    _texture_atlases: ResMut<Assets<TextureAtlas>>,
+    mut atlas_handlers: ResMut<TextureAtlasHandlers>,
+    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
     info!("Preparing sprites");
 
-    #[cfg(feature = "pre_loaded_sprites")]
-    {
+    if !sprite_assets.sprite_sheets().is_empty() {
         let Some(sheets) = &sprites.sheets else {
             panic!("Sprite sheets configs were not setup.");
         };
 
-        for (file, handle) in &sprite_assets.sprite_sheets {
+        for (file, handle) in sprite_assets.sprite_sheets() {
             let file = match file.strip_prefix("sprite-sheets/") {
                 Some(file) => file,
                 None => file,

@@ -27,15 +27,14 @@ use ryot::prelude::*;
 // use ryot_compass::lmdb::LmdbEnv;
 
 use ryot_compass::{
-    draw_palette_window, AppPlugin, CompassContentAssets, Palette, PaletteState, Tile,
-    TilesetCategory,
+    draw_palette_window, AppPlugin, CompassContentAssets, CompassSpriteAssets, Palette,
+    PaletteState, Tile, TilesetCategory,
 };
 use winit::window::Icon;
 
 use rfd::AsyncFileDialog;
 
 use crate::error_handling::ErrorPlugin;
-use ryot::bevy_ryot::sprites::SpriteAssets;
 use ryot::prelude::sprites::load_sprites;
 use ryot::prelude::sprites::*;
 use ryot::tile_grid::TileGrid;
@@ -84,7 +83,7 @@ impl Material2d for RainbowOutlineMaterial {
 }
 
 fn spawn_camera(
-    sprite: Res<SpriteAssets>,
+    sprite: Res<CompassSpriteAssets>,
     content: Res<CompassContentAssets>,
     configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
     mut commands: Commands,

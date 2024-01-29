@@ -54,7 +54,7 @@ impl Plugin for AppPlugin {
                     .set(entitled_window("Compass".to_string()))
                     .set(ImagePlugin::default_nearest()),
                 ContentPlugin::<CompassContentAssets>::new(),
-                SpritesPlugin,
+                SpritesPlugin::<CompassSpriteAssets>::new(),
                 WorldInspectorPlugin::default().run_if(input_toggle_active(true, KeyCode::Escape)),
             ))
             .insert_resource(ClearColor(Color::rgb(0.12, 0.12, 0.12)));
