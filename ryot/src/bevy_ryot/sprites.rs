@@ -3,9 +3,9 @@ use crate::appearances::{SpriteSheetData, SpriteSheetDataSet};
 use crate::bevy_ryot::InternalContentState;
 use crate::prelude::tile_grid::TileGrid;
 use crate::prelude::ContentAssets;
-use crate::tile_grid::OffsetStrategy;
 use crate::{get_decompressed_file_name, SpriteSheetConfig, SPRITE_SHEET_FOLDER};
 use bevy::prelude::*;
+use bevy::sprite::Anchor;
 use bevy::utils::HashMap;
 use std::path::PathBuf;
 
@@ -182,10 +182,7 @@ pub(crate) fn store_atlases_assets_after_loading<C: ContentAssets>(
 
 /// Primitive draw function, to be replaced with a more sophisticated drawing system.
 pub fn draw_sprite(pos: Vec3, sprite: &LoadedSprite, commands: &mut Commands, tile_grid: TileGrid) {
-    let tile_pos = tile_grid.get_display_position_from_tile_pos(
-        pos,
-        OffsetStrategy::ProportionalToSpriteSize(sprite.get_sprite_size()),
-    );
+    let tile_pos = tile_grid.get_display_position_from_tile_pos(pos);
 
     let Some(tile_pos) = tile_pos else {
         return;
@@ -204,12 +201,15 @@ pub fn build_sprite_bundle(
     translation: Vec3,
     index: usize,
 ) -> SpriteSheetBundle {
+    let mut sprite = TextureAtlasSprite::new(index);
+    sprite.anchor = Anchor::BottomRight;
+
     SpriteSheetBundle {
         transform: Transform {
             translation,
             ..default()
         },
-        sprite: TextureAtlasSprite::new(index),
+        sprite,
         texture_atlas: handle,
         ..default()
     }
