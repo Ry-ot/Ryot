@@ -1,4 +1,4 @@
-#[allow(dead_code)]
+#![allow(dead_code)]
 use crate::appearances::*;
 use glam::UVec3;
 use thiserror::Error;
