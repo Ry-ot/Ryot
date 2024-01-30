@@ -61,13 +61,13 @@ impl LoadedSprite {
     }
 }
 
-/// A system that gets the LoadedSprite from the resources.
+/// A system helper that gets the LoadedSprite from the resources.
 /// If the sprite sheet is not loaded yet, it sends a LoadSpriteSheetTextureCommand event.
 /// It returns only the loaded sprites.
 pub fn load_sprites<C: SpriteAssets>(
     sprite_ids: &[u32],
-    content_assets: Res<C>,
-    mut build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
+    content_assets: &Res<C>,
+    build_spr_sheet_texture_cmd: &mut EventWriter<LoadSpriteSheetTextureCommand>,
 ) -> Vec<LoadedSprite> {
     let Some(sprite_sheets) = content_assets.sprite_sheet_data_set() else {
         warn!("No sprite sheets loaded");
