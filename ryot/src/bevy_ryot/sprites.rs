@@ -201,15 +201,16 @@ pub fn build_sprite_bundle(
     translation: Vec3,
     index: usize,
 ) -> SpriteSheetBundle {
-    let mut sprite = TextureAtlasSprite::new(index);
-    sprite.anchor = Anchor::BottomRight;
-
     SpriteSheetBundle {
         transform: Transform {
             translation,
             ..default()
         },
-        sprite,
+        sprite: TextureAtlasSprite {
+            index,
+            anchor: Anchor::BottomRight,
+            ..Default::default()
+        },
         texture_atlas: handle,
         ..default()
     }
