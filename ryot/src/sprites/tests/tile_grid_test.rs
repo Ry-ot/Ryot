@@ -1,4 +1,4 @@
-use crate::tile_grid::TileGrid;
+use crate::tile_grid::{OffsetStrategy, TileGrid};
 use glam::{UVec2, Vec2, Vec3};
 use rstest::rstest;
 
@@ -45,43 +45,7 @@ fn test_get_tile_pos_from_display_pos_vec2(
     #[case] expected: Vec2,
 ) {
     assert_eq!(
-        tile_grid.get_tile_pos_from_display_pos_vec2(cursor_pos),
-        expected
-    );
-}
-
-#[rstest]
-#[case(
-    TileGrid::from_grid_size(100, 100),
-    Vec2::new(0., 0.),
-    Some(Vec2::new(16., -16.))
-)]
-#[case(
-    TileGrid::from_grid_size(100, 100),
-    Vec2::new(32., 32.),
-    Some(Vec2::new(1040., -1040.))
-)]
-#[case(
-    TileGrid::from_grid_size(100, 100),
-    Vec2::new(100., 100.),
-    Some(Vec2::new(3216., -3216.))
-)]
-#[case(
-    TileGrid::from_tile_size(UVec2::new(128, 256)),
-    Vec2::new(20., 10.),
-    Some(Vec2::new(2624., -2688.))
-)]
-#[case(TileGrid::from_grid_size(100, 100), Vec2::new(64., -64.), None)]
-#[case(TileGrid::from_grid_size(100, 100), Vec2::new(-64., 64.), None)]
-#[case(TileGrid::from_grid_size(2048, 1024), Vec2::new(2050., 0.), None)]
-#[case(TileGrid::from_grid_size(2048, 1024), Vec2::new(0., 2050.), None)]
-fn test_get_display_position_from_tile_pos_vec2(
-    #[case] tile_grid: TileGrid,
-    #[case] tile_pos: Vec2,
-    #[case] expected: Option<Vec2>,
-) {
-    assert_eq!(
-        tile_grid.get_display_position_from_tile_pos_vec2(tile_pos),
+        tile_grid.get_tile_pos_from_display_pos(cursor_pos),
         expected
     );
 }
@@ -113,7 +77,10 @@ fn test_get_display_position_from_tile_pos_vec3(
     #[case] expected: Option<Vec3>,
 ) {
     assert_eq!(
-        tile_grid.get_display_position_from_tile_pos_vec3(tile_pos),
+        tile_grid.get_display_position_from_tile_pos(
+            tile_pos,
+            OffsetStrategy::ProportionalToSpriteSize(Vec2::new(0., 0.))
+        ),
         expected
     );
 }
