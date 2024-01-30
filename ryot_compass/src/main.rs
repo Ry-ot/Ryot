@@ -37,7 +37,7 @@ use rfd::AsyncFileDialog;
 use crate::error_handling::ErrorPlugin;
 use ryot::prelude::sprites::load_sprites;
 use ryot::prelude::sprites::*;
-use ryot::tile_grid::TileGrid;
+use ryot::tile_grid::{OffsetStrategy, TileGrid};
 use std::future::Future;
 use std::marker::PhantomData;
 
@@ -270,7 +270,7 @@ fn draw<C: ContentAssets>(
     if mouse_button_input.pressed(MouseButton::Left) {
         let tile_grid = configs.get(content.config().id()).or_default().grid;
 
-        let pos = tile_grid.get_tile_pos_from_display_pos_vec2(cursor_pos.0);
+        let pos = tile_grid.get_tile_pos_from_display_pos(cursor_pos.0);
 
         draw_sprite(
             Vec3::new(pos.x, pos.y, 1.1),
@@ -400,14 +400,17 @@ fn update_cursor<C: ContentAssets>(
 
         let tile_grid = configs.get(content.config().id()).or_default().grid;
 
-        let tile_pos = tile_grid.get_tile_pos_from_display_pos_vec2(cursor_pos.0);
-        let Some(cursor_pos) = tile_grid.get_display_position_from_tile_pos_vec2(tile_pos) else {
+        let tile_pos = tile_grid.get_tile_pos_from_display_pos(cursor_pos.0);
+        let Some(cursor_pos) = tile_grid.get_display_position_from_tile_pos(
+            tile_pos.extend(128.),
+            OffsetStrategy::ProportionalToSpriteSize(new_sprite.get_sprite_size()),
+        ) else {
             return;
         };
 
-        transform.translation = Vec3::from((cursor_pos, 128.));
+        transform.translation = cursor_pos;
 
-        if cursor_pos == Vec2::ZERO {
+        if cursor_pos.truncate() == Vec2::ZERO {
             *visibility = Visibility::Hidden;
         } else {
             *visibility = Visibility::Visible;

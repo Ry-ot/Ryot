@@ -3,6 +3,7 @@ use crate::appearances::{SpriteSheetData, SpriteSheetDataSet};
 use crate::bevy_ryot::InternalContentState;
 use crate::prelude::tile_grid::TileGrid;
 use crate::prelude::ContentAssets;
+use crate::tile_grid::OffsetStrategy;
 use crate::{get_decompressed_file_name, SpriteSheetConfig, SPRITE_SHEET_FOLDER};
 use bevy::prelude::*;
 use bevy::utils::HashMap;
@@ -53,6 +54,10 @@ impl LoadedSprite {
         self.sprite_sheet
             .get_sprite_index(self.sprite_id)
             .expect("Sprite must exist in sheet")
+    }
+
+    pub fn get_sprite_size(&self) -> Vec2 {
+        self.sprite_sheet.layout.get_size(&self.config).as_vec2()
     }
 }
 
@@ -177,7 +182,12 @@ pub(crate) fn store_atlases_assets_after_loading<C: ContentAssets>(
 
 /// Primitive draw function, to be replaced with a more sophisticated drawing system.
 pub fn draw_sprite(pos: Vec3, sprite: &LoadedSprite, commands: &mut Commands, tile_grid: TileGrid) {
-    let Some(tile_pos) = tile_grid.get_display_position_from_tile_pos_vec3(pos) else {
+    let tile_pos = tile_grid.get_display_position_from_tile_pos(
+        pos,
+        OffsetStrategy::ProportionalToSpriteSize(sprite.get_sprite_size()),
+    );
+
+    let Some(tile_pos) = tile_pos else {
         return;
     };
 

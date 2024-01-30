@@ -1,3 +1,4 @@
+use glam::UVec2;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
 mod config;
@@ -33,6 +34,10 @@ impl SpriteLayout {
             SpriteLayout::OneByOne | SpriteLayout::TwoByOne => sheet_config.tile_size.y,
             SpriteLayout::OneByTwo | SpriteLayout::TwoByTwo => sheet_config.tile_size.y * 2,
         }
+    }
+
+    pub fn get_size(&self, sheet_config: &SpriteSheetConfig) -> UVec2 {
+        UVec2::new(self.get_width(sheet_config), self.get_height(sheet_config))
     }
 }
 
