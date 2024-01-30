@@ -397,7 +397,6 @@ fn update_cursor<C: ContentAssets>(
     {
         *atlas_handle = new_sprite.atlas_texture_handle.clone();
         sprite.index = new_sprite.get_sprite_index();
-        sprite.anchor = Anchor::BottomRight;
 
         let tile_grid = configs.get(content.config().id()).or_default().grid;
         let tile_pos = tile_grid.get_tile_pos_from_display_pos(cursor_pos.0);
@@ -439,7 +438,13 @@ fn update_cursor<C: ContentAssets>(
 
 fn spawn_cursor(mut commands: Commands) {
     commands.spawn((
-        SpriteSheetBundle { ..default() },
+        SpriteSheetBundle {
+            sprite: TextureAtlasSprite {
+                anchor: Anchor::BottomRight,
+                ..Default::default()
+            },
+            ..default()
+        },
         SelectedTile {
             index: None,
             atlas: None,
