@@ -137,9 +137,7 @@ fn process_appearances(
                 return None;
             }
 
-            let Some(id) = appearance.id else {
-                return None;
-            };
+            let id = appearance.id?;
 
             for frame_group in appearance.frame_group.iter() {
                 let Some(sprite_info) = &frame_group.sprite_info else {
