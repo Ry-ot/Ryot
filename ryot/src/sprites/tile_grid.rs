@@ -64,12 +64,8 @@ impl TileGrid {
     /// The tile position is the position of the tile in the grid, not the position of the tile in the world.
     /// The tile position must always be positive, so if the display position is negative, it will return None.
     /// The z position is used to calculate the rendering order of the tile.
-    pub fn get_display_position_from_tile_pos(
-        &self,
-        tile_pos: Vec3,
-        offset_strategy: OffsetStrategy,
-    ) -> Option<Vec3> {
-        if tile_pos.x < 0. || tile_pos.y < 0. {
+    pub fn get_display_position_from_tile_pos(&self, tile_pos: Vec3) -> Option<Vec3> {
+        if tile_pos.x <= 0. || tile_pos.y <= 0. {
             return None;
         }
 
@@ -77,44 +73,14 @@ impl TileGrid {
             return None;
         }
 
-        // X grows the same for both tile and camera, so we just add the offset of half tile.
-        // Y grows in opposite directions, so we need to invert Y and add the offset.
-        let x = tile_pos.x * self.tile_size.x as f32 + (self.tile_size.x as f32 / 2.);
-        let y = -tile_pos.y * self.tile_size.y as f32 - (self.tile_size.y as f32 / 2.);
-
-        // z for 2d sprites define the rendering order, for 45 degrees top-down
-        // perspective we always want right bottom items to be drawn on top.
-        let z = tile_pos.z + (tile_pos.x + tile_pos.y) / u16::MAX as f32;
-
-        // Gets the offset based on your offset strategy
-        let offset = offset_strategy.get_offset(self.tile_size.as_vec2());
-
-        Some(Vec3::from((x - offset.x, y + offset.y, z)))
-    }
-}
-
-pub enum OffsetStrategy {
-    None,
-    ProportionalToSpriteSize(Vec2),
-}
-
-impl OffsetStrategy {
-    pub fn get_offset(&self, tile_size: Vec2) -> Vec2 {
-        match self {
-            OffsetStrategy::ProportionalToSpriteSize(sprite_size) => {
-                let mut offset = Vec2::ZERO;
-
-                if sprite_size.x > tile_size.x {
-                    offset.x += sprite_size.x / ((sprite_size.x / tile_size.x) * 2.0);
-                }
-
-                if sprite_size.y > tile_size.y {
-                    offset.y += sprite_size.y / ((sprite_size.y / tile_size.y) * 2.0);
-                }
-
-                offset
-            }
-            _ => Vec2::ZERO,
-        }
+        Some(Vec3::from((
+            // X grows the same for both tile and camera, so we just add the offset of half tile.
+            tile_pos.x * self.tile_size.x as f32,
+            // Y grows in opposite directions, so we need to invert Y and add the offset.
+            -tile_pos.y * self.tile_size.y as f32,
+            // z for 2d sprites define the rendering order, for 45 degrees top-down
+            // perspective we always want right bottom items to be drawn on top.
+            tile_pos.z + (tile_pos.x + tile_pos.y) / u16::MAX as f32,
+        )))
     }
 }

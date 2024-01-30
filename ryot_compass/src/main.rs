@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
 use bevy::render::mesh::{Indices, PrimitiveTopology};
 use bevy::render::render_resource::{AsBindGroup, ShaderRef};
-use bevy::sprite::{Material2d, MaterialMesh2dBundle};
+use bevy::sprite::{Anchor, Material2d, MaterialMesh2dBundle};
 use bevy::window::PrimaryWindow;
 use bevy::winit::WinitWindows;
 use std::fmt::Debug;
@@ -37,7 +37,7 @@ use rfd::AsyncFileDialog;
 use crate::error_handling::ErrorPlugin;
 use ryot::prelude::sprites::load_sprites;
 use ryot::prelude::sprites::*;
-use ryot::tile_grid::{OffsetStrategy, TileGrid};
+use ryot::tile_grid::TileGrid;
 use std::future::Future;
 use std::marker::PhantomData;
 
@@ -397,14 +397,13 @@ fn update_cursor<C: ContentAssets>(
     {
         *atlas_handle = new_sprite.atlas_texture_handle.clone();
         sprite.index = new_sprite.get_sprite_index();
+        sprite.anchor = Anchor::BottomRight;
 
         let tile_grid = configs.get(content.config().id()).or_default().grid;
-
         let tile_pos = tile_grid.get_tile_pos_from_display_pos(cursor_pos.0);
-        let Some(cursor_pos) = tile_grid.get_display_position_from_tile_pos(
-            tile_pos.extend(128.),
-            OffsetStrategy::ProportionalToSpriteSize(new_sprite.get_sprite_size()),
-        ) else {
+
+        let Some(cursor_pos) = tile_grid.get_display_position_from_tile_pos(tile_pos.extend(128.))
+        else {
             return;
         };
 
