@@ -241,7 +241,7 @@ fn draw<C: SpriteAssets>(
     palette_state: Res<PaletteState>,
     mouse_button_input: Res<Input<MouseButton>>,
     error_states: Res<ErrorState>,
-    build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
+    mut build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
     content: Res<CompassContentAssets>,
     configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
 ) {
@@ -261,7 +261,11 @@ fn draw<C: SpriteAssets>(
         return;
     };
 
-    let sprites = load_sprites(&[sprite_id], content_assets, build_spr_sheet_texture_cmd);
+    let sprites = load_sprites(
+        &[sprite_id],
+        &content_assets,
+        &mut build_spr_sheet_texture_cmd,
+    );
 
     let Some(sprite) = sprites.first() else {
         return;
@@ -368,7 +372,7 @@ fn update_cursor<C: SpriteAssets>(
         &SelectedTile,
     )>,
     content_assets: Res<C>,
-    build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
+    mut build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
     content: Res<CompassContentAssets>,
     configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
 ) {
@@ -393,7 +397,11 @@ fn update_cursor<C: SpriteAssets>(
     A click will only change the tile adding something to the tile.
     */
 
-    let sprites = load_sprites(&[sprite_id], content_assets, build_spr_sheet_texture_cmd);
+    let sprites = load_sprites(
+        &[sprite_id],
+        &content_assets,
+        &mut build_spr_sheet_texture_cmd,
+    );
 
     let Some(new_sprite) = sprites.first() else {
         return;
@@ -606,7 +614,7 @@ pub fn print_appearances<C: AppearancesAssets + SpriteAssets>(
     palettes: Res<Palette>,
     palette_state: ResMut<PaletteState>,
     texture_atlases: Res<Assets<TextureAtlas>>,
-    build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
+    mut build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
 ) {
     if palettes.get_for_category(&TilesetCategory::Raw).is_empty() {
         return;
@@ -641,8 +649,8 @@ pub fn print_appearances<C: AppearancesAssets + SpriteAssets>(
 
     for sprite in load_sprites(
         &sprite_ids[begin..end],
-        content_assets,
-        build_spr_sheet_texture_cmd,
+        &content_assets,
+        &mut build_spr_sheet_texture_cmd,
     ) {
         let Some(atlas) = texture_atlases.get(sprite.atlas_texture_handle.clone()) else {
             continue;
