@@ -65,8 +65,8 @@ impl<T: Configurable> Default for ConfigPlugin<T> {
 /// use bevy::prelude::*;
 /// use ryot::prelude::*;
 ///
-/// fn system<T: ContentAssets>(
-///     content: Res<T>,
+/// fn system<C: ContentAssets>(
+///     content: Res<C>,
 ///     configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
 /// ) {
 ///    let config = configs.get(content.config()).or_default();

@@ -63,18 +63,25 @@ pub struct Catalog {
 /// Assets contains appearances (loaded from a *.dat file), a catalog (loaded from a *.json file),
 /// a config (loaded from a *.toml file) and a map of sprite sheets images and textures (loaded
 /// from *.png files).
-pub trait ContentAssets: Resource + AssetCollection + Send + Sync + 'static {
+pub trait ContentAssets: AppearancesAssets + ConfigAssets + SpriteAssets {}
+
+pub trait ConfigAssets: Resource + AssetCollection + Send + Sync + 'static {
     // Config related assets
-    fn appearances(&self) -> &Handle<Appearance>;
     fn catalog_content(&self) -> &Handle<Catalog>;
     fn config(&self) -> &Handle<ConfigAsset<ContentConfigs>>;
+}
 
-    // Sprite related assets
+pub trait AppearancesAssets: Resource + AssetCollection + Send + Sync + 'static {
+    fn appearances(&self) -> &Handle<Appearance>;
+    fn prepared_appearances(&self) -> &PreparedAppearances;
+    fn prepared_appearances_mut(&mut self) -> &mut PreparedAppearances;
+}
+
+pub trait SpriteAssets: Resource + AssetCollection + Send + Sync + 'static {
     fn sprite_sheets(&self) -> &HashMap<String, Handle<Image>>;
     fn sprite_sheet_data_set(&self) -> &Option<SpriteSheetDataSet>;
     fn set_sprite_sheets_data(&mut self, sprite_sheet_set: SpriteSheetDataSet);
 
-    // Atlas related assets
     fn atlas_handles(&self) -> &HashMap<String, Handle<TextureAtlas>>;
     fn insert_atlas_handle(&mut self, file: &str, handle: Handle<TextureAtlas>);
     fn get_atlas_handle(&self, file: &str) -> Option<&Handle<TextureAtlas>>;
@@ -86,15 +93,15 @@ pub trait ContentAssets: Resource + AssetCollection + Send + Sync + 'static {
 ///
 /// It also manages the loading state of the content assets, the lifecycle of the content
 /// and the events that allow lazy loading of sprites.
-pub struct ContentPlugin<T: ContentAssets>(PhantomData<T>);
+pub struct ContentPlugin<C: ContentAssets>(PhantomData<C>);
 
-impl<T: ContentAssets> ContentPlugin<T> {
+impl<C: ContentAssets> ContentPlugin<C> {
     pub fn new() -> Self {
         Self(PhantomData)
     }
 }
 
-impl<T: ContentAssets> Default for ContentPlugin<T> {
+impl<C: ContentAssets> Default for ContentPlugin<C> {
     fn default() -> Self {
         Self::new()
     }
@@ -113,7 +120,7 @@ impl<C: ContentAssets + Default> Plugin for ContentPlugin<C> {
             )
             .add_systems(
                 OnEnter(InternalContentState::PreparingContent),
-                prepare_content::<C>,
+                (prepare_content::<C>, prepare_appearances::<C>),
             )
             .add_systems(
                 OnEnter(InternalContentState::PreparingSprites),
@@ -131,9 +138,9 @@ impl<C: ContentAssets + Default> Plugin for ContentPlugin<C> {
 /// a way that the game can use them.
 ///
 /// This is the last step of the content loading process, triggering the sprite loading process.
-fn prepare_content<T: ContentAssets>(
+fn prepare_content<C: ContentAssets>(
     contents: Res<Assets<Catalog>>,
-    mut content_assets: ResMut<T>,
+    mut content_assets: ResMut<C>,
     configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
     mut state: ResMut<NextState<InternalContentState>>,
 ) {

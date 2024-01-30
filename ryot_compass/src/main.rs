@@ -233,7 +233,7 @@ pub struct Tiles(Vec<(Tile, bool)>);
 // }
 
 #[allow(clippy::too_many_arguments)]
-fn draw<C: ContentAssets>(
+fn draw<C: SpriteAssets>(
     mut commands: Commands,
     mut egui_ctx: EguiContexts,
     content_assets: Res<C>,
@@ -355,7 +355,7 @@ pub fn update_cursor_pos(
 }
 
 #[allow(clippy::too_many_arguments)]
-fn update_cursor<C: ContentAssets>(
+fn update_cursor<C: SpriteAssets>(
     cursor_pos: Res<CursorPos>,
     palette_state: Res<PaletteState>,
     mut egui_ctx: EguiContexts,
@@ -386,6 +386,12 @@ fn update_cursor<C: ContentAssets>(
     let Some(sprite_id) = palette_state.selected_tile else {
         return;
     };
+
+    /*
+
+    When a click happens, no sprite is drawn.
+    A click will only change the tile adding something to the tile.
+    */
 
     let sprites = load_sprites(&[sprite_id], content_assets, build_spr_sheet_texture_cmd);
 
@@ -452,7 +458,7 @@ fn spawn_cursor(mut commands: Commands) {
     ));
 }
 
-fn ui_example<C: ContentAssets>(
+fn ui_example<C: SpriteAssets>(
     content_assets: Res<C>,
     mut egui_ctx: EguiContexts,
     mut exit: EventWriter<AppExit>,
@@ -594,7 +600,7 @@ fn ui_example<C: ContentAssets>(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn print_appearances<C: ContentAssets>(
+pub fn print_appearances<C: SpriteAssets>(
     palette_state: ResMut<PaletteState>,
     appearances: Res<Assets<Appearance>>,
     static_assets: Res<CompassContentAssets>,
@@ -803,21 +809,21 @@ impl Plugin for CameraPlugin {
     }
 }
 
-pub struct UIPlugin<C: ContentAssets>(PhantomData<C>);
+pub struct UIPlugin<C: SpriteAssets>(PhantomData<C>);
 
-impl<C: ContentAssets> UIPlugin<C> {
+impl<C: SpriteAssets> UIPlugin<C> {
     pub fn new() -> Self {
         Self(PhantomData)
     }
 }
 
-impl<C: ContentAssets> Default for UIPlugin<C> {
+impl<C: SpriteAssets> Default for UIPlugin<C> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<C: ContentAssets> Plugin for UIPlugin<C> {
+impl<C: SpriteAssets> Plugin for UIPlugin<C> {
     fn build(&self, app: &mut App) {
         app.add_optional_plugin(EguiPlugin)
             .init_resource::<AboutMeOpened>()

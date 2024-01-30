@@ -2,7 +2,7 @@
 use crate::appearances::{SpriteSheetData, SpriteSheetDataSet};
 use crate::bevy_ryot::InternalContentState;
 use crate::prelude::tile_grid::TileGrid;
-use crate::prelude::ContentAssets;
+use crate::prelude::{ContentAssets, SpriteAssets};
 use crate::{get_decompressed_file_name, SpriteSheetConfig, SPRITE_SHEET_FOLDER};
 use bevy::prelude::*;
 use bevy::sprite::Anchor;
@@ -29,8 +29,8 @@ pub(crate) struct SpriteSheetTextureWasLoaded {
 #[derive(Debug)]
 pub struct LoadedSprite {
     pub sprite_id: u32,
-    pub sprite_sheet: SpriteSheetData,
     pub config: SpriteSheetConfig,
+    pub sprite_sheet: SpriteSheetData,
     pub atlas_texture_handle: Handle<TextureAtlas>,
 }
 
@@ -44,8 +44,8 @@ impl LoadedSprite {
 
         Some(Self {
             sprite_id,
-            sprite_sheet: sprite_sheet.clone(),
             config: sprite_sheets.config,
+            sprite_sheet: sprite_sheet.clone(),
             atlas_texture_handle: atlas_handles.get(&sprite_sheet.file)?.clone(),
         })
     }
@@ -64,7 +64,7 @@ impl LoadedSprite {
 /// A system that gets the LoadedSprite from the resources.
 /// If the sprite sheet is not loaded yet, it sends a LoadSpriteSheetTextureCommand event.
 /// It returns only the loaded sprites.
-pub fn load_sprites<C: ContentAssets>(
+pub fn load_sprites<C: SpriteAssets>(
     sprite_ids: &[u32],
     content_assets: Res<C>,
     mut build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
@@ -90,8 +90,8 @@ pub fn load_sprites<C: ContentAssets>(
 
         loaded.push(LoadedSprite {
             sprite_id: *sprite_id,
-            sprite_sheet: sprite_sheet.clone(),
             config: sprite_sheets.config,
+            sprite_sheet: sprite_sheet.clone(),
             atlas_texture_handle: handle.clone(),
         });
     }
