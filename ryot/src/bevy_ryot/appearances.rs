@@ -72,10 +72,52 @@ impl AssetLoader for AppearanceAssetLoader {
 
 #[derive(Debug, Default)]
 pub struct PreparedAppearances {
-    pub objects: HashMap<u32, appearances::Appearance>,
-    pub outfits: HashMap<u32, appearances::Appearance>,
-    pub effects: HashMap<u32, appearances::Appearance>,
-    pub missiles: HashMap<u32, appearances::Appearance>,
+    groups: HashMap<AppearanceGroup, HashMap<u32, appearances::Appearance>>,
+}
+
+impl PreparedAppearances {
+    pub fn is_empty(&self) -> bool {
+        self.groups.is_empty()
+    }
+
+    pub fn insert(&mut self, group: AppearanceGroup, id: u32, appearance: appearances::Appearance) {
+        self.groups.entry(group).or_default().insert(id, appearance);
+    }
+
+    pub fn get_group(
+        &self,
+        group: AppearanceGroup,
+    ) -> Option<&HashMap<u32, appearances::Appearance>> {
+        self.groups.get(&group)
+    }
+
+    pub fn get_for_group(
+        &self,
+        group: AppearanceGroup,
+        id: u32,
+    ) -> Option<&appearances::Appearance> {
+        self.groups.get(&group)?.get(&id)
+    }
+}
+
+#[derive(Hash, Eq, Default, PartialEq, Debug, Clone)]
+pub enum AppearanceGroup {
+    #[default]
+    Object,
+    Outfit,
+    Effect,
+    Missile,
+}
+
+impl AppearanceGroup {
+    fn label(&self) -> &'static str {
+        match self {
+            AppearanceGroup::Object => "object",
+            AppearanceGroup::Outfit => "outfit",
+            AppearanceGroup::Effect => "effect",
+            AppearanceGroup::Missile => "missile",
+        }
+    }
 }
 
 /// Prepares the appearances from the .dat file into a HashMap to allow fast access
@@ -88,42 +130,32 @@ pub(crate) fn prepare_appearances<C: ContentAssets>(
     mut content_assets: ResMut<C>,
     appearances: Res<Assets<Appearance>>,
 ) {
-    info!("Preparing appearances");
+    debug!("Preparing appearances");
     let Some(Appearance(appearances)) = appearances.get(content_assets.appearances().id()) else {
         panic!("No config found for content");
     };
 
     let prepared_appearances = content_assets.prepared_appearances_mut();
 
-    for (kind, from, to) in [
-        (
-            "object",
-            &appearances.object,
-            &mut prepared_appearances.objects,
-        ),
-        (
-            "outfit",
-            &appearances.outfit,
-            &mut prepared_appearances.outfits,
-        ),
-        (
-            "effect",
-            &appearances.effect,
-            &mut prepared_appearances.effects,
-        ),
-        (
-            "missile",
-            &appearances.missile,
-            &mut prepared_appearances.missiles,
-        ),
+    for (from, group) in [
+        (&appearances.object, AppearanceGroup::Object),
+        (&appearances.outfit, AppearanceGroup::Outfit),
+        (&appearances.effect, AppearanceGroup::Effect),
+        (&appearances.missile, AppearanceGroup::Missile),
     ] {
         process_appearances(from, |id, appearance| {
-            to.insert(id, appearance.clone());
+            prepared_appearances.insert(group.clone(), id, appearance.clone());
         });
-        info!("{} out of {} '{}' prepared", to.len(), from.len(), kind);
+
+        debug!(
+            "{} out of {} '{}' prepared",
+            prepared_appearances.get_group(group.clone()).unwrap().len(),
+            from.len(),
+            group.label()
+        );
     }
 
-    info!("Appearances prepared");
+    debug!("Appearances prepared");
 }
 
 fn process_appearances(

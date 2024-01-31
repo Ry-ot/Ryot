@@ -26,7 +26,7 @@ pub(crate) struct SpriteSheetTextureWasLoaded {
 /// A struct that holds the information needed to draw a sprite.
 /// It's a wrapper around a sprite sheet and a sprite id, that also holds the
 /// handle to the texture atlas.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct LoadedSprite {
     pub sprite_id: u32,
     pub config: SpriteSheetConfig,
@@ -224,7 +224,7 @@ pub(crate) fn sprites_preparer<C: ContentAssets>(
     mut state: ResMut<NextState<InternalContentState>>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
 ) {
-    info!("Preparing sprites");
+    debug!("Preparing sprites");
 
     if !content_assets.sprite_sheets().is_empty() {
         let Some(sheets) = content_assets.sprite_sheet_data_set().clone() else {
@@ -263,5 +263,5 @@ pub(crate) fn sprites_preparer<C: ContentAssets>(
 
     state.set(InternalContentState::Ready);
 
-    info!("Finished preparing sprites");
+    debug!("Finished preparing sprites");
 }
