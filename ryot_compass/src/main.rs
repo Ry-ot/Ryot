@@ -600,141 +600,97 @@ fn ui_example<C: SpriteAssets>(
 }
 
 #[allow(clippy::too_many_arguments)]
-pub fn print_appearances<C: SpriteAssets>(
-    palette_state: ResMut<PaletteState>,
-    appearances: Res<Assets<Appearance>>,
-    static_assets: Res<CompassContentAssets>,
-    mut egui_ctx: EguiContexts,
-    mut palettes: ResMut<Palette>,
+pub fn print_appearances<C: AppearancesAssets + SpriteAssets>(
     content_assets: Res<C>,
-    texture_atlases: ResMut<Assets<TextureAtlas>>,
+    mut egui_ctx: EguiContexts,
+    palettes: Res<Palette>,
+    palette_state: ResMut<PaletteState>,
+    texture_atlases: Res<Assets<TextureAtlas>>,
     build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
-    // error_states: Res<ErrorState>,
 ) {
-    // if error_states.has_error {
-    //     return;
-    // }
-
-    if !palettes
-        .tile_set
-        .get(&TilesetCategory::Terrains)
-        .unwrap()
-        .is_empty()
-    {
-        if content_assets.sprite_sheet_data_set().is_none() {
-            return;
-        };
-
-        let mut egui_images: Vec<(LoadedSprite, egui::Image)> = vec![];
-
-        let mut sprite_ids: Vec<u32> = if palette_state.category == TilesetCategory::Raw {
-            let mut sprite_ids = vec![];
-
-            for category_sprites in palettes.tile_set.values() {
-                sprite_ids.extend(category_sprites);
-            }
-
-            sprite_ids
-        } else {
-            palettes
-                .tile_set
-                .get(&palette_state.category)
-                .unwrap()
-                .to_vec()
-        }
-        .into_iter()
-        .unique()
-        .collect();
-
-        sprite_ids.sort();
-
-        let begin = palette_state.begin().min(sprite_ids.len() - 5);
-        let end = palette_state.end().min(sprite_ids.len());
-
-        for sprite in load_sprites(
-            &sprite_ids[begin..end],
-            content_assets,
-            build_spr_sheet_texture_cmd,
-        ) {
-            let Some(atlas) = texture_atlases.get(sprite.atlas_texture_handle.clone()) else {
-                continue;
-            };
-
-            let Some(rect) = atlas.textures.get(sprite.get_sprite_index()) else {
-                continue;
-            };
-
-            let uv: egui::Rect = egui::Rect::from_min_max(
-                egui::pos2(rect.min.x / atlas.size.x, rect.min.y / atlas.size.y),
-                egui::pos2(rect.max.x / atlas.size.x, rect.max.y / atlas.size.y),
-            );
-
-            let rect_vec2: egui::Vec2 =
-                egui::Vec2::new(rect.max.x - rect.min.x, rect.max.y - rect.min.y);
-            let tex: TextureId = egui_ctx.add_image(atlas.texture.clone_weak());
-            egui_images.push((
-                sprite,
-                egui::Image::new(SizedTexture::new(tex, rect_vec2)).uv(uv),
-            ));
-        }
-
-        draw_palette_window(
-            sprite_ids.len(),
-            palettes.tile_set.keys().sorted().collect_vec(),
-            egui_images,
-            egui_ctx,
-            palette_state,
-        );
-
+    if palettes.get_for_category(&TilesetCategory::Raw).is_empty() {
         return;
     }
 
-    let mut total = 0;
+    let mut egui_images: Vec<(LoadedSprite, egui::Image)> = vec![];
 
-    if let Some(Appearance(appearances)) = appearances.get(static_assets.appearances().clone()) {
-        appearances.outfit.iter().for_each(|outfit| {
-            if outfit.id.is_none() {
-                warn!("No-id {:?}", outfit);
-            }
-            total += 1;
-        });
+    let mut sprite_ids: Vec<u32> = palettes
+        .get_for_category(&palette_state.category)
+        .iter()
+        .filter_map(|value| {
+            Some(
+                *content_assets
+                    .prepared_appearances()
+                    .objects
+                    .get(value)?
+                    .frame_group
+                    .first()?
+                    .sprite_info
+                    .clone()?
+                    .sprite_id
+                    .first()?,
+            )
+        })
+        .unique()
+        .collect();
 
-        appearances.object.iter().for_each(|object| {
-            total += 1;
+    sprite_ids.sort();
 
-            let Some(frame_group) = object.frame_group.first() else {
-                warn!("No-sprite {:?}", object);
-                return;
-            };
+    let begin = palette_state.begin().min(sprite_ids.len() - 5);
+    let end = palette_state.end().min(sprite_ids.len());
 
-            let Some(sprite_info) = &frame_group.sprite_info else {
-                warn!("No-sprite {:?}", object);
-                return;
-            };
+    for sprite in load_sprites(
+        &sprite_ids[begin..end],
+        content_assets,
+        build_spr_sheet_texture_cmd,
+    ) {
+        let Some(atlas) = texture_atlases.get(sprite.atlas_texture_handle.clone()) else {
+            continue;
+        };
 
-            let Some(sprite_id) = sprite_info.sprite_id.first() else {
-                warn!("No-sprite {:?}", object);
-                return;
-            };
+        let Some(rect) = atlas.textures.get(sprite.get_sprite_index()) else {
+            continue;
+        };
 
-            let category: TilesetCategory = object.into();
+        let uv: egui::Rect = egui::Rect::from_min_max(
+            egui::pos2(rect.min.x / atlas.size.x, rect.min.y / atlas.size.y),
+            egui::pos2(rect.max.x / atlas.size.x, rect.max.y / atlas.size.y),
+        );
 
-            palettes
-                .tile_set
-                .get_mut(&category)
-                .unwrap()
-                .push(*sprite_id);
-        });
-    };
-
-    total = 0;
-
-    for (category, ids) in palettes.tile_set.iter_mut() {
-        *ids = ids.iter().unique().cloned().collect();
-        debug!("{}: {}", category.get_label(), ids.len());
-        total += ids.len();
+        let rect_vec2: egui::Vec2 =
+            egui::Vec2::new(rect.max.x - rect.min.x, rect.max.y - rect.min.y);
+        let tex: TextureId = egui_ctx.add_image(atlas.texture.clone_weak());
+        egui_images.push((
+            sprite,
+            egui::Image::new(SizedTexture::new(tex, rect_vec2)).uv(uv),
+        ));
     }
-    debug!("Total: {}", total);
+
+    draw_palette_window(
+        sprite_ids.len(),
+        palettes.get_categories(),
+        egui_images,
+        egui_ctx,
+        palette_state,
+    );
+}
+
+fn setup_categories<C: AppearancesAssets + SpriteAssets>(
+    content_assets: Res<C>,
+    mut palettes: ResMut<Palette>,
+) {
+    if content_assets.prepared_appearances().objects.is_empty() {
+        warn!("Appearances were not properly prepared");
+        return;
+    }
+
+    content_assets
+        .prepared_appearances()
+        .objects
+        .iter()
+        .for_each(|(asset_id, object)| {
+            palettes.add_to_category(object.into(), *asset_id);
+        });
 }
 
 // fn set_window_icon(
@@ -823,7 +779,7 @@ impl<C: SpriteAssets> Default for UIPlugin<C> {
     }
 }
 
-impl<C: SpriteAssets> Plugin for UIPlugin<C> {
+impl<C: AppearancesAssets + SpriteAssets> Plugin for UIPlugin<C> {
     fn build(&self, app: &mut App) {
         app.add_optional_plugin(EguiPlugin)
             .init_resource::<AboutMeOpened>()
@@ -844,6 +800,10 @@ fn main() {
         .add_plugins(CameraPlugin)
         .add_plugins(UIPlugin::<CompassContentAssets>::new())
         .add_plugins(ErrorPlugin)
+        .add_systems(
+            OnEnter(InternalContentState::Ready),
+            setup_categories::<CompassContentAssets>,
+        )
         // .init_resource::<LmdbEnv>()
         // .init_resource::<Tiles>()
         // .add_systems(Startup, setup_window)
