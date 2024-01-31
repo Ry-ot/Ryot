@@ -1,8 +1,9 @@
 use crate::sprites::LoadedSprite;
-use crate::TilesetCategory;
-use bevy::prelude::{debug, ResMut, Resource};
+use crate::{Palette, TilesetCategory};
+use bevy::prelude::*;
 use bevy_egui::EguiContexts;
-use egui::{Align, Ui};
+use egui::load::SizedTexture;
+use egui::{Align, TextureId, Ui};
 use std::ops::Range;
 
 #[derive(Resource, Debug)]
@@ -13,8 +14,10 @@ pub struct PaletteState {
     pub grid_size: u32,
     pub tile_padding: f32,
     pub selected_tile: Option<u32>,
-    pub category: TilesetCategory,
+    pub selected_category: TilesetCategory,
+    pub category_sprites: Vec<u32>,
     pub visible_rows: Range<usize>,
+    pub loaded_images: Vec<(LoadedSprite, Handle<Image>, egui::Vec2, egui::Rect)>,
 }
 
 impl Default for PaletteState {
@@ -26,8 +29,10 @@ impl Default for PaletteState {
             grid_size: 64,
             tile_padding: 15.,
             selected_tile: None,
-            category: TilesetCategory::Terrains,
+            selected_category: TilesetCategory::Raw,
+            category_sprites: vec![],
             visible_rows: Range { start: 0, end: 10 },
+            loaded_images: vec![],
         }
     }
 }
@@ -54,19 +59,47 @@ impl PaletteState {
     }
 }
 
+pub fn get_egui_parameters_for_texture(
+    sprite: &LoadedSprite,
+    atlas: &TextureAtlas,
+) -> Option<(egui::Vec2, egui::Rect)> {
+    let rect = atlas.textures.get(sprite.get_sprite_index())?;
+
+    let uv: egui::Rect = egui::Rect::from_min_max(
+        egui::pos2(rect.min.x / atlas.size.x, rect.min.y / atlas.size.y),
+        egui::pos2(rect.max.x / atlas.size.x, rect.max.y / atlas.size.y),
+    );
+
+    let rect_vec2: egui::Vec2 = egui::Vec2::new(rect.max.x - rect.min.x, rect.max.y - rect.min.y);
+
+    Some((rect_vec2, uv))
+}
+
 pub fn draw_palette_window(
-    items_count: usize,
-    categories: Vec<&TilesetCategory>,
-    egui_images: Vec<(LoadedSprite, egui::Image)>,
+    palettes: Res<Palette>,
     mut egui_ctx: EguiContexts,
     mut palette_state: ResMut<PaletteState>,
 ) {
+    let categories = palettes.get_categories();
+    let binding = palette_state.loaded_images.clone();
+
+    let egui_images = binding
+        .iter()
+        .map(|(sprite, image, rect, uv)| {
+            let tex: TextureId = egui_ctx.add_image(image.clone_weak());
+            (
+                sprite,
+                egui::Image::new(SizedTexture::new(tex, *rect)).uv(*uv),
+            )
+        })
+        .collect::<Vec<_>>();
+
     egui::Window::new("Palette")
         .max_width(palette_state.width)
         .show(egui_ctx.ctx_mut(), |ui| {
             draw_palette_bottom_panel(ui, &mut palette_state);
             draw_palette_picker(ui, categories, &mut palette_state);
-            draw_palette_items(ui, items_count, egui_images, palette_state);
+            draw_palette_items(ui, egui_images, palette_state);
         });
 }
 
@@ -117,19 +150,20 @@ pub fn draw_palette_picker(
     palette_state: &mut ResMut<PaletteState>,
 ) {
     egui::ComboBox::from_id_source("palette")
-        .selected_text(palette_state.category.get_label().clone())
+        .selected_text(palette_state.selected_category.get_label().clone())
         .width(palette_state.width)
         .show_ui(ui, |ui| {
             for key in categories {
                 if ui
                     .selectable_value(
-                        &mut palette_state.category.get_label(),
+                        &mut palette_state.selected_category.get_label(),
                         key.get_label().clone(),
                         key,
                     )
                     .clicked()
                 {
-                    palette_state.category = *key;
+                    palette_state.selected_category = *key;
+                    palette_state.category_sprites.clear();
                 }
             }
         });
@@ -137,8 +171,7 @@ pub fn draw_palette_picker(
 
 pub fn draw_palette_items(
     ui: &mut Ui,
-    items_count: usize,
-    egui_images: Vec<(LoadedSprite, egui::Image)>,
+    egui_images: Vec<(&LoadedSprite, egui::Image)>,
     mut palette_state: ResMut<PaletteState>,
 ) {
     let row_padding = 3.;
@@ -149,7 +182,7 @@ pub fn draw_palette_items(
         .show_rows(
             ui,
             row_height,
-            palette_state.get_total_rows(items_count),
+            palette_state.get_total_rows(palette_state.category_sprites.len()),
             |ui, row_range| {
                 ui.set_width(palette_state.width);
                 palette_state.visible_rows = row_range.clone();

@@ -24,10 +24,9 @@ use crate::bevy_ryot::sprites::LoadSpriteSheetTextureCommand;
 use crate::ContentConfigs;
 use bevy::app::{App, Plugin, Update};
 use bevy::asset::{Asset, Assets, Handle};
-use bevy::log::info;
 use bevy::prelude::{
-    default, Image, NextState, OnEnter, Res, ResMut, Resource, States, TextureAtlas, TypePath,
-    Window, WindowPlugin,
+    debug, default, Image, NextState, OnEnter, Res, ResMut, Resource, States, TextureAtlas,
+    TypePath, Window, WindowPlugin,
 };
 use bevy::utils::HashMap;
 use bevy_asset_loader::asset_collection::AssetCollection;
@@ -144,7 +143,7 @@ fn prepare_content<C: ContentAssets>(
     configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
     mut state: ResMut<NextState<InternalContentState>>,
 ) {
-    info!("Preparing content");
+    debug!("Preparing content");
     let Some(ConfigAsset(configs)) = configs.get(content_assets.config().id()) else {
         panic!("No config found for content");
     };
@@ -160,7 +159,7 @@ fn prepare_content<C: ContentAssets>(
 
     state.set(InternalContentState::PreparingSprites);
 
-    info!("Finished preparing content");
+    debug!("Finished preparing content");
 }
 
 /// Quick way to create WASM compatible windows with a title.
