@@ -100,7 +100,8 @@ fn spawn_camera(
     // Create vertices for the vertical lines (columns)
     let (bottom_left, top_right) = tile_grid.get_bounds_screen();
     let (bottom_left_tile, top_right_tile) = tile_grid.get_bounds_tiles();
-    for col in (bottom_left_tile.x - 1)..=top_right_tile.x {
+
+    for col in bottom_left_tile.x - 1..=top_right_tile.x {
         let x_offset = (col * tile_grid.tile_size.x as i32) as f32;
 
         positions.push([x_offset, bottom_left.y, 0.0]);
@@ -115,7 +116,7 @@ fn spawn_camera(
     }
 
     // Create vertices for the horizontal lines (rows)
-    for row in bottom_left_tile.y..=(top_right_tile.y + 1) {
+    for row in bottom_left_tile.y - 1..=top_right_tile.y {
         let y_offset = (row * tile_grid.tile_size.y as i32) as f32;
 
         positions.push([bottom_left.x, y_offset, 0.0]);
@@ -147,7 +148,7 @@ fn spawn_camera(
             custom_size: Some(tile_grid.get_size().as_vec2()),
             ..Default::default()
         },
-        transform: Transform::from_xyz(0., 0., 0.), // Slightly in front to cover the white border
+        transform: Transform::from_translation(Vec3::ZERO),
         ..Default::default()
     });
 
@@ -161,7 +162,7 @@ fn spawn_camera(
 
     commands.spawn(SpriteBundle {
         texture: content.mascot.clone(),
-        transform: Transform::from_translation(Vec3::new(0., 0., 1.)).with_scale(Vec3::splat(0.2)),
+        transform: Transform::from_translation(Vec2::ZERO.extend(1.)).with_scale(Vec3::splat(0.5)),
         ..Default::default()
     });
 }
@@ -409,12 +410,7 @@ fn update_cursor<C: SpriteAssets>(
         let tile_grid = configs.get(content.config().id()).or_default().grid;
         let tile_pos = tile_grid.get_tile_pos_from_display_pos(cursor_pos.0);
 
-        let (min, max) = tile_grid.get_bounds_screen();
-        if cursor_pos.0.x < min.x
-            || cursor_pos.0.x > max.x
-            || cursor_pos.0.y < min.y
-            || cursor_pos.0.y > max.y
-        {
+        if tile_grid.screen_clamp(cursor_pos.0) != cursor_pos.0 {
             *visibility = Visibility::Hidden;
         } else {
             *visibility = Visibility::Visible;
