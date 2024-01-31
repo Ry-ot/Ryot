@@ -7,6 +7,7 @@ use bevy::render::render_resource::{AsBindGroup, ShaderRef};
 use bevy::sprite::{Anchor, Material2d, MaterialMesh2dBundle};
 use bevy::window::PrimaryWindow;
 use bevy::winit::WinitWindows;
+use color_eyre::eyre::Result;
 use std::fmt::Debug;
 
 use bevy_egui::{EguiContexts, EguiPlugin};
@@ -37,7 +38,6 @@ use rfd::AsyncFileDialog;
 use crate::error_handling::ErrorPlugin;
 use ryot::prelude::sprites::load_sprites;
 use ryot::prelude::sprites::*;
-use ryot::tile_grid::TileGrid;
 use std::future::Future;
 use std::marker::PhantomData;
 
@@ -90,47 +90,43 @@ fn spawn_camera(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    let TileGrid {
-        columns,
-        rows,
-        tile_size,
-    } = configs.get(content.config().id()).or_default().grid;
+    let tile_grid = configs.get(content.config().id()).or_default().grid;
 
     let mut positions = Vec::new();
     let mut colors = Vec::new();
     let mut indices = Vec::new();
-
-    let width = (columns * tile_size.x) as f32;
-    let height = (rows * tile_size.y) as f32;
+    let mut idx = 0;
 
     // Create vertices for the vertical lines (columns)
-    for col in 0..=columns {
-        let x_offset = (col * tile_size.x) as f32;
+    let (bottom_left, top_right) = tile_grid.get_bounds_screen();
+    let (bottom_left_tile, top_right_tile) = tile_grid.get_bounds_tiles();
+    for col in (bottom_left_tile.x - 1)..=top_right_tile.x {
+        let x_offset = (col * tile_grid.tile_size.x as i32) as f32;
 
-        positions.push([x_offset, 0.0, 0.0]);
-        positions.push([x_offset, -height, 0.0]);
+        positions.push([x_offset, bottom_left.y, 0.0]);
+        positions.push([x_offset, top_right.y, 0.0]);
 
         // Add colors (white for grid lines)
         colors.extend(vec![Color::WHITE.as_rgba_f32(); 2]);
 
         // Add indices for the line
-        let idx = col * 2;
         indices.extend_from_slice(&[idx, idx + 1]);
+        idx += 2;
     }
 
     // Create vertices for the horizontal lines (rows)
-    for row in 0..=rows {
-        let y_offset = (row * tile_size.y) as f32;
+    for row in bottom_left_tile.y..=(top_right_tile.y + 1) {
+        let y_offset = (row * tile_grid.tile_size.y as i32) as f32;
 
-        positions.push([0.0, -y_offset, 0.0]);
-        positions.push([width, -y_offset, 0.0]);
+        positions.push([bottom_left.x, y_offset, 0.0]);
+        positions.push([top_right.x, y_offset, 0.0]);
 
         // Add colors (white for grid lines)
         colors.extend(vec![Color::WHITE.as_rgba_f32(); 2]);
 
         // Add indices for the line
-        let idx = (columns + 1) * 2 + row * 2; // Offset by the number of vertices added for columns
         indices.extend_from_slice(&[idx, idx + 1]);
+        idx += 2;
     }
 
     // Create the mesh
@@ -148,17 +144,17 @@ fn spawn_camera(
     commands.spawn(SpriteBundle {
         sprite: Sprite {
             color: Color::rgba(255., 255., 255., 0.01),
-            custom_size: Some(Vec2::new(width, height)),
+            custom_size: Some(tile_grid.get_size().as_vec2()),
             ..Default::default()
         },
-        transform: Transform::from_xyz(width / 2., height / -2., 0.), // Slightly in front to cover the white border
+        transform: Transform::from_xyz(0., 0., 0.), // Slightly in front to cover the white border
         ..Default::default()
     });
 
     // Spawn the square with the grid
     commands.spawn(MaterialMesh2dBundle {
         mesh: mesh_handle.into(),
-        transform: Transform::from_translation(Vec3::new(0., 0., 256.)),
+        transform: Transform::from_translation(Vec2::ZERO.extend(256.)),
         material: materials.add(ColorMaterial::default()),
         ..default()
     });
@@ -342,20 +338,18 @@ fn draw<C: SpriteAssets>(
 // We need to keep the cursor position updated based on any `CursorMoved` events.
 pub fn update_cursor_pos(
     mut cursor_pos: ResMut<CursorPos>,
-    camera_q: Query<(&GlobalTransform, &Camera)>,
-    mut cursor_moved_events: EventReader<CursorMoved>,
-) {
-    for cursor_moved in cursor_moved_events.read() {
-        // To get the mouse's world position, we have to transform its window position by
-        // any transforms on the camera. This is done by projecting the cursor position into
-        // camera space (world space).
-        for (cam_t, cam) in camera_q.iter() {
-            if let Some(pos) = cam.viewport_to_world_2d(cam_t, cursor_moved.position) {
-                *cursor_pos = CursorPos(pos);
-                debug!("Cursor pos: {:?}", pos);
-            }
-        }
-    }
+    camera_query: Query<(&Camera, &GlobalTransform)>,
+    window_query: Query<&Window, With<PrimaryWindow>>,
+) -> Result<()> {
+    let (camera, camera_transform) = camera_query.get_single()?;
+    let Some(cursor_position) = window_query.get_single()?.cursor_position() else {
+        return Ok(());
+    };
+    let Some(point) = camera.viewport_to_world_2d(camera_transform, cursor_position) else {
+        return Ok(());
+    };
+    *cursor_pos = CursorPos(point);
+    Ok(())
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -415,18 +409,23 @@ fn update_cursor<C: SpriteAssets>(
         let tile_grid = configs.get(content.config().id()).or_default().grid;
         let tile_pos = tile_grid.get_tile_pos_from_display_pos(cursor_pos.0);
 
+        let (min, max) = tile_grid.get_bounds_screen();
+        if cursor_pos.0.x < min.x
+            || cursor_pos.0.x > max.x
+            || cursor_pos.0.y < min.y
+            || cursor_pos.0.y > max.y
+        {
+            *visibility = Visibility::Hidden;
+        } else {
+            *visibility = Visibility::Visible;
+        }
+
         let Some(cursor_pos) = tile_grid.get_display_position_from_tile_pos(tile_pos.extend(128.))
         else {
             return;
         };
 
         transform.translation = cursor_pos;
-
-        if cursor_pos.truncate() == Vec2::ZERO {
-            *visibility = Visibility::Hidden;
-        } else {
-            *visibility = Visibility::Visible;
-        }
 
         if egui_ctx.ctx_mut().is_pointer_over_area() {
             continue;
@@ -764,7 +763,7 @@ impl Plugin for CameraPlugin {
                 Update,
                 (
                     camera_movement,
-                    update_cursor_pos,
+                    update_cursor_pos.map(drop),
                     update_cursor::<CompassContentAssets>,
                 )
                     .chain()

@@ -56,18 +56,19 @@ pub fn movement(
         // Using default because camera doesn't work properly with smaller grids
         let tile_grid = TileGrid::default();
 
+        let (min_bounds, max_bounds) = tile_grid.get_bounds_screen();
         transform.translation.x =
             normalize_dimension(transform.translation.x, tile_grid.tile_size.x);
         transform.translation.x = transform.translation.x.clamp(
-            ortho.scale * (window.width() / 2. - 50. / scale_balance),
-            tile_grid.columns as f32,
+            min_bounds.x + window.width() / 2. / scale_balance,
+            max_bounds.x - window.width() / 2. / scale_balance,
         );
 
         transform.translation.y =
-            normalize_dimension(transform.translation.y, tile_grid.tile_size.x);
+            normalize_dimension(transform.translation.y, tile_grid.tile_size.y);
         transform.translation.y = transform.translation.y.clamp(
-            -(tile_grid.rows as f32),
-            -ortho.scale * (window.height() / 2. - 90. / scale_balance),
+            min_bounds.y + window.height() / 2. / scale_balance,
+            max_bounds.y - window.height() / 2. / scale_balance,
         );
 
         // Important! We need to restore the Z values when moving the camera around.
