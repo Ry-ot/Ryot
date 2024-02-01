@@ -1,5 +1,5 @@
 use bevy::{input::Input, math::Vec3, prelude::*, render::camera::Camera};
-use ryot::prelude::tile_grid::TileGrid;
+use ryot::{position::TilePosition, CONTENT_CONFIG};
 
 // A simple camera system for moving and zooming the camera.
 #[allow(dead_code)]
@@ -54,21 +54,21 @@ pub fn movement(
         };
 
         // Using default because camera doesn't work properly with smaller grids
-        let tile_grid = TileGrid::default();
 
-        let (min_bounds, max_bounds) = tile_grid.get_bounds_screen();
-        transform.translation.x =
-            normalize_dimension(transform.translation.x, tile_grid.tile_size.x);
+        let (bottom_left_tile, top_right_tile) = (TilePosition::MIN, TilePosition::MAX);
+        let (min_bounds, max_bounds) = (Vec2::from(bottom_left_tile), Vec2::from(top_right_tile));
+        let tile_size = CONTENT_CONFIG.sprite_sheet.tile_size;
+        const MARGIN: f32 = 90.;
+        transform.translation.x = normalize_dimension(transform.translation.x, tile_size.x);
         transform.translation.x = transform.translation.x.clamp(
-            min_bounds.x + window.width() / 2. / scale_balance,
-            max_bounds.x - window.width() / 2. / scale_balance,
+            min_bounds.x + window.width() / 2. / scale_balance - MARGIN,
+            max_bounds.x - window.width() / 2. / scale_balance + MARGIN,
         );
 
-        transform.translation.y =
-            normalize_dimension(transform.translation.y, tile_grid.tile_size.y);
+        transform.translation.y = normalize_dimension(transform.translation.y, tile_size.y);
         transform.translation.y = transform.translation.y.clamp(
-            min_bounds.y + window.height() / 2. / scale_balance,
-            max_bounds.y - window.height() / 2. / scale_balance,
+            min_bounds.y + window.height() / 2. / scale_balance - MARGIN,
+            max_bounds.y - window.height() / 2. / scale_balance + MARGIN,
         );
 
         // Important! We need to restore the Z values when moving the camera around.

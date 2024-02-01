@@ -7,7 +7,7 @@ pub use config::*;
 mod sheet_loading;
 pub use sheet_loading::*;
 
-pub mod tile_grid;
+pub mod position;
 
 pub mod error;
 

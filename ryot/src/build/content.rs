@@ -42,10 +42,6 @@ impl ContentBuild {
             .path
             .clone()
             .unwrap_or_else(|| assets_root_path().join(CONTENT_CONFIG_PATH));
-        println!(
-            "cargo:warning=Running content build {:?} using config {:?}",
-            &self, path
-        );
 
         let content_config = read_content_configs(path.clone());
 
@@ -85,8 +81,6 @@ impl ContentBuild {
 
         copy_appearances(&directories.source_path, &directories.destination_path)?;
         decompress_sprites(content_config)?;
-
-        println!("cargo:warning=Content build completed");
 
         Ok(())
     }

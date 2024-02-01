@@ -4,8 +4,6 @@ use ryot::prelude::ContentBuild;
 use std::env;
 
 fn main() {
-    println!("cargo:warning=Build script of ryot_compass is running...");
-
     if env::var("SKIP_BUILD_SCRIPT").is_ok() {
         println!("cargo:warning=Skipping ryot_compass build script for CI build");
         return;
@@ -22,8 +20,6 @@ fn main() {
     ContentBuild::default()
         .run()
         .expect("Failed to build assets");
-
-    println!("cargo:warning=Build script of ryot_compass completed.");
 }
 
 fn build_target() {

@@ -9,6 +9,7 @@ use bevy::sprite::{Anchor, MaterialMesh2dBundle};
 use bevy::window::PrimaryWindow;
 use bevy_egui::EguiContexts;
 use ryot::bevy_ryot::sprites::{load_sprites, LoadSpriteSheetTextureCommand};
+use ryot::position::TilePosition;
 use ryot::prelude::*;
 use std::marker::PhantomData;
 
@@ -88,19 +89,18 @@ fn spawn_camera<C: ConfigAssets + MascotAssets + SpriteAssets>(
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    let tile_grid = CONTENT_CONFIG.grid;
-
     let mut positions = Vec::new();
     let mut colors = Vec::new();
     let mut indices = Vec::new();
     let mut idx = 0;
 
     // Create vertices for the vertical lines (columns)
-    let (bottom_left, top_right) = tile_grid.get_bounds_screen();
-    let (bottom_left_tile, top_right_tile) = tile_grid.get_bounds_tiles();
+    let (bottom_left_tile, top_right_tile) = (TilePosition::MIN, TilePosition::MAX);
+    let (bottom_left, top_right) = (Vec2::from(bottom_left_tile), Vec2::from(top_right_tile));
+    let tile_size = CONTENT_CONFIG.sprite_sheet.tile_size;
 
-    for col in bottom_left_tile.x - 1..=top_right_tile.x {
-        let x_offset = (col * tile_grid.tile_size.x as i32) as f32;
+    for col in bottom_left_tile.x..=top_right_tile.x {
+        let x_offset = (col * tile_size.x as i32) as f32;
 
         positions.push([x_offset, bottom_left.y, 0.0]);
         positions.push([x_offset, top_right.y, 0.0]);
@@ -114,8 +114,8 @@ fn spawn_camera<C: ConfigAssets + MascotAssets + SpriteAssets>(
     }
 
     // Create vertices for the horizontal lines (rows)
-    for row in bottom_left_tile.y - 1..=top_right_tile.y {
-        let y_offset = (row * tile_grid.tile_size.y as i32) as f32;
+    for row in bottom_left_tile.y..=top_right_tile.y {
+        let y_offset = ((row - 1) * tile_size.y as i32) as f32;
 
         positions.push([bottom_left.x, y_offset, 0.0]);
         positions.push([top_right.x, y_offset, 0.0]);
@@ -138,17 +138,6 @@ fn spawn_camera<C: ConfigAssets + MascotAssets + SpriteAssets>(
 
     // Spawn camera
     commands.spawn(Camera2dBundle::default());
-
-    // Spawn a black square on top for the main area
-    commands.spawn(SpriteBundle {
-        sprite: Sprite {
-            color: Color::rgba(255., 255., 255., 0.01),
-            custom_size: Some(tile_grid.get_size().as_vec2()),
-            ..Default::default()
-        },
-        transform: Transform::from_translation(Vec3::ZERO),
-        ..Default::default()
-    });
 
     // Spawn the square with the grid
     commands.spawn(MaterialMesh2dBundle {
@@ -210,7 +199,7 @@ fn update_cursor_visibility(
     cursor_pos: Res<CursorPos>,
     mut egui_ctx: EguiContexts,
     mut windows: Query<&mut Window>,
-    mut cursor_query: Query<(&mut Transform, &mut Visibility), With<SelectedTile>>,
+    mut cursor_query: Query<&mut Transform, With<SelectedTile>>,
 ) {
     if egui_ctx.ctx_mut().is_pointer_over_area() {
         egui_ctx
@@ -223,41 +212,12 @@ fn update_cursor_visibility(
         return;
     }
 
-    for (mut transform, mut visibility) in cursor_query.iter_mut() {
-        let tile_grid = CONTENT_CONFIG.grid;
-        let tile_pos = tile_grid.get_tile_pos_from_display_pos(cursor_pos.0);
-
-        if tile_grid.screen_clamp(cursor_pos.0) != cursor_pos.0 {
-            *visibility = Visibility::Hidden;
-        } else {
-            *visibility = Visibility::Visible;
-        }
-
-        let Some(cursor_pos) = tile_grid.get_display_position_from_tile_pos(tile_pos.extend(128.))
-        else {
-            return;
-        };
-
-        transform.translation = cursor_pos;
+    for mut transform in cursor_query.iter_mut() {
+        let tile_pos = TilePosition::from(cursor_pos.0);
+        transform.translation = Vec3::from(tile_pos) + Vec3::new(0., 0., 128.);
 
         if egui_ctx.ctx_mut().is_pointer_over_area() {
             continue;
-        }
-
-        match *visibility {
-            Visibility::Visible => {
-                egui_ctx.ctx_mut().set_cursor_icon(egui::CursorIcon::None);
-                windows.single_mut().cursor.icon = CursorIcon::Default;
-                windows.single_mut().cursor.visible = false;
-            }
-            Visibility::Hidden => {
-                egui_ctx
-                    .ctx_mut()
-                    .set_cursor_icon(egui::CursorIcon::NotAllowed);
-                windows.single_mut().cursor.icon = CursorIcon::NotAllowed;
-                windows.single_mut().cursor.visible = true;
-            }
-            _ => {}
         }
     }
 }
