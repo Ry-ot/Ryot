@@ -11,17 +11,11 @@ use std::marker::PhantomData;
 mod async_events;
 pub use async_events::*;
 
-mod configs;
-pub use configs::*;
-
 pub mod sprites;
-
-#[cfg(test)]
-mod tests;
 
 use crate::appearances::{ContentType, SpriteSheetDataSet};
 use crate::bevy_ryot::sprites::LoadSpriteSheetTextureCommand;
-use crate::ContentConfigs;
+use crate::CONTENT_CONFIG;
 use bevy::app::{App, Plugin, Update};
 use bevy::asset::{Asset, Assets, Handle};
 use bevy::prelude::{
@@ -67,7 +61,6 @@ pub trait ContentAssets: AppearancesAssets + ConfigAssets + SpriteAssets {}
 pub trait ConfigAssets: Resource + AssetCollection + Send + Sync + 'static {
     // Config related assets
     fn catalog_content(&self) -> &Handle<Catalog>;
-    fn config(&self) -> &Handle<ConfigAsset<ContentConfigs>>;
 }
 
 pub trait AppearancesAssets: Resource + AssetCollection + Send + Sync + 'static {
@@ -111,7 +104,6 @@ impl<C: ContentAssets + Default> Plugin for ContentPlugin<C> {
         app.init_resource::<C>()
             .add_plugins(JsonAssetPlugin::<Catalog>::new(&["json"]))
             .add_plugins(AppearanceAssetPlugin)
-            .add_plugins(ConfigPlugin::<ContentConfigs>::default())
             .add_loading_state(
                 LoadingState::new(InternalContentState::LoadingContent)
                     .continue_to_state(InternalContentState::PreparingContent)
@@ -140,13 +132,9 @@ impl<C: ContentAssets + Default> Plugin for ContentPlugin<C> {
 fn prepare_content<C: ContentAssets>(
     contents: Res<Assets<Catalog>>,
     mut content_assets: ResMut<C>,
-    configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
     mut state: ResMut<NextState<InternalContentState>>,
 ) {
     debug!("Preparing content");
-    let Some(ConfigAsset(configs)) = configs.get(content_assets.config().id()) else {
-        panic!("No config found for content");
-    };
 
     let Some(catalog) = contents.get(content_assets.catalog_content().id()) else {
         panic!("No catalog loaded");
@@ -154,7 +142,7 @@ fn prepare_content<C: ContentAssets>(
 
     content_assets.set_sprite_sheets_data(SpriteSheetDataSet::from_content(
         &catalog.content,
-        &configs.sprite_sheet,
+        &CONTENT_CONFIG.sprite_sheet,
     ));
 
     state.set(InternalContentState::PreparingSprites);

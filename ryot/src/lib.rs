@@ -28,6 +28,9 @@
 //!   structures.
 //! * [Content Utilities](crate::content) - A collection of structs that can be used to manipulate
 //!   contents, including configuring and loading them.
+
+#![feature(lazy_cell)]
+
 pub mod appearances;
 
 pub mod drawing;

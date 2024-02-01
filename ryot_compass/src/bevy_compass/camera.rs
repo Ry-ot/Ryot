@@ -9,9 +9,7 @@ use bevy::sprite::{Anchor, MaterialMesh2dBundle};
 use bevy::window::PrimaryWindow;
 use bevy_egui::EguiContexts;
 use ryot::bevy_ryot::sprites::{load_sprites, LoadSpriteSheetTextureCommand};
-use ryot::bevy_ryot::ConfigAsset;
 use ryot::prelude::*;
-use ryot::ContentConfigs;
 use std::marker::PhantomData;
 
 pub struct CameraPlugin<C: ConfigAssets + MascotAssets + SpriteAssets>(PhantomData<C>);
@@ -41,7 +39,7 @@ impl<C: ConfigAssets + MascotAssets + SpriteAssets> Plugin for CameraPlugin<C> {
                     movement,
                     update_cursor_pos.map(drop),
                     update_cursor_palette_sprite::<C>,
-                    update_cursor_visibility::<C>,
+                    update_cursor_visibility,
                 )
                     .chain()
                     .run_if(in_state(InternalContentState::Ready)),
@@ -86,12 +84,11 @@ fn update_cursor_pos(
 
 fn spawn_camera<C: ConfigAssets + MascotAssets + SpriteAssets>(
     content: Res<C>,
-    configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
     mut materials: ResMut<Assets<ColorMaterial>>,
 ) {
-    let tile_grid = configs.get(content.config().id()).or_default().grid;
+    let tile_grid = CONTENT_CONFIG.grid;
 
     let mut positions = Vec::new();
     let mut colors = Vec::new();
@@ -209,12 +206,10 @@ fn update_cursor_palette_sprite<C: SpriteAssets>(
     }
 }
 
-fn update_cursor_visibility<C: ConfigAssets>(
-    content_assets: Res<C>,
+fn update_cursor_visibility(
     cursor_pos: Res<CursorPos>,
     mut egui_ctx: EguiContexts,
     mut windows: Query<&mut Window>,
-    configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
     mut cursor_query: Query<(&mut Transform, &mut Visibility), With<SelectedTile>>,
 ) {
     if egui_ctx.ctx_mut().is_pointer_over_area() {
@@ -229,7 +224,7 @@ fn update_cursor_visibility<C: ConfigAssets>(
     }
 
     for (mut transform, mut visibility) in cursor_query.iter_mut() {
-        let tile_grid = configs.get(content_assets.config().id()).or_default().grid;
+        let tile_grid = CONTENT_CONFIG.grid;
         let tile_pos = tile_grid.get_tile_pos_from_display_pos(cursor_pos.0);
 
         if tile_grid.screen_clamp(cursor_pos.0) != cursor_pos.0 {

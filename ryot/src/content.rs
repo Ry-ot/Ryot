@@ -1,4 +1,5 @@
-use crate::bevy_ryot::Configurable;
+use std::sync::LazyLock;
+
 use crate::tile_grid::TileGrid;
 use crate::{error, SpriteSheetConfig};
 use config::Config;
@@ -10,17 +11,16 @@ use std::{fs, result};
 pub static CONTENT_CONFIG_PATH: &str = "config/.content.toml";
 pub static SPRITE_SHEET_FOLDER: &str = "sprite-sheets";
 
+pub static CONTENT_CONFIG: LazyLock<ContentConfigs> = LazyLock::new(|| {
+    let path = assets_root_path().join(CONTENT_CONFIG_PATH);
+    read_content_configs(path)
+});
+
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct ContentConfigs {
     pub directories: DirectoryConfigs,
     pub sprite_sheet: SpriteSheetConfig,
     pub grid: TileGrid,
-}
-
-impl Configurable for ContentConfigs {
-    fn extensions() -> Vec<&'static str> {
-        vec!["content.toml"]
-    }
 }
 
 #[derive(Debug, Clone, Deserialize)]

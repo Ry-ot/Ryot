@@ -35,7 +35,6 @@ fn draw<C: ConfigAssets + SpriteAssets>(
     mouse_button_input: Res<Input<MouseButton>>,
     error_states: Res<ErrorState>,
     mut build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
-    configs: Res<Assets<ConfigAsset<ContentConfigs>>>,
 ) {
     if egui_ctx.ctx_mut().is_pointer_over_area() {
         return;
@@ -64,7 +63,7 @@ fn draw<C: ConfigAssets + SpriteAssets>(
     };
 
     if mouse_button_input.pressed(MouseButton::Left) {
-        let tile_grid = configs.get(content_assets.config().id()).or_default().grid;
+        let tile_grid = CONTENT_CONFIG.grid;
 
         let pos = tile_grid.get_tile_pos_from_display_pos(cursor_pos.0);
 
@@ -303,9 +302,11 @@ pub fn setup_window(
     let primary_window = windows.get_window(primary_window_entity).unwrap();
 
     let (icon_rgba, icon_width, icon_height) = {
-        let image = image::open("assets/icons/compass_4.png")
-            .expect("Failed to open icon path")
-            .into_rgba8();
+        let Ok(image) = image::open("assets/icons/compass_4.png") else {
+            error!("Failed to load icon image");
+            return;
+        };
+        let image = image.into_rgba8();
         let (width, height) = image.dimensions();
         let rgba = image.into_raw();
         (rgba, width, height)
