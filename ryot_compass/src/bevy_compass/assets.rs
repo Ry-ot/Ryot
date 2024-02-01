@@ -33,43 +33,37 @@ pub struct CompassContentAssets {
     sprite_sheets: HashMap<String, Handle<Image>>,
 }
 
-impl ContentAssets for CompassContentAssets {}
-impl AppearancesAssets for CompassContentAssets {
+impl PreloadedContentAssets for CompassContentAssets {}
+
+impl PreloadedAssets for CompassContentAssets {
     fn appearances(&self) -> &Handle<Appearance> {
         &self.appearances
     }
+
     fn catalog_content(&self) -> &Handle<Catalog> {
         &self.catalog_content
     }
-
-    fn prepared_appearances(&self) -> &PreparedAppearances {
-        &self.prepared_appearances
-    }
-
     fn prepared_appearances_mut(&mut self) -> &mut PreparedAppearances {
         &mut self.prepared_appearances
     }
-}
-
-impl SpriteAssets for CompassContentAssets {
-    fn sprite_sheets(&self) -> &HashMap<String, Handle<Image>> {
-        &self.sprite_sheets
+    fn sprite_sheets(&mut self) -> &mut HashMap<String, Handle<Image>> {
+        &mut self.sprite_sheets
     }
-
-    fn sprite_sheet_data_set(&self) -> &Option<SpriteSheetDataSet> {
-        &self.atlas.sheet_data_set
-    }
-
     fn set_sprite_sheets_data(&mut self, sprite_sheet_set: SpriteSheetDataSet) {
         self.atlas.sheet_data_set.replace(sprite_sheet_set);
     }
 
-    fn atlas_handles(&self) -> &HashMap<String, Handle<TextureAtlas>> {
-        &self.atlas.handles
-    }
-
     fn insert_atlas_handle(&mut self, file: &str, handle: Handle<TextureAtlas>) {
         self.atlas.handles.insert(file.to_string(), handle);
+    }
+}
+
+impl ContentAssets for CompassContentAssets {
+    fn prepared_appearances(&self) -> &PreparedAppearances {
+        &self.prepared_appearances
+    }
+    fn sprite_sheet_data_set(&self) -> &Option<SpriteSheetDataSet> {
+        &self.atlas.sheet_data_set
     }
 
     fn get_atlas_handle(&self, file: &str) -> Option<&Handle<TextureAtlas>> {
@@ -77,11 +71,11 @@ impl SpriteAssets for CompassContentAssets {
     }
 }
 
-pub trait MascotAssets: Resource + AssetCollection + Send + Sync + 'static {
+pub trait CompassAssets: ContentAssets + AssetCollection {
     fn mascot(&self) -> Handle<Image>;
 }
 
-impl MascotAssets for CompassContentAssets {
+impl CompassAssets for CompassContentAssets {
     fn mascot(&self) -> Handle<Image> {
         self.mascot.clone()
     }

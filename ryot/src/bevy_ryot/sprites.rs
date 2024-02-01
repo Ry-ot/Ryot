@@ -2,7 +2,7 @@
 use crate::appearances::{SpriteSheetData, SpriteSheetDataSet};
 use crate::bevy_ryot::InternalContentState;
 use crate::position::TilePosition;
-use crate::prelude::{ContentAssets, SpriteAssets, RYOT_ANCHOR};
+use crate::prelude::*;
 use crate::{get_decompressed_file_name, SpriteSheetConfig, SPRITE_SHEET_FOLDER};
 use bevy::prelude::*;
 use bevy::utils::HashMap;
@@ -31,6 +31,11 @@ pub struct LoadedSprite {
     pub config: SpriteSheetConfig,
     pub sprite_sheet: SpriteSheetData,
     pub atlas_texture_handle: Handle<TextureAtlas>,
+}
+
+#[derive(Debug, Default, Resource)]
+pub struct LoadedSprites {
+    pub sprites: HashMap<u32, LoadedSprite>,
 }
 
 impl LoadedSprite {
@@ -63,7 +68,7 @@ impl LoadedSprite {
 /// A system helper that gets the LoadedSprite from the resources.
 /// If the sprite sheet is not loaded yet, it sends a LoadSpriteSheetTextureCommand event.
 /// It returns only the loaded sprites.
-pub fn load_sprites<C: SpriteAssets>(
+pub fn load_sprites<C: ContentAssets>(
     sprite_ids: &[u32],
     content_assets: &Res<C>,
     build_spr_sheet_texture_cmd: &mut EventWriter<LoadSpriteSheetTextureCommand>,
@@ -153,7 +158,7 @@ pub(crate) fn load_sprite_sheets_from_command<C: ContentAssets>(
 /// A system that handles the loading of sprite sheets.
 /// It listens to the SpriteSheetTextureWasLoaded event, adds the loaded texture atlas to the   
 /// atlas handles resource and stores the handle to the atlas.
-pub(crate) fn store_atlases_assets_after_loading<C: ContentAssets>(
+pub(crate) fn store_atlases_assets_after_loading<C: PreloadedContentAssets>(
     mut content_assets: ResMut<C>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
     mut sprite_sheet_texture_was_loaded: EventReader<SpriteSheetTextureWasLoaded>,
@@ -216,7 +221,7 @@ pub fn build_sprite_bundle(
 /// A system that prepares the sprite assets for use in the game.
 /// It loads the sprite sheets as atlases and stores their handles.
 /// It also determines the loading as completed and sets the internal state to Ready.
-pub(crate) fn sprites_preparer<C: ContentAssets>(
+pub(crate) fn prepare_sprites<C: PreloadedContentAssets>(
     mut content_assets: ResMut<C>,
     mut state: ResMut<NextState<InternalContentState>>,
     mut texture_atlases: ResMut<Assets<TextureAtlas>>,
@@ -256,6 +261,8 @@ pub(crate) fn sprites_preparer<C: ContentAssets>(
             let atlas_handle = texture_atlases.add(atlas.clone());
             content_assets.insert_atlas_handle(&sprite_sheet.file, atlas_handle);
         }
+
+        content_assets.sprite_sheets().clear();
     }
 
     state.set(InternalContentState::Ready);
