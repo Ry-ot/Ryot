@@ -197,22 +197,22 @@ fn update_cursor_palette_sprite<C: SpriteAssets>(
 
 fn update_cursor_visibility(
     cursor_pos: Res<CursorPos>,
+    palette_state: Res<PaletteState>,
     mut egui_ctx: EguiContexts,
     mut windows: Query<&mut Window>,
     mut cursor_query: Query<(&mut Transform, &mut Visibility), With<SelectedTile>>,
 ) {
-    if egui_ctx.ctx_mut().is_pointer_over_area() {
-        egui_ctx
-            .ctx_mut()
-            .set_cursor_icon(egui::CursorIcon::Default);
-
-        windows.single_mut().cursor.visible = true;
-        windows.single_mut().cursor.icon = CursorIcon::Default;
-
-        return;
-    }
-
     for (mut transform, mut visibility) in cursor_query.iter_mut() {
+        if egui_ctx.ctx_mut().is_pointer_over_area() || palette_state.selected_tile.is_none() {
+            *visibility = Visibility::Hidden;
+
+            windows.single_mut().cursor.visible = true;
+            windows.single_mut().cursor.icon = CursorIcon::Default;
+            egui_ctx.ctx().set_cursor_icon(egui::CursorIcon::Default);
+
+            continue;
+        }
+
         let tile_pos = TilePosition::from(cursor_pos.0);
         transform.translation = Vec3::from(tile_pos) + Vec3::new(0., 0., 128.);
 
