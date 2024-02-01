@@ -11,7 +11,8 @@ use error_handling::ErrorState;
 use ryot::prelude::*;
 
 use ryot_compass::{
-    AppPlugin, CameraPlugin, CompassContentAssets, CursorPos, PalettePlugin, PaletteState,
+    check_egui_usage, AppPlugin, CameraPlugin, CompassContentAssets, CursorPos, GUIState,
+    PalettePlugin, PaletteState,
 };
 use winit::window::Icon;
 
@@ -332,6 +333,8 @@ impl<C: SpriteAssets> Default for UIPlugin<C> {
 impl<C: AppearancesAssets + ConfigAssets + SpriteAssets> Plugin for UIPlugin<C> {
     fn build(&self, app: &mut App) {
         app.add_optional_plugin(EguiPlugin)
+            .init_resource::<GUIState>()
+            .add_systems(First, check_egui_usage)
             .init_resource::<AboutMeOpened>()
             .add_systems(
                 Update,
@@ -348,8 +351,8 @@ struct AboutMeOpened(bool);
 fn main() {
     App::new()
         .add_plugins(AppPlugin)
-        .add_plugins(CameraPlugin::<CompassContentAssets>::new())
         .add_plugins(UIPlugin::<CompassContentAssets>::new())
+        .add_plugins(CameraPlugin::<CompassContentAssets>::new())
         .add_plugins(ErrorPlugin)
         .add_plugins(PalettePlugin::<CompassContentAssets>::new())
         .add_systems(Startup, set_window_icon)

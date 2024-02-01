@@ -6,7 +6,7 @@ exclude = ["dist", "build", "assets", "credits"]
 
 [dependencies]
 ryot = { version = "0.1.0", path = "../ryot" }
-bevy_egui = "0.24.0"
+bevy_egui = { version = "0.24.0", features = ["immutable_ctx"] }
 egui = { version = "0.24.1", default-features = false, features = ["bytemuck"] }
 rand = "0.8.5"
 serde = { version = "1.0.193", features = ["derive"] }
