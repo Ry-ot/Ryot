@@ -13,21 +13,21 @@ use ryot::position::TilePosition;
 use ryot::prelude::*;
 use std::marker::PhantomData;
 
-pub struct CameraPlugin<C: ConfigAssets + MascotAssets + SpriteAssets>(PhantomData<C>);
+pub struct CameraPlugin<C: MascotAssets + SpriteAssets>(PhantomData<C>);
 
-impl<C: ConfigAssets + MascotAssets + SpriteAssets> CameraPlugin<C> {
+impl<C: MascotAssets + SpriteAssets> CameraPlugin<C> {
     pub fn new() -> Self {
         Self(PhantomData)
     }
 }
 
-impl<C: ConfigAssets + MascotAssets + SpriteAssets> Default for CameraPlugin<C> {
+impl<C: MascotAssets + SpriteAssets> Default for CameraPlugin<C> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<C: ConfigAssets + MascotAssets + SpriteAssets> Plugin for CameraPlugin<C> {
+impl<C: MascotAssets + SpriteAssets> Plugin for CameraPlugin<C> {
     fn build(&self, app: &mut App) {
         app.init_resource::<CursorPos>()
             .add_systems(
@@ -83,7 +83,7 @@ fn update_cursor_pos(
     Ok(())
 }
 
-fn spawn_camera<C: ConfigAssets + MascotAssets + SpriteAssets>(
+fn spawn_camera<C: MascotAssets + SpriteAssets>(
     content: Res<C>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
