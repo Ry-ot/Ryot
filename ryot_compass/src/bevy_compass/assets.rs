@@ -38,6 +38,9 @@ impl AppearancesAssets for CompassContentAssets {
     fn appearances(&self) -> &Handle<Appearance> {
         &self.appearances
     }
+    fn catalog_content(&self) -> &Handle<Catalog> {
+        &self.catalog_content
+    }
 
     fn prepared_appearances(&self) -> &PreparedAppearances {
         &self.prepared_appearances
@@ -45,12 +48,6 @@ impl AppearancesAssets for CompassContentAssets {
 
     fn prepared_appearances_mut(&mut self) -> &mut PreparedAppearances {
         &mut self.prepared_appearances
-    }
-}
-
-impl ConfigAssets for CompassContentAssets {
-    fn catalog_content(&self) -> &Handle<Catalog> {
-        &self.catalog_content
     }
 }
 

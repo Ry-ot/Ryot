@@ -8,12 +8,11 @@ use bevy::winit::WinitWindows;
 use bevy_egui::{EguiContexts, EguiPlugin};
 
 mod error_handling;
-use error_handling::ErrorState;
 use ryot::prelude::*;
 
 use ryot_compass::{
-    check_egui_usage, AppPlugin, CameraPlugin, CompassContentAssets, CursorPos, GUIState,
-    PalettePlugin, PaletteState,
+    check_egui_usage, gui_is_not_in_use, AppPlugin, CameraPlugin, CompassContentAssets, CursorPos,
+    GUIState, PalettePlugin, PaletteState,
 };
 use winit::window::Icon;
 
@@ -27,24 +26,14 @@ use ryot_compass::helpers::read_file;
 use std::marker::PhantomData;
 
 #[allow(clippy::too_many_arguments)]
-fn draw<C: ConfigAssets + SpriteAssets>(
+fn draw<C: SpriteAssets>(
     mut commands: Commands,
-    mut egui_ctx: EguiContexts,
     content_assets: Res<C>,
     cursor_pos: Res<CursorPos>,
     palette_state: Res<PaletteState>,
     mouse_button_input: Res<Input<MouseButton>>,
-    error_states: Res<ErrorState>,
     mut build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
 ) {
-    if egui_ctx.ctx_mut().is_pointer_over_area() {
-        return;
-    }
-
-    if error_states.has_error {
-        return;
-    }
-
     if content_assets.sprite_sheet_data_set().is_none() {
         return;
     };
@@ -324,7 +313,7 @@ impl<C: SpriteAssets> Default for UIPlugin<C> {
     }
 }
 
-impl<C: AppearancesAssets + ConfigAssets + SpriteAssets> Plugin for UIPlugin<C> {
+impl<C: AppearancesAssets + SpriteAssets> Plugin for UIPlugin<C> {
     fn build(&self, app: &mut App) {
         app.add_optional_plugin(EguiPlugin)
             .init_resource::<GUIState>()
@@ -334,7 +323,8 @@ impl<C: AppearancesAssets + ConfigAssets + SpriteAssets> Plugin for UIPlugin<C> 
                 Update,
                 (draw::<C>, ui_example::<C>)
                     .chain()
-                    .run_if(in_state(InternalContentState::Ready)),
+                    .run_if(in_state(InternalContentState::Ready))
+                    .run_if(gui_is_not_in_use()),
             );
     }
 }

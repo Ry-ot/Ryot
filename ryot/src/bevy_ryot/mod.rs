@@ -59,15 +59,11 @@ pub struct Catalog {
 /// Assets contains appearances (loaded from a *.dat file), a catalog (loaded from a *.json file),
 /// a config (loaded from a *.toml file) and a map of sprite sheets images and textures (loaded
 /// from *.png files).
-pub trait ContentAssets: AppearancesAssets + ConfigAssets + SpriteAssets {}
-
-pub trait ConfigAssets: Resource + AssetCollection + Send + Sync + 'static {
-    // Config related assets
-    fn catalog_content(&self) -> &Handle<Catalog>;
-}
+pub trait ContentAssets: AppearancesAssets + SpriteAssets {}
 
 pub trait AppearancesAssets: Resource + AssetCollection + Send + Sync + 'static {
     fn appearances(&self) -> &Handle<Appearance>;
+    fn catalog_content(&self) -> &Handle<Catalog>;
     fn prepared_appearances(&self) -> &PreparedAppearances;
     fn prepared_appearances_mut(&mut self) -> &mut PreparedAppearances;
 }
