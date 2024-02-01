@@ -3,9 +3,8 @@ use bevy::prelude::{Image, Resource, TextureAtlas};
 use bevy::utils::HashMap;
 use bevy_asset_loader::asset_collection::AssetCollection;
 use ryot::appearances::SpriteSheetDataSet;
-use ryot::bevy_ryot::{Appearance, Catalog, ConfigAsset, ContentAssets, PreparedAppearances};
+use ryot::bevy_ryot::{Appearance, Catalog, ContentAssets, PreparedAppearances};
 use ryot::prelude::*;
-use ryot::ContentConfigs;
 
 #[derive(Default)]
 pub struct AtlasCollection {
@@ -22,8 +21,6 @@ pub struct CompassContentAssets {
     appearances: Handle<Appearance>,
     #[asset(path = "catalog-content.json")]
     catalog_content: Handle<Catalog>,
-    #[asset(path = "config/.content.toml")]
-    config: Handle<ConfigAsset<ContentConfigs>>,
     prepared_appearances: PreparedAppearances,
 
     // Image related handles
@@ -54,10 +51,6 @@ impl AppearancesAssets for CompassContentAssets {
 impl ConfigAssets for CompassContentAssets {
     fn catalog_content(&self) -> &Handle<Catalog> {
         &self.catalog_content
-    }
-
-    fn config(&self) -> &Handle<ConfigAsset<ContentConfigs>> {
-        &self.config
     }
 }
 

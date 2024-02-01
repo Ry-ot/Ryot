@@ -38,10 +38,14 @@ impl ContentBuild {
     }
 
     pub fn run(self) -> Result<(), std::io::Error> {
-        println!("cargo:warning=Running content build {:?}", self);
         let path = self
             .path
+            .clone()
             .unwrap_or_else(|| assets_root_path().join(CONTENT_CONFIG_PATH));
+        println!(
+            "cargo:warning=Running content build {:?} using config {:?}",
+            &self, path
+        );
 
         let content_config = read_content_configs(path.clone());
 
