@@ -43,7 +43,7 @@ pub fn movement(
             (dimension / tile_size as f32).round() * tile_size as f32
         };
 
-        transform.translation += time.delta_seconds() * direction * 5_000.;
+        transform.translation += time.delta_seconds() * direction * 50_000.;
 
         let window = windows.single();
 

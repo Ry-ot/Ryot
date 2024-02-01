@@ -5,7 +5,7 @@ use bevy::asset::{Assets, Handle};
 use bevy::math::{Vec2, Vec3};
 use bevy::prelude::*;
 use bevy::render::mesh::{Indices, PrimitiveTopology};
-use bevy::sprite::{Anchor, MaterialMesh2dBundle};
+use bevy::sprite::MaterialMesh2dBundle;
 use bevy::window::PrimaryWindow;
 use bevy_egui::EguiContexts;
 use ryot::bevy_ryot::sprites::{load_sprites, LoadSpriteSheetTextureCommand};
@@ -58,7 +58,7 @@ fn spawn_cursor(mut commands: Commands) {
     commands.spawn((
         SpriteSheetBundle {
             sprite: TextureAtlasSprite {
-                anchor: Anchor::BottomRight,
+                anchor: RYOT_ANCHOR,
                 ..Default::default()
             },
             ..default()
@@ -97,13 +97,13 @@ fn spawn_camera<C: ConfigAssets + MascotAssets + SpriteAssets>(
     // Create vertices for the vertical lines (columns)
     let (bottom_left_tile, top_right_tile) = (TilePosition::MIN, TilePosition::MAX);
     let (bottom_left, top_right) = (Vec2::from(bottom_left_tile), Vec2::from(top_right_tile));
-    let tile_size = CONTENT_CONFIG.sprite_sheet.tile_size;
+    let tile_size = CONTENT_CONFIG.sprite_sheet.tile_size.as_vec2();
 
-    for col in bottom_left_tile.x..=top_right_tile.x {
+    for col in bottom_left_tile.x - 1..=top_right_tile.x {
         let x_offset = (col * tile_size.x as i32) as f32;
 
         positions.push([x_offset, bottom_left.y, 0.0]);
-        positions.push([x_offset, top_right.y, 0.0]);
+        positions.push([x_offset, top_right.y + tile_size.y, 0.0]);
 
         // Add colors (white for grid lines)
         colors.extend(vec![Color::WHITE.as_rgba_f32(); 2]);
@@ -114,10 +114,10 @@ fn spawn_camera<C: ConfigAssets + MascotAssets + SpriteAssets>(
     }
 
     // Create vertices for the horizontal lines (rows)
-    for row in bottom_left_tile.y..=top_right_tile.y {
-        let y_offset = ((row - 1) * tile_size.y as i32) as f32;
+    for row in bottom_left_tile.y - 1..=top_right_tile.y {
+        let y_offset = (row * tile_size.y as i32) as f32;
 
-        positions.push([bottom_left.x, y_offset, 0.0]);
+        positions.push([bottom_left.x - tile_size.x, y_offset, 0.0]);
         positions.push([top_right.x, y_offset, 0.0]);
 
         // Add colors (white for grid lines)
@@ -199,7 +199,7 @@ fn update_cursor_visibility(
     cursor_pos: Res<CursorPos>,
     mut egui_ctx: EguiContexts,
     mut windows: Query<&mut Window>,
-    mut cursor_query: Query<&mut Transform, With<SelectedTile>>,
+    mut cursor_query: Query<(&mut Transform, &mut Visibility), With<SelectedTile>>,
 ) {
     if egui_ctx.ctx_mut().is_pointer_over_area() {
         egui_ctx
@@ -212,12 +212,22 @@ fn update_cursor_visibility(
         return;
     }
 
-    for mut transform in cursor_query.iter_mut() {
+    for (mut transform, mut visibility) in cursor_query.iter_mut() {
         let tile_pos = TilePosition::from(cursor_pos.0);
         transform.translation = Vec3::from(tile_pos) + Vec3::new(0., 0., 128.);
 
-        if egui_ctx.ctx_mut().is_pointer_over_area() {
-            continue;
+        if tile_pos.is_valid() {
+            *visibility = Visibility::Visible;
+            egui_ctx.ctx_mut().set_cursor_icon(egui::CursorIcon::None);
+            windows.single_mut().cursor.icon = CursorIcon::Default;
+            windows.single_mut().cursor.visible = false;
+        } else {
+            *visibility = Visibility::Hidden;
+            egui_ctx
+                .ctx_mut()
+                .set_cursor_icon(egui::CursorIcon::NotAllowed);
+            windows.single_mut().cursor.icon = CursorIcon::NotAllowed;
+            windows.single_mut().cursor.visible = true;
         }
     }
 }
