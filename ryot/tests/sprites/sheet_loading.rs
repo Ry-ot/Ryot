@@ -1,6 +1,5 @@
 use image::RgbaImage;
 use rstest::{fixture, rstest};
-use ryot::prelude::tile_grid::TileGrid;
 use ryot::prelude::{
     decompress_sprite_sheet, decompress_sprite_sheets, load_sprite_sheet_image, ContentConfigs,
     SpriteSheetConfig, SPRITE_SHEET_FOLDER,
@@ -61,7 +60,6 @@ fn test_decompress_sprite_sheets(#[from(image_fixture)] expected: RgbaImage) {
             destination_path: PathBuf::from("tests/fixtures"),
         },
         sprite_sheet: SpriteSheetConfig::cip_sheet(),
-        grid: TileGrid::default(),
     };
 
     decompress_sprite_sheets(

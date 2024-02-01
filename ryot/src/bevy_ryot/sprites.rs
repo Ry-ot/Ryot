@@ -1,7 +1,7 @@
 //! Sprite loading and drawing.
 use crate::appearances::{SpriteSheetData, SpriteSheetDataSet};
 use crate::bevy_ryot::InternalContentState;
-use crate::prelude::tile_grid::TileGrid;
+use crate::position::TilePosition;
 use crate::prelude::{ContentAssets, SpriteAssets};
 use crate::{get_decompressed_file_name, SpriteSheetConfig, SPRITE_SHEET_FOLDER};
 use bevy::prelude::*;
@@ -181,16 +181,10 @@ pub(crate) fn store_atlases_assets_after_loading<C: ContentAssets>(
 }
 
 /// Primitive draw function, to be replaced with a more sophisticated drawing system.
-pub fn draw_sprite(pos: Vec3, sprite: &LoadedSprite, commands: &mut Commands, tile_grid: TileGrid) {
-    let tile_pos = tile_grid.get_display_position_from_tile_pos(pos);
-
-    let Some(tile_pos) = tile_pos else {
-        return;
-    };
-
+pub fn draw_sprite(pos: TilePosition, sprite: &LoadedSprite, commands: &mut Commands) {
     commands.spawn(build_sprite_bundle(
         sprite.atlas_texture_handle.clone(),
-        tile_pos,
+        pos.into(),
         sprite.get_sprite_index(),
     ));
 }

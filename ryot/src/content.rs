@@ -1,6 +1,5 @@
 use std::sync::LazyLock;
 
-use crate::tile_grid::TileGrid;
 use crate::{error, SpriteSheetConfig};
 use config::Config;
 use serde::Deserialize;
@@ -20,7 +19,6 @@ pub static CONTENT_CONFIG: LazyLock<ContentConfigs> = LazyLock::new(|| {
 pub struct ContentConfigs {
     pub directories: DirectoryConfigs,
     pub sprite_sheet: SpriteSheetConfig,
-    pub grid: TileGrid,
 }
 
 #[derive(Debug, Clone, Deserialize)]

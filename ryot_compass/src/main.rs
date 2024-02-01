@@ -1,4 +1,5 @@
 use bevy::app::AppExit;
+use ryot::position::TilePosition;
 use std::io::Cursor;
 
 use bevy::prelude::*;
@@ -63,16 +64,8 @@ fn draw<C: ConfigAssets + SpriteAssets>(
     };
 
     if mouse_button_input.pressed(MouseButton::Left) {
-        let tile_grid = CONTENT_CONFIG.grid;
-
-        let pos = tile_grid.get_tile_pos_from_display_pos(cursor_pos.0);
-
-        draw_sprite(
-            Vec3::new(pos.x, pos.y, 1.1),
-            sprite,
-            &mut commands,
-            tile_grid,
-        );
+        let pos = TilePosition::from(cursor_pos.0);
+        draw_sprite(pos.with_z(2), sprite, &mut commands);
         debug!("Tile: {:?} drawn", pos);
     }
 
