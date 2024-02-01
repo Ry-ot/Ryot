@@ -1,6 +1,7 @@
 use crate::sprites::LoadedSprite;
 use crate::{Palette, TilesetCategory};
 use bevy::prelude::*;
+use bevy::utils::HashMap;
 use bevy_egui::EguiContexts;
 use egui::load::SizedTexture;
 use egui::{Align, TextureId, Ui};
@@ -15,7 +16,7 @@ pub struct PaletteState {
     pub tile_padding: f32,
     pub selected_tile: Option<u32>,
     pub selected_category: TilesetCategory,
-    pub category_sprites: Vec<u32>,
+    pub category_sprites: HashMap<u32, u32>,
     pub visible_rows: Range<usize>,
     pub loaded_images: Vec<(LoadedSprite, Handle<Image>, egui::Vec2, egui::Rect)>,
 }
@@ -30,7 +31,7 @@ impl Default for PaletteState {
             tile_padding: 15.,
             selected_tile: None,
             selected_category: TilesetCategory::Raw,
-            category_sprites: vec![],
+            category_sprites: HashMap::default(),
             visible_rows: Range { start: 0, end: 10 },
             loaded_images: vec![],
         }
@@ -202,8 +203,16 @@ pub fn draw_palette_items(
                                         .clone()
                                         .fit_to_exact_size(egui::Vec2::new(size, size));
 
+                                    let Some(content_id) = palette_state
+                                        .category_sprites
+                                        .get(&sprite.sprite_id)
+                                        .copied()
+                                    else {
+                                        return;
+                                    };
+
                                     let selected = match palette_state.selected_tile {
-                                        Some(selected_index) => selected_index == sprite.sprite_id,
+                                        Some(selected_index) => selected_index == content_id,
                                         _ => false,
                                     };
 
@@ -211,16 +220,16 @@ pub fn draw_palette_items(
                                         ui.add(egui::ImageButton::new(tile).selected(selected));
 
                                     let ui_button = ui_button
-                                        .on_hover_text(format!("{}", sprite.sprite_id))
+                                        .on_hover_text(format!("{}", content_id))
                                         .on_hover_cursor(egui::CursorIcon::PointingHand);
 
                                     if ui_button.clicked() {
-                                        if palette_state.selected_tile == Some(sprite.sprite_id) {
+                                        if palette_state.selected_tile == Some(content_id) {
                                             palette_state.selected_tile = None;
                                         } else {
-                                            palette_state.selected_tile = Some(sprite.sprite_id);
+                                            palette_state.selected_tile = Some(content_id);
                                         }
-                                        debug!("Tile: {:?} selected", sprite.sprite_id);
+                                        debug!("Tile: {:?} selected", content_id);
                                     }
 
                                     ui.add_space(row_padding);

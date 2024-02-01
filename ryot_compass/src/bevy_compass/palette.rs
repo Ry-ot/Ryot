@@ -4,26 +4,25 @@ use bevy::log::warn;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use bevy_egui::EguiPlugin;
-use itertools::Itertools;
 use ryot::bevy_ryot::sprites::{load_sprites, LoadSpriteSheetTextureCommand};
 use ryot::prelude::*;
 use std::marker::PhantomData;
 
-pub struct PalettePlugin<C: AppearancesAssets + SpriteAssets>(PhantomData<C>);
+pub struct PalettePlugin<C: ContentAssets>(PhantomData<C>);
 
-impl<C: AppearancesAssets + SpriteAssets> PalettePlugin<C> {
+impl<C: ContentAssets> PalettePlugin<C> {
     pub fn new() -> Self {
         Self(PhantomData)
     }
 }
 
-impl<C: AppearancesAssets + SpriteAssets> Default for PalettePlugin<C> {
+impl<C: ContentAssets> Default for PalettePlugin<C> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<C: AppearancesAssets + SpriteAssets> Plugin for PalettePlugin<C> {
+impl<C: ContentAssets> Plugin for PalettePlugin<C> {
     fn build(&self, app: &mut App) {
         app.add_optional_plugin(EguiPlugin)
             .init_resource::<Palette>()
@@ -78,10 +77,7 @@ impl Palette {
     }
 }
 
-fn setup_categories<C: AppearancesAssets + SpriteAssets>(
-    content_assets: Res<C>,
-    mut palettes: ResMut<Palette>,
-) {
+fn setup_categories<C: ContentAssets>(content_assets: Res<C>, mut palettes: ResMut<Palette>) {
     let Some(objects) = content_assets
         .prepared_appearances()
         .get_group(AppearanceGroup::Object)
@@ -95,7 +91,7 @@ fn setup_categories<C: AppearancesAssets + SpriteAssets>(
     });
 }
 
-pub fn update_palette_category<C: AppearancesAssets + SpriteAssets>(
+pub fn update_palette_category<C: ContentAssets>(
     palettes: Res<Palette>,
     content_assets: Res<C>,
     mut palette_state: ResMut<PaletteState>,
@@ -109,33 +105,27 @@ pub fn update_palette_category<C: AppearancesAssets + SpriteAssets>(
         return;
     }
 
-    let sprite_ids: Vec<u32> = palettes
+    let sprite_ids: Vec<(u32, u32)> = palettes
         .get_for_category(&palette_state.selected_category)
         .iter()
         .filter_map(|value| {
-            Some(
-                *content_assets
-                    .prepared_appearances()
-                    .get_for_group(AppearanceGroup::Object, *value)?
-                    .frame_group
-                    .first()?
-                    .sprite_info
-                    .clone()?
-                    .sprite_id
-                    .first()?,
-            )
+            let sprite_id = content_assets
+                .prepared_appearances()
+                .get_for_group(AppearanceGroup::Object, *value)?
+                .main_sprite_id;
+
+            Some((sprite_id, *value))
         })
-        .unique()
         .collect();
 
-    sprite_ids.iter().for_each(|id| {
-        palette_state.category_sprites.push(*id);
+    sprite_ids.iter().for_each(|(sprite_id, content_id)| {
+        palette_state
+            .category_sprites
+            .insert(*sprite_id, *content_id);
     });
-
-    palette_state.category_sprites.sort();
 }
 
-pub fn update_palette_items<C: AppearancesAssets + SpriteAssets>(
+pub fn update_palette_items<C: ContentAssets>(
     palettes: Res<Palette>,
     content_assets: Res<C>,
     mut palette_state: ResMut<PaletteState>,
@@ -154,7 +144,15 @@ pub fn update_palette_items<C: AppearancesAssets + SpriteAssets>(
         .end()
         .min(palette_state.category_sprites.len());
 
-    let sprite_ids = &palette_state.category_sprites[begin..end].to_vec();
+    let mut sprite_ids = palette_state
+        .category_sprites
+        .keys()
+        .copied()
+        .collect::<Vec<_>>();
+
+    sprite_ids.sort();
+
+    let sprite_ids = &sprite_ids[begin..end];
 
     if palette_state
         .loaded_images

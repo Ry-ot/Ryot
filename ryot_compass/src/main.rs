@@ -19,14 +19,19 @@ use winit::window::Icon;
 use rfd::AsyncFileDialog;
 
 use crate::error_handling::ErrorPlugin;
+use bevy::utils::HashMap;
 use bevy::window::PrimaryWindow;
+use ryot::drawing::TileContent;
 use ryot::prelude::sprites::load_sprites;
 use ryot::prelude::sprites::*;
 use ryot_compass::helpers::read_file;
 use std::marker::PhantomData;
 
+#[derive(Debug, Default, Resource)]
+pub struct MapTiles(HashMap<TilePosition, TileContent>);
+
 #[allow(clippy::too_many_arguments)]
-fn draw<C: SpriteAssets>(
+fn draw<C: ContentAssets>(
     mut commands: Commands,
     content_assets: Res<C>,
     cursor_pos: Res<CursorPos>,
@@ -34,13 +39,29 @@ fn draw<C: SpriteAssets>(
     mouse_button_input: Res<Input<MouseButton>>,
     mut build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
 ) {
+    /*
+       When I click I don't render the sprite automatically, I just add the sprite to a drawing buffer
+       The drawing buffer is smart, it will only add sprites that are allowed to the buffer.
+       Every frame the buffer is checked and the sprites needed are loaded,
+       The rendering system will then check if the buffer has loaded sprites and render them.
+    */
     if content_assets.sprite_sheet_data_set().is_none() {
+        warn!("Trying to draw a sprite without any loaded content");
         return;
     };
 
-    let Some(sprite_id) = palette_state.selected_tile else {
+    let Some(content_id) = palette_state.selected_tile else {
         return;
     };
+
+    let Some(prepared_appearance) = content_assets
+        .prepared_appearances()
+        .get_for_group(AppearanceGroup::Object, content_id)
+    else {
+        return;
+    };
+
+    let sprite_id = prepared_appearance.main_sprite_id;
 
     let sprites = load_sprites(
         &[sprite_id],
@@ -112,7 +133,7 @@ fn draw<C: SpriteAssets>(
     // }
 }
 
-fn ui_example<C: SpriteAssets>(
+fn ui_example<C: ContentAssets>(
     content_assets: Res<C>,
     mut egui_ctx: EguiContexts,
     mut exit: EventWriter<AppExit>,
@@ -299,21 +320,21 @@ pub fn setup_window(
     primary_window.set_window_icon(Some(icon));
 }
 
-pub struct UIPlugin<C: SpriteAssets>(PhantomData<C>);
+pub struct UIPlugin<C: ContentAssets>(PhantomData<C>);
 
-impl<C: SpriteAssets> UIPlugin<C> {
+impl<C: ContentAssets> UIPlugin<C> {
     pub fn new() -> Self {
         Self(PhantomData)
     }
 }
 
-impl<C: SpriteAssets> Default for UIPlugin<C> {
+impl<C: ContentAssets> Default for UIPlugin<C> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<C: AppearancesAssets + SpriteAssets> Plugin for UIPlugin<C> {
+impl<C: ContentAssets> Plugin for UIPlugin<C> {
     fn build(&self, app: &mut App) {
         app.add_optional_plugin(EguiPlugin)
             .init_resource::<GUIState>()
@@ -334,6 +355,7 @@ struct AboutMeOpened(bool);
 
 fn main() {
     App::new()
+        .init_resource::<LoadedSprites>()
         .add_plugins(AppPlugin)
         .add_plugins(UIPlugin::<CompassContentAssets>::new())
         .add_plugins(CameraPlugin::<CompassContentAssets>::new())

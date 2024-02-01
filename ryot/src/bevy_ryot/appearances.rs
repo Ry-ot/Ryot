@@ -1,10 +1,9 @@
 //! # Appearances
 //! This module contains the code to load the appearances.dat file.
 //! This file contains the information needed to load sprites and other content.
-
 use crate::appearances;
-use crate::appearances::Appearances;
-use crate::bevy_ryot::ContentAssets;
+use crate::appearances::{AppearanceFlags, Appearances, FrameGroup};
+use crate::prelude::*;
 use bevy::asset::io::Reader;
 use bevy::asset::{Asset, AssetLoader, AsyncReadExt, BoxedFuture, LoadContext};
 use bevy::prelude::*;
@@ -71,8 +70,33 @@ impl AssetLoader for AppearanceAssetLoader {
 }
 
 #[derive(Debug, Default)]
+pub struct PreparedAppearance {
+    pub id: u32,
+    pub name: String,
+    pub main_sprite_id: u32,
+    pub frame_groups: Vec<FrameGroup>,
+    pub flags: Option<AppearanceFlags>,
+}
+
+impl From<appearances::Appearance> for Option<PreparedAppearance> {
+    fn from(item: appearances::Appearance) -> Self {
+        let id = item.id?;
+        let main_frame = item.frame_group.first()?.clone();
+        let main_sprite_id = *main_frame.sprite_info?.sprite_id.first()?;
+
+        Some(PreparedAppearance {
+            id: item.id?,
+            name: item.name.unwrap_or(id.to_string()),
+            main_sprite_id,
+            frame_groups: item.frame_group.clone(),
+            flags: item.flags.clone(),
+        })
+    }
+}
+
+#[derive(Debug, Default)]
 pub struct PreparedAppearances {
-    groups: HashMap<AppearanceGroup, HashMap<u32, appearances::Appearance>>,
+    groups: HashMap<AppearanceGroup, HashMap<u32, PreparedAppearance>>,
 }
 
 impl PreparedAppearances {
@@ -81,21 +105,18 @@ impl PreparedAppearances {
     }
 
     pub fn insert(&mut self, group: AppearanceGroup, id: u32, appearance: appearances::Appearance) {
-        self.groups.entry(group).or_default().insert(id, appearance);
+        let prepared: Option<PreparedAppearance> = appearance.into();
+
+        if let Some(prepared) = prepared {
+            self.groups.entry(group).or_default().insert(id, prepared);
+        };
     }
 
-    pub fn get_group(
-        &self,
-        group: AppearanceGroup,
-    ) -> Option<&HashMap<u32, appearances::Appearance>> {
+    pub fn get_group(&self, group: AppearanceGroup) -> Option<&HashMap<u32, PreparedAppearance>> {
         self.groups.get(&group)
     }
 
-    pub fn get_for_group(
-        &self,
-        group: AppearanceGroup,
-        id: u32,
-    ) -> Option<&appearances::Appearance> {
+    pub fn get_for_group(&self, group: AppearanceGroup, id: u32) -> Option<&PreparedAppearance> {
         self.groups.get(&group)?.get(&id)
     }
 }
@@ -126,12 +147,13 @@ impl AppearanceGroup {
 ///
 /// A prepared appearance must have at least an id and a main sprite id.
 /// Appearances that don't have at least these two fields are ignored.
-pub(crate) fn prepare_appearances<C: ContentAssets>(
+pub(crate) fn prepare_appearances<C: PreloadedContentAssets>(
     mut content_assets: ResMut<C>,
-    appearances: Res<Assets<Appearance>>,
+    mut appearances_assets: ResMut<Assets<Appearance>>,
 ) {
     debug!("Preparing appearances");
-    let Some(Appearance(appearances)) = appearances.get(content_assets.appearances().id()) else {
+    let Some(Appearance(appearances)) = appearances_assets.get(content_assets.appearances().id())
+    else {
         panic!("No config found for content");
     };
 
@@ -154,6 +176,8 @@ pub(crate) fn prepare_appearances<C: ContentAssets>(
             group.label()
         );
     }
+
+    appearances_assets.remove(content_assets.appearances().id());
 
     debug!("Appearances prepared");
 }

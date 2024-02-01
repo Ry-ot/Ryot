@@ -1,4 +1,4 @@
-use crate::bevy_compass::MascotAssets;
+use crate::bevy_compass::CompassAssets;
 use crate::helpers::camera::movement;
 use crate::PaletteState;
 use bevy::asset::{Assets, Handle};
@@ -13,21 +13,21 @@ use ryot::position::TilePosition;
 use ryot::prelude::*;
 use std::marker::PhantomData;
 
-pub struct CameraPlugin<C: MascotAssets + SpriteAssets>(PhantomData<C>);
+pub struct CameraPlugin<C: CompassAssets>(PhantomData<C>);
 
-impl<C: MascotAssets + SpriteAssets> CameraPlugin<C> {
+impl<C: CompassAssets> CameraPlugin<C> {
     pub fn new() -> Self {
         Self(PhantomData)
     }
 }
 
-impl<C: MascotAssets + SpriteAssets> Default for CameraPlugin<C> {
+impl<C: CompassAssets> Default for CameraPlugin<C> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<C: MascotAssets + SpriteAssets> Plugin for CameraPlugin<C> {
+impl<C: CompassAssets> Plugin for CameraPlugin<C> {
     fn build(&self, app: &mut App) {
         app.init_resource::<CursorPos>()
             .add_systems(
@@ -83,7 +83,7 @@ fn update_cursor_pos(
     Ok(())
 }
 
-fn spawn_camera<C: MascotAssets + SpriteAssets>(
+fn spawn_camera<C: CompassAssets>(
     content: Res<C>,
     mut commands: Commands,
     mut meshes: ResMut<Assets<Mesh>>,
@@ -154,7 +154,7 @@ fn spawn_camera<C: MascotAssets + SpriteAssets>(
     });
 }
 
-fn update_cursor_palette_sprite<C: SpriteAssets>(
+fn update_cursor_palette_sprite<C: ContentAssets>(
     content_assets: Res<C>,
     palette_state: Res<PaletteState>,
     mut cursor_query: Query<(
@@ -164,9 +164,18 @@ fn update_cursor_palette_sprite<C: SpriteAssets>(
     )>,
     mut build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
 ) {
-    let Some(sprite_id) = palette_state.selected_tile else {
+    let Some(content_id) = palette_state.selected_tile else {
         return;
     };
+
+    let Some(prepared_appearance) = content_assets
+        .prepared_appearances()
+        .get_for_group(AppearanceGroup::Object, content_id)
+    else {
+        return;
+    };
+
+    let sprite_id = prepared_appearance.main_sprite_id;
 
     for (mut sprite, mut atlas_handle, mut selected_tile) in cursor_query.iter_mut() {
         if let Some((index, handle)) = &selected_tile.0 {

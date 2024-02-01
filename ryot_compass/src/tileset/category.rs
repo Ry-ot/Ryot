@@ -1,5 +1,6 @@
 use egui::WidgetText;
 use ryot::appearances::{Appearance, AppearanceFlags, ItemCategory};
+use ryot::prelude::*;
 use std::cmp::Ordering;
 use strum_macros::{EnumCount, EnumIter};
 
@@ -103,6 +104,16 @@ impl From<&ItemCategory> for TilesetCategory {
 
 impl From<&Appearance> for TilesetCategory {
     fn from(appearance: &Appearance) -> Self {
+        if let Some(flags) = &appearance.flags {
+            return flags.into();
+        }
+
+        TilesetCategory::Miscellaneous
+    }
+}
+
+impl From<&PreparedAppearance> for TilesetCategory {
+    fn from(appearance: &PreparedAppearance) -> Self {
         if let Some(flags) = &appearance.flags {
             return flags.into();
         }

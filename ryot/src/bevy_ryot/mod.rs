@@ -18,10 +18,7 @@ use crate::bevy_ryot::sprites::LoadSpriteSheetTextureCommand;
 use crate::CONTENT_CONFIG;
 use bevy::app::{App, Plugin, Update};
 use bevy::asset::{Asset, Assets, Handle};
-use bevy::prelude::{
-    debug, default, Image, NextState, OnEnter, Res, ResMut, Resource, States, TextureAtlas,
-    TypePath, Window, WindowPlugin,
-};
+use bevy::prelude::*;
 use bevy::sprite::Anchor;
 use bevy::utils::HashMap;
 use bevy_asset_loader::asset_collection::AssetCollection;
@@ -52,29 +49,28 @@ pub struct Catalog {
     pub content: Vec<ContentType>,
 }
 
-/// A trait that represents the content assets of a game.
-/// It expects the type to implement AssetCollection and Resource.
-/// It's a Bevy resource that holds the handles to the assets loaded by bevy_asset_loader.
-///
-/// Assets contains appearances (loaded from a *.dat file), a catalog (loaded from a *.json file),
-/// a config (loaded from a *.toml file) and a map of sprite sheets images and textures (loaded
-/// from *.png files).
-pub trait ContentAssets: AppearancesAssets + SpriteAssets {}
+/// A trait that represents Preloaded and Content assets.
+/// Most of the PreloadedAssets are not directly available to the game.
+/// They are only used to prepare the ContentAssets and then discarded.
+/// That's why there is a separation between PreloadedAssets and ContentAssets.
+pub trait PreloadedContentAssets: PreloadedAssets + ContentAssets {}
 
-pub trait AppearancesAssets: Resource + AssetCollection + Send + Sync + 'static {
+/// A trait that represents assets that are preloaded within ryot.
+/// It contains preloaded assets and mutable preparation methods for the ContentAssets.
+pub trait PreloadedAssets: Resource + AssetCollection + Send + Sync + 'static {
     fn appearances(&self) -> &Handle<Appearance>;
     fn catalog_content(&self) -> &Handle<Catalog>;
-    fn prepared_appearances(&self) -> &PreparedAppearances;
     fn prepared_appearances_mut(&mut self) -> &mut PreparedAppearances;
+    fn sprite_sheets(&mut self) -> &mut HashMap<String, Handle<Image>>;
+    fn set_sprite_sheets_data(&mut self, sprite_sheet_set: SpriteSheetDataSet);
+    fn insert_atlas_handle(&mut self, file: &str, handle: Handle<TextureAtlas>);
 }
 
-pub trait SpriteAssets: Resource + AssetCollection + Send + Sync + 'static {
-    fn sprite_sheets(&self) -> &HashMap<String, Handle<Image>>;
+/// The main ContentAssets of a Ryot game, is prepared by preparer systems
+/// during the loading process and is used by the game to access the content.
+pub trait ContentAssets: Resource + Send + Sync + 'static {
+    fn prepared_appearances(&self) -> &PreparedAppearances;
     fn sprite_sheet_data_set(&self) -> &Option<SpriteSheetDataSet>;
-    fn set_sprite_sheets_data(&mut self, sprite_sheet_set: SpriteSheetDataSet);
-
-    fn atlas_handles(&self) -> &HashMap<String, Handle<TextureAtlas>>;
-    fn insert_atlas_handle(&mut self, file: &str, handle: Handle<TextureAtlas>);
     fn get_atlas_handle(&self, file: &str) -> Option<&Handle<TextureAtlas>>;
 }
 
@@ -84,21 +80,21 @@ pub trait SpriteAssets: Resource + AssetCollection + Send + Sync + 'static {
 ///
 /// It also manages the loading state of the content assets, the lifecycle of the content
 /// and the events that allow lazy loading of sprites.
-pub struct ContentPlugin<C: ContentAssets>(PhantomData<C>);
+pub struct ContentPlugin<C: PreloadedContentAssets>(PhantomData<C>);
 
-impl<C: ContentAssets> ContentPlugin<C> {
+impl<C: PreloadedContentAssets> ContentPlugin<C> {
     pub fn new() -> Self {
         Self(PhantomData)
     }
 }
 
-impl<C: ContentAssets> Default for ContentPlugin<C> {
+impl<C: PreloadedContentAssets> Default for ContentPlugin<C> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<C: ContentAssets + Default> Plugin for ContentPlugin<C> {
+impl<C: PreloadedContentAssets + Default> Plugin for ContentPlugin<C> {
     fn build(&self, app: &mut App) {
         app.init_resource::<C>()
             .add_plugins(JsonAssetPlugin::<Catalog>::new(&["json"]))
@@ -114,7 +110,7 @@ impl<C: ContentAssets + Default> Plugin for ContentPlugin<C> {
             )
             .add_systems(
                 OnEnter(InternalContentState::PreparingSprites),
-                sprites::sprites_preparer::<C>,
+                sprites::prepare_sprites::<C>,
             )
             .add_event::<LoadSpriteSheetTextureCommand>()
             .add_event::<sprites::SpriteSheetTextureWasLoaded>()
@@ -128,8 +124,8 @@ impl<C: ContentAssets + Default> Plugin for ContentPlugin<C> {
 /// a way that the game can use them.
 ///
 /// This is the last step of the content loading process, triggering the sprite loading process.
-fn prepare_content<C: ContentAssets>(
-    contents: Res<Assets<Catalog>>,
+fn prepare_content<C: PreloadedContentAssets>(
+    mut contents: ResMut<Assets<Catalog>>,
     mut content_assets: ResMut<C>,
     mut state: ResMut<NextState<InternalContentState>>,
 ) {
@@ -145,6 +141,8 @@ fn prepare_content<C: ContentAssets>(
     ));
 
     state.set(InternalContentState::PreparingSprites);
+
+    contents.remove(content_assets.catalog_content().id());
 
     debug!("Finished preparing content");
 }
