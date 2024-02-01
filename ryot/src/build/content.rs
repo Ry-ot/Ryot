@@ -38,6 +38,8 @@ impl ContentBuild {
     }
 
     pub fn run(self) -> Result<(), std::io::Error> {
+        println!("cargo:warning=Running content build {:?}", self);
+
         let path = self
             .path
             .clone()

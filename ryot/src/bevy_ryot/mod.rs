@@ -22,11 +22,14 @@ use bevy::prelude::{
     debug, default, Image, NextState, OnEnter, Res, ResMut, Resource, States, TextureAtlas,
     TypePath, Window, WindowPlugin,
 };
+use bevy::sprite::Anchor;
 use bevy::utils::HashMap;
 use bevy_asset_loader::asset_collection::AssetCollection;
 use bevy_asset_loader::loading_state::{LoadingState, LoadingStateAppExt};
 use bevy_asset_loader::prelude::*;
 use bevy_common_assets::json::JsonAssetPlugin;
+
+pub static RYOT_ANCHOR: Anchor = Anchor::BottomRight;
 
 /// The states that the content loading process can be in.
 /// This is used to track the progress of the content loading process.

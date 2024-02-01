@@ -1,14 +1,7 @@
 use std::ops::Deref;
-use thiserror::Error;
 
 use glam::{IVec3, UVec2, Vec2, Vec3};
 use serde::{Deserialize, Serialize};
-
-#[derive(Error, Debug, PartialEq)]
-pub enum TilePositionError {
-    #[error("Tile position is out of bounds")]
-    OutOfBounds,
-}
 
 /// A 2d position in the tile grid. This is is not the position of the tile on
 /// the screen, because it doesn't take into account the tile size. Z is used to
@@ -22,20 +15,20 @@ impl TilePosition {
     /// The maximum possible tile position. This has to be something that when multiplied by the tile size does not overflow f32.
     pub const MAX: TilePosition = TilePosition(IVec3::new(i16::MAX as i32, i16::MAX as i32, 0));
 
+    pub const ZERO: TilePosition = TilePosition(IVec3::ZERO);
+
+    pub const BOTTOM_RIGHT_OFFSET: Vec2 = Vec2::new(0., -1.);
+
     pub fn new(x: i32, y: i32, z: i32) -> Self {
         Self(IVec3::new(x, y, z))
     }
 
     pub fn with_z(self, z: i32) -> Self {
-        Self(self.0 * IVec3::new(1, 1, 0) + IVec3::new(0, 0, z))
+        Self(self.0.truncate().extend(z))
     }
 
-    pub fn validate(self) -> Result<Self, TilePositionError> {
-        if self.clamp(Self::MIN.0, Self::MAX.0) == *self {
-            Ok(self)
-        } else {
-            Err(TilePositionError::OutOfBounds)
-        }
+    pub fn is_valid(self) -> bool {
+        self.clamp(Self::MIN.0, Self::MAX.0).truncate() == self.truncate()
     }
 }
 
@@ -55,14 +48,12 @@ impl From<Vec2> for TilePosition {
                 .as_ivec2()
                 .extend(0),
         )
-        .validate()
-        .unwrap()
     }
 }
 
 impl From<TilePosition> for Vec2 {
     fn from(tile_pos: TilePosition) -> Self {
-        (tile_pos.as_vec3().truncate() + Vec2::new(0., -1.)) * tile_size().as_vec2()
+        (tile_pos.as_vec3().truncate() + TilePosition::BOTTOM_RIGHT_OFFSET) * tile_size().as_vec2()
     }
 }
 

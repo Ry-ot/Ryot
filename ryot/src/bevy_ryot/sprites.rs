@@ -2,10 +2,9 @@
 use crate::appearances::{SpriteSheetData, SpriteSheetDataSet};
 use crate::bevy_ryot::InternalContentState;
 use crate::position::TilePosition;
-use crate::prelude::{ContentAssets, SpriteAssets};
+use crate::prelude::{ContentAssets, SpriteAssets, RYOT_ANCHOR};
 use crate::{get_decompressed_file_name, SpriteSheetConfig, SPRITE_SHEET_FOLDER};
 use bevy::prelude::*;
-use bevy::sprite::Anchor;
 use bevy::utils::HashMap;
 use std::path::PathBuf;
 
@@ -182,6 +181,10 @@ pub(crate) fn store_atlases_assets_after_loading<C: ContentAssets>(
 
 /// Primitive draw function, to be replaced with a more sophisticated drawing system.
 pub fn draw_sprite(pos: TilePosition, sprite: &LoadedSprite, commands: &mut Commands) {
+    if !pos.is_valid() {
+        return;
+    }
+
     commands.spawn(build_sprite_bundle(
         sprite.atlas_texture_handle.clone(),
         pos.into(),
@@ -202,7 +205,7 @@ pub fn build_sprite_bundle(
         },
         sprite: TextureAtlasSprite {
             index,
-            anchor: Anchor::BottomRight,
+            anchor: RYOT_ANCHOR,
             ..Default::default()
         },
         texture_atlas: handle,

@@ -1,4 +1,4 @@
-use crate::position::{TilePosition, TilePositionError};
+use crate::position::TilePosition;
 use glam::Vec2;
 use rstest::rstest;
 
@@ -33,17 +33,14 @@ fn test_position_from_screen_vec2(#[case] input: (f32, f32), #[case] expected: (
 }
 
 #[rstest]
-#[case((0, 0), Ok(TilePosition::new(0, 0, 0)))]
-#[case((i32::MIN, i32::MIN), Err(TilePositionError::OutOfBounds))]
-#[case((i32::MAX, i32::MAX), Err(TilePositionError::OutOfBounds))]
-#[case((i32::MIN, 0), Err(TilePositionError::OutOfBounds))]
-#[case((0, i32::MIN), Err(TilePositionError::OutOfBounds))]
-#[case((i16::MAX as i32, 0), Ok(TilePosition::new(i16::MAX as i32, 0, 0)))]
-#[case((0, i16::MAX as i32), Ok(TilePosition::new(0, i16::MAX as i32, 0)))]
-fn test_validate(
-    #[case] input: (i32, i32),
-    #[case] expected: Result<TilePosition, TilePositionError>,
-) {
+#[case((0, 0), true)]
+#[case((i32::MIN, i32::MIN), false)]
+#[case((i32::MAX, i32::MAX), false)]
+#[case((i32::MIN, 0), false)]
+#[case((0, i32::MIN), false)]
+#[case((i16::MAX as i32, 0), true)]
+#[case((0, i16::MAX as i32), true)]
+fn test_validate(#[case] input: (i32, i32), #[case] expected: bool) {
     let position = TilePosition::new(input.0, input.1, 0);
-    assert_eq!(position.validate(), expected);
+    assert_eq!(position.is_valid(), expected);
 }
