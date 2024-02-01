@@ -215,7 +215,11 @@ pub fn draw_palette_items(
                                         .on_hover_cursor(egui::CursorIcon::PointingHand);
 
                                     if ui_button.clicked() {
-                                        palette_state.selected_tile = Some(sprite.sprite_id);
+                                        if palette_state.selected_tile == Some(sprite.sprite_id) {
+                                            palette_state.selected_tile = None;
+                                        } else {
+                                            palette_state.selected_tile = Some(sprite.sprite_id);
+                                        }
                                         debug!("Tile: {:?} selected", sprite.sprite_id);
                                     }
 
