@@ -1,3 +1,4 @@
+use bevy::prelude::info;
 use std::ops::Deref;
 
 use glam::{IVec3, UVec2, Vec2, Vec3};
@@ -59,10 +60,13 @@ impl From<TilePosition> for Vec2 {
 
 impl From<TilePosition> for Vec3 {
     fn from(tile_pos: TilePosition) -> Self {
+        let pos = Vec2::from(tile_pos);
+        let weight = u16::MAX as f32;
+
         // z for 2d sprites define the rendering order, for 45 degrees top-down
         // perspective we always want right bottom items to be drawn on top.
-        Vec2::from(tile_pos)
-            .extend((tile_pos.z + (tile_pos.x + tile_pos.y) / u16::MAX as i32) as f32)
+        // Calculations must be done in f32 otherwise decimals are lost.
+        Vec2::from(tile_pos).extend(tile_pos.z as f32 + 1. + pos.x / weight - pos.y / weight)
     }
 }
 
