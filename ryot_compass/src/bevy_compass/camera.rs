@@ -8,7 +8,7 @@ use bevy::render::mesh::{Indices, PrimitiveTopology};
 use bevy::sprite::MaterialMesh2dBundle;
 use bevy::window::PrimaryWindow;
 use bevy_egui::EguiContexts;
-use ryot::bevy_ryot::sprites::{load_sprites, LoadSpriteSheetTextureCommand};
+use ryot::bevy_ryot::sprites::{load_sprites, SpritesToBeLoaded};
 use ryot::position::TilePosition;
 use ryot::prelude::*;
 use std::marker::PhantomData;
@@ -162,7 +162,7 @@ fn update_cursor_palette_sprite<C: ContentAssets>(
         &mut Handle<TextureAtlas>,
         &mut SelectedTile,
     )>,
-    mut build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
+    mut sprites_to_be_loaded: ResMut<SpritesToBeLoaded>,
 ) {
     let Some(content_id) = palette_state.selected_tile else {
         return;
@@ -184,11 +184,7 @@ fn update_cursor_palette_sprite<C: ContentAssets>(
             }
         }
 
-        let sprites = load_sprites(
-            &[sprite_id],
-            &content_assets,
-            &mut build_spr_sheet_texture_cmd,
-        );
+        let sprites = load_sprites(&[sprite_id], &content_assets, &mut sprites_to_be_loaded);
 
         let Some(new_sprite) = sprites.first() else {
             continue;

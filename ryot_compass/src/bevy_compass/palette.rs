@@ -4,7 +4,7 @@ use bevy::log::warn;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use bevy_egui::EguiPlugin;
-use ryot::bevy_ryot::sprites::{load_sprites, LoadSpriteSheetTextureCommand};
+use ryot::bevy_ryot::sprites::{load_sprites, SpritesToBeLoaded};
 use ryot::prelude::*;
 use std::marker::PhantomData;
 
@@ -130,7 +130,7 @@ pub fn update_palette_items<C: ContentAssets>(
     content_assets: Res<C>,
     mut palette_state: ResMut<PaletteState>,
     texture_atlases: Res<Assets<TextureAtlas>>,
-    mut build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
+    mut sprites_to_be_loaded: ResMut<SpritesToBeLoaded>,
 ) {
     if palettes.is_empty() {
         return;
@@ -167,11 +167,7 @@ pub fn update_palette_items<C: ContentAssets>(
 
     palette_state.loaded_images.clear();
 
-    for sprite in load_sprites(
-        sprite_ids,
-        &content_assets,
-        &mut build_spr_sheet_texture_cmd,
-    ) {
+    for sprite in load_sprites(sprite_ids, &content_assets, &mut sprites_to_be_loaded) {
         let Some(atlas) = texture_atlases.get(sprite.atlas_texture_handle.clone()) else {
             continue;
         };

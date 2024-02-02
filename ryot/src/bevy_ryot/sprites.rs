@@ -5,15 +5,8 @@ use crate::position::TilePosition;
 use crate::prelude::*;
 use crate::{get_decompressed_file_name, SpriteSheetConfig, SPRITE_SHEET_FOLDER};
 use bevy::prelude::*;
-use bevy::utils::HashMap;
+use bevy::utils::{HashMap, StableHashSet};
 use std::path::PathBuf;
-
-/// A command that is sent as a bevy event to trigger the loading of the sprite sheets
-/// for a given set of sprite ids.
-#[derive(Debug, Clone, Event)]
-pub struct LoadSpriteSheetTextureCommand {
-    pub sprite_ids: Vec<u32>,
-}
 
 /// An event that is sent when a sprite sheet texture loading is completed.
 #[derive(Debug, Clone, Event)]
@@ -33,9 +26,11 @@ pub struct LoadedSprite {
     pub atlas_texture_handle: Handle<TextureAtlas>,
 }
 
+/// Struct that represents sprites that were requested but are not yet loaded.
+/// This resource will be consumed by the sprite loading system and cleaned up.
 #[derive(Debug, Default, Resource)]
-pub struct LoadedSprites {
-    pub sprites: HashMap<u32, LoadedSprite>,
+pub struct SpritesToBeLoaded {
+    pub sprite_ids: StableHashSet<u32>,
 }
 
 impl LoadedSprite {
@@ -66,12 +61,12 @@ impl LoadedSprite {
 }
 
 /// A system helper that gets the LoadedSprite from the resources.
-/// If the sprite sheet is not loaded yet, it sends a LoadSpriteSheetTextureCommand event.
+/// If the sprite sheet is not loaded yet, it adds the sprite to SpritesToBeLoaded resource
 /// It returns only the loaded sprites.
 pub fn load_sprites<C: ContentAssets>(
     sprite_ids: &[u32],
     content_assets: &Res<C>,
-    build_spr_sheet_texture_cmd: &mut EventWriter<LoadSpriteSheetTextureCommand>,
+    sprites_to_be_loaded: &mut ResMut<SpritesToBeLoaded>,
 ) -> Vec<LoadedSprite> {
     let Some(sprite_sheets) = content_assets.sprite_sheet_data_set() else {
         warn!("No sprite sheets loaded");
@@ -87,72 +82,46 @@ pub fn load_sprites<C: ContentAssets>(
             continue;
         };
 
-        let Some(handle) = content_assets.get_atlas_handle(sprite_sheet.file.as_str()) else {
-            to_be_loaded.push(*sprite_id);
-            continue;
-        };
-
-        loaded.push(LoadedSprite {
-            sprite_id: *sprite_id,
-            config: sprite_sheets.config,
-            sprite_sheet: sprite_sheet.clone(),
-            atlas_texture_handle: handle.clone(),
-        });
+        match content_assets.get_atlas_handle(sprite_sheet.file.as_str()) {
+            Some(handle) => {
+                loaded.push(LoadedSprite {
+                    sprite_id: *sprite_id,
+                    config: sprite_sheets.config,
+                    sprite_sheet: sprite_sheet.clone(),
+                    atlas_texture_handle: handle.clone(),
+                });
+            }
+            None => {
+                to_be_loaded.push(*sprite_id);
+                sprites_to_be_loaded.sprite_ids.insert(*sprite_id);
+            }
+        }
     }
-
-    build_spr_sheet_texture_cmd.send(LoadSpriteSheetTextureCommand {
-        sprite_ids: to_be_loaded,
-    });
 
     loaded
 }
 
-/// A system that listens to the LoadSpriteSheetTextureCommand event, loads the sprite sheet
+/// A system that listens to the Checks the SpritesToBeLoaded, loads the sprite sheet
 /// from the '.png' files and sends the SpriteSheetTextureWasLoaded event once it's done.
 pub(crate) fn load_sprite_sheets_from_command<C: ContentAssets>(
     content_assets: Res<C>,
     asset_server: Res<AssetServer>,
+    mut sprites_to_be_loaded: ResMut<SpritesToBeLoaded>,
     mut sprite_sheet_texture_was_loaded: EventWriter<SpriteSheetTextureWasLoaded>,
-    mut build_spr_sheet_texture_cmd: EventReader<LoadSpriteSheetTextureCommand>,
 ) {
     let Some(sprite_sheets) = content_assets.sprite_sheet_data_set() else {
         return;
     };
 
-    for LoadSpriteSheetTextureCommand { sprite_ids } in build_spr_sheet_texture_cmd.read() {
-        for sprite_id in sprite_ids {
-            let Some(sprite_sheet) = sprite_sheets.get_by_sprite_id(*sprite_id) else {
-                warn!("Sprite {} not found in sprite sheets", sprite_id);
-                continue;
-            };
+    load_sprite_textures(
+        sprites_to_be_loaded.sprite_ids.iter().copied().collect(),
+        &content_assets,
+        &asset_server,
+        &sprite_sheets,
+        &mut sprite_sheet_texture_was_loaded,
+    );
 
-            if content_assets
-                .get_atlas_handle(sprite_sheet.file.as_str())
-                .is_some()
-            {
-                continue;
-            }
-
-            let image_handle: Handle<Image> = asset_server.load(
-                PathBuf::from(SPRITE_SHEET_FOLDER)
-                    .join(get_decompressed_file_name(&sprite_sheet.file)),
-            );
-
-            let config = &sprite_sheets.config;
-
-            sprite_sheet_texture_was_loaded.send(SpriteSheetTextureWasLoaded {
-                sprite_id: *sprite_id,
-                atlas: TextureAtlas::from_grid(
-                    image_handle,
-                    sprite_sheet.get_tile_size(config).as_vec2(),
-                    sprite_sheet.get_columns_count(config),
-                    sprite_sheet.get_rows_count(config),
-                    None,
-                    None,
-                ),
-            });
-        }
-    }
+    sprites_to_be_loaded.sprite_ids.clear();
 }
 
 /// A system that handles the loading of sprite sheets.
@@ -185,27 +154,35 @@ pub(crate) fn store_atlases_assets_after_loading<C: PreloadedContentAssets>(
 }
 
 /// Primitive draw function, to be replaced with a more sophisticated drawing system.
-pub fn draw_sprite(pos: TilePosition, sprite: &LoadedSprite, commands: &mut Commands) {
-    if !pos.is_valid() {
-        return;
-    }
-
-    commands.spawn(build_sprite_bundle(
-        sprite.atlas_texture_handle.clone(),
-        pos.into(),
-        sprite.get_sprite_index(),
-    ));
+pub fn draw_sprite(
+    pos: TilePosition,
+    sprite: &LoadedSprite,
+    commands: &mut Commands,
+) -> Option<Entity> {
+    Some(
+        commands
+            .spawn(build_sprite_bundle(
+                sprite.get_sprite_index(),
+                pos,
+                sprite.atlas_texture_handle.clone(),
+            )?)
+            .id(),
+    )
 }
 
 /// A helper function to build a sprite bundle from a sprite sheet handle, a translation and a sprite index.
 pub fn build_sprite_bundle(
-    handle: Handle<TextureAtlas>,
-    translation: Vec3,
     index: usize,
-) -> SpriteSheetBundle {
-    SpriteSheetBundle {
+    pos: TilePosition,
+    handle: Handle<TextureAtlas>,
+) -> Option<SpriteSheetBundle> {
+    if !pos.is_valid() {
+        return None;
+    }
+
+    Some(SpriteSheetBundle {
         transform: Transform {
-            translation,
+            translation: pos.into(),
             ..default()
         },
         sprite: TextureAtlasSprite {
@@ -215,7 +192,66 @@ pub fn build_sprite_bundle(
         },
         texture_atlas: handle,
         ..default()
+    })
+}
+
+pub(crate) fn load_sprite_textures<C: ContentAssets>(
+    sprite_ids: Vec<u32>,
+    content_assets: &Res<C>,
+    asset_server: &Res<AssetServer>,
+    sprite_sheets: &SpriteSheetDataSet,
+    sprite_sheet_texture_was_loaded: &mut EventWriter<SpriteSheetTextureWasLoaded>,
+) -> Vec<(u32, TextureAtlas)> {
+    let events = sprite_ids
+        .iter()
+        .filter_map(|sprite_id| {
+            load_sprite_texture(*sprite_id, &content_assets, &asset_server, &sprite_sheets)
+        })
+        .collect::<Vec<_>>();
+
+    sprite_sheet_texture_was_loaded.send_batch(events.clone());
+
+    events
+        .iter()
+        .map(|SpriteSheetTextureWasLoaded { sprite_id, atlas }| (*sprite_id, atlas.clone()))
+        .collect::<Vec<(u32, TextureAtlas)>>()
+}
+
+pub(crate) fn load_sprite_texture<C: ContentAssets>(
+    sprite_id: u32,
+    content_assets: &Res<C>,
+    asset_server: &Res<AssetServer>,
+    sprite_sheets: &SpriteSheetDataSet,
+) -> Option<SpriteSheetTextureWasLoaded> {
+    let Some(sprite_sheet) = sprite_sheets.get_by_sprite_id(sprite_id) else {
+        warn!("Sprite {} not found in sprite sheets", sprite_id);
+        return None;
+    };
+
+    if content_assets
+        .get_atlas_handle(sprite_sheet.file.as_str())
+        .is_some()
+    {
+        return None;
     }
+
+    let image_handle: Handle<Image> = asset_server.load(
+        PathBuf::from(SPRITE_SHEET_FOLDER).join(get_decompressed_file_name(&sprite_sheet.file)),
+    );
+
+    let config = &sprite_sheets.config;
+
+    Some(SpriteSheetTextureWasLoaded {
+        sprite_id,
+        atlas: TextureAtlas::from_grid(
+            image_handle,
+            sprite_sheet.get_tile_size(config).as_vec2(),
+            sprite_sheet.get_columns_count(config),
+            sprite_sheet.get_rows_count(config),
+            None,
+            None,
+        ),
+    })
 }
 
 /// A system that prepares the sprite assets for use in the game.

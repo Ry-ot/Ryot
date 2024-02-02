@@ -1,5 +1,6 @@
 use bevy::app::AppExit;
 use ryot::position::TilePosition;
+use std::fmt::Debug;
 use std::io::Cursor;
 
 use bevy::prelude::*;
@@ -12,39 +13,54 @@ use ryot::prelude::*;
 
 use ryot_compass::{
     check_egui_usage, gui_is_not_in_use, AppPlugin, CameraPlugin, CompassContentAssets, CursorPos,
-    GUIState, PalettePlugin, PaletteState,
+    GUIState, PalettePlugin, PaletteState, SelectedTile,
 };
 use winit::window::Icon;
 
 use rfd::AsyncFileDialog;
 
 use crate::error_handling::ErrorPlugin;
+use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::utils::HashMap;
 use bevy::window::PrimaryWindow;
-use ryot::drawing::TileContent;
-use ryot::prelude::sprites::load_sprites;
+use color_eyre::owo_colors::OwoColorize;
+use ryot::drawing::{Layer, TileContent};
 use ryot::prelude::sprites::*;
 use ryot_compass::helpers::read_file;
 use std::marker::PhantomData;
 
-#[derive(Debug, Default, Resource)]
-pub struct MapTiles(HashMap<TilePosition, TileContent>);
+/*
+Drawing levels (keeping it around 100k sprites per level):
+- Max details: 1 floor, 1 top, 1 bottom, 1 ground and 10 contents - ~64x64
+- Medium details: 1 floor: 1 top, 1 bottom, 1 ground and 5 content - ~112x112
+- Minimal details: 1 floor: 1 top, 1 bottom, 1 ground and 1 content - ~160x160
+- Ground+top: 1 floor, 1 top, 1 ground - 224x224
+- Ground only - 320x320
+- >320x320 - Not possible (maybe chunk view so that people can navigate through the map quicker in the future)
+- Draw rules change per detail level
 
-#[allow(clippy::too_many_arguments)]
-fn draw<C: ContentAssets>(
+We load 2-3x the current view but we only set as visible the 1.1 * view.
+As we move the camera, we set the new tiles as visible and the old ones as hidden and we deload/load the edges (as hidden)
+As we zoom in and out, we change the detail level of the tiles and change visibility accordingly.
+
+So when a click happens the first tihng that it does is a c
+*/
+
+#[derive(Debug, Default, Resource, Deref, DerefMut)]
+pub struct MapTiles(HashMap<TilePosition, HashMap<Layer, Entity>>);
+
+#[derive(Debug, Default, Event)]
+pub struct ElementWasDrawnToPosition(TilePosition, PreparedAppearance);
+
+fn update_map_from_mouse_input<C: ContentAssets>(
     mut commands: Commands,
     content_assets: Res<C>,
     cursor_pos: Res<CursorPos>,
     palette_state: Res<PaletteState>,
     mouse_button_input: Res<Input<MouseButton>>,
-    mut build_spr_sheet_texture_cmd: EventWriter<LoadSpriteSheetTextureCommand>,
+    mut tiles: ResMut<MapTiles>,
+    mut map_updated_event: EventWriter<ElementWasDrawnToPosition>,
 ) {
-    /*
-       When I click I don't render the sprite automatically, I just add the sprite to a drawing buffer
-       The drawing buffer is smart, it will only add sprites that are allowed to the buffer.
-       Every frame the buffer is checked and the sprites needed are loaded,
-       The rendering system will then check if the buffer has loaded sprites and render them.
-    */
     if content_assets.sprite_sheet_data_set().is_none() {
         warn!("Trying to draw a sprite without any loaded content");
         return;
@@ -61,75 +77,82 @@ fn draw<C: ContentAssets>(
         return;
     };
 
-    let sprite_id = prepared_appearance.main_sprite_id;
-
-    let sprites = load_sprites(
-        &[sprite_id],
-        &content_assets,
-        &mut build_spr_sheet_texture_cmd,
-    );
-
-    let Some(sprite) = sprites.first() else {
-        return;
-    };
-
     if mouse_button_input.pressed(MouseButton::Left) {
-        let pos = TilePosition::from(cursor_pos.0);
-        draw_sprite(pos.with_z(2), sprite, &mut commands);
-        debug!("Tile: {:?} drawn", pos);
+        map_updated_event.send(ElementWasDrawnToPosition(
+            TilePosition::from(cursor_pos.0),
+            prepared_appearance.clone(),
+        ));
     }
+}
 
-    if mouse_button_input.just_pressed(MouseButton::Right) {
-        for x in 0..200 {
-            for y in 0..120 {
-                let mut sprites = vec![195613];
-                if x.ge(&20) && x.le(&30) && y.ge(&20) && y.le(&30) {
-                    sprites.push(91267);
+fn load_map_sprites<C: ContentAssets>(
+    mut tiles: ResMut<MapTiles>,
+    content_assets: Res<C>,
+    mut commands: Commands,
+    mut map_updated_event: EventReader<ElementWasDrawnToPosition>,
+    mut sprite_query: Query<(&mut TextureAtlasSprite, &mut Handle<TextureAtlas>)>,
+    mut sprites_to_be_loaded: ResMut<SpritesToBeLoaded>,
+) {
+    for ElementWasDrawnToPosition(tile_pos, prepared_appearance) in map_updated_event.read() {
+        let loaded_sprites = load_sprites(
+            &[prepared_appearance.main_sprite_id],
+            &content_assets,
+            &mut sprites_to_be_loaded,
+        );
+
+        if loaded_sprites.is_empty() {
+            warn!(
+                "Failed to load sprite: {:?}",
+                prepared_appearance.main_sprite_id
+            );
+            continue;
+        };
+
+        let loaded_sprite = loaded_sprites.first().unwrap();
+        let mut content = tiles.entry(tile_pos.clone()).or_default();
+        let layer = prepared_appearance.layer;
+
+        match content.get(&layer) {
+            Some(entity) => {
+                let (mut texture, mut handle) = sprite_query.get_mut(*entity).unwrap();
+                texture.index = loaded_sprite.get_sprite_index();
+                *handle = loaded_sprite.atlas_texture_handle.clone();
+            }
+            None => {
+                if let Some(bundle) = build_sprite_bundle(
+                    loaded_sprite.get_sprite_index(),
+                    tile_pos.with_z(10 + layer.base_z_offset()),
+                    loaded_sprite.atlas_texture_handle.clone(),
+                ) {
+                    content.insert(layer, commands.spawn(bundle).id());
                 }
-
-                // let sprites = load_sprites_2(
-                //     &sprites,
-                //     sprite_sheets,
-                //     &asset_server,
-                //     &mut atlas_handlers,
-                //     &mut texture_atlases,
-                // );
-                //
-                // for (i, sprite) in sprites.iter().enumerate() {
-                //     draw_sprite(
-                //         Vec3::new(x as f32, y as f32, 1. + i as f32),
-                //         sprite,
-                //         &mut commands,
-                //     );
-                // }
             }
         }
     }
+}
 
-    // let loaded_monster = load_sprites(&vec![91267], &content.raw_content, &asset_server, &mut atlas_handlers, &mut texture_atlases);
-    // if let Some(sprite) = loaded_monster.first() {
-    //     for x in 20..30 {
-    //         for y in 20..30 {
-    //             draw_sprite(Vec3::new(x as f32, y as f32, 0.0), sprite, &mut commands);
-    //         }
-    //     }
-    // }
+fn render_map<C: ContentAssets>(
+    content_assets: Res<C>,
+    cursor_pos: Res<CursorPos>,
+    palette_state: Res<PaletteState>,
+    mouse_button_input: Res<Input<MouseButton>>,
+    mut commands: Commands,
+    mut tiles: ResMut<MapTiles>,
+) {
+    // let sprites = load_sprites(
+    //     &[sprite_id],
+    //     &content_assets,
+    //     &mut build_spr_sheet_texture_cmd,
+    // );
 
-    // let num_of_sprites = 400_689;
-    // let sprites_per_row = (num_of_sprites as f32).sqrt() as u32;
-    //
-    // commands.spawn_batch((0..num_of_sprites).map(move |i| {
-    //     let x = (i % sprites_per_row) as f32 * 50.0;
-    //     let y = (i / sprites_per_row) as f32 * 50.0;
-    //     SpriteBundle {
-    //         texture: tile_handle_square.clone(),
-    //         transform: Transform::from_xyz(x, y, 0.0),
-    //         ..Default::default()
-    //     }
-    // }));
-    //     counter.0 += 100_000;
-    //
+    // let Some(sprite) = sprites.first() else {
     //     return;
+    // };
+
+    // if mouse_button_input.pressed(MouseButton::Left) {
+    //     let pos = TilePosition::from(cursor_pos.0);
+    //     draw_sprite(pos.with_z(2), sprite, &mut commands);
+    //     debug!("Tile: {:?} drawn", pos);
     // }
 }
 
@@ -320,6 +343,9 @@ pub fn setup_window(
     primary_window.set_window_icon(Some(icon));
 }
 
+#[derive(Resource, Default)]
+struct AboutMeOpened(bool);
+
 pub struct UIPlugin<C: ContentAssets>(PhantomData<C>);
 
 impl<C: ContentAssets> UIPlugin<C> {
@@ -342,7 +368,12 @@ impl<C: ContentAssets> Plugin for UIPlugin<C> {
             .init_resource::<AboutMeOpened>()
             .add_systems(
                 Update,
-                (draw::<C>, ui_example::<C>)
+                (
+                    update_map_from_mouse_input::<C>,
+                    load_map_sprites::<C>,
+                    render_map::<C>,
+                    ui_example::<C>,
+                )
                     .chain()
                     .run_if(in_state(InternalContentState::Ready))
                     .run_if(gui_is_not_in_use()),
@@ -350,17 +381,19 @@ impl<C: ContentAssets> Plugin for UIPlugin<C> {
     }
 }
 
-#[derive(Resource, Default)]
-struct AboutMeOpened(bool);
-
 fn main() {
     App::new()
-        .init_resource::<LoadedSprites>()
-        .add_plugins(AppPlugin)
-        .add_plugins(UIPlugin::<CompassContentAssets>::new())
-        .add_plugins(CameraPlugin::<CompassContentAssets>::new())
-        .add_plugins(ErrorPlugin)
-        .add_plugins(PalettePlugin::<CompassContentAssets>::new())
+        .init_resource::<MapTiles>()
+        .add_event::<ElementWasDrawnToPosition>()
+        .add_plugins((
+            AppPlugin,
+            UIPlugin::<CompassContentAssets>::new(),
+            CameraPlugin::<CompassContentAssets>::new(),
+            ErrorPlugin,
+            PalettePlugin::<CompassContentAssets>::new(),
+            FrameTimeDiagnosticsPlugin,
+            LogDiagnosticsPlugin::default(),
+        ))
         .add_systems(Startup, set_window_icon)
         .add_systems(Startup, setup_window)
         .run();

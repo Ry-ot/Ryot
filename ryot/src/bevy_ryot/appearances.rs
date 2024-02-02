@@ -3,6 +3,7 @@
 //! This file contains the information needed to load sprites and other content.
 use crate::appearances;
 use crate::appearances::{AppearanceFlags, Appearances, FrameGroup};
+use crate::drawing::Layer;
 use crate::prelude::*;
 use bevy::asset::io::Reader;
 use bevy::asset::{Asset, AssetLoader, AsyncReadExt, BoxedFuture, LoadContext};
@@ -69,10 +70,11 @@ impl AssetLoader for AppearanceAssetLoader {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Clone, Default)]
 pub struct PreparedAppearance {
     pub id: u32,
     pub name: String,
+    pub layer: Layer,
     pub main_sprite_id: u32,
     pub frame_groups: Vec<FrameGroup>,
     pub flags: Option<AppearanceFlags>,
@@ -87,6 +89,7 @@ impl From<appearances::Appearance> for Option<PreparedAppearance> {
         Some(PreparedAppearance {
             id: item.id?,
             name: item.name.unwrap_or(id.to_string()),
+            layer: Layer::from(item.flags.clone()),
             main_sprite_id,
             frame_groups: item.frame_group.clone(),
             flags: item.flags.clone(),
