@@ -70,7 +70,7 @@ impl AssetLoader for AppearanceAssetLoader {
     }
 }
 
-#[derive(Debug, Clone, Default)]
+#[derive(Debug, Clone, Default, Component)]
 pub struct PreparedAppearance {
     pub id: u32,
     pub name: String,

@@ -18,7 +18,7 @@ pub(crate) struct SpriteSheetTextureWasLoaded {
 /// A struct that holds the information needed to draw a sprite.
 /// It's a wrapper around a sprite sheet and a sprite id, that also holds the
 /// handle to the texture atlas.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Component)]
 pub struct LoadedSprite {
     pub sprite_id: u32,
     pub config: SpriteSheetConfig,

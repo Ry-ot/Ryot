@@ -21,10 +21,11 @@ use rfd::AsyncFileDialog;
 
 use crate::error_handling::ErrorPlugin;
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
+use bevy::ecs::system::{Command, EntityCommand, WithEntity};
 use bevy::utils::HashMap;
 use bevy::window::PrimaryWindow;
 use color_eyre::owo_colors::OwoColorize;
-use ryot::drawing::{Layer, TileContent};
+use ryot::drawing::Layer;
 use ryot::prelude::sprites::*;
 use ryot_compass::helpers::read_file;
 use std::marker::PhantomData;
@@ -45,122 +46,226 @@ As we zoom in and out, we change the detail level of the tiles and change visibi
 
 So when a click happens the first tihng that it does is a c
 */
+trait ReversibleCommand: Command + Send + Sync + 'static {
+    fn undo(&self, commands: &mut Commands);
+}
+
+trait ReversibleEntityCommand: EntityCommand + Send + Sync + 'static {
+    fn undo(&self, entity: Entity, commands: &mut Commands);
+}
+
+enum UndoableCommand {
+    Regular(Box<dyn ReversibleCommand>),
+    Entity(Entity, Box<dyn ReversibleEntityCommand>),
+}
 
 #[derive(Debug, Default, Resource, Deref, DerefMut)]
 pub struct MapTiles(HashMap<TilePosition, HashMap<Layer, Entity>>);
 
-#[derive(Debug, Default, Event)]
-pub struct ElementWasDrawnToPosition(TilePosition, PreparedAppearance);
+#[derive(Debug, Clone)]
+pub struct AddTileContent(TilePosition, LoadedSprite, PreparedAppearance);
+impl Command for AddTileContent {
+    fn apply(self, world: &mut World) {
+        let AddTileContent(tile_pos, loaded_sprite, prepared_appearance) = self;
 
-fn update_map_from_mouse_input<C: ContentAssets>(
-    mut commands: Commands,
-    content_assets: Res<C>,
-    cursor_pos: Res<CursorPos>,
-    palette_state: Res<PaletteState>,
-    mouse_button_input: Res<Input<MouseButton>>,
-    mut tiles: ResMut<MapTiles>,
-    mut map_updated_event: EventWriter<ElementWasDrawnToPosition>,
-) {
-    if content_assets.sprite_sheet_data_set().is_none() {
-        warn!("Trying to draw a sprite without any loaded content");
-        return;
-    };
+        let layer = prepared_appearance.layer;
 
-    let Some(content_id) = palette_state.selected_tile else {
-        return;
-    };
+        if let Some(bundle) = build_sprite_bundle(
+            loaded_sprite.get_sprite_index(),
+            tile_pos.with_z(10 + layer.base_z_offset()),
+            loaded_sprite.atlas_texture_handle.clone(),
+        ) {
+            let new_entity = world
+                .spawn((bundle, tile_pos, loaded_sprite, prepared_appearance))
+                .id();
+            {
+                let mut map_tiles = world.resource_mut::<MapTiles>();
+                let content = map_tiles.entry(self.0.clone()).or_default();
+                content.insert(layer, new_entity);
+            }
+        }
+    }
+}
 
-    let Some(prepared_appearance) = content_assets
-        .prepared_appearances()
-        .get_for_group(AppearanceGroup::Object, content_id)
-    else {
-        return;
-    };
-
-    if mouse_button_input.pressed(MouseButton::Left) {
-        map_updated_event.send(ElementWasDrawnToPosition(
-            TilePosition::from(cursor_pos.0),
-            prepared_appearance.clone(),
+impl ReversibleCommand for AddTileContent {
+    fn undo(&self, commands: &mut Commands) {
+        commands.add(ChangeTileContentVisibility(
+            self.0.clone(),
+            Visibility::Hidden,
         ));
     }
 }
 
-fn load_map_sprites<C: ContentAssets>(
-    mut tiles: ResMut<MapTiles>,
-    content_assets: Res<C>,
-    mut commands: Commands,
-    mut map_updated_event: EventReader<ElementWasDrawnToPosition>,
-    mut sprite_query: Query<(&mut TextureAtlasSprite, &mut Handle<TextureAtlas>)>,
-    mut sprites_to_be_loaded: ResMut<SpritesToBeLoaded>,
-) {
-    for ElementWasDrawnToPosition(tile_pos, prepared_appearance) in map_updated_event.read() {
-        let loaded_sprites = load_sprites(
-            &[prepared_appearance.main_sprite_id],
-            &content_assets,
-            &mut sprites_to_be_loaded,
-        );
+#[derive(Debug, Clone)]
+pub struct ChangeTileContentVisibility(TilePosition, Visibility);
 
-        if loaded_sprites.is_empty() {
-            warn!(
-                "Failed to load sprite: {:?}",
-                prepared_appearance.main_sprite_id
-            );
-            continue;
+impl Command for ChangeTileContentVisibility {
+    fn apply(self, world: &mut World) {
+        let ChangeTileContentVisibility(tile_pos, tile_visibility) = self;
+
+        // Separate the entities to modify from the MapTiles resource borrowing scope
+        let entities_to_modify = {
+            let map_tiles = world.resource_mut::<MapTiles>();
+            map_tiles.get(&tile_pos).map(|content| {
+                content
+                    .iter()
+                    .map(|(_, &entity)| entity)
+                    .collect::<Vec<_>>()
+            })
         };
 
-        let loaded_sprite = loaded_sprites.first().unwrap();
-        let mut content = tiles.entry(tile_pos.clone()).or_default();
-        let layer = prepared_appearance.layer;
-
-        match content.get(&layer) {
-            Some(entity) => {
-                let (mut texture, mut handle) = sprite_query.get_mut(*entity).unwrap();
-                texture.index = loaded_sprite.get_sprite_index();
-                *handle = loaded_sprite.atlas_texture_handle.clone();
-            }
-            None => {
-                if let Some(bundle) = build_sprite_bundle(
-                    loaded_sprite.get_sprite_index(),
-                    tile_pos.with_z(10 + layer.base_z_offset()),
-                    loaded_sprite.atlas_texture_handle.clone(),
-                ) {
-                    content.insert(layer, commands.spawn(bundle).id());
+        // Apply changes to entities outside of the MapTiles borrowing scope
+        if let Some(entities) = entities_to_modify {
+            for entity in entities {
+                if let Some(mut visibility) = world.get_mut::<Visibility>(entity) {
+                    *visibility = tile_visibility;
                 }
             }
         }
     }
 }
 
-fn render_map<C: ContentAssets>(
+impl ReversibleCommand for ChangeTileContentVisibility {
+    fn undo(&self, commands: &mut Commands) {
+        commands.add(ChangeTileContentVisibility(
+            self.0.clone(),
+            match self.1 {
+                Visibility::Hidden => Visibility::Visible,
+                Visibility::Visible => Visibility::Hidden,
+                _ => self.1,
+            },
+        ));
+    }
+}
+
+#[derive(Default, Resource)]
+pub struct CommandHistory {
+    commands: Vec<UndoableCommand>,
+}
+
+#[derive(Debug, Clone)]
+pub struct UpdateTileContent(Option<LoadedSprite>, Option<LoadedSprite>);
+impl EntityCommand for UpdateTileContent {
+    fn apply(self, id: Entity, world: &mut World) {
+        let UpdateTileContent(loaded_sprite, _) = &self;
+
+        let Some(loaded_sprite) = loaded_sprite else {
+            world.despawn(id);
+            return;
+        };
+
+        if let Some(mut loaded) = world.get_mut::<LoadedSprite>(id) {
+            *loaded = loaded_sprite.clone();
+        }
+
+        if let Some(mut atlas_sprite) = world.get_mut::<TextureAtlasSprite>(id) {
+            atlas_sprite.index = loaded_sprite.get_sprite_index();
+        }
+
+        if let Some(mut atlas_handle) = world.get_mut::<Handle<TextureAtlas>>(id) {
+            *atlas_handle = loaded_sprite.atlas_texture_handle.clone();
+        }
+
+        if let Some(mut visibility) = world.get_mut::<Visibility>(id) {
+            *visibility = Visibility::Visible;
+        }
+    }
+}
+
+impl ReversibleEntityCommand for UpdateTileContent {
+    fn undo(&self, entity: Entity, commands: &mut Commands) {
+        commands.add(UpdateTileContent(self.1.clone(), self.0.clone()).with_entity(entity));
+    }
+}
+
+#[derive(Debug, Default, Event)]
+pub struct DrawIntoPositionCommand(TilePosition, PreparedAppearance);
+
+fn update_map_from_mouse_input<C: ContentAssets>(
+    mut commands: Commands,
+    mut tiles: ResMut<MapTiles>,
+    mut command_history: ResMut<CommandHistory>,
     content_assets: Res<C>,
     cursor_pos: Res<CursorPos>,
     palette_state: Res<PaletteState>,
+    mut loaded_query: Query<&mut LoadedSprite>,
     mouse_button_input: Res<Input<MouseButton>>,
-    mut commands: Commands,
-    mut tiles: ResMut<MapTiles>,
+    keyboard_input: Res<Input<KeyCode>>,
 ) {
-    // let sprites = load_sprites(
-    //     &[sprite_id],
-    //     &content_assets,
-    //     &mut build_spr_sheet_texture_cmd,
-    // );
+    if content_assets.sprite_sheet_data_set().is_none() {
+        warn!("Trying to draw a sprite without any loaded content");
+        return;
+    };
 
-    // let Some(sprite) = sprites.first() else {
-    //     return;
-    // };
+    let Some((content_id, loaded_sprite)) = &palette_state.selected_tile else {
+        return;
+    };
 
-    // if mouse_button_input.pressed(MouseButton::Left) {
-    //     let pos = TilePosition::from(cursor_pos.0);
-    //     draw_sprite(pos.with_z(2), sprite, &mut commands);
-    //     debug!("Tile: {:?} drawn", pos);
-    // }
+    let Some(prepared_appearance) = content_assets
+        .prepared_appearances()
+        .get_for_group(AppearanceGroup::Object, *content_id)
+    else {
+        return;
+    };
+
+    if keyboard_input.just_pressed(KeyCode::U) {
+        if let Some(command) = command_history.commands.pop() {
+            info!("Undoing command: {}", command_history.commands.len());
+            match command {
+                UndoableCommand::Regular(command) => {
+                    command.undo(&mut commands);
+                }
+                UndoableCommand::Entity(entity, command) => {
+                    command.undo(entity, &mut commands);
+                }
+            }
+        }
+    }
+
+    if mouse_button_input.just_pressed(MouseButton::Right) {
+        let command =
+            ChangeTileContentVisibility(TilePosition::from(cursor_pos.0), Visibility::Hidden);
+        commands.add(command.clone());
+        command_history
+            .commands
+            .push(UndoableCommand::Regular(Box::new(command)));
+    }
+
+    if mouse_button_input.just_pressed(MouseButton::Left) {
+        let tile_pos = TilePosition::from(cursor_pos.0);
+        command_history.commands.push(
+            match tiles
+                .entry(tile_pos.clone())
+                .or_default()
+                .get(&prepared_appearance.layer)
+            {
+                Some(entity) => {
+                    let current = loaded_query.get(*entity).unwrap();
+                    let command =
+                        UpdateTileContent(Some(loaded_sprite.clone()), Some(current.clone()));
+
+                    commands.get_entity(*entity).unwrap().add(command.clone());
+
+                    UndoableCommand::Entity(entity.clone(), Box::new(command.clone()))
+                }
+                None => {
+                    let command = AddTileContent(
+                        tile_pos.clone(),
+                        loaded_sprite.clone(),
+                        prepared_appearance.clone(),
+                    );
+                    commands.add(command.clone());
+                    UndoableCommand::Regular(Box::new(command))
+                }
+            },
+        );
+    }
 }
 
 fn ui_example<C: ContentAssets>(
     content_assets: Res<C>,
     mut egui_ctx: EguiContexts,
     mut exit: EventWriter<AppExit>,
-    // content_sender: Res<EventSender<ContentWasLoaded>>,
     mut about_me: ResMut<AboutMeOpened>,
     mut _windows: NonSend<WinitWindows>,
 ) {
@@ -368,12 +473,7 @@ impl<C: ContentAssets> Plugin for UIPlugin<C> {
             .init_resource::<AboutMeOpened>()
             .add_systems(
                 Update,
-                (
-                    update_map_from_mouse_input::<C>,
-                    load_map_sprites::<C>,
-                    render_map::<C>,
-                    ui_example::<C>,
-                )
+                (update_map_from_mouse_input::<C>, ui_example::<C>)
                     .chain()
                     .run_if(in_state(InternalContentState::Ready))
                     .run_if(gui_is_not_in_use()),
@@ -383,8 +483,8 @@ impl<C: ContentAssets> Plugin for UIPlugin<C> {
 
 fn main() {
     App::new()
+        .init_resource::<CommandHistory>()
         .init_resource::<MapTiles>()
-        .add_event::<ElementWasDrawnToPosition>()
         .add_plugins((
             AppPlugin,
             UIPlugin::<CompassContentAssets>::new(),
