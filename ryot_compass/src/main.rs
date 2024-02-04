@@ -13,7 +13,7 @@ use ryot::prelude::*;
 
 use ryot_compass::{
     check_egui_usage, gui_is_not_in_use, AppPlugin, CameraPlugin, CompassContentAssets, CursorPos,
-    GUIState, PalettePlugin, PaletteState, SelectedTile,
+    GUIState, PalettePlugin, PaletteState,
 };
 use winit::window::Icon;
 
@@ -21,10 +21,9 @@ use rfd::AsyncFileDialog;
 
 use crate::error_handling::ErrorPlugin;
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
-use bevy::ecs::system::{Command, EntityCommand, WithEntity};
+use bevy::ecs::system::{Command, EntityCommand};
 use bevy::utils::HashMap;
 use bevy::window::PrimaryWindow;
-use color_eyre::owo_colors::OwoColorize;
 use ryot::drawing::Layer;
 use ryot::prelude::sprites::*;
 use ryot_compass::helpers::read_file;
@@ -80,7 +79,7 @@ impl Command for AddTileContent {
                 .id();
             {
                 let mut map_tiles = world.resource_mut::<MapTiles>();
-                let content = map_tiles.entry(self.0.clone()).or_default();
+                let content = map_tiles.entry(self.0).or_default();
                 content.insert(layer, new_entity);
             }
         }
@@ -89,10 +88,7 @@ impl Command for AddTileContent {
 
 impl ReversibleCommand for AddTileContent {
     fn undo(&self, commands: &mut Commands) {
-        commands.add(ChangeTileContentVisibility(
-            self.0.clone(),
-            Visibility::Hidden,
-        ));
+        commands.add(ChangeTileContentVisibility(self.0, Visibility::Hidden));
     }
 }
 
@@ -128,7 +124,7 @@ impl Command for ChangeTileContentVisibility {
 impl ReversibleCommand for ChangeTileContentVisibility {
     fn undo(&self, commands: &mut Commands) {
         commands.add(ChangeTileContentVisibility(
-            self.0.clone(),
+            self.0,
             match self.1 {
                 Visibility::Hidden => Visibility::Visible,
                 Visibility::Visible => Visibility::Hidden,
@@ -178,9 +174,7 @@ impl ReversibleEntityCommand for UpdateTileContent {
     }
 }
 
-#[derive(Debug, Default, Event)]
-pub struct DrawIntoPositionCommand(TilePosition, PreparedAppearance);
-
+#[allow(clippy::too_many_arguments)]
 fn update_map_from_mouse_input<C: ContentAssets>(
     mut commands: Commands,
     mut tiles: ResMut<MapTiles>,
@@ -188,7 +182,7 @@ fn update_map_from_mouse_input<C: ContentAssets>(
     content_assets: Res<C>,
     cursor_pos: Res<CursorPos>,
     palette_state: Res<PaletteState>,
-    mut loaded_query: Query<&mut LoadedSprite>,
+    loaded_query: Query<&mut LoadedSprite>,
     mouse_button_input: Res<Input<MouseButton>>,
     keyboard_input: Res<Input<KeyCode>>,
 ) {
@@ -235,7 +229,7 @@ fn update_map_from_mouse_input<C: ContentAssets>(
         let tile_pos = TilePosition::from(cursor_pos.0);
         command_history.commands.push(
             match tiles
-                .entry(tile_pos.clone())
+                .entry(tile_pos)
                 .or_default()
                 .get(&prepared_appearance.layer)
             {
@@ -246,11 +240,11 @@ fn update_map_from_mouse_input<C: ContentAssets>(
 
                     commands.get_entity(*entity).unwrap().add(command.clone());
 
-                    UndoableCommand::Entity(entity.clone(), Box::new(command.clone()))
+                    UndoableCommand::Entity(*entity, Box::new(command.clone()))
                 }
                 None => {
                     let command = AddTileContent(
-                        tile_pos.clone(),
+                        tile_pos,
                         loaded_sprite.clone(),
                         prepared_appearance.clone(),
                     );
