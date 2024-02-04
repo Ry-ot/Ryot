@@ -117,7 +117,7 @@ pub(crate) fn load_sprite_sheets_from_command<C: ContentAssets>(
         sprites_to_be_loaded.sprite_ids.iter().copied().collect(),
         &content_assets,
         &asset_server,
-        &sprite_sheets,
+        sprite_sheets,
         &mut sprite_sheet_texture_was_loaded,
     );
 
@@ -205,7 +205,7 @@ pub(crate) fn load_sprite_textures<C: ContentAssets>(
     let events = sprite_ids
         .iter()
         .filter_map(|sprite_id| {
-            load_sprite_texture(*sprite_id, &content_assets, &asset_server, &sprite_sheets)
+            load_sprite_texture(*sprite_id, content_assets, asset_server, sprite_sheets)
         })
         .collect::<Vec<_>>();
 

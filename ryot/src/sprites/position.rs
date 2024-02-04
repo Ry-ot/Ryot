@@ -1,6 +1,9 @@
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;
-use std::ops::Deref;
+use std::{
+    fmt::{self, Formatter},
+    ops::Deref,
+};
 
 use glam::{IVec3, UVec2, Vec2, Vec3};
 use serde::{Deserialize, Serialize};
@@ -23,7 +26,7 @@ impl TilePosition {
 
     pub const ZERO: TilePosition = TilePosition(IVec3::ZERO);
 
-    pub const BOTTOM_RIGHT_OFFSET: Vec2 = Vec2::new(0., -1.);
+    const BOTTOM_RIGHT_OFFSET: Vec2 = Vec2::new(0., -1.);
 
     pub fn new(x: i32, y: i32, z: i32) -> Self {
         Self(IVec3::new(x, y, z))
@@ -35,6 +38,18 @@ impl TilePosition {
 
     pub fn is_valid(self) -> bool {
         self.clamp(Self::MIN.0, Self::MAX.0).truncate() == self.truncate()
+    }
+
+    pub fn distance(self, other: Self) -> f32 {
+        self.truncate()
+            .as_vec2()
+            .distance(other.truncate().as_vec2())
+    }
+}
+
+impl fmt::Display for TilePosition {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "TilePosition({}, {}, {})", self.x, self.y, self.z)
     }
 }
 
@@ -49,7 +64,7 @@ impl Deref for TilePosition {
 impl From<Vec2> for TilePosition {
     fn from(screen_pos: Vec2) -> Self {
         Self(
-            (screen_pos / tile_size().as_vec2())
+            ((screen_pos - TilePosition::BOTTOM_RIGHT_OFFSET) / tile_size().as_vec2())
                 .ceil()
                 .as_ivec2()
                 .extend(0),
@@ -72,6 +87,18 @@ impl From<TilePosition> for Vec3 {
         // perspective we always want right bottom items to be drawn on top.
         // Calculations must be done in f32 otherwise decimals are lost.
         Vec2::from(tile_pos).extend(tile_pos.z as f32 + 1. + pos.x / weight - pos.y / weight)
+    }
+}
+
+impl From<&TilePosition> for Vec3 {
+    fn from(tile_pos: &TilePosition) -> Self {
+        Vec3::from(*tile_pos)
+    }
+}
+
+impl From<&TilePosition> for Vec2 {
+    fn from(tile_pos: &TilePosition) -> Self {
+        Vec2::from(*tile_pos)
     }
 }
 

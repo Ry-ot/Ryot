@@ -38,7 +38,7 @@ impl<C: CompassAssets> Plugin for CameraPlugin<C> {
                 (
                     movement,
                     update_cursor_pos.map(drop),
-                    update_cursor_palette_sprite::<C>,
+                    update_cursor_palette_sprite,
                     update_cursor_visibility,
                 )
                     .chain()
@@ -135,9 +135,6 @@ fn spawn_camera<C: CompassAssets>(
 
     let mesh_handle: Handle<Mesh> = meshes.add(mesh);
 
-    // Spawn camera
-    commands.spawn(Camera2dBundle::default());
-
     // Spawn the square with the grid
     commands.spawn(MaterialMesh2dBundle {
         mesh: mesh_handle.into(),
@@ -146,6 +143,9 @@ fn spawn_camera<C: CompassAssets>(
         ..default()
     });
 
+    // Spawn camera
+    commands.spawn(Camera2dBundle::default());
+
     commands.spawn(SpriteBundle {
         texture: content.mascot().clone(),
         transform: Transform::from_translation(Vec2::ZERO.extend(1.)).with_scale(Vec3::splat(0.5)),
@@ -153,7 +153,7 @@ fn spawn_camera<C: CompassAssets>(
     });
 }
 
-fn update_cursor_palette_sprite<C: ContentAssets>(
+fn update_cursor_palette_sprite(
     palette_state: Res<PaletteState>,
     mut cursor_query: Query<(
         &mut TextureAtlasSprite,
@@ -195,13 +195,14 @@ fn update_cursor_visibility(
         }
 
         let tile_pos = TilePosition::from(cursor_pos.0);
-        transform.translation = Vec3::from(tile_pos) + Vec3::new(0., 0., 128.);
+        transform.translation = Vec2::from(tile_pos).extend(128.);
 
         if tile_pos.is_valid() {
             *visibility = Visibility::Visible;
-            egui_ctx.ctx_mut().set_cursor_icon(egui::CursorIcon::None);
-            windows.single_mut().cursor.icon = CursorIcon::Default;
-            windows.single_mut().cursor.visible = false;
+            egui_ctx
+                .ctx_mut()
+                .set_cursor_icon(egui::CursorIcon::Crosshair);
+            windows.single_mut().cursor.icon = CursorIcon::Crosshair;
         } else {
             *visibility = Visibility::Hidden;
             egui_ctx
