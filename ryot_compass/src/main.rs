@@ -22,9 +22,12 @@ use rfd::AsyncFileDialog;
 use crate::error_handling::ErrorPlugin;
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::ecs::system::{Command, EntityCommand};
-use bevy::utils::HashMap;
 use bevy::window::PrimaryWindow;
 use ryot::drawing::Layer;
+use ryot::drawing_commands::{
+    AddTileContent, ChangeTileContentVisibility, CommandHistory, DeleteTileContent, MapTiles,
+    ReversibleCommand, ReversibleEntityCommand, UndoableCommand, UpdateTileContent,
+};
 use ryot::prelude::sprites::*;
 use ryot_compass::helpers::read_file;
 use std::marker::PhantomData;
@@ -45,134 +48,6 @@ As we zoom in and out, we change the detail level of the tiles and change visibi
 
 So when a click happens the first tihng that it does is a c
 */
-trait ReversibleCommand: Command + Send + Sync + 'static {
-    fn undo(&self, commands: &mut Commands);
-}
-
-trait ReversibleEntityCommand: EntityCommand + Send + Sync + 'static {
-    fn undo(&self, entity: Entity, commands: &mut Commands);
-}
-
-enum UndoableCommand {
-    Regular(Box<dyn ReversibleCommand>),
-    Entity(Entity, Box<dyn ReversibleEntityCommand>),
-}
-
-#[derive(Debug, Default, Resource, Deref, DerefMut)]
-pub struct MapTiles(HashMap<TilePosition, HashMap<Layer, Entity>>);
-
-#[derive(Debug, Clone)]
-pub struct AddTileContent(TilePosition, LoadedSprite, PreparedAppearance);
-impl Command for AddTileContent {
-    fn apply(self, world: &mut World) {
-        let AddTileContent(tile_pos, loaded_sprite, prepared_appearance) = self;
-
-        let layer = prepared_appearance.layer;
-
-        if let Some(bundle) = build_sprite_bundle(
-            loaded_sprite.get_sprite_index(),
-            tile_pos.with_z(10 + layer.base_z_offset()),
-            loaded_sprite.atlas_texture_handle.clone(),
-        ) {
-            let new_entity = world
-                .spawn((bundle, tile_pos, loaded_sprite, prepared_appearance))
-                .id();
-            {
-                let mut map_tiles = world.resource_mut::<MapTiles>();
-                let content = map_tiles.entry(self.0).or_default();
-                content.insert(layer, new_entity);
-            }
-        }
-    }
-}
-
-impl ReversibleCommand for AddTileContent {
-    fn undo(&self, commands: &mut Commands) {
-        commands.add(ChangeTileContentVisibility(self.0, Visibility::Hidden));
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct ChangeTileContentVisibility(TilePosition, Visibility);
-
-impl Command for ChangeTileContentVisibility {
-    fn apply(self, world: &mut World) {
-        let ChangeTileContentVisibility(tile_pos, tile_visibility) = self;
-
-        // Separate the entities to modify from the MapTiles resource borrowing scope
-        let entities_to_modify = {
-            let map_tiles = world.resource_mut::<MapTiles>();
-            map_tiles.get(&tile_pos).map(|content| {
-                content
-                    .iter()
-                    .map(|(_, &entity)| entity)
-                    .collect::<Vec<_>>()
-            })
-        };
-
-        // Apply changes to entities outside of the MapTiles borrowing scope
-        if let Some(entities) = entities_to_modify {
-            for entity in entities {
-                if let Some(mut visibility) = world.get_mut::<Visibility>(entity) {
-                    *visibility = tile_visibility;
-                }
-            }
-        }
-    }
-}
-
-impl ReversibleCommand for ChangeTileContentVisibility {
-    fn undo(&self, commands: &mut Commands) {
-        commands.add(ChangeTileContentVisibility(
-            self.0,
-            match self.1 {
-                Visibility::Hidden => Visibility::Visible,
-                Visibility::Visible => Visibility::Hidden,
-                _ => self.1,
-            },
-        ));
-    }
-}
-
-#[derive(Default, Resource)]
-pub struct CommandHistory {
-    commands: Vec<UndoableCommand>,
-}
-
-#[derive(Debug, Clone)]
-pub struct UpdateTileContent(Option<LoadedSprite>, Option<LoadedSprite>);
-impl EntityCommand for UpdateTileContent {
-    fn apply(self, id: Entity, world: &mut World) {
-        let UpdateTileContent(loaded_sprite, _) = &self;
-
-        let Some(loaded_sprite) = loaded_sprite else {
-            world.despawn(id);
-            return;
-        };
-
-        if let Some(mut loaded) = world.get_mut::<LoadedSprite>(id) {
-            *loaded = loaded_sprite.clone();
-        }
-
-        if let Some(mut atlas_sprite) = world.get_mut::<TextureAtlasSprite>(id) {
-            atlas_sprite.index = loaded_sprite.get_sprite_index();
-        }
-
-        if let Some(mut atlas_handle) = world.get_mut::<Handle<TextureAtlas>>(id) {
-            *atlas_handle = loaded_sprite.atlas_texture_handle.clone();
-        }
-
-        if let Some(mut visibility) = world.get_mut::<Visibility>(id) {
-            *visibility = Visibility::Visible;
-        }
-    }
-}
-
-impl ReversibleEntityCommand for UpdateTileContent {
-    fn undo(&self, entity: Entity, commands: &mut Commands) {
-        commands.add(UpdateTileContent(self.1.clone(), self.0.clone()).with_entity(entity));
-    }
-}
 
 #[allow(clippy::too_many_arguments)]
 fn update_map_from_mouse_input<C: ContentAssets>(
@@ -182,7 +57,7 @@ fn update_map_from_mouse_input<C: ContentAssets>(
     content_assets: Res<C>,
     cursor_pos: Res<CursorPos>,
     palette_state: Res<PaletteState>,
-    loaded_query: Query<&mut LoadedSprite>,
+    loaded_query: Query<(&mut LoadedSprite, &Visibility)>,
     mouse_button_input: Res<Input<MouseButton>>,
     keyboard_input: Res<Input<KeyCode>>,
 ) {
@@ -217,8 +92,38 @@ fn update_map_from_mouse_input<C: ContentAssets>(
     }
 
     if mouse_button_input.just_pressed(MouseButton::Right) {
-        let command =
-            ChangeTileContentVisibility(TilePosition::from(cursor_pos.0), Visibility::Hidden);
+        let tile_pos = TilePosition::from(cursor_pos.0);
+        // let command =
+        //     ChangeTileContentVisibility(TilePosition::from(cursor_pos.0), Visibility::Hidden);
+        // commands.add(command.clone());
+        // command_history
+        //     .commands
+        //     .push(UndoableCommand::Regular(Box::new(command)));
+
+        let Some(tile_content) = tiles.get(&tile_pos) else {
+            return;
+        };
+
+        let mut content: Option<(Layer, &LoadedSprite)> = None;
+
+        for layer in [Layer::Top, Layer::None, Layer::Bottom, Layer::Ground] {
+            if let Some(top) = tile_content.get(&layer) {
+                if let Ok((current, visibility)) = loaded_query.get(*top) {
+                    if visibility == Visibility::Hidden {
+                        continue;
+                    }
+
+                    content = Some((layer, current));
+                    break;
+                }
+            }
+        }
+
+        let Some((layer, content)) = content else {
+            return;
+        };
+
+        let command = ChangeTileContentVisibility(tile_pos, Visibility::Hidden, layer);
         commands.add(command.clone());
         command_history
             .commands
@@ -234,22 +139,20 @@ fn update_map_from_mouse_input<C: ContentAssets>(
                 .get(&prepared_appearance.layer)
             {
                 Some(entity) => {
-                    let current = loaded_query.get(*entity).unwrap();
+                    let (current, _) = loaded_query.get(*entity).unwrap();
                     let command =
                         UpdateTileContent(Some(loaded_sprite.clone()), Some(current.clone()));
 
-                    commands.get_entity(*entity).unwrap().add(command.clone());
+                    commands.add(command.clone().with_entity(*entity));
 
                     UndoableCommand::Entity(*entity, Box::new(command.clone()))
                 }
                 None => {
-                    let command = AddTileContent(
-                        tile_pos,
-                        loaded_sprite.clone(),
-                        prepared_appearance.clone(),
-                    );
-                    commands.add(command.clone());
-                    UndoableCommand::Regular(Box::new(command))
+                    let entity = commands.spawn_empty().id();
+                    let command =
+                        AddTileContent(tile_pos, loaded_sprite.clone(), prepared_appearance.layer);
+                    commands.add(command.clone().with_entity(entity));
+                    UndoableCommand::Entity(entity, Box::new(command.clone()))
                 }
             },
         );

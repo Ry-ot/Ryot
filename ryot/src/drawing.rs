@@ -2,6 +2,7 @@
 
 use crate::appearances;
 use crate::prelude::*;
+use bevy::prelude::Component;
 use bevy::utils::HashMap;
 use thiserror::Error;
 
@@ -70,7 +71,7 @@ impl TileContent {
     }
 }
 
-#[derive(Eq, Hash, PartialEq, Debug, Copy, Clone, Default)]
+#[derive(Eq, Hash, PartialEq, Debug, Copy, Clone, Default, Component)]
 pub enum Layer {
     #[default]
     None,
