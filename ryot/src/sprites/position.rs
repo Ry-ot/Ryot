@@ -1,4 +1,5 @@
-use bevy::prelude::info;
+#[cfg(feature = "bevy")]
+use bevy::prelude::*;
 use std::ops::Deref;
 
 use glam::{IVec3, UVec2, Vec2, Vec3};
@@ -7,6 +8,10 @@ use serde::{Deserialize, Serialize};
 /// A 2d position in the tile grid. This is is not the position of the tile on
 /// the screen, because it doesn't take into account the tile size. Z is used to
 /// calculate the rendering order of the tile.
+#[cfg(feature = "bevy")]
+#[derive(Eq, PartialEq, Deserialize, Serialize, Component, Default, Clone, Copy, Debug, Hash)]
+pub struct TilePosition(pub IVec3);
+#[cfg(not(feature = "bevy"))]
 #[derive(Eq, PartialEq, Deserialize, Serialize, Default, Clone, Copy, Debug, Hash)]
 pub struct TilePosition(pub IVec3);
 

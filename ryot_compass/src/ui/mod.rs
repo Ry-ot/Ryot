@@ -14,7 +14,7 @@ pub struct PaletteState {
     pub width: f32,
     pub grid_size: u32,
     pub tile_padding: f32,
-    pub selected_tile: Option<u32>,
+    pub selected_tile: Option<(u32, LoadedSprite)>,
     pub selected_category: TilesetCategory,
     pub category_sprites: HashMap<u32, u32>,
     pub visible_rows: Range<usize>,
@@ -211,8 +211,8 @@ pub fn draw_palette_items(
                                         return;
                                     };
 
-                                    let selected = match palette_state.selected_tile {
-                                        Some(selected_index) => selected_index == content_id,
+                                    let selected = match &palette_state.selected_tile {
+                                        Some((selected_index, _)) => *selected_index == content_id,
                                         _ => false,
                                     };
 
@@ -224,12 +224,19 @@ pub fn draw_palette_items(
                                         .on_hover_cursor(egui::CursorIcon::PointingHand);
 
                                     if ui_button.clicked() {
-                                        if palette_state.selected_tile == Some(content_id) {
-                                            palette_state.selected_tile = None;
-                                        } else {
-                                            palette_state.selected_tile = Some(content_id);
+                                        match palette_state.selected_tile {
+                                            Some((selected_index, _))
+                                                if selected_index == content_id =>
+                                            {
+                                                palette_state.selected_tile = None;
+                                                debug!("Tile: {:?} deselected", content_id);
+                                            }
+                                            _ => {
+                                                palette_state.selected_tile =
+                                                    Some((content_id, (*sprite).clone()));
+                                                debug!("Tile: {:?} selected", content_id);
+                                            }
                                         }
-                                        debug!("Tile: {:?} selected", content_id);
                                     }
 
                                     ui.add_space(row_padding);

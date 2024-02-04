@@ -8,7 +8,6 @@ use bevy::render::mesh::{Indices, PrimitiveTopology};
 use bevy::sprite::MaterialMesh2dBundle;
 use bevy::window::PrimaryWindow;
 use bevy_egui::EguiContexts;
-use ryot::bevy_ryot::sprites::{load_sprites, SpritesToBeLoaded};
 use ryot::position::TilePosition;
 use ryot::prelude::*;
 use std::marker::PhantomData;
@@ -155,47 +154,24 @@ fn spawn_camera<C: CompassAssets>(
 }
 
 fn update_cursor_palette_sprite<C: ContentAssets>(
-    content_assets: Res<C>,
     palette_state: Res<PaletteState>,
     mut cursor_query: Query<(
         &mut TextureAtlasSprite,
         &mut Handle<TextureAtlas>,
         &mut SelectedTile,
     )>,
-    mut sprites_to_be_loaded: ResMut<SpritesToBeLoaded>,
 ) {
-    let Some(content_id) = palette_state.selected_tile else {
+    let Some((_, loaded_sprite)) = &palette_state.selected_tile else {
         return;
     };
-
-    let Some(prepared_appearance) = content_assets
-        .prepared_appearances()
-        .get_for_group(AppearanceGroup::Object, content_id)
-    else {
-        return;
-    };
-
-    let sprite_id = prepared_appearance.main_sprite_id;
 
     for (mut sprite, mut atlas_handle, mut selected_tile) in cursor_query.iter_mut() {
-        if let Some((index, handle)) = &selected_tile.0 {
-            if *index == sprite_id as usize && *handle == *atlas_handle {
-                continue;
-            }
-        }
-
-        let sprites = load_sprites(&[sprite_id], &content_assets, &mut sprites_to_be_loaded);
-
-        let Some(new_sprite) = sprites.first() else {
-            continue;
-        };
-
-        *atlas_handle = new_sprite.atlas_texture_handle.clone();
-        sprite.index = new_sprite.get_sprite_index();
+        *atlas_handle = loaded_sprite.atlas_texture_handle.clone();
+        sprite.index = loaded_sprite.get_sprite_index();
 
         selected_tile.0 = Some((
-            new_sprite.get_sprite_index(),
-            new_sprite.atlas_texture_handle.clone(),
+            loaded_sprite.get_sprite_index(),
+            loaded_sprite.atlas_texture_handle.clone(),
         ));
     }
 }
