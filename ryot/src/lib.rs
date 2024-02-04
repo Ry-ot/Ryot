@@ -33,6 +33,8 @@
 
 pub mod appearances;
 
+pub mod drawing_commands;
+
 pub mod drawing;
 
 #[cfg(feature = "bevy")]
