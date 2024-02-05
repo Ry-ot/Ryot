@@ -167,7 +167,12 @@ pub fn update_palette_items<C: ContentAssets>(
 
     palette_state.loaded_images.clear();
 
-    for sprite in load_sprites(sprite_ids, &content_assets, &mut sprites_to_be_loaded) {
+    for sprite in load_sprites(
+        AppearanceGroup::Object,
+        sprite_ids,
+        &content_assets,
+        &mut sprites_to_be_loaded,
+    ) {
         let Some(atlas) = texture_atlases.get(sprite.atlas_texture_handle.clone()) else {
             continue;
         };

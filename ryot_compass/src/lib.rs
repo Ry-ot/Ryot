@@ -19,6 +19,7 @@ mod plan;
 pub use plan::*;
 
 mod serde;
+use ryot::bevy_ryot::sprites::animate_sprite_system;
 pub use serde::types::*;
 
 mod error;
@@ -55,6 +56,10 @@ impl Plugin for AppPlugin {
                 ContentPlugin::<CompassContentAssets>::new(),
                 WorldInspectorPlugin::default().run_if(input_toggle_active(true, KeyCode::Escape)),
             ))
+            .add_systems(
+                Update,
+                animate_sprite_system.run_if(input_toggle_active(true, KeyCode::C)),
+            )
             .insert_resource(ClearColor(Color::rgb(0.12, 0.12, 0.12)));
     }
 }

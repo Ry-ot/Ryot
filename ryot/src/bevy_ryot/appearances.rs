@@ -1,7 +1,7 @@
 //! # Appearances
 //! This module contains the code to load the appearances.dat file.
 //! This file contains the information needed to load sprites and other content.
-use crate::appearances;
+use crate::appearances::{self, FixedFrameGroup};
 use crate::appearances::{AppearanceFlags, Appearances, FrameGroup};
 use crate::drawing::Layer;
 use crate::prelude::*;
@@ -11,6 +11,7 @@ use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
 use bevy::utils::HashMap;
 use prost::Message;
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 /// A plugin to register the Appearance asset and its loader.
@@ -69,6 +70,39 @@ impl AssetLoader for AppearanceAssetLoader {
         &["dat"]
     }
 }
+
+#[derive(Component, Default, Clone, Copy, Debug, Serialize, Deserialize)]
+pub enum CardinalDirection {
+    North,
+    East,
+    #[default]
+    South,
+    West,
+}
+
+#[derive(Component, Debug, Clone, Default, PartialEq)]
+pub struct AppearanceDescriptor {
+    pub group: AppearanceGroup,
+    pub id: u32,
+    pub frame_group_index: FixedFrameGroup,
+}
+
+impl AppearanceDescriptor {
+    pub fn new(group: AppearanceGroup, id: u32, frame_group_index: FixedFrameGroup) -> Self {
+        Self {
+            group,
+            id,
+            frame_group_index,
+        }
+    }
+
+    pub fn object(id: u32) -> Self {
+        Self::new(AppearanceGroup::Object, id, FixedFrameGroup::default())
+    }
+}
+
+#[derive(Component, Debug, Clone, Default)]
+pub(crate) struct LoadingAppearance;
 
 #[derive(Debug, Clone, Default)]
 pub struct PreparedAppearance {

@@ -1,6 +1,5 @@
 use bevy::app::AppExit;
 use ryot::position::TilePosition;
-use std::fmt::Debug;
 use std::io::Cursor;
 
 use bevy::prelude::*;
@@ -21,14 +20,13 @@ use rfd::AsyncFileDialog;
 
 use crate::error_handling::ErrorPlugin;
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
-use bevy::ecs::system::{Command, EntityCommand};
+use bevy::ecs::system::EntityCommand;
 use bevy::window::PrimaryWindow;
 use ryot::drawing::Layer;
 use ryot::drawing_commands::{
-    AddTileContent, ChangeTileContentVisibility, CommandHistory, DeleteTileContent, MapTiles,
-    ReversibleCommand, ReversibleEntityCommand, UndoableCommand, UpdateTileContent,
+    AddTileContent, ChangeTileContentVisibility, CommandHistory, MapTiles, UndoableCommand,
+    UpdateTileContent,
 };
-use ryot::prelude::sprites::*;
 use ryot_compass::helpers::read_file;
 use std::marker::PhantomData;
 
@@ -57,7 +55,7 @@ fn update_map_from_mouse_input<C: ContentAssets>(
     content_assets: Res<C>,
     cursor_pos: Res<CursorPos>,
     palette_state: Res<PaletteState>,
-    loaded_query: Query<(&mut LoadedSprite, &Visibility)>,
+    current_appearance_query: Query<(&mut AppearanceDescriptor, &Visibility)>,
     mouse_button_input: Res<Input<MouseButton>>,
     keyboard_input: Res<Input<KeyCode>>,
 ) {
@@ -66,13 +64,13 @@ fn update_map_from_mouse_input<C: ContentAssets>(
         return;
     };
 
-    let Some((content_id, loaded_sprite)) = &palette_state.selected_tile else {
+    let Some(AppearanceDescriptor { group, id, .. }) = &palette_state.selected_tile else {
         return;
     };
 
     let Some(prepared_appearance) = content_assets
         .prepared_appearances()
-        .get_for_group(AppearanceGroup::Object, *content_id)
+        .get_for_group(group.clone(), *id)
     else {
         return;
     };
@@ -104,11 +102,11 @@ fn update_map_from_mouse_input<C: ContentAssets>(
             return;
         };
 
-        let mut content: Option<(Layer, &LoadedSprite)> = None;
+        let mut content: Option<(Layer, &AppearanceDescriptor)> = None;
 
         for layer in [Layer::Top, Layer::None, Layer::Bottom, Layer::Ground] {
             if let Some(top) = tile_content.get(&layer) {
-                if let Ok((current, visibility)) = loaded_query.get(*top) {
+                if let Ok((current, visibility)) = current_appearance_query.get(*top) {
                     if visibility == Visibility::Hidden {
                         continue;
                     }
@@ -119,7 +117,7 @@ fn update_map_from_mouse_input<C: ContentAssets>(
             }
         }
 
-        let Some((layer, content)) = content else {
+        let Some((layer, _)) = content else {
             return;
         };
 
@@ -132,6 +130,7 @@ fn update_map_from_mouse_input<C: ContentAssets>(
 
     if mouse_button_input.just_pressed(MouseButton::Left) {
         let tile_pos = TilePosition::from(cursor_pos.0);
+        let desired_appearance = AppearanceDescriptor::new(group.clone(), *id, default());
         command_history.commands.push(
             match tiles
                 .entry(tile_pos)
@@ -139,9 +138,9 @@ fn update_map_from_mouse_input<C: ContentAssets>(
                 .get(&prepared_appearance.layer)
             {
                 Some(entity) => {
-                    let (current, _) = loaded_query.get(*entity).unwrap();
+                    let (current, _) = current_appearance_query.get(*entity).unwrap();
                     let command =
-                        UpdateTileContent(Some(loaded_sprite.clone()), Some(current.clone()));
+                        UpdateTileContent(Some(desired_appearance), Some(current.clone()));
 
                     commands.add(command.clone().with_entity(*entity));
 
@@ -150,7 +149,7 @@ fn update_map_from_mouse_input<C: ContentAssets>(
                 None => {
                     let entity = commands.spawn_empty().id();
                     let command =
-                        AddTileContent(tile_pos, loaded_sprite.clone(), prepared_appearance.layer);
+                        AddTileContent(tile_pos, desired_appearance, prepared_appearance.layer);
                     commands.add(command.clone().with_entity(entity));
                     UndoableCommand::Entity(entity, Box::new(command.clone()))
                 }

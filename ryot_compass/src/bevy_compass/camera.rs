@@ -50,19 +50,14 @@ impl<C: CompassAssets> Plugin for CameraPlugin<C> {
 #[derive(Resource, Debug, Default)]
 pub struct CursorPos(pub Vec2);
 
-#[derive(Debug, Component, Default)]
-pub struct SelectedTile(Option<(usize, Handle<TextureAtlas>)>);
+#[derive(Component)]
+pub struct CursorPointer;
 
 fn spawn_cursor(mut commands: Commands) {
     commands.spawn((
-        SpriteSheetBundle {
-            sprite: TextureAtlasSprite {
-                anchor: RYOT_ANCHOR,
-                ..Default::default()
-            },
-            ..default()
-        },
-        SelectedTile::default(),
+        CursorPointer,
+        AppearanceDescriptor::default(),
+        TilePosition::default(),
     ));
 }
 
@@ -155,24 +150,17 @@ fn spawn_camera<C: CompassAssets>(
 
 fn update_cursor_palette_sprite(
     palette_state: Res<PaletteState>,
-    mut cursor_query: Query<(
-        &mut TextureAtlasSprite,
-        &mut Handle<TextureAtlas>,
-        &mut SelectedTile,
-    )>,
+    mut cursor_query: Query<&mut AppearanceDescriptor, With<CursorPointer>>,
 ) {
-    let Some((_, loaded_sprite)) = &palette_state.selected_tile else {
+    let Some(selected) = &palette_state.selected_tile else {
         return;
     };
 
-    for (mut sprite, mut atlas_handle, mut selected_tile) in cursor_query.iter_mut() {
-        *atlas_handle = loaded_sprite.atlas_texture_handle.clone();
-        sprite.index = loaded_sprite.get_sprite_index();
-
-        selected_tile.0 = Some((
-            loaded_sprite.get_sprite_index(),
-            loaded_sprite.atlas_texture_handle.clone(),
-        ));
+    for mut desired_appearance in cursor_query.iter_mut() {
+        if *desired_appearance == *selected {
+            return;
+        }
+        *desired_appearance = selected.clone();
     }
 }
 
@@ -181,9 +169,12 @@ fn update_cursor_visibility(
     palette_state: Res<PaletteState>,
     mut egui_ctx: EguiContexts,
     mut windows: Query<&mut Window>,
-    mut cursor_query: Query<(&mut Transform, &mut Visibility), With<SelectedTile>>,
+    mut cursor_query: Query<
+        (&mut TilePosition, &mut Transform, &mut Visibility),
+        With<CursorPointer>,
+    >,
 ) {
-    for (mut transform, mut visibility) in cursor_query.iter_mut() {
+    for (mut tile_pos, mut transform, mut visibility) in cursor_query.iter_mut() {
         if egui_ctx.ctx_mut().is_pointer_over_area() || palette_state.selected_tile.is_none() {
             *visibility = Visibility::Hidden;
 
@@ -194,8 +185,8 @@ fn update_cursor_visibility(
             continue;
         }
 
-        let tile_pos = TilePosition::from(cursor_pos.0);
-        transform.translation = Vec2::from(tile_pos).extend(128.);
+        *tile_pos = TilePosition::from(cursor_pos.0);
+        transform.translation = Vec2::from(*tile_pos).extend(128.);
 
         if tile_pos.is_valid() {
             *visibility = Visibility::Visible;

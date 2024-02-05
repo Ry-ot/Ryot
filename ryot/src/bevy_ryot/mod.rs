@@ -115,7 +115,15 @@ impl<C: PreloadedContentAssets + Default> Plugin for ContentPlugin<C> {
             )
             .add_event::<sprites::SpriteSheetTextureWasLoaded>()
             .add_systems(Update, sprites::load_sprite_sheets_from_command::<C>)
-            .add_systems(Update, sprites::store_atlases_assets_after_loading::<C>);
+            .add_systems(Update, sprites::store_atlases_assets_after_loading::<C>)
+            .add_systems(
+                Update,
+                (
+                    sprites::load_sprite_system::<C>,
+                    sprites::update_sprite_system::<C>,
+                )
+                    .run_if(in_state(InternalContentState::Ready)),
+            );
     }
 }
 
