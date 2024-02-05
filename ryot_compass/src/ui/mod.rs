@@ -5,6 +5,7 @@ use bevy::utils::HashMap;
 use bevy_egui::EguiContexts;
 use egui::load::SizedTexture;
 use egui::{Align, TextureId, Ui};
+use ryot::bevy_ryot::AppearanceDescriptor;
 use std::ops::Range;
 
 #[derive(Resource, Debug)]
@@ -14,7 +15,7 @@ pub struct PaletteState {
     pub width: f32,
     pub grid_size: u32,
     pub tile_padding: f32,
-    pub selected_tile: Option<(u32, LoadedSprite)>,
+    pub selected_tile: Option<AppearanceDescriptor>,
     pub selected_category: TilesetCategory,
     pub category_sprites: HashMap<u32, u32>,
     pub visible_rows: Range<usize>,
@@ -212,7 +213,7 @@ pub fn draw_palette_items(
                                     };
 
                                     let selected = match &palette_state.selected_tile {
-                                        Some((selected_index, _)) => *selected_index == content_id,
+                                        Some(AppearanceDescriptor { id, .. }) => *id == content_id,
                                         _ => false,
                                     };
 
@@ -225,15 +226,19 @@ pub fn draw_palette_items(
 
                                     if ui_button.clicked() {
                                         match palette_state.selected_tile {
-                                            Some((selected_index, _))
-                                                if selected_index == content_id =>
+                                            Some(AppearanceDescriptor { id, .. })
+                                                if id == content_id =>
                                             {
                                                 palette_state.selected_tile = None;
                                                 debug!("Tile: {:?} deselected", content_id);
                                             }
                                             _ => {
                                                 palette_state.selected_tile =
-                                                    Some((content_id, (*sprite).clone()));
+                                                    Some(AppearanceDescriptor::new(
+                                                        sprite.group.clone(),
+                                                        content_id,
+                                                        default(),
+                                                    ));
                                                 debug!("Tile: {:?} selected", content_id);
                                             }
                                         }

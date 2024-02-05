@@ -1,4 +1,4 @@
-use crate::bevy_ryot::sprites::{build_sprite_bundle, LoadedSprite};
+use crate::bevy_ryot::AppearanceDescriptor;
 use crate::drawing::Layer;
 use crate::position::TilePosition;
 use bevy::ecs::system::{Command, EntityCommand};
@@ -27,7 +27,7 @@ pub enum UndoableCommand {
 pub struct MapTiles(pub HashMap<TilePosition, HashMap<Layer, Entity>>);
 
 #[derive(Debug, Clone)]
-pub struct DeleteTileContent(pub TilePosition, pub LoadedSprite, pub Layer);
+pub struct DeleteTileContent(pub TilePosition, pub AppearanceDescriptor, pub Layer);
 impl EntityCommand for DeleteTileContent {
     fn apply(self, id: Entity, world: &mut World) {
         let DeleteTileContent(tile_pos, _, layer) = &self;
@@ -48,24 +48,17 @@ impl ReversibleEntityCommand for DeleteTileContent {
 }
 
 #[derive(Debug, Clone)]
-pub struct AddTileContent(pub TilePosition, pub LoadedSprite, pub Layer);
+pub struct AddTileContent(pub TilePosition, pub AppearanceDescriptor, pub Layer);
 impl EntityCommand for AddTileContent {
     fn apply(self, id: Entity, world: &mut World) {
-        let AddTileContent(tile_pos, loaded_sprite, layer) = self;
+        let AddTileContent(tile_pos, desired_appearance, layer) = self;
+        world
+            .entity_mut(id)
+            .insert((desired_appearance, tile_pos, layer));
 
-        if let Some(bundle) = build_sprite_bundle(
-            loaded_sprite.get_sprite_index(),
-            tile_pos.with_z(10 + layer.base_z_offset()),
-            loaded_sprite.atlas_texture_handle.clone(),
-        ) {
-            world
-                .entity_mut(id.clone())
-                .insert((bundle, tile_pos, loaded_sprite, layer));
-
-            let mut map_tiles = world.resource_mut::<MapTiles>();
-            let content = map_tiles.entry(self.0).or_default();
-            content.insert(layer, id);
-        }
+        let mut map_tiles = world.resource_mut::<MapTiles>();
+        let content = map_tiles.entry(self.0).or_default();
+        content.insert(layer, id);
     }
 }
 
@@ -120,7 +113,10 @@ impl ReversibleCommand for ChangeTileContentVisibility {
 }
 
 #[derive(Debug, Clone)]
-pub struct UpdateTileContent(pub Option<LoadedSprite>, pub Option<LoadedSprite>);
+pub struct UpdateTileContent(
+    pub Option<AppearanceDescriptor>,
+    pub Option<AppearanceDescriptor>,
+);
 impl EntityCommand for UpdateTileContent {
     fn apply(self, id: Entity, world: &mut World) {
         let UpdateTileContent(loaded_sprite, _) = &self;
@@ -130,16 +126,8 @@ impl EntityCommand for UpdateTileContent {
             return;
         };
 
-        if let Some(mut loaded) = world.get_mut::<LoadedSprite>(id) {
+        if let Some(mut loaded) = world.get_mut::<AppearanceDescriptor>(id) {
             *loaded = loaded_sprite.clone();
-        }
-
-        if let Some(mut atlas_sprite) = world.get_mut::<TextureAtlasSprite>(id) {
-            atlas_sprite.index = loaded_sprite.get_sprite_index();
-        }
-
-        if let Some(mut atlas_handle) = world.get_mut::<Handle<TextureAtlas>>(id) {
-            *atlas_handle = loaded_sprite.atlas_texture_handle.clone();
         }
 
         if let Some(mut visibility) = world.get_mut::<Visibility>(id) {

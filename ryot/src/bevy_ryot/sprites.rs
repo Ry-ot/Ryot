@@ -1,5 +1,5 @@
 //! Sprite loading and drawing.
-use crate::appearances::{SpriteSheetData, SpriteSheetDataSet};
+use crate::appearances::{FixedFrameGroup, SpriteSheetData, SpriteSheetDataSet};
 use crate::bevy_ryot::InternalContentState;
 use crate::position::TilePosition;
 use crate::prelude::*;
@@ -15,15 +15,31 @@ pub(crate) struct SpriteSheetTextureWasLoaded {
     pub atlas: TextureAtlas,
 }
 
+/// A component that holds the loaded sprites in a vector.
+#[derive(Component, Debug, Clone, Default)]
+pub struct LoadedSprites(pub Vec<LoadedSprite>);
+
 /// A struct that holds the information needed to draw a sprite.
 /// It's a wrapper around a sprite sheet and a sprite id, that also holds the
 /// handle to the texture atlas.
 #[derive(Debug, Clone, Component)]
 pub struct LoadedSprite {
     pub sprite_id: u32,
+    pub group: AppearanceGroup,
     pub config: SpriteSheetConfig,
     pub sprite_sheet: SpriteSheetData,
     pub atlas_texture_handle: Handle<TextureAtlas>,
+}
+
+/// A component that holds the information needed to animate a sprite.
+#[derive(Component, Default)]
+pub struct AnimationSprite {
+    pub timer: Timer,
+    pub sprites: Vec<LoadedSprite>,
+    pub initial_index: usize,
+    pub phase: usize,
+    pub skip: usize,
+    pub total_phases: usize,
 }
 
 /// Struct that represents sprites that were requested but are not yet loaded.
@@ -35,6 +51,7 @@ pub struct SpritesToBeLoaded {
 
 impl LoadedSprite {
     pub fn new(
+        group: AppearanceGroup,
         sprite_id: u32,
         sprite_sheets: &SpriteSheetDataSet,
         atlas_handles: &HashMap<String, Handle<TextureAtlas>>,
@@ -42,6 +59,7 @@ impl LoadedSprite {
         let sprite_sheet = sprite_sheets.get_by_sprite_id(sprite_id)?;
 
         Some(Self {
+            group,
             sprite_id,
             config: sprite_sheets.config,
             sprite_sheet: sprite_sheet.clone(),
@@ -64,6 +82,7 @@ impl LoadedSprite {
 /// If the sprite sheet is not loaded yet, it adds the sprite to SpritesToBeLoaded resource
 /// It returns only the loaded sprites.
 pub fn load_sprites<C: ContentAssets>(
+    group: AppearanceGroup,
     sprite_ids: &[u32],
     content_assets: &Res<C>,
     sprites_to_be_loaded: &mut ResMut<SpritesToBeLoaded>,
@@ -85,6 +104,7 @@ pub fn load_sprites<C: ContentAssets>(
         match content_assets.get_atlas_handle(sprite_sheet.file.as_str()) {
             Some(handle) => {
                 loaded.push(LoadedSprite {
+                    group: group.clone(),
                     sprite_id: *sprite_id,
                     config: sprite_sheets.config,
                     sprite_sheet: sprite_sheet.clone(),
@@ -304,4 +324,239 @@ pub(crate) fn prepare_sprites<C: PreloadedContentAssets>(
     state.set(InternalContentState::Ready);
 
     debug!("Finished preparing sprites");
+}
+
+fn load_desired_appereance_sprite<C: ContentAssets>(
+    group: AppearanceGroup,
+    id: u32,
+    frame_group_index: FixedFrameGroup,
+    direction: Option<&CardinalDirection>,
+    content_assets: &Res<C>,
+    sprites_to_be_loaded: &mut ResMut<SpritesToBeLoaded>,
+) -> Option<(
+    LoadedSprite,
+    AnimationSprite,
+    Vec<LoadedSprite>,
+    PreparedAppearance,
+)> {
+    let prepared_appearance = content_assets
+        .prepared_appearances()
+        .get_for_group(group.clone(), id)?;
+
+    let frame_group = prepared_appearance
+        .frame_groups
+        .get(frame_group_index as usize)?;
+    let sprite_info = frame_group.sprite_info.as_ref()?;
+
+    let sprites = load_sprites(
+        group.clone(),
+        &sprite_info.sprite_id,
+        content_assets,
+        sprites_to_be_loaded,
+    );
+
+    // This means that it was not loaded yet, and loading was requested
+    if sprites.len() != sprite_info.sprite_id.len() {
+        return None;
+    }
+
+    let direction_index = match direction {
+        Some(CardinalDirection::North) => 0,
+        Some(CardinalDirection::East) => 1,
+        Some(CardinalDirection::South) => 2,
+        Some(CardinalDirection::West) => 3,
+        None => 0,
+    } * sprite_info.layers() as usize;
+    let sprite = sprites.get(direction_index)?;
+
+    let animation_sprite = if let Some(animation) = sprite_info.animation.as_ref() {
+        AnimationSprite {
+            timer: Timer::from_seconds(0.1, TimerMode::Repeating),
+            sprites: sprites.clone(),
+            phase: 0,
+            initial_index: direction_index,
+            total_phases: animation.sprite_phase.len(),
+            skip: (sprite_info.layers()
+                * sprite_info.pattern_width()
+                * sprite_info.pattern_height()
+                * sprite_info.pattern_depth()) as usize,
+        }
+    } else {
+        AnimationSprite::default()
+    };
+    Some((
+        sprite.clone(),
+        animation_sprite,
+        sprites,
+        prepared_appearance.clone(),
+    ))
+}
+
+type UninitializedSpriteFilter = (
+    With<AppearanceDescriptor>,
+    Without<TextureAtlasSprite>,
+    Without<AnimationSprite>,
+);
+
+type InitializedSpriteFilter = (
+    With<AppearanceDescriptor>,
+    With<TextureAtlasSprite>,
+    With<AnimationSprite>,
+    Or<(With<LoadingAppearance>, Changed<AppearanceDescriptor>)>,
+);
+
+/// Update the sprite system, which updates the sprite appearance based on the
+/// `AppearanceDescriptor` component. It also updates the `LoadedSprites` component
+/// with the new sprites.
+/// It's meant to run every frame to update the appearance of the entities when the
+/// `AppearanceDescriptor` changes.
+pub(crate) fn update_sprite_system<C: ContentAssets>(
+    mut commands: Commands,
+    mut query: Query<
+        (
+            Entity,
+            &AppearanceDescriptor,
+            Option<&CardinalDirection>,
+            &mut LoadedSprites,
+            &mut Handle<TextureAtlas>,
+            &mut TextureAtlasSprite,
+            &mut AnimationSprite,
+        ),
+        InitializedSpriteFilter,
+    >,
+    content_assets: Res<C>,
+    mut sprites_to_be_loaded: ResMut<SpritesToBeLoaded>,
+) {
+    for (
+        entity,
+        AppearanceDescriptor {
+            group,
+            id,
+            frame_group_index,
+        },
+        direction,
+        mut loaded_sprites,
+        mut atlas,
+        mut atlas_sprite,
+        mut animation_sprite,
+    ) in &mut query
+    {
+        let (sprite, anim, sprites, _) = match load_desired_appereance_sprite(
+            group.clone(),
+            *id,
+            *frame_group_index,
+            direction,
+            &content_assets,
+            &mut sprites_to_be_loaded,
+        ) {
+            Some(value) => value,
+            None => {
+                commands.entity(entity).insert(LoadingAppearance);
+                continue;
+            }
+        };
+        *loaded_sprites = LoadedSprites(sprites.clone());
+        *atlas = sprite.atlas_texture_handle.clone();
+        atlas_sprite.index = sprite.get_sprite_index();
+        *animation_sprite = anim;
+
+        commands.entity(entity).remove::<LoadingAppearance>();
+    }
+}
+
+/// Load sprites for entities that have a `AppearanceDescriptor` and a
+/// `TilePosition` component. This system will wait until all sprites are loaded
+/// before initializing the entity.
+/// It's meant to run only once to complete the initialization of the entities,
+/// or when an entity changes its appearance.
+pub(crate) fn load_sprite_system<C: ContentAssets>(
+    mut commands: Commands,
+    mut query: Query<
+        (
+            Entity,
+            &TilePosition,
+            &AppearanceDescriptor,
+            Option<&CardinalDirection>,
+        ),
+        UninitializedSpriteFilter,
+    >,
+    content_assets: Res<C>,
+    mut sprites_to_be_loaded: ResMut<SpritesToBeLoaded>,
+) {
+    for (
+        entity,
+        position,
+        AppearanceDescriptor {
+            group,
+            id,
+            frame_group_index,
+        },
+        direction,
+    ) in &mut query
+    {
+        let (sprite, anim, sprites, prepared_appearance) = match load_desired_appereance_sprite(
+            group.clone(),
+            *id,
+            *frame_group_index,
+            direction,
+            &content_assets,
+            &mut sprites_to_be_loaded,
+        ) {
+            Some(value) => value,
+            None => {
+                commands.entity(entity).insert(LoadingAppearance);
+                continue;
+            }
+        };
+
+        commands
+            .entity(entity)
+            .insert(LoadedSprites(sprites.clone()))
+            .insert(SpriteSheetBundle {
+                transform: Transform::from_translation(
+                    position
+                        .with_z(10 + prepared_appearance.layer.base_z_offset())
+                        .into(),
+                ),
+                sprite: TextureAtlasSprite {
+                    index: sprite.get_sprite_index(),
+                    anchor: RYOT_ANCHOR,
+                    ..Default::default()
+                },
+                texture_atlas: sprite.atlas_texture_handle.clone(),
+                ..default()
+            })
+            .insert(anim)
+            .remove::<LoadingAppearance>();
+    }
+}
+
+/// A system that animates the sprites based on the `AnimationSprite` component.
+/// It's meant to run every frame to update the animation of the entities.
+/// It will only run if the entity has a `TextureAtlasSprite` and an `AnimationSprite` component.
+pub fn animate_sprite_system(
+    time: Res<Time>,
+    mut sprites_to_animate: Query<(
+        &mut AnimationSprite,
+        &mut Handle<TextureAtlas>,
+        &mut TextureAtlasSprite,
+    )>,
+) {
+    for (mut anim, mut atlas, mut atlas_sprite) in &mut sprites_to_animate {
+        anim.timer.tick(time.delta());
+        if anim.timer.just_finished() {
+            anim.phase += 1;
+            if anim.phase >= anim.total_phases {
+                anim.phase = 0;
+            }
+            let Some(sprite) = anim
+                .sprites
+                .get(anim.initial_index + anim.phase * anim.skip)
+            else {
+                return;
+            };
+            *atlas = sprite.atlas_texture_handle.clone();
+            atlas_sprite.index = sprite.get_sprite_index();
+        }
+    }
 }
