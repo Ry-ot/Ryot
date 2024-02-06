@@ -1,7 +1,7 @@
 use glam::UVec2;
 use serde::Deserialize;
 
-#[derive(Debug, Copy, Clone, Default, Deserialize)]
+#[derive(Debug, Copy, Clone, Deserialize)]
 #[allow(unused)]
 pub struct SpriteSheetConfig {
     pub tile_size: UVec2,
@@ -10,6 +10,17 @@ pub struct SpriteSheetConfig {
     pub compression_config: Option<CompressionConfig>,
     #[serde(default)]
     pub encoding_config: Option<EncodingConfig>,
+}
+
+impl Default for SpriteSheetConfig {
+    fn default() -> Self {
+        SpriteSheetConfig {
+            tile_size: UVec2::new(32, 32),
+            sheet_size: UVec2::new(384, 384),
+            compression_config: None,
+            encoding_config: None,
+        }
+    }
 }
 
 impl SpriteSheetConfig {
