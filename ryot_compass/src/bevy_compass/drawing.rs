@@ -1,4 +1,4 @@
-use crate::{gui_is_not_in_use, CursorPos, PaletteState};
+use crate::{gui_is_not_in_use, CursorPointer, CursorPos};
 use bevy::app::{App, Plugin, Update};
 use bevy::ecs::system::EntityCommand;
 use bevy::input::Input;
@@ -48,7 +48,10 @@ fn delete_tile_content(
     tiles: ResMut<MapTiles>,
     mut command_history: ResMut<DrawingCommandHistory>,
     cursor_pos: Res<CursorPos>,
-    current_appearance_query: Query<(&mut AppearanceDescriptor, &Visibility)>,
+    current_appearance_query: Query<
+        (&mut AppearanceDescriptor, &Visibility),
+        Without<CursorPointer>,
+    >,
     mouse_button_input: Res<Input<MouseButton>>,
 ) {
     if mouse_button_input.just_pressed(MouseButton::Right) {
@@ -130,69 +133,72 @@ fn undo_tile_action(
     }
 }
 
-#[allow(clippy::too_many_arguments)]
 fn draw_to_tile<C: ContentAssets>(
     mut commands: Commands,
     mut tiles: ResMut<MapTiles>,
     mut command_history: ResMut<DrawingCommandHistory>,
     content_assets: Res<C>,
-    cursor_pos: Res<CursorPos>,
-    palette_state: Res<PaletteState>,
-    current_appearance_query: Query<(&mut AppearanceDescriptor, &Visibility)>,
+    current_appearance_query: Query<
+        (&mut AppearanceDescriptor, &Visibility),
+        Without<CursorPointer>,
+    >,
     mouse_button_input: Res<Input<MouseButton>>,
+    query: Query<
+        (&AppearanceDescriptor, &TilePosition),
+        (With<CursorPointer>, Changed<TilePosition>),
+    >,
 ) {
     if content_assets.sprite_sheet_data_set().is_none() {
         warn!("Trying to draw a sprite without any loaded content");
         return;
     };
 
-    let Some(AppearanceDescriptor { group, id, .. }) = &palette_state.selected_tile else {
-        return;
-    };
+    for (AppearanceDescriptor { group, id, .. }, tile_pos) in &query {
+        let tile_pos = *tile_pos;
 
-    let Some(prepared_appearance) = content_assets
-        .prepared_appearances()
-        .get_for_group(*group, *id)
-    else {
-        return;
-    };
-
-    if mouse_button_input.just_pressed(MouseButton::Left) {
-        let layer = prepared_appearance.layer;
-        let tile_pos = TilePosition::from(cursor_pos.0);
-        let appearance = AppearanceDescriptor::new(*group, *id, default());
-
-        let new_bundle = Some(DrawingBundle {
-            layer,
-            tile_pos,
-            appearance,
-            visibility: Visibility::Visible,
-        });
-
-        let entity = tiles
-            .entry(tile_pos)
-            .or_default()
-            .get(&layer)
-            .map_or_else(|| commands.spawn_empty().id(), |&e| e);
-
-        let old_bundle = match current_appearance_query.get(entity) {
-            Ok((appearance, visibility)) => Some(DrawingBundle {
-                layer,
-                tile_pos,
-                appearance: *appearance,
-                visibility: *visibility,
-            }),
-            Err(_) => None,
+        let Some(prepared_appearance) = content_assets
+            .prepared_appearances()
+            .get_for_group(*group, *id)
+        else {
+            return;
         };
 
-        let command = UpdateTileContent(new_bundle, old_bundle);
-        commands.add(command.with_entity(entity));
-        command_history
-            .performed_commands
-            .push(ReversibleCommandRecord::new(
+        if mouse_button_input.pressed(MouseButton::Left) {
+            let layer = prepared_appearance.layer;
+            let appearance = AppearanceDescriptor::new(*group, *id, default());
+
+            let new_bundle = Some(DrawingBundle {
                 layer,
                 tile_pos,
-                Box::new(command),
-            ));
+                appearance,
+                visibility: Visibility::Visible,
+            });
+
+            let entity = tiles
+                .entry(tile_pos)
+                .or_default()
+                .get(&layer)
+                .map_or_else(|| commands.spawn_empty().id(), |&e| e);
+
+            let old_bundle = match current_appearance_query.get(entity) {
+                Ok((appearance, visibility)) => Some(DrawingBundle {
+                    layer,
+                    tile_pos,
+                    appearance: *appearance,
+                    visibility: *visibility,
+                }),
+                Err(_) => None,
+            };
+
+            let command = UpdateTileContent(new_bundle, old_bundle);
+            commands.add(command.with_entity(entity));
+            command_history
+                .performed_commands
+                .push(ReversibleCommandRecord::new(
+                    layer,
+                    tile_pos,
+                    Box::new(command),
+                ));
+        }
     }
 }

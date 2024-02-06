@@ -185,8 +185,12 @@ fn update_cursor_visibility(
             continue;
         }
 
-        *tile_pos = TilePosition::from(cursor_pos.0);
-        transform.translation = Vec2::from(*tile_pos).extend(999.);
+        let new_tile_pos = TilePosition::from(cursor_pos.0);
+
+        if *tile_pos != new_tile_pos {
+            *tile_pos = TilePosition::from(cursor_pos.0);
+            transform.translation = Vec2::from(*tile_pos).extend(999.);
+        }
 
         if tile_pos.is_valid() {
             *visibility = Visibility::Visible;
