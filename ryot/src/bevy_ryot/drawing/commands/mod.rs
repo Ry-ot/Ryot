@@ -1,17 +1,19 @@
 use crate::bevy_ryot::drawing::Layer;
 use crate::position::TilePosition;
-use bevy::prelude::{Commands, Deref, DerefMut, Entity, Resource};
+use bevy::prelude::{Commands, Entity, Resource};
 
 mod update_tile_content;
 pub use update_tile_content::*;
 
-#[derive(Default, Resource, Deref, DerefMut)]
+#[derive(Default, Resource)]
 pub struct DrawingCommandHistory {
-    pub commands: Vec<ReversibleCommandRecord>,
+    pub performed_commands: Vec<ReversibleCommandRecord>,
+    pub reversed_commands: Vec<ReversibleCommandRecord>,
 }
 
 pub trait ReversibleCommand: Send + Sync + 'static {
     fn undo(&self, commands: &mut Commands, entity: Option<Entity>);
+    fn redo(&self, commands: &mut Commands, entity: Option<Entity>);
 }
 
 pub struct ReversibleCommandRecord {
