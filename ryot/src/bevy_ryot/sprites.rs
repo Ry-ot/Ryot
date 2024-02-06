@@ -104,7 +104,7 @@ pub fn load_sprites<C: ContentAssets>(
         match content_assets.get_atlas_handle(sprite_sheet.file.as_str()) {
             Some(handle) => {
                 loaded.push(LoadedSprite {
-                    group: group.clone(),
+                    group,
                     sprite_id: *sprite_id,
                     config: sprite_sheets.config,
                     sprite_sheet: sprite_sheet.clone(),
@@ -341,7 +341,7 @@ fn load_desired_appereance_sprite<C: ContentAssets>(
 )> {
     let prepared_appearance = content_assets
         .prepared_appearances()
-        .get_for_group(group.clone(), id)?;
+        .get_for_group(group, id)?;
 
     let frame_group = prepared_appearance
         .frame_groups
@@ -349,7 +349,7 @@ fn load_desired_appereance_sprite<C: ContentAssets>(
     let sprite_info = frame_group.sprite_info.as_ref()?;
 
     let sprites = load_sprites(
-        group.clone(),
+        group,
         &sprite_info.sprite_id,
         content_assets,
         sprites_to_be_loaded,
@@ -442,7 +442,7 @@ pub(crate) fn update_sprite_system<C: ContentAssets>(
     ) in &mut query
     {
         let (sprite, anim, sprites, _) = match load_desired_appereance_sprite(
-            group.clone(),
+            *group,
             *id,
             *frame_group_index,
             direction,
@@ -467,8 +467,7 @@ pub(crate) fn update_sprite_system<C: ContentAssets>(
 /// Load sprites for entities that have a `AppearanceDescriptor` and a
 /// `TilePosition` component. This system will wait until all sprites are loaded
 /// before initializing the entity.
-/// It's meant to run only once to complete the initialization of the entities,
-/// or when an entity changes its appearance.
+/// It's meant to run only once to complete the initialization of the entities.
 pub(crate) fn load_sprite_system<C: ContentAssets>(
     mut commands: Commands,
     mut query: Query<
@@ -495,7 +494,7 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
     ) in &mut query
     {
         let (sprite, anim, sprites, prepared_appearance) = match load_desired_appereance_sprite(
-            group.clone(),
+            *group,
             *id,
             *frame_group_index,
             direction,
@@ -515,7 +514,7 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
             .insert(SpriteSheetBundle {
                 transform: Transform::from_translation(
                     position
-                        .with_z(10 + prepared_appearance.layer.base_z_offset())
+                        .with_z(100 + prepared_appearance.layer.base_z_offset())
                         .into(),
                 ),
                 sprite: TextureAtlasSprite {

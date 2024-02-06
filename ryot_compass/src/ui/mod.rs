@@ -235,7 +235,7 @@ pub fn draw_palette_items(
                                             _ => {
                                                 palette_state.selected_tile =
                                                     Some(AppearanceDescriptor::new(
-                                                        sprite.group.clone(),
+                                                        sprite.group,
                                                         content_id,
                                                         default(),
                                                     ));

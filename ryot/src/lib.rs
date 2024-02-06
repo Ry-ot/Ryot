@@ -30,12 +30,9 @@
 //!   contents, including configuring and loading them.
 
 #![feature(lazy_cell)]
+#![feature(return_position_impl_trait_in_trait)]
 
 pub mod appearances;
-
-pub mod drawing_commands;
-
-pub mod drawing;
 
 #[cfg(feature = "bevy")]
 pub mod bevy_ryot;

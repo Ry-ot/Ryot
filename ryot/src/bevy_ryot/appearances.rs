@@ -3,8 +3,7 @@
 //! This file contains the information needed to load sprites and other content.
 use crate::appearances::{self, FixedFrameGroup};
 use crate::appearances::{AppearanceFlags, Appearances, FrameGroup};
-use crate::drawing::Layer;
-use crate::prelude::*;
+use crate::prelude::{drawing::*, *};
 use bevy::asset::io::Reader;
 use bevy::asset::{Asset, AssetLoader, AsyncReadExt, BoxedFuture, LoadContext};
 use bevy::prelude::*;
@@ -80,7 +79,7 @@ pub enum CardinalDirection {
     West,
 }
 
-#[derive(Component, Debug, Clone, Default, PartialEq)]
+#[derive(Component, Debug, Copy, Clone, Default, PartialEq)]
 pub struct AppearanceDescriptor {
     pub group: AppearanceGroup,
     pub id: u32,
@@ -158,7 +157,7 @@ impl PreparedAppearances {
     }
 }
 
-#[derive(Hash, Eq, Default, PartialEq, Debug, Clone)]
+#[derive(Hash, Eq, Default, PartialEq, Debug, Copy, Clone)]
 pub enum AppearanceGroup {
     #[default]
     Object,
@@ -203,12 +202,12 @@ pub(crate) fn prepare_appearances<C: PreloadedContentAssets>(
         (&appearances.missile, AppearanceGroup::Missile),
     ] {
         process_appearances(from, |id, appearance| {
-            prepared_appearances.insert(group.clone(), id, appearance.clone());
+            prepared_appearances.insert(group, id, appearance.clone());
         });
 
         debug!(
             "{} out of {} '{}' prepared",
-            prepared_appearances.get_group(group.clone()).unwrap().len(),
+            prepared_appearances.get_group(group).unwrap().len(),
             from.len(),
             group.label()
         );

@@ -133,7 +133,7 @@ fn spawn_camera<C: CompassAssets>(
     // Spawn the square with the grid
     commands.spawn(MaterialMesh2dBundle {
         mesh: mesh_handle.into(),
-        transform: Transform::from_translation(Vec2::ZERO.extend(256.)),
+        transform: Transform::from_translation(Vec2::ZERO.extend(998.)),
         material: materials.add(ColorMaterial::default()),
         ..default()
     });
@@ -160,7 +160,7 @@ fn update_cursor_palette_sprite(
         if *desired_appearance == *selected {
             return;
         }
-        *desired_appearance = selected.clone();
+        *desired_appearance = *selected;
     }
 }
 
@@ -186,7 +186,7 @@ fn update_cursor_visibility(
         }
 
         *tile_pos = TilePosition::from(cursor_pos.0);
-        transform.translation = Vec2::from(*tile_pos).extend(128.);
+        transform.translation = Vec2::from(*tile_pos).extend(999.);
 
         if tile_pos.is_valid() {
             *visibility = Visibility::Visible;

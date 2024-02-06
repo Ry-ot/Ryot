@@ -12,7 +12,9 @@ use serde::{Deserialize, Serialize};
 /// the screen, because it doesn't take into account the tile size. Z is used to
 /// calculate the rendering order of the tile.
 #[cfg(feature = "bevy")]
-#[derive(Eq, PartialEq, Deserialize, Serialize, Component, Default, Clone, Copy, Debug, Hash)]
+#[derive(
+    Eq, PartialEq, Deserialize, Serialize, Component, Reflect, Default, Clone, Copy, Debug, Hash,
+)]
 pub struct TilePosition(pub IVec3);
 #[cfg(not(feature = "bevy"))]
 #[derive(Eq, PartialEq, Deserialize, Serialize, Default, Clone, Copy, Debug, Hash)]
