@@ -9,3 +9,6 @@ pub use gui::*;
 
 mod palette;
 pub use palette::*;
+
+mod drawing;
+pub use drawing::*;

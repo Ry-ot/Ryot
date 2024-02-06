@@ -11,6 +11,8 @@ use std::marker::PhantomData;
 mod async_events;
 pub use async_events::*;
 
+pub mod drawing;
+
 pub mod sprites;
 
 use crate::appearances::{ContentType, SpriteSheetDataSet};
