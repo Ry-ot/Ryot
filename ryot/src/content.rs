@@ -10,10 +10,15 @@ use std::{fs, result};
 pub static CONTENT_CONFIG_PATH: &str = "config/.content.toml";
 pub static SPRITE_SHEET_FOLDER: &str = "sprite-sheets";
 
+#[cfg(not(target_arch = "wasm32"))]
 pub static CONTENT_CONFIG: LazyLock<ContentConfigs> = LazyLock::new(|| {
     let path = assets_root_path().join(CONTENT_CONFIG_PATH);
+
     read_content_configs(path)
 });
+
+#[cfg(target_arch = "wasm32")]
+pub static CONTENT_CONFIG: LazyLock<ContentConfigs> = LazyLock::new(|| ContentConfigs::default());
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct ContentConfigs {
@@ -24,6 +29,7 @@ pub struct ContentConfigs {
 #[derive(Debug, Clone, Deserialize)]
 #[allow(unused)]
 pub struct DirectoryConfigs {
+    #[serde(default = "default_source_path")]
     pub source_path: PathBuf,
     #[serde(default = "assets_root_path")]
     pub destination_path: PathBuf,
@@ -36,6 +42,10 @@ impl Default for DirectoryConfigs {
             destination_path: assets_root_path(),
         }
     }
+}
+
+pub fn default_source_path() -> PathBuf {
+    assets_root_path().join("content")
 }
 
 pub fn assets_root_path() -> PathBuf {
