@@ -88,11 +88,13 @@ fn delete_tile_content(
         );
 
         commands.add(command.with_entity(entity));
-        command_history.push(ReversibleCommandRecord::new(
-            layer,
-            tile_pos,
-            Box::new(command),
-        ));
+        command_history
+            .performed_commands
+            .push(ReversibleCommandRecord::new(
+                layer,
+                tile_pos,
+                Box::new(command),
+            ));
     }
 }
 
@@ -102,15 +104,28 @@ fn undo_tile_action(
     keyboard_input: Res<Input<KeyCode>>,
     mut command_history: ResMut<DrawingCommandHistory>,
 ) {
+    let fn_get_entity = |command_record: &ReversibleCommandRecord| {
+        tiles
+            .get(&command_record.tile_pos)
+            .and_then(|t| t.get(&command_record.layer))
+            .copied()
+    };
+
     if keyboard_input.just_pressed(KeyCode::U) {
-        if let Some(command_record) = command_history.commands.pop() {
-            command_record.command.undo(
-                &mut commands,
-                tiles
-                    .get(&command_record.tile_pos)
-                    .and_then(|t| t.get(&command_record.layer))
-                    .copied(),
-            );
+        if let Some(command_record) = command_history.performed_commands.pop() {
+            command_record
+                .command
+                .undo(&mut commands, fn_get_entity(&command_record));
+            command_history.reversed_commands.push(command_record);
+        }
+    }
+
+    if keyboard_input.just_pressed(KeyCode::R) {
+        if let Some(command_record) = command_history.reversed_commands.pop() {
+            command_record
+                .command
+                .redo(&mut commands, fn_get_entity(&command_record));
+            command_history.performed_commands.push(command_record);
         }
     }
 }
@@ -172,10 +187,12 @@ fn draw_to_tile<C: ContentAssets>(
 
         let command = UpdateTileContent(new_bundle, old_bundle);
         commands.add(command.with_entity(entity));
-        command_history.push(ReversibleCommandRecord::new(
-            layer,
-            tile_pos,
-            Box::new(command),
-        ));
+        command_history
+            .performed_commands
+            .push(ReversibleCommandRecord::new(
+                layer,
+                tile_pos,
+                Box::new(command),
+            ));
     }
 }

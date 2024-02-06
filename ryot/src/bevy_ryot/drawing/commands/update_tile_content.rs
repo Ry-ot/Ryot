@@ -44,4 +44,9 @@ impl ReversibleCommand for UpdateTileContent {
             commands.add(UpdateTileContent(self.1, self.0).with_entity(entity));
         }
     }
+    fn redo(&self, commands: &mut Commands, entity: Option<Entity>) {
+        if let Some(entity) = entity {
+            commands.add(self.with_entity(entity));
+        }
+    }
 }
