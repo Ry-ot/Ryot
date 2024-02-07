@@ -1,11 +1,8 @@
 use crate::bevy_compass::CompassAssets;
 use crate::helpers::camera::movement;
 use crate::PaletteState;
-use bevy::asset::{Assets, Handle};
 use bevy::math::{Vec2, Vec3};
 use bevy::prelude::*;
-use bevy::render::mesh::{Indices, PrimitiveTopology};
-use bevy::sprite::MaterialMesh2dBundle;
 use bevy::window::PrimaryWindow;
 use bevy_egui::EguiContexts;
 use ryot::bevy_ryot::drawing::Layer;
@@ -79,68 +76,7 @@ fn update_cursor_pos(
     Ok(())
 }
 
-fn spawn_camera<C: CompassAssets>(
-    content: Res<C>,
-    mut commands: Commands,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
-) {
-    let mut positions = Vec::new();
-    let mut colors = Vec::new();
-    let mut indices = Vec::new();
-    let mut idx = 0;
-
-    // Create vertices for the vertical lines (columns)
-    let (bottom_left_tile, top_right_tile) = (TilePosition::MIN, TilePosition::MAX);
-    let (bottom_left, top_right) = (Vec2::from(bottom_left_tile), Vec2::from(top_right_tile));
-    let tile_size = CONTENT_CONFIG.sprite_sheet.tile_size.as_vec2();
-
-    for col in bottom_left_tile.x - 1..=top_right_tile.x {
-        let x_offset = (col * tile_size.x as i32) as f32;
-
-        positions.push([x_offset, bottom_left.y, 0.0]);
-        positions.push([x_offset, top_right.y + tile_size.y, 0.0]);
-
-        // Add colors (white for grid lines)
-        colors.extend(vec![Color::WHITE.as_rgba_f32(); 2]);
-
-        // Add indices for the line
-        indices.extend_from_slice(&[idx, idx + 1]);
-        idx += 2;
-    }
-
-    // Create vertices for the horizontal lines (rows)
-    for row in bottom_left_tile.y - 1..=top_right_tile.y {
-        let y_offset = (row * tile_size.y as i32) as f32;
-
-        positions.push([bottom_left.x - tile_size.x, y_offset, 0.0]);
-        positions.push([top_right.x, y_offset, 0.0]);
-
-        // Add colors (white for grid lines)
-        colors.extend(vec![Color::WHITE.as_rgba_f32(); 2]);
-
-        // Add indices for the line
-        indices.extend_from_slice(&[idx, idx + 1]);
-        idx += 2;
-    }
-
-    // Create the mesh
-    let mut mesh = Mesh::new(PrimitiveTopology::LineList);
-    mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
-    mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, colors);
-    mesh.set_indices(Some(Indices::U32(indices)));
-
-    let mesh_handle: Handle<Mesh> = meshes.add(mesh);
-
-    // Spawn the square with the grid
-    commands.spawn(MaterialMesh2dBundle {
-        mesh: mesh_handle.into(),
-        transform: Transform::from_translation(Vec2::ZERO.extend(998.)),
-        material: materials.add(ColorMaterial::default()),
-        ..default()
-    });
-
-    // Spawn camera
+fn spawn_camera<C: CompassAssets>(content: Res<C>, mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
 
     commands.spawn(SpriteBundle {
