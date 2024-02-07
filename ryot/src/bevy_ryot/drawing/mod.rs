@@ -68,6 +68,16 @@ As we zoom in and out, we change the detail level of the tiles and change visibi
 So when a click happens the first tihng that it does is a c
 */
 
+/// This enum defines the layers that composes a game.
+/// The base layers are defined in the enum and custom layers can be added.
+/// The layers are used to define the rendering order of the tiles.
+/// There are two types of layers: dynamic and static.
+///     - Dynamic layers are used for elements that can change their rendering order
+///     depending on their attributes like position or floor. E.g.: creatures, items, effects.
+///    - Static layers are used for elements that have a fixed rendering order and are always
+///    rendered on top of dynamic layers. E.g.: mouse, grid, ui elements.
+///
+/// Static layers are separated from dynamic layers by the StaticLowerBound layer.
 #[derive(Eq, Hash, PartialEq, Debug, Copy, Clone, Default, Reflect, Component)]
 pub enum Layer {
     #[default]
@@ -77,6 +87,7 @@ pub enum Layer {
     Ground,
     Creature,
     Effect,
+    StaticLowerBound,
     Cursor,
     Custom(i32),
 }
@@ -91,7 +102,7 @@ impl Layer {
     /// We leave a gap of 10 between layers to allow for more layers to be added
     /// in the future and to make it possible to place custom layers between
     /// the default ones.
-    pub fn base_z_offset(&self) -> i32 {
+    pub fn z(&self) -> i32 {
         match self {
             Self::Top => 90,
             Self::Bottom => 80,
@@ -99,7 +110,8 @@ impl Layer {
             Self::Creature => 40,
             Self::Items => 20,
             Self::Ground => 0,
-            Self::Cursor => 1000,
+            Self::StaticLowerBound => 900,
+            Self::Cursor => 999,
             Self::Custom(z) => *z,
         }
     }
