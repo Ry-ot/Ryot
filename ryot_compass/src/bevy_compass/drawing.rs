@@ -4,6 +4,8 @@ use bevy::ecs::system::EntityCommand;
 use bevy::input::Input;
 use bevy::prelude::*;
 use bevy_inspector_egui::quick::ResourceInspectorPlugin;
+use rand::prelude::SliceRandom;
+use rand::thread_rng;
 use ryot::bevy_ryot::drawing::{
     DrawingBundle, DrawingCommandHistory, Layer, MapTiles, ReversibleCommandRecord,
     UpdateTileContent,
@@ -23,7 +25,7 @@ struct UndoRedoConfig {
 impl Default for UndoRedoConfig {
     fn default() -> Self {
         Self {
-            timer: Timer::from_seconds(0.2, TimerMode::Repeating),
+            timer: Timer::from_seconds(0.1, TimerMode::Repeating),
         }
     }
 }
@@ -49,7 +51,11 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
             .register_type::<Layer>()
             .add_systems(
                 Update,
-                (draw_to_tile::<C>, delete_tile_content, undo_tile_action)
+                (
+                    draw_to_tile::<C>,
+                    delete_tile_content,
+                    undo_redo_tile_action,
+                )
                     .run_if(in_state(InternalContentState::Ready))
                     .run_if(gui_is_not_in_use()),
             )
@@ -124,7 +130,7 @@ fn delete_tile_content(
     }
 }
 
-fn undo_tile_action(
+fn undo_redo_tile_action(
     time: Res<Time>,
     mut commands: Commands,
     tiles: ResMut<MapTiles>,
@@ -133,33 +139,24 @@ fn undo_tile_action(
     mut command_history: ResMut<DrawingCommandHistory>,
 ) {
     undo_redo_config.timer.tick(time.delta());
-    if !undo_redo_config.timer.just_finished() {
-        return;
-    }
 
-    let fn_get_entity = |command_record: &ReversibleCommandRecord| {
-        tiles
-            .get(&command_record.tile_pos)
-            .and_then(|t| t.get(&command_record.layer))
-            .copied()
-    };
+    let mut actions: [(
+        KeyCode,
+        fn(&mut Commands, &ResMut<MapTiles>, &mut ResMut<DrawingCommandHistory>),
+    ); 2] = [(KeyCode::U, undo), (KeyCode::R, redo)];
 
-    if should_react_to_input::<KeyCode>(true, KeyCode::U, &keyboard_input) {
-        if let Some(command_record) = command_history.performed_commands.pop() {
-            command_record
-                .command
-                .undo(&mut commands, fn_get_entity(&command_record));
-            command_history.reversed_commands.push(command_record);
-        }
-    }
+    actions.shuffle(&mut thread_rng());
 
-    if should_react_to_input::<KeyCode>(true, KeyCode::R, &keyboard_input) {
-        if let Some(command_record) = command_history.reversed_commands.pop() {
-            command_record
-                .command
-                .redo(&mut commands, fn_get_entity(&command_record));
-            command_history.performed_commands.push(command_record);
-        }
+    for &(key_code, action) in actions.iter() {
+        react_to_input(
+            key_code,
+            action,
+            &mut undo_redo_config.timer,
+            &keyboard_input,
+            &mut commands,
+            &tiles,
+            &mut command_history,
+        );
     }
 }
 
@@ -223,6 +220,10 @@ fn draw_to_tile<C: ContentAssets>(
             Err(_) => None,
         };
 
+        if old_bundle == new_bundle {
+            return;
+        }
+
         let command = UpdateTileContent(new_bundle, old_bundle);
         commands.add(command.with_entity(entity));
         command_history
@@ -245,4 +246,57 @@ fn should_react_to_input<T: Copy + Eq + Hash + Send + Sync + 'static>(
     }
 
     triggered && input_resource.pressed(desired_input)
+}
+
+fn redo(
+    commands: &mut Commands,
+    tiles: &ResMut<MapTiles>,
+    command_history: &mut ResMut<DrawingCommandHistory>,
+) {
+    if let Some(command_record) = command_history.reversed_commands.pop() {
+        command_record.command.redo(
+            commands,
+            get_entity_from_command_record(tiles, &command_record),
+        );
+        command_history.performed_commands.push(command_record);
+    }
+}
+
+fn undo(
+    commands: &mut Commands,
+    tiles: &ResMut<MapTiles>,
+    command_history: &mut ResMut<DrawingCommandHistory>,
+) {
+    if let Some(command_record) = command_history.performed_commands.pop() {
+        command_record.command.undo(
+            commands,
+            get_entity_from_command_record(tiles, &command_record),
+        );
+        command_history.reversed_commands.push(command_record);
+    }
+}
+
+fn get_entity_from_command_record(
+    tiles: &ResMut<MapTiles>,
+    command_record: &ReversibleCommandRecord,
+) -> Option<Entity> {
+    tiles
+        .get(&command_record.tile_pos)
+        .and_then(|t| t.get(&command_record.layer))
+        .copied()
+}
+
+fn react_to_input<T: Copy + Eq + Hash + Send + Sync + 'static>(
+    desired_input: T,
+    block: fn(&mut Commands, &ResMut<MapTiles>, &mut ResMut<DrawingCommandHistory>),
+    timer: &mut Timer,
+    keyboard_input: &Res<Input<T>>,
+    commands: &mut Commands,
+    tiles: &ResMut<MapTiles>,
+    command_history: &mut ResMut<DrawingCommandHistory>,
+) {
+    if should_react_to_input::<T>(timer.just_finished(), desired_input, keyboard_input) {
+        timer.reset();
+        block(commands, tiles, command_history);
+    }
 }

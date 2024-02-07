@@ -10,7 +10,7 @@ pub use commands::*;
 #[derive(Debug, Default, Resource, Deref, Reflect, DerefMut)]
 pub struct MapTiles(pub HashMap<TilePosition, HashMap<Layer, Entity>>);
 
-#[derive(Bundle, Debug, Copy, Clone, Default)]
+#[derive(Bundle, Debug, Copy, Clone, Default, Eq, PartialEq)]
 pub struct DrawingBundle {
     pub layer: Layer,
     pub tile_pos: TilePosition,
