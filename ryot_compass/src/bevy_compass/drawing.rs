@@ -3,20 +3,19 @@ use bevy::app::{App, Plugin, Update};
 use bevy::ecs::system::EntityCommand;
 use bevy::input::Input;
 use bevy::prelude::*;
-use bevy_inspector_egui::quick::ResourceInspectorPlugin;
 use rand::prelude::SliceRandom;
 use rand::thread_rng;
 use ryot::bevy_ryot::drawing::{
-    DrawingBundle, DrawingCommandHistory, Layer, MapTiles, ReversibleCommandRecord,
-    UpdateTileContent,
+    CommandHistory, DrawingBundle, Layer, MapTiles, ReversibleCommandRecord, UpdateTileContent,
 };
 use ryot::bevy_ryot::*;
 use ryot::position::TilePosition;
 use std::hash::Hash;
 use std::marker::PhantomData;
 
-pub struct DrawingPlugin<C: ContentAssets>(PhantomData<C>);
-
+/// This resource is used to configure the undo/redo system.
+/// Currently, it only contains a timer that is used to control the speed of the undo/redo actions.
+/// The default cooldown for undo/redo is 100ms.
 #[derive(Resource)]
 struct UndoRedoConfig {
     timer: Timer,
@@ -29,6 +28,12 @@ impl Default for UndoRedoConfig {
         }
     }
 }
+
+/// The drawing plugin is responsible for handling the core drawing logic and related commands.
+/// It is also responsible for keeping track of a command history, used to perform undo/redo actions.
+/// The plugin also registers the MapTiles resource, that keeps a map between position and layer in the
+/// map and the entity that represents it.
+pub struct DrawingPlugin<C: ContentAssets>(PhantomData<C>);
 
 impl<C: ContentAssets> DrawingPlugin<C> {
     pub fn new() -> Self {
@@ -45,10 +50,8 @@ impl<C: ContentAssets> Default for DrawingPlugin<C> {
 impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
     fn build(&self, app: &mut App) {
         app.init_resource::<UndoRedoConfig>()
-            .init_resource::<DrawingCommandHistory>()
+            .init_resource::<CommandHistory>()
             .init_resource::<MapTiles>()
-            .register_type::<TilePosition>()
-            .register_type::<Layer>()
             .add_systems(
                 Update,
                 (
@@ -62,15 +65,16 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
             .add_systems(
                 OnExit(InternalContentState::PreparingSprites),
                 spawn_grid(Color::WHITE),
-            )
-            .add_plugins(ResourceInspectorPlugin::<MapTiles>::default());
+            );
     }
 }
 
+/// A function that listens to the right mouse button and deletes the content of the tile under the cursor.
+/// It always delete the topmost content of the tile, following the Z-ordering.
 fn delete_tile_content(
     mut commands: Commands,
     tiles: ResMut<MapTiles>,
-    mut command_history: ResMut<DrawingCommandHistory>,
+    mut command_history: ResMut<CommandHistory>,
     current_appearance_query: Query<(&mut AppearanceDescriptor, &Visibility), Without<Cursor>>,
     mouse_button_input: Res<Input<MouseButton>>,
     cursor_query: Query<(&TilePosition, Changed<TilePosition>), With<Cursor>>,
@@ -136,13 +140,13 @@ fn undo_redo_tile_action(
     tiles: ResMut<MapTiles>,
     keyboard_input: Res<Input<KeyCode>>,
     mut undo_redo_config: ResMut<UndoRedoConfig>,
-    mut command_history: ResMut<DrawingCommandHistory>,
+    mut command_history: ResMut<CommandHistory>,
 ) {
     undo_redo_config.timer.tick(time.delta());
 
     let mut actions: [(
         KeyCode,
-        fn(&mut Commands, &ResMut<MapTiles>, &mut ResMut<DrawingCommandHistory>),
+        fn(&mut Commands, &ResMut<MapTiles>, &mut ResMut<CommandHistory>),
     ); 2] = [(KeyCode::U, undo), (KeyCode::R, redo)];
 
     actions.shuffle(&mut thread_rng());
@@ -163,7 +167,7 @@ fn undo_redo_tile_action(
 fn draw_to_tile<C: ContentAssets>(
     mut commands: Commands,
     mut tiles: ResMut<MapTiles>,
-    mut command_history: ResMut<DrawingCommandHistory>,
+    mut command_history: ResMut<CommandHistory>,
     content_assets: Res<C>,
     current_appearance_query: Query<(&mut AppearanceDescriptor, &Visibility), Without<Cursor>>,
     mouse_button_input: Res<Input<MouseButton>>,
@@ -251,7 +255,7 @@ fn should_react_to_input<T: Copy + Eq + Hash + Send + Sync + 'static>(
 fn redo(
     commands: &mut Commands,
     tiles: &ResMut<MapTiles>,
-    command_history: &mut ResMut<DrawingCommandHistory>,
+    command_history: &mut ResMut<CommandHistory>,
 ) {
     if let Some(command_record) = command_history.reversed_commands.pop() {
         command_record.command.redo(
@@ -265,7 +269,7 @@ fn redo(
 fn undo(
     commands: &mut Commands,
     tiles: &ResMut<MapTiles>,
-    command_history: &mut ResMut<DrawingCommandHistory>,
+    command_history: &mut ResMut<CommandHistory>,
 ) {
     if let Some(command_record) = command_history.performed_commands.pop() {
         command_record.command.undo(
@@ -288,12 +292,12 @@ fn get_entity_from_command_record(
 
 fn react_to_input<T: Copy + Eq + Hash + Send + Sync + 'static>(
     desired_input: T,
-    block: fn(&mut Commands, &ResMut<MapTiles>, &mut ResMut<DrawingCommandHistory>),
+    block: fn(&mut Commands, &ResMut<MapTiles>, &mut ResMut<CommandHistory>),
     timer: &mut Timer,
     keyboard_input: &Res<Input<T>>,
     commands: &mut Commands,
     tiles: &ResMut<MapTiles>,
-    command_history: &mut ResMut<DrawingCommandHistory>,
+    command_history: &mut ResMut<CommandHistory>,
 ) {
     if should_react_to_input::<T>(timer.just_finished(), desired_input, keyboard_input) {
         timer.reset();
