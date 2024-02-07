@@ -242,7 +242,7 @@ impl OptionalPlugin for App {
 /// use bevy::prelude::*;
 /// use ryot::prelude::spawn_grid;
 ///
-/// App::new().add_system(Startup, spawn_grid(Color::WHITE));
+/// App::new().add_systems(Startup, spawn_grid(Color::WHITE));
 /// ```
 pub fn spawn_grid(
     color: Color,
