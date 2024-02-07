@@ -1,5 +1,5 @@
 use crate::appearances::{self, FixedFrameGroup};
-use crate::bevy_ryot::AppearanceDescriptor;
+use crate::bevy_ryot::{AppearanceDescriptor, InternalContentState};
 use crate::position::TilePosition;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
@@ -7,12 +7,30 @@ use bevy::utils::HashMap;
 mod commands;
 pub use commands::*;
 
+pub struct DrawingPlugin;
+
+impl Plugin for DrawingPlugin {
+    fn build(&self, app: &mut App) {
+        app.register_type::<Layer>()
+            .register_type::<DetailLevel>()
+            .add_systems(
+                Update,
+                (reduce_detail_level, increase_detail_level)
+                    .chain()
+                    .run_if(in_state(InternalContentState::Ready)),
+            );
+    }
+}
+
 /// A resource that holds the map tiles and the entities that are drawn on them.
 /// An entity location is represented by the combination of a Layer and a Position.
 /// The MapTiles are represented by a HashMap of TilePosition and a HashMap of Layer and Entity.
 /// The MapTiles is used to keep track of the entities that are drawn on the map and their position.
 #[derive(Debug, Default, Resource, Deref, Reflect, DerefMut)]
 pub struct MapTiles(pub HashMap<TilePosition, HashMap<Layer, Entity>>);
+
+#[derive(Component, Debug, Copy, Clone, Default, Eq, PartialEq)]
+pub struct Tile;
 
 /// A bundle that represents an entity drawn to a location (Layer + TilePosition) in the map.
 /// The DrawingBundle is used to create and update the entities that are drawn on the map.
@@ -28,6 +46,7 @@ pub struct DrawingBundle {
     pub tile_pos: TilePosition,
     pub appearance: AppearanceDescriptor,
     pub visibility: Visibility,
+    pub tile: Tile,
 }
 
 impl DrawingBundle {
@@ -36,7 +55,8 @@ impl DrawingBundle {
             layer,
             tile_pos,
             appearance,
-            visibility: Visibility::default(),
+            tile: Tile,
+            visibility: Visibility::Visible,
         }
     }
 
@@ -63,22 +83,63 @@ impl DrawingBundle {
     }
 }
 
-/*
-Drawing levels (keeping it around 100k sprites per level):
-- Max details: 1 floor, 1 top, 1 bottom, 1 ground and 10 contents - ~64x64
-- Medium details: 1 floor: 1 top, 1 bottom, 1 ground and 5 content - ~112x112
-- Minimal details: 1 floor: 1 top, 1 bottom, 1 ground and 1 content - ~160x160
-- Ground+top: 1 floor, 1 top, 1 ground - 224x224
-- Ground only - 320x320
-- >320x320 - Not possible (maybe chunk view so that people can navigate through the map quicker in the future)
-- Draw rules change per detail level
+#[derive(Debug, Copy, Clone, Reflect, Component)]
+pub struct WontDraw;
 
-We load 2-3x the current view but we only set as visible the 1.1 * view.
-As we move the camera, we set the new tiles as visible and the old ones as hidden and we deload/load the edges (as hidden)
-As we zoom in and out, we change the detail level of the tiles and change visibility accordingly.
+/// Drawing levels (we try to keep a maximum of 100k visible sprites per level):
+///     - Max details: 1 floor, 1 top, 1 bottom, 1 ground and 10 contents - ~64x64
+///     - Medium details: 1 floor: 1 top, 1 bottom, 1 ground and 5 content - ~112x112
+///     - Minimal details: 1 floor: 1 top, 1 bottom, 1 ground and 1 content - ~160x160
+///     - Ground+bottom: 1 floor, 1 bottom, 1 ground - 224x224
+///     - Ground only - 320x320
+///     - >320x320 - Not possible (maybe chunk view so that people can navigate through the map quicker in the future)
+///     - Draw rules change per detail level
+///
+/// We load 2-3x the current view but we only set as visible the 1.1 * view.
+/// As we move the camera, we set the new tiles as visible and the old ones as hidden and we deload/load the edges (as hidden)
+/// As we zoom in and out, we change the detail level of the tiles and change visibility accordingly.
+#[derive(Eq, Hash, PartialEq, Debug, Copy, Clone, Default, Reflect, Component)]
+pub enum DetailLevel {
+    #[default]
+    Max,
+    Medium,
+    Minimal,
+    GroundBottom,
+    GroundOnly,
+    None,
+}
 
-So when a click happens the first tihng that it does is a c
-*/
+impl DetailLevel {
+    pub fn from_area(area: u32) -> Self {
+        let size = (area as f32).sqrt() as i32;
+        match size {
+            0..=64 => Self::Max,
+            65..=112 => Self::Medium,
+            113..=160 => Self::Minimal,
+            161..=224 => Self::GroundBottom,
+            225..=320 => Self::GroundOnly,
+            _ => Self::None,
+        }
+    }
+
+    pub fn visible_layers(&self) -> Vec<Layer> {
+        match self {
+            Self::Max => vec![
+                Layer::Items,
+                Layer::Top,
+                Layer::Bottom,
+                Layer::Ground,
+                Layer::Creature,
+                Layer::Effect,
+            ],
+            Self::Medium => vec![Layer::Items, Layer::Top, Layer::Bottom, Layer::Ground],
+            Self::Minimal => vec![Layer::Items, Layer::Bottom, Layer::Ground],
+            Self::GroundBottom => vec![Layer::Bottom, Layer::Ground],
+            Self::GroundOnly => vec![Layer::Ground],
+            Self::None => vec![],
+        }
+    }
+}
 
 /// This enum defines the layers that composes a game.
 /// The base layers are defined in the enum and custom layers can be added.
@@ -136,6 +197,44 @@ impl From<Option<appearances::AppearanceFlags>> for Layer {
             Some(flags) if flags.bottom.is_some() => Self::Bottom,
             Some(flags) if flags.bank.is_some() || flags.clip.is_some() => Self::Ground,
             _ => Self::Items,
+        }
+    }
+}
+
+fn reduce_detail_level(
+    mut commands: Commands,
+    camera_query: Query<&DetailLevel, (With<Camera>, Changed<DetailLevel>)>,
+    mut visible_entities: Query<(Entity, &mut Visibility, &Layer), (Without<WontDraw>, With<Tile>)>,
+) {
+    for detail_level in camera_query.iter() {
+        for (entity, mut visibility, layer) in visible_entities.iter_mut() {
+            if *visibility == Visibility::Hidden {
+                continue;
+            }
+
+            if !detail_level.visible_layers().contains(layer) {
+                *visibility = Visibility::Hidden;
+                commands.entity(entity).insert(WontDraw);
+            }
+        }
+    }
+}
+
+fn increase_detail_level(
+    mut commands: Commands,
+    camera_query: Query<&DetailLevel, (With<Camera>, Changed<DetailLevel>)>,
+    mut invisible_entities: Query<(Entity, &mut Visibility, &Layer), (With<WontDraw>, With<Tile>)>,
+) {
+    for detail_level in camera_query.iter() {
+        for (entity, mut visibility, layer) in invisible_entities.iter_mut() {
+            if *visibility == Visibility::Visible {
+                continue;
+            }
+
+            if detail_level.visible_layers().contains(layer) {
+                *visibility = Visibility::Visible;
+                commands.entity(entity).remove::<WontDraw>();
+            }
         }
     }
 }

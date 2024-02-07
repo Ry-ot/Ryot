@@ -49,7 +49,8 @@ impl<C: ContentAssets> Default for DrawingPlugin<C> {
 
 impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
     fn build(&self, app: &mut App) {
-        app.init_resource::<UndoRedoConfig>()
+        app.add_plugins(drawing::DrawingPlugin)
+            .init_resource::<UndoRedoConfig>()
             .init_resource::<CommandHistory>()
             .init_resource::<MapTiles>()
             .add_systems(
@@ -113,15 +114,8 @@ fn delete_tile_content(
             return;
         };
 
-        let command = UpdateTileContent(
-            None,
-            Some(DrawingBundle {
-                layer,
-                tile_pos,
-                appearance,
-                visibility: Visibility::Visible,
-            }),
-        );
+        let command =
+            UpdateTileContent(None, Some(DrawingBundle::new(layer, tile_pos, appearance)));
 
         commands.add(command.with_entity(entity));
         command_history
@@ -201,13 +195,6 @@ fn draw_to_tile<C: ContentAssets>(
         let layer = prepared_appearance.layer;
         let appearance = AppearanceDescriptor::new(*group, *id, default());
 
-        let new_bundle = Some(DrawingBundle {
-            layer,
-            tile_pos,
-            appearance,
-            visibility: Visibility::Visible,
-        });
-
         let entity = tiles
             .entry(tile_pos)
             .or_default()
@@ -215,14 +202,13 @@ fn draw_to_tile<C: ContentAssets>(
             .map_or_else(|| commands.spawn_empty().id(), |&e| e);
 
         let old_bundle = match current_appearance_query.get(entity) {
-            Ok((appearance, visibility)) => Some(DrawingBundle {
-                layer,
-                tile_pos,
-                appearance: *appearance,
-                visibility: *visibility,
-            }),
+            Ok((appearance, visibility)) => {
+                Some(DrawingBundle::new(layer, tile_pos, *appearance).with_visibility(*visibility))
+            }
             Err(_) => None,
         };
+
+        let new_bundle = Some(DrawingBundle::new(layer, tile_pos, appearance));
 
         if old_bundle == new_bundle {
             return;
