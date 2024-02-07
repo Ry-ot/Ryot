@@ -8,6 +8,8 @@ use bevy::prelude::*;
 use bevy::utils::{HashMap, StableHashSet};
 use std::path::PathBuf;
 
+use self::drawing::Layer;
+
 /// An event that is sent when a sprite sheet texture loading is completed.
 #[derive(Debug, Clone, Event)]
 pub(crate) struct SpriteSheetTextureWasLoaded {
@@ -173,48 +175,6 @@ pub(crate) fn store_atlases_assets_after_loading<C: PreloadedContentAssets>(
     }
 }
 
-/// Primitive draw function, to be replaced with a more sophisticated drawing system.
-pub fn draw_sprite(
-    pos: TilePosition,
-    sprite: &LoadedSprite,
-    commands: &mut Commands,
-) -> Option<Entity> {
-    Some(
-        commands
-            .spawn(build_sprite_bundle(
-                sprite.get_sprite_index(),
-                pos,
-                sprite.atlas_texture_handle.clone(),
-            )?)
-            .id(),
-    )
-}
-
-/// A helper function to build a sprite bundle from a sprite sheet handle, a translation and a sprite index.
-pub fn build_sprite_bundle(
-    index: usize,
-    pos: TilePosition,
-    handle: Handle<TextureAtlas>,
-) -> Option<SpriteSheetBundle> {
-    if !pos.is_valid() {
-        return None;
-    }
-
-    Some(SpriteSheetBundle {
-        transform: Transform {
-            translation: pos.into(),
-            ..default()
-        },
-        sprite: TextureAtlasSprite {
-            index,
-            anchor: RYOT_ANCHOR,
-            ..Default::default()
-        },
-        texture_atlas: handle,
-        ..default()
-    })
-}
-
 pub(crate) fn load_sprite_textures<C: ContentAssets>(
     sprite_ids: Vec<u32>,
     content_assets: &Res<C>,
@@ -333,12 +293,7 @@ fn load_desired_appereance_sprite<C: ContentAssets>(
     direction: Option<&CardinalDirection>,
     content_assets: &Res<C>,
     sprites_to_be_loaded: &mut ResMut<SpritesToBeLoaded>,
-) -> Option<(
-    LoadedSprite,
-    AnimationSprite,
-    Vec<LoadedSprite>,
-    PreparedAppearance,
-)> {
+) -> Option<(LoadedSprite, Option<AnimationSprite>, Vec<LoadedSprite>)> {
     let prepared_appearance = content_assets
         .prepared_appearances()
         .get_for_group(group, id)?;
@@ -369,8 +324,10 @@ fn load_desired_appereance_sprite<C: ContentAssets>(
     } * sprite_info.layers() as usize;
     let sprite = sprites.get(direction_index)?;
 
-    let animation_sprite = if let Some(animation) = sprite_info.animation.as_ref() {
-        AnimationSprite {
+    let animation_sprite = sprite_info
+        .animation
+        .as_ref()
+        .map(|animation| AnimationSprite {
             timer: Timer::from_seconds(0.1, TimerMode::Repeating),
             sprites: sprites.clone(),
             phase: 0,
@@ -380,29 +337,20 @@ fn load_desired_appereance_sprite<C: ContentAssets>(
                 * sprite_info.pattern_width()
                 * sprite_info.pattern_height()
                 * sprite_info.pattern_depth()) as usize,
-        }
-    } else {
-        AnimationSprite::default()
-    };
-    Some((
-        sprite.clone(),
-        animation_sprite,
-        sprites,
-        prepared_appearance.clone(),
-    ))
+        });
+    Some((sprite.clone(), animation_sprite, sprites))
 }
 
-type UninitializedSpriteFilter = (
-    With<AppearanceDescriptor>,
-    Without<TextureAtlasSprite>,
-    Without<AnimationSprite>,
-);
+type UninitializedSpriteFilter = (With<AppearanceDescriptor>, Without<TextureAtlasSprite>);
 
 type InitializedSpriteFilter = (
     With<AppearanceDescriptor>,
     With<TextureAtlasSprite>,
-    With<AnimationSprite>,
-    Or<(With<LoadingAppearance>, Changed<AppearanceDescriptor>)>,
+    Or<(
+        With<LoadingAppearance>,
+        Changed<AppearanceDescriptor>,
+        Changed<CardinalDirection>,
+    )>,
 );
 
 /// Update the sprite system, which updates the sprite appearance based on the
@@ -420,7 +368,7 @@ pub(crate) fn update_sprite_system<C: ContentAssets>(
             &mut LoadedSprites,
             &mut Handle<TextureAtlas>,
             &mut TextureAtlasSprite,
-            &mut AnimationSprite,
+            Option<&mut AnimationSprite>,
         ),
         InitializedSpriteFilter,
     >,
@@ -438,10 +386,10 @@ pub(crate) fn update_sprite_system<C: ContentAssets>(
         mut loaded_sprites,
         mut atlas,
         mut atlas_sprite,
-        mut animation_sprite,
+        animation_sprite,
     ) in &mut query
     {
-        let (sprite, anim, sprites, _) = match load_desired_appereance_sprite(
+        let (sprite, anim, sprites) = match load_desired_appereance_sprite(
             *group,
             *id,
             *frame_group_index,
@@ -458,7 +406,15 @@ pub(crate) fn update_sprite_system<C: ContentAssets>(
         *loaded_sprites = LoadedSprites(sprites.clone());
         *atlas = sprite.atlas_texture_handle.clone();
         atlas_sprite.index = sprite.get_sprite_index();
-        *animation_sprite = anim;
+        if let Some(anim) = anim {
+            if let Some(mut animation_sprite) = animation_sprite {
+                *animation_sprite = anim;
+            } else {
+                commands.entity(entity).insert(anim);
+            }
+        } else {
+            commands.entity(entity).remove::<AnimationSprite>();
+        }
 
         commands.entity(entity).remove::<LoadingAppearance>();
     }
@@ -475,6 +431,7 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
             Entity,
             &TilePosition,
             &AppearanceDescriptor,
+            &Layer,
             Option<&CardinalDirection>,
         ),
         UninitializedSpriteFilter,
@@ -490,10 +447,11 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
             id,
             frame_group_index,
         },
+        layer,
         direction,
     ) in &mut query
     {
-        let (sprite, anim, sprites, prepared_appearance) = match load_desired_appereance_sprite(
+        let (sprite, anim, sprites) = match load_desired_appereance_sprite(
             *group,
             *id,
             *frame_group_index,
@@ -513,9 +471,7 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
             .insert(LoadedSprites(sprites.clone()))
             .insert(SpriteSheetBundle {
                 transform: Transform::from_translation(
-                    position
-                        .with_z(100 + prepared_appearance.layer.base_z_offset())
-                        .into(),
+                    position.with_z(100 + layer.base_z_offset()).into(),
                 ),
                 sprite: TextureAtlasSprite {
                     index: sprite.get_sprite_index(),
@@ -525,8 +481,13 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
                 texture_atlas: sprite.atlas_texture_handle.clone(),
                 ..default()
             })
-            .insert(anim)
             .remove::<LoadingAppearance>();
+
+        if let Some(anim) = anim {
+            commands.entity(entity).insert(anim);
+        } else {
+            commands.entity(entity).remove::<AnimationSprite>();
+        }
     }
 }
 

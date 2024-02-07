@@ -8,6 +8,7 @@ use bevy::render::mesh::{Indices, PrimitiveTopology};
 use bevy::sprite::MaterialMesh2dBundle;
 use bevy::window::PrimaryWindow;
 use bevy_egui::EguiContexts;
+use ryot::bevy_ryot::drawing::Layer;
 use ryot::position::TilePosition;
 use ryot::prelude::*;
 use std::marker::PhantomData;
@@ -57,6 +58,7 @@ fn spawn_cursor(mut commands: Commands) {
     commands.spawn((
         CursorPointer,
         AppearanceDescriptor::default(),
+        Layer::Cursor,
         TilePosition::default(),
     ));
 }

@@ -98,6 +98,14 @@ impl AppearanceDescriptor {
     pub fn object(id: u32) -> Self {
         Self::new(AppearanceGroup::Object, id, FixedFrameGroup::default())
     }
+
+    pub fn outfit(id: u32, frame_group_index: FixedFrameGroup) -> Self {
+        Self::new(AppearanceGroup::Outfit, id, frame_group_index)
+    }
+
+    pub fn effect(id: u32) -> Self {
+        Self::new(AppearanceGroup::Effect, id, FixedFrameGroup::default())
+    }
 }
 
 #[derive(Component, Debug, Clone, Default)]
