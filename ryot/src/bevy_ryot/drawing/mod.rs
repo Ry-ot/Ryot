@@ -1,4 +1,4 @@
-use crate::appearances;
+use crate::appearances::{self, FixedFrameGroup};
 use crate::bevy_ryot::AppearanceDescriptor;
 use crate::position::TilePosition;
 use bevy::prelude::*;
@@ -16,6 +16,39 @@ pub struct DrawingBundle {
     pub tile_pos: TilePosition,
     pub appearance: AppearanceDescriptor,
     pub visibility: Visibility,
+}
+
+impl DrawingBundle {
+    pub fn new(layer: Layer, tile_pos: TilePosition, appearance: AppearanceDescriptor) -> Self {
+        Self {
+            layer,
+            tile_pos,
+            appearance,
+            visibility: Visibility::default(),
+        }
+    }
+
+    pub fn object(layer: Layer, tile_pos: TilePosition, id: u32) -> Self {
+        Self::new(layer, tile_pos, AppearanceDescriptor::object(id))
+    }
+
+    pub fn creature(tile_pos: TilePosition, id: u32, frame_group_index: FixedFrameGroup) -> Self {
+        Self::new(
+            Layer::Creature,
+            tile_pos,
+            AppearanceDescriptor::outfit(id, frame_group_index),
+        )
+    }
+
+    pub fn with_visibility(mut self, visibility: Visibility) -> Self {
+        self.visibility = visibility;
+        self
+    }
+
+    pub fn with_layer(mut self, layer: Layer) -> Self {
+        self.layer = layer;
+        self
+    }
 }
 
 /*
@@ -44,6 +77,7 @@ pub enum Layer {
     Ground,
     Creature,
     Effect,
+    Cursor,
     Custom(i32),
 }
 
@@ -65,6 +99,7 @@ impl Layer {
             Self::Creature => 40,
             Self::Items => 20,
             Self::Ground => 0,
+            Self::Cursor => 1000,
             Self::Custom(z) => *z,
         }
     }
