@@ -30,7 +30,6 @@
 //!   contents, including configuring and loading them.
 
 #![feature(lazy_cell)]
-#![feature(return_position_impl_trait_in_trait)]
 
 pub mod appearances;
 
