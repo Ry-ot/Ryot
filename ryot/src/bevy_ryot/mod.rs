@@ -20,6 +20,7 @@ pub mod sprites;
 use crate::appearances::{ContentType, SpriteSheetDataSet};
 use crate::bevy_ryot::sprites::SpritesToBeLoaded;
 use crate::position::TilePosition;
+use crate::prelude::drawing::Layer;
 use crate::CONTENT_CONFIG;
 use bevy::app::{App, Plugin, Update};
 use bevy::asset::{Asset, Assets, Handle};
@@ -32,6 +33,7 @@ use bevy_asset_loader::prelude::*;
 use bevy_common_assets::json::JsonAssetPlugin;
 
 pub static RYOT_ANCHOR: Anchor = Anchor::BottomRight;
+pub static GRID_LAYER: Layer = Layer::Custom(998);
 
 /// The states that the content loading process can be in.
 /// This is used to track the progress of the content loading process.
@@ -238,9 +240,9 @@ impl OptionalPlugin for App {
 /// # Example
 /// ```rust
 /// use bevy::prelude::*;
-/// use ryot::bevy_ryot::drawing::spawn_grid;
+/// use ryot::prelude::spawn_grid;
 ///
-/// App::new().add_system(spawn_grid(Color::WHITE));
+/// App::new().add_system(Startup, spawn_grid(Color::WHITE));
 /// ```
 pub fn spawn_grid(
     color: Color,
@@ -290,7 +292,7 @@ pub fn spawn_grid(
 
         commands.spawn(MaterialMesh2dBundle {
             mesh: mesh_handle.into(),
-            transform: Transform::from_translation(Vec2::ZERO.extend(256.)),
+            transform: Transform::from_translation(Vec2::ZERO.extend(GRID_LAYER.z() as f32)),
             material: materials.add(ColorMaterial::default()),
             ..default()
         });

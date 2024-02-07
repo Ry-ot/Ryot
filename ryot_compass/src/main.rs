@@ -234,8 +234,7 @@ impl<C: ContentAssets> Plugin for UIPlugin<C> {
             .init_resource::<AboutMeOpened>()
             .add_systems(
                 Update,
-                (ui_example::<C>)
-                    .chain()
+                ui_example::<C>
                     .run_if(in_state(InternalContentState::Ready))
                     .run_if(gui_is_not_in_use()),
             );

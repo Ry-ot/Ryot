@@ -470,9 +470,7 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
             .entity(entity)
             .insert(LoadedSprites(sprites.clone()))
             .insert(SpriteSheetBundle {
-                transform: Transform::from_translation(
-                    position.with_z(100 + layer.base_z_offset()).into(),
-                ),
+                transform: Transform::from_translation(position.with_z(100 + layer.z()).into()),
                 sprite: TextureAtlasSprite {
                     index: sprite.get_sprite_index(),
                     anchor: RYOT_ANCHOR,

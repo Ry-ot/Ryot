@@ -85,6 +85,12 @@ impl From<TilePosition> for Vec3 {
         let pos = Vec2::from(tile_pos);
         let weight = u16::MAX as f32;
 
+        // Static objects are drawn on top of the ground, so we don't need to tweak the Z based
+        // on the tile position.
+        if tile_pos.z >= Layer::StaticLowerBound.z() {
+            return Vec2::from(tile_pos).extend(tile_pos.z as f32);
+        }
+
         // z for 2d sprites define the rendering order, for 45 degrees top-down
         // perspective we always want right bottom items to be drawn on top.
         // Calculations must be done in f32 otherwise decimals are lost.
@@ -104,6 +110,7 @@ impl From<&TilePosition> for Vec2 {
     }
 }
 
+use crate::prelude::drawing::Layer;
 #[cfg(not(test))]
 use crate::CONTENT_CONFIG;
 
