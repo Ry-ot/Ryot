@@ -79,7 +79,7 @@ pub enum CardinalDirection {
     West,
 }
 
-#[derive(Component, Debug, Copy, Clone, Default, PartialEq)]
+#[derive(Component, Debug, Copy, Clone, Default, Eq, PartialEq)]
 pub struct AppearanceDescriptor {
     pub group: AppearanceGroup,
     pub id: u32,
