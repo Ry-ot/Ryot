@@ -7,9 +7,21 @@ use bevy::utils::HashMap;
 mod commands;
 pub use commands::*;
 
+/// A resource that holds the map tiles and the entities that are drawn on them.
+/// An entity location is represented by the combination of a Layer and a Position.
+/// The MapTiles are represented by a HashMap of TilePosition and a HashMap of Layer and Entity.
+/// The MapTiles is used to keep track of the entities that are drawn on the map and their position.
 #[derive(Debug, Default, Resource, Deref, Reflect, DerefMut)]
 pub struct MapTiles(pub HashMap<TilePosition, HashMap<Layer, Entity>>);
 
+/// A bundle that represents an entity drawn to a location (Layer + TilePosition) in the map.
+/// The DrawingBundle is used to create and update the entities that are drawn on the map.
+/// It holds the layer, the tile position, the appearance descriptor and the visibility of the entity.
+///
+/// Visibility is mainly a sprite component, however, for performance reasons, we use the sprite
+/// visibility to control the visibility of the tile content. This way, we can reduce the amount of
+/// effort made to drawn the map, by not drawing the tiles that are not visible, while still keeping
+/// them as entity.
 #[derive(Bundle, Debug, Copy, Clone, Default, Eq, PartialEq)]
 pub struct DrawingBundle {
     pub layer: Layer,
