@@ -50,7 +50,7 @@ impl TilePosition {
 }
 
 impl fmt::Display for TilePosition {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "TilePosition({}, {}, {})", self.x, self.y, self.z)
     }
 }

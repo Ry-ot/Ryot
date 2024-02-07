@@ -105,6 +105,7 @@ impl<C: PreloadedContentAssets + Default> Plugin for ContentPlugin<C> {
     fn build(&self, app: &mut App) {
         app.init_resource::<C>()
             .init_resource::<SpritesToBeLoaded>()
+            .register_type::<TilePosition>()
             .add_plugins(JsonAssetPlugin::<Catalog>::new(&["json"]))
             .add_plugins(AppearanceAssetPlugin)
             .add_loading_state(

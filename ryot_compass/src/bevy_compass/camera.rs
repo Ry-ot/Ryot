@@ -7,7 +7,9 @@ use bevy_egui::EguiContexts;
 use bevy_pancam::*;
 use ryot::bevy_ryot::drawing::Layer;
 use ryot::position::TilePosition;
+use ryot::prelude::drawing::DetailLevel;
 use ryot::prelude::*;
+use std::fmt;
 use std::marker::PhantomData;
 
 pub struct CameraPlugin<C: CompassAssets>(PhantomData<C>);
@@ -38,6 +40,7 @@ impl<C: CompassAssets> Plugin for CameraPlugin<C> {
                     update_cursor_pos.map(drop),
                     update_cursor_palette_sprite,
                     update_cursor_visibility.map(drop),
+                    update_camera_edges,
                 )
                     .chain()
                     .run_if(in_state(InternalContentState::Ready)),
@@ -48,27 +51,78 @@ impl<C: CompassAssets> Plugin for CameraPlugin<C> {
 #[derive(Component)]
 pub struct Cursor;
 
+#[derive(Eq, PartialEq, Component, Reflect, Default, Clone, Copy, Debug)]
+pub struct Edges {
+    pub min: TilePosition,
+    pub max: TilePosition,
+}
+
+impl fmt::Display for Edges {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Edges({}, {})", self.min, self.max)
+    }
+}
+
+impl Edges {
+    pub fn from_transform_and_projection(
+        transform: &Transform,
+        projection: &OrthographicProjection,
+    ) -> Self {
+        let visible_width = projection.area.max.x - projection.area.min.x;
+        let visible_height = projection.area.max.y - projection.area.min.y;
+
+        // Adjust by the camera scale if necessary
+        let visible_width = visible_width * transform.scale.x;
+        let visible_height = visible_height * transform.scale.y;
+
+        // Calculate boundaries based on the camera's position
+        let camera_position = transform.translation;
+        let left_bound = camera_position.x - visible_width / 2.0;
+        let right_bound = camera_position.x + visible_width / 2.0;
+        let bottom_bound = camera_position.y - visible_height / 2.0;
+        let top_bound = camera_position.y + visible_height / 2.0;
+
+        Self {
+            min: TilePosition::from(Vec2::new(left_bound, bottom_bound)),
+            max: TilePosition::from(Vec2::new(right_bound, top_bound)),
+        }
+    }
+
+    pub fn size(&self) -> IVec2 {
+        IVec2::new(self.max.x - self.min.x, self.max.y - self.min.y)
+    }
+
+    pub fn area(&self) -> u32 {
+        (self.size().x * self.size().y).unsigned_abs()
+    }
+}
+
 fn spawn_cursor(mut commands: Commands) {
     commands.spawn((
         Cursor,
-        AppearanceDescriptor::default(),
         Layer::Cursor,
         TilePosition::default(),
+        AppearanceDescriptor::default(),
     ));
 }
 
 fn spawn_camera(content: Res<CompassContentAssets>, mut commands: Commands) {
-    commands.spawn(Camera2dBundle::default()).insert(PanCam {
-        grab_buttons: vec![KeyMouseCombo::KeyMouse(
-            vec![KeyCode::AltLeft],
-            MouseButton::Left,
-        )],
-        enabled: true,
-        zoom_to_cursor: true,
-        min_scale: 0.2,
-        max_scale: Some(10.),
-        ..default()
-    });
+    commands.spawn((
+        Camera2dBundle::default(),
+        Edges::default(),
+        DetailLevel::default(),
+        PanCam {
+            grab_buttons: vec![KeyMouseCombo::KeyMouse(
+                vec![KeyCode::AltLeft],
+                MouseButton::Left,
+            )],
+            enabled: true,
+            zoom_to_cursor: true,
+            min_scale: 0.2,
+            max_scale: Some(8.75),
+            ..default()
+        },
+    ));
 
     commands.spawn(SpriteBundle {
         texture: content.mascot().clone(),
@@ -158,4 +212,31 @@ fn update_cursor_visibility(
     }
 
     Ok(())
+}
+
+fn update_camera_edges(
+    mut camera_query: Query<
+        (
+            &mut Edges,
+            &mut DetailLevel,
+            &Transform,
+            &OrthographicProjection,
+        ),
+        With<Camera>,
+    >,
+) {
+    for (mut edges, mut detail_level, transform, projection) in camera_query.iter_mut() {
+        let new_edges = Edges::from_transform_and_projection(transform, projection);
+
+        if new_edges == *edges {
+            continue;
+        }
+
+        *edges = new_edges;
+        let new_detail_level = DetailLevel::from_area(edges.area());
+
+        if *detail_level != new_detail_level {
+            *detail_level = new_detail_level;
+        }
+    }
 }
