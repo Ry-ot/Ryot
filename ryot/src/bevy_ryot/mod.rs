@@ -6,6 +6,8 @@
 mod appearances;
 
 pub use appearances::*;
+use bevy::render::mesh::Indices;
+use bevy::render::render_resource::PrimitiveTopology;
 use std::marker::PhantomData;
 
 mod async_events;
@@ -17,11 +19,12 @@ pub mod sprites;
 
 use crate::appearances::{ContentType, SpriteSheetDataSet};
 use crate::bevy_ryot::sprites::SpritesToBeLoaded;
+use crate::position::TilePosition;
 use crate::CONTENT_CONFIG;
 use bevy::app::{App, Plugin, Update};
 use bevy::asset::{Asset, Assets, Handle};
 use bevy::prelude::*;
-use bevy::sprite::Anchor;
+use bevy::sprite::{Anchor, MaterialMesh2dBundle};
 use bevy::utils::HashMap;
 use bevy_asset_loader::asset_collection::AssetCollection;
 use bevy_asset_loader::loading_state::{LoadingState, LoadingStateAppExt};
@@ -227,5 +230,69 @@ impl OptionalPlugin for App {
         }
 
         self
+    }
+}
+
+/// A system to spawn a grid of lines to represent the tiles in the game using a custom color.
+///
+/// # Example
+/// ```rust
+/// use bevy::prelude::*;
+/// use ryot::bevy_ryot::drawing::spawn_grid;
+///
+/// App::new().add_system(spawn_grid(Color::WHITE));
+/// ```
+pub fn spawn_grid(
+    color: Color,
+) -> impl FnMut(Commands, ResMut<Assets<Mesh>>, ResMut<Assets<ColorMaterial>>) {
+    move |mut commands: Commands,
+          mut meshes: ResMut<Assets<Mesh>>,
+          mut materials: ResMut<Assets<ColorMaterial>>| {
+        let mut positions = Vec::new();
+        let mut colors = Vec::new();
+        let mut indices = Vec::new();
+        let mut idx = 0;
+
+        let (bottom_left_tile, top_right_tile) = (TilePosition::MIN, TilePosition::MAX);
+        let (bottom_left, top_right) = (Vec2::from(bottom_left_tile), Vec2::from(top_right_tile));
+        let tile_size = CONTENT_CONFIG.sprite_sheet.tile_size.as_vec2();
+
+        for col in bottom_left_tile.x - 1..=top_right_tile.x {
+            let x_offset = (col * tile_size.x as i32) as f32;
+
+            positions.push([x_offset, bottom_left.y, 0.0]);
+            positions.push([x_offset, top_right.y + tile_size.y, 0.0]);
+
+            colors.extend(vec![color.as_rgba_f32(); 2]);
+
+            indices.extend_from_slice(&[idx, idx + 1]);
+            idx += 2;
+        }
+
+        for row in bottom_left_tile.y - 1..=top_right_tile.y {
+            let y_offset = (row * tile_size.y as i32) as f32;
+
+            positions.push([bottom_left.x - tile_size.x, y_offset, 0.0]);
+            positions.push([top_right.x, y_offset, 0.0]);
+
+            colors.extend(vec![color.as_rgba_f32(); 2]);
+
+            indices.extend_from_slice(&[idx, idx + 1]);
+            idx += 2;
+        }
+
+        let mut mesh = Mesh::new(PrimitiveTopology::LineList);
+        mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
+        mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, colors);
+        mesh.set_indices(Some(Indices::U32(indices)));
+
+        let mesh_handle: Handle<Mesh> = meshes.add(mesh);
+
+        commands.spawn(MaterialMesh2dBundle {
+            mesh: mesh_handle.into(),
+            transform: Transform::from_translation(Vec2::ZERO.extend(256.)),
+            material: materials.add(ColorMaterial::default()),
+            ..default()
+        });
     }
 }

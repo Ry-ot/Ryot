@@ -35,6 +35,10 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
                 .run_if(in_state(InternalContentState::Ready))
                 .run_if(gui_is_not_in_use()),
         )
+        .add_systems(
+            OnExit(InternalContentState::PreparingSprites),
+            spawn_grid(Color::WHITE),
+        )
         .init_resource::<DrawingCommandHistory>()
         .init_resource::<MapTiles>()
         .register_type::<TilePosition>()
