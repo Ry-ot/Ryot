@@ -144,8 +144,8 @@ fn draw_to_tile<C: ContentAssets>(
     >,
     mouse_button_input: Res<Input<MouseButton>>,
     query: Query<
-        (&AppearanceDescriptor, &TilePosition),
-        (With<CursorPointer>, Changed<TilePosition>),
+        (&AppearanceDescriptor, &TilePosition, Changed<TilePosition>),
+        With<CursorPointer>,
     >,
 ) {
     if content_assets.sprite_sheet_data_set().is_none() {
@@ -153,7 +153,7 @@ fn draw_to_tile<C: ContentAssets>(
         return;
     };
 
-    for (AppearanceDescriptor { group, id, .. }, tile_pos) in &query {
+    for (AppearanceDescriptor { group, id, .. }, tile_pos, position_changed) in &query {
         let tile_pos = *tile_pos;
 
         let Some(prepared_appearance) = content_assets
@@ -163,7 +163,10 @@ fn draw_to_tile<C: ContentAssets>(
             return;
         };
 
-        if mouse_button_input.pressed(MouseButton::Left) {
+        let desired_input = MouseButton::Left;
+        if position_changed && mouse_button_input.pressed(desired_input)
+            || mouse_button_input.just_pressed(desired_input)
+        {
             let layer = prepared_appearance.layer;
             let appearance = AppearanceDescriptor::new(*group, *id, default());
 
