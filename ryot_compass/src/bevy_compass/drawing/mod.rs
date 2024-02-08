@@ -28,6 +28,8 @@ pub enum DrawingAction {
     SetRoundBrush,
     SetSquareBrush,
     SetDiamondBrush,
+    IncreaseBrush,
+    DecreaseBrush,
 }
 
 impl DrawingAction {
@@ -54,10 +56,19 @@ impl DrawingAction {
 
         input_map.insert_multiple([
             (KeyCode::Key1, DrawingAction::SetSingleTileBrush),
-            (KeyCode::Key2, DrawingAction::SetRoundBrush),
-            (KeyCode::Key3, DrawingAction::SetSquareBrush),
-            (KeyCode::Key4, DrawingAction::SetDiamondBrush),
+            (KeyCode::Key2, DrawingAction::SetSquareBrush),
+            (KeyCode::Key3, DrawingAction::SetDiamondBrush),
+            (KeyCode::Key4, DrawingAction::SetRoundBrush),
         ]);
+
+        input_map.insert_chord(
+            [KeyCode::ControlLeft, KeyCode::Plus],
+            DrawingAction::IncreaseBrush,
+        );
+        input_map.insert_chord(
+            [KeyCode::ControlLeft, KeyCode::Minus],
+            DrawingAction::DecreaseBrush,
+        );
 
         // Small hack to remove clash with the pancam plugin
         input_map.insert_chord(MAP_GRAB_INPUTS, DrawingAction::Stop);

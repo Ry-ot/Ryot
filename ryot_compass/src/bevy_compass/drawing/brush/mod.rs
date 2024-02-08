@@ -1,8 +1,11 @@
 use bevy::prelude::*;
-use ryot::prelude::drawing::*;
+use ryot::prelude::{drawing::*, position::*, *};
 
 mod diamond;
 pub use diamond::DiamondBrush;
+
+mod geometric;
+pub use geometric::GeometricBrush;
 
 mod round;
 pub use round::RoundBrush;
@@ -17,17 +20,26 @@ pub trait BrushAction: Eq + PartialEq + Clone + Reflect + Send + Sync + 'static 
     fn apply(&self, center: DrawingBundle) -> Vec<DrawingBundle>;
 }
 
-#[derive(Component, Eq, PartialEq, Reflect, Copy, Clone, Hash)]
+#[derive(Component, Eq, Default, PartialEq, Reflect, Copy, Clone, Hash)]
 pub enum Brush {
+    #[default]
     SingleTile,
-    Round(RoundBrush),
-    Square(SquareBrush),
-    Diamond(DiamondBrush),
+    Geometric(GeometricBrush),
 }
 
-impl Default for Brush {
-    fn default() -> Self {
-        DiamondBrush::default().into()
+impl Brush {
+    fn increase(&mut self) {
+        match self {
+            Brush::SingleTile => (),
+            Brush::Geometric(brush) => brush.increase(),
+        }
+    }
+
+    fn decrease(&mut self) {
+        match self {
+            Brush::SingleTile => (),
+            Brush::Geometric(brush) => brush.decrease(),
+        }
     }
 }
 
@@ -35,9 +47,7 @@ impl BrushAction for Brush {
     fn apply(&self, center: DrawingBundle) -> Vec<DrawingBundle> {
         match self {
             Brush::SingleTile => SingleTileBrush.apply(center),
-            Brush::Round(brush) => brush.apply(center),
-            Brush::Square(brush) => brush.apply(center),
-            Brush::Diamond(brush) => brush.apply(center),
+            Brush::Geometric(brush) => brush.apply(center),
         }
     }
 }
