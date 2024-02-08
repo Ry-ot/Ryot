@@ -1,3 +1,4 @@
+use crate::bevy_compass::drawing::brush::{Brush, RoundBrush, SingleTileBrush, SquareBrush};
 use crate::{Cursor, DrawingAction};
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
@@ -47,37 +48,39 @@ pub(super) fn draw_to_tile<C: ContentAssets>(
             return;
         }
 
-        let tile_pos = *tile_pos;
         let layer = prepared_appearance.layer;
         let appearance = AppearanceDescriptor::new(*group, *id, default());
 
-        let entity = tiles
-            .entry(tile_pos)
-            .or_default()
-            .get(&layer)
-            .map_or_else(|| commands.spawn_empty().id(), |&e| e);
+        for new_bundle in
+            RoundBrush::new(5).to_paint(DrawingBundle::new(layer, *tile_pos, appearance))
+        {
+            let entity = tiles
+                .entry(new_bundle.tile_pos)
+                .or_default()
+                .get(&layer)
+                .map_or_else(|| commands.spawn_empty().id(), |&e| e);
 
-        let old_bundle = match current_appearance_query.get(entity) {
-            Ok((appearance, visibility)) => {
-                Some(DrawingBundle::new(layer, tile_pos, *appearance).with_visibility(*visibility))
+            let old_bundle = match current_appearance_query.get(entity) {
+                Ok((appearance, visibility)) => Some(
+                    DrawingBundle::new(layer, new_bundle.tile_pos, *appearance)
+                        .with_visibility(*visibility),
+                ),
+                Err(_) => None,
+            };
+
+            if old_bundle == Some(new_bundle) {
+                continue;
             }
-            Err(_) => None,
-        };
 
-        let new_bundle = Some(DrawingBundle::new(layer, tile_pos, appearance));
-
-        if old_bundle == new_bundle {
-            return;
+            let command = UpdateTileContent(Some(new_bundle), old_bundle);
+            commands.add(command.with_entity(entity));
+            command_history
+                .performed_commands
+                .push(ReversibleCommandRecord::new(
+                    layer,
+                    new_bundle.tile_pos,
+                    Box::new(command),
+                ));
         }
-
-        let command = UpdateTileContent(new_bundle, old_bundle);
-        commands.add(command.with_entity(entity));
-        command_history
-            .performed_commands
-            .push(ReversibleCommandRecord::new(
-                layer,
-                tile_pos,
-                Box::new(command),
-            ));
     }
 }

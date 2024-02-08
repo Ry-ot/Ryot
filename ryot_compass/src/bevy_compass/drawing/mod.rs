@@ -14,6 +14,8 @@ use delete::delete_tile_content;
 mod undo_redo;
 use undo_redo::*;
 
+mod brush;
+
 #[derive(Actionlike, Reflect, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum DrawingAction {
     Stop,
