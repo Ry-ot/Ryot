@@ -1,10 +1,11 @@
 use crate::bevy_compass::CompassAssets;
-use crate::{CompassContentAssets, PaletteState};
+use crate::{CompassContentAssets, DrawingAction, PaletteState};
 use bevy::math::{Vec2, Vec3};
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy_egui::EguiContexts;
 use bevy_pancam::*;
+use leafwing_input_manager::prelude::*;
 use ryot::bevy_ryot::drawing::Layer;
 use ryot::position::TilePosition;
 use ryot::prelude::drawing::DetailLevel;
@@ -48,8 +49,21 @@ impl<C: CompassAssets> Plugin for CameraPlugin<C> {
     }
 }
 
-#[derive(Component)]
-pub struct Cursor;
+#[derive(Eq, PartialEq, Component, Reflect, Default, Clone, Copy, Debug)]
+pub struct Cursor {
+    pub drawing_state: DrawingState,
+}
+
+#[derive(Eq, PartialEq, Reflect, Clone, Copy, Debug)]
+pub struct DrawingState {
+    pub enabled: bool,
+}
+
+impl Default for DrawingState {
+    fn default() -> Self {
+        Self { enabled: true }
+    }
+}
 
 #[derive(Eq, PartialEq, Component, Reflect, Default, Clone, Copy, Debug)]
 pub struct Edges {
@@ -99,10 +113,16 @@ impl Edges {
 
 fn spawn_cursor(mut commands: Commands) {
     commands.spawn((
-        Cursor,
+        Cursor::default(),
         Layer::Cursor,
         TilePosition::default(),
         AppearanceDescriptor::default(),
+        InputManagerBundle::<DrawingAction> {
+            // Stores "which actions are currently pressed"
+            action_state: ActionState::default(),
+            // Describes how to convert from player inputs into those actions
+            input_map: DrawingAction::get_default_input_map(),
+        },
     ));
 }
 
@@ -133,13 +153,16 @@ fn spawn_camera(content: Res<CompassContentAssets>, mut commands: Commands) {
 
 fn update_cursor_palette_sprite(
     palette_state: Res<PaletteState>,
-    mut cursor_query: Query<&mut AppearanceDescriptor, With<Cursor>>,
+    mut cursor_query: Query<(&mut Cursor, &mut AppearanceDescriptor)>,
 ) {
-    let Some(selected) = &palette_state.selected_tile else {
-        return;
-    };
+    for (mut cursor, mut desired_appearance) in cursor_query.iter_mut() {
+        let Some(selected) = &palette_state.selected_tile else {
+            cursor.drawing_state.enabled = false;
+            return;
+        };
 
-    for mut desired_appearance in cursor_query.iter_mut() {
+        cursor.drawing_state.enabled = true;
+
         if *desired_appearance == *selected {
             return;
         }

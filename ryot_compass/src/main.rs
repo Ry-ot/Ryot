@@ -230,7 +230,7 @@ impl<C: ContentAssets> Plugin for UIPlugin<C> {
     fn build(&self, app: &mut App) {
         app.add_optional_plugin(EguiPlugin)
             .init_resource::<GUIState>()
-            .add_systems(First, check_egui_usage)
+            .add_systems(PostUpdate, check_egui_usage)
             .init_resource::<AboutMeOpened>()
             .add_systems(
                 Update,

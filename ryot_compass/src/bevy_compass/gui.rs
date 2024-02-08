@@ -4,7 +4,7 @@ use bevy_egui::EguiContexts;
 /// The GUIState resource is used to keep track of whether the GUI is being used.
 /// This is useful for systems that should only run when the GUI is/is not being used.
 /// For example, drawing systems should only run when the GUI is not being used.
-#[derive(Resource, Default)]
+#[derive(Resource, PartialEq, Eq, Default)]
 pub struct GUIState {
     pub is_being_used: bool,
 }
@@ -47,5 +47,5 @@ pub fn gui_is_not_in_use() -> impl FnMut(Res<GUIState>) -> bool + Clone {
 
 /// This system updates the GUIState resource to indicate whether EGUI is being used or not.
 pub fn check_egui_usage(egui: EguiContexts, mut gui_state: ResMut<GUIState>) {
-    gui_state.is_being_used = egui.ctx().is_pointer_over_area()
+    gui_state.is_being_used = egui.ctx().wants_pointer_input() || egui.ctx().wants_keyboard_input()
 }
