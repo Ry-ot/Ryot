@@ -17,13 +17,17 @@ use undo_redo::*;
 mod brush;
 pub use brush::*;
 
-#[derive(Actionlike, Reflect, Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Actionlike, Reflect, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum DrawingAction {
     Stop,
     Draw,
     Erase,
     Undo,
     Redo,
+    SetSingleTileBrush,
+    SetRoundBrush,
+    SetSquareBrush,
+    SetDiamondBrush,
 }
 
 impl DrawingAction {
@@ -47,6 +51,13 @@ impl DrawingAction {
             ],
             DrawingAction::Redo,
         );
+
+        input_map.insert_multiple([
+            (KeyCode::Key1, DrawingAction::SetSingleTileBrush),
+            (KeyCode::Key2, DrawingAction::SetRoundBrush),
+            (KeyCode::Key3, DrawingAction::SetSquareBrush),
+            (KeyCode::Key4, DrawingAction::SetDiamondBrush),
+        ]);
 
         // Small hack to remove clash with the pancam plugin
         input_map.insert_chord(MAP_GRAB_INPUTS, DrawingAction::Stop);
@@ -86,6 +97,7 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
                     draw_to_tile::<C>,
                     delete_tile_content,
                     undo_redo_tile_action,
+                    update_brush,
                 )
                     .run_if(in_state(InternalContentState::Ready))
                     .run_if(gui_is_not_in_use()),

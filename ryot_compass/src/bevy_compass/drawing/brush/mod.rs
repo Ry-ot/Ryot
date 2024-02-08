@@ -10,11 +10,14 @@ pub use round::RoundBrush;
 mod square;
 pub use square::SquareBrush;
 
+mod systems;
+pub use systems::update_brush;
+
 pub trait BrushAction: Eq + PartialEq + Clone + Reflect + Send + Sync + 'static {
     fn apply(&self, center: DrawingBundle) -> Vec<DrawingBundle>;
 }
 
-#[derive(Component, Eq, PartialEq, Reflect, Copy, Clone)]
+#[derive(Component, Eq, PartialEq, Reflect, Copy, Clone, Hash)]
 pub enum Brush {
     SingleTile,
     Round(RoundBrush),
@@ -39,7 +42,7 @@ impl BrushAction for Brush {
     }
 }
 
-#[derive(Debug, Default, Eq, PartialEq, Reflect, Copy, Clone)]
+#[derive(Debug, Default, Eq, PartialEq, Reflect, Copy, Clone, Hash)]
 pub struct SingleTileBrush;
 impl BrushAction for SingleTileBrush {
     fn apply(&self, center: DrawingBundle) -> Vec<DrawingBundle> {
