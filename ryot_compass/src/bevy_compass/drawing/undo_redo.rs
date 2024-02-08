@@ -60,7 +60,7 @@ fn redo(
         match &command_record {
             CommandType::TileCommand(command_record) => command_record.command.redo(
                 commands,
-                get_entity_from_command_record(tiles, &command_record),
+                get_entity_from_command_record(tiles, command_record),
             ),
             CommandType::Batch(batch_size) => {
                 for _ in 0..*batch_size.deref() {
@@ -82,7 +82,7 @@ fn undo(
         match &command_record {
             CommandType::TileCommand(command_record) => command_record.command.undo(
                 commands,
-                get_entity_from_command_record(tiles, &command_record),
+                get_entity_from_command_record(tiles, command_record),
             ),
             CommandType::Batch(batch_size) => {
                 for _ in 0..*batch_size.deref() {

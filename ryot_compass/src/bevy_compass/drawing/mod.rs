@@ -15,6 +15,7 @@ mod undo_redo;
 use undo_redo::*;
 
 mod brush;
+pub use brush::*;
 
 #[derive(Actionlike, Reflect, Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum DrawingAction {
