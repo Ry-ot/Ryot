@@ -90,3 +90,45 @@ impl Brush for RoundBrush {
         positions
     }
 }
+
+#[derive(Debug, Default, Resource, Deref, Reflect, DerefMut)]
+pub struct DiamondBrush(u8);
+
+impl DiamondBrush {
+    pub fn new(size: u8) -> Self {
+        Self(size.clamp(1, 50))
+    }
+}
+
+impl Brush for DiamondBrush {
+    fn to_paint(&self, center: DrawingBundle) -> Vec<DrawingBundle> {
+        let mut positions = Vec::new();
+        let DrawingBundle {
+            layer,
+            tile_pos,
+            appearance,
+            visibility,
+            ..
+        } = center;
+
+        let size = self.0 as i32;
+
+        for x_offset in -size..=size {
+            for y_offset in -size..=size {
+                if x_offset.abs() + y_offset.abs() <= size {
+                    let new_pos =
+                        TilePosition::new(tile_pos.x + x_offset, tile_pos.y + y_offset, tile_pos.z);
+                    positions.push(DrawingBundle {
+                        layer,
+                        tile_pos: new_pos,
+                        appearance,
+                        visibility,
+                        tile: Tile,
+                    });
+                }
+            }
+        }
+
+        positions
+    }
+}
