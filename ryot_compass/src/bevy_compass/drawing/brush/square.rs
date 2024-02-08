@@ -1,9 +1,9 @@
-use crate::Brush;
-use bevy::prelude::{Deref, DerefMut, Reflect, Resource};
+use crate::{Brush, BrushAction};
+use bevy::prelude::*;
 use ryot::bevy_ryot::drawing::{DrawingBundle, Tile};
 use ryot::position::TilePosition;
 
-#[derive(Debug, Default, Resource, Deref, Reflect, DerefMut)]
+#[derive(Debug, Deref, Eq, PartialEq, Reflect, DerefMut, Copy, Clone)]
 pub struct SquareBrush(i32);
 
 impl SquareBrush {
@@ -12,7 +12,19 @@ impl SquareBrush {
     }
 }
 
-impl Brush for SquareBrush {
+impl Into<Brush> for SquareBrush {
+    fn into(self) -> Brush {
+        Brush::Square(self)
+    }
+}
+
+impl Default for SquareBrush {
+    fn default() -> Self {
+        Self::new(3)
+    }
+}
+
+impl BrushAction for SquareBrush {
     fn apply(&self, center: DrawingBundle) -> Vec<DrawingBundle> {
         let mut positions = Vec::new();
         let DrawingBundle {

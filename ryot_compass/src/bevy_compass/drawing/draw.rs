@@ -1,4 +1,4 @@
-use crate::{Brush, Cursor, DrawingAction, SquareBrush};
+use crate::{BrushAction, Cursor, DrawingAction};
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
@@ -50,7 +50,11 @@ pub(super) fn draw_to_tile<C: ContentAssets>(
         let layer = prepared_appearance.layer;
         let appearance = AppearanceDescriptor::new(*group, *id, default());
 
-        let bundles = SquareBrush::new(5).apply(DrawingBundle::new(layer, *tile_pos, appearance));
+        let bundles = cursor
+            .drawing_state
+            .brush
+            .apply(DrawingBundle::new(layer, *tile_pos, appearance));
+
         let mut queued = 0;
 
         for new_bundle in bundles {

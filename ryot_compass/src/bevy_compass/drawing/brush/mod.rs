@@ -1,3 +1,4 @@
+use bevy::prelude::*;
 use ryot::prelude::drawing::*;
 
 mod diamond;
@@ -9,26 +10,39 @@ pub use round::RoundBrush;
 mod square;
 pub use square::SquareBrush;
 
-pub trait Brush {
+pub trait BrushAction: Eq + PartialEq + Clone + Reflect + Send + Sync + 'static {
     fn apply(&self, center: DrawingBundle) -> Vec<DrawingBundle>;
 }
 
-pub enum BrushType {
+#[derive(Component, Eq, PartialEq, Reflect, Copy, Clone)]
+pub enum Brush {
+    SingleTile,
     Round(RoundBrush),
     Square(SquareBrush),
     Diamond(DiamondBrush),
-    // Custom(dyn Fn(DrawingBundle) -> Vec<DrawingBundle>),
 }
 
-pub struct SingleTileBrush;
-impl Brush for SingleTileBrush {
-    fn apply(&self, center: DrawingBundle) -> Vec<DrawingBundle> {
-        vec![center]
+impl Default for Brush {
+    fn default() -> Self {
+        DiamondBrush::default().into()
     }
 }
 
-impl Brush for dyn Fn(DrawingBundle) -> Vec<DrawingBundle> {
+impl BrushAction for Brush {
     fn apply(&self, center: DrawingBundle) -> Vec<DrawingBundle> {
-        self(center)
+        match self {
+            Brush::SingleTile => SingleTileBrush.apply(center),
+            Brush::Round(brush) => brush.apply(center),
+            Brush::Square(brush) => brush.apply(center),
+            Brush::Diamond(brush) => brush.apply(center),
+        }
+    }
+}
+
+#[derive(Debug, Default, Eq, PartialEq, Reflect, Copy, Clone)]
+pub struct SingleTileBrush;
+impl BrushAction for SingleTileBrush {
+    fn apply(&self, center: DrawingBundle) -> Vec<DrawingBundle> {
+        vec![center]
     }
 }

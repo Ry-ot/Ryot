@@ -1,5 +1,5 @@
 use crate::bevy_compass::CompassAssets;
-use crate::{CompassContentAssets, DrawingAction, PaletteState};
+use crate::{Brush, CompassContentAssets, DrawingAction, PaletteState};
 use bevy::math::{Vec2, Vec3};
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
@@ -50,19 +50,23 @@ impl<C: CompassAssets> Plugin for CameraPlugin<C> {
     }
 }
 
-#[derive(Eq, PartialEq, Component, Reflect, Default, Clone, Copy, Debug)]
+#[derive(Eq, PartialEq, Component, Default, Clone, Copy, Reflect)]
 pub struct Cursor {
     pub drawing_state: DrawingState,
 }
 
-#[derive(Eq, PartialEq, Reflect, Clone, Copy, Debug)]
+#[derive(Eq, PartialEq, Clone, Copy, Reflect)]
 pub struct DrawingState {
     pub enabled: bool,
+    pub brush: Brush,
 }
 
 impl Default for DrawingState {
     fn default() -> Self {
-        Self { enabled: true }
+        Self {
+            enabled: true,
+            brush: Brush::default(),
+        }
     }
 }
 
