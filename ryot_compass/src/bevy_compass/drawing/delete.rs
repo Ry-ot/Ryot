@@ -58,5 +58,7 @@ pub(super) fn delete_tile_content(
         command_history
             .performed_commands
             .push(TileCommandRecord::new(layer, tile_pos, Box::new(command)).into());
+
+        command_history.reversed_commands.clear();
     }
 }
