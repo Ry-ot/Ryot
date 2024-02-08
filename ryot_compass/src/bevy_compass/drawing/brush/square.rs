@@ -1,28 +1,10 @@
-use crate::{Brush, BrushAction};
+use crate::BrushAction;
 use bevy::prelude::*;
 use ryot::bevy_ryot::drawing::{DrawingBundle, Tile};
 use ryot::position::TilePosition;
 
 #[derive(Debug, Deref, Eq, PartialEq, Reflect, DerefMut, Copy, Clone, Hash)]
-pub struct SquareBrush(i32);
-
-impl SquareBrush {
-    pub fn new(size: i32) -> Self {
-        Self(size.abs().clamp(1, 50))
-    }
-}
-
-impl From<SquareBrush> for Brush {
-    fn from(brush: SquareBrush) -> Self {
-        Brush::Square(brush)
-    }
-}
-
-impl Default for SquareBrush {
-    fn default() -> Self {
-        Self::new(3)
-    }
-}
+pub struct SquareBrush(pub i32);
 
 impl BrushAction for SquareBrush {
     fn apply(&self, center: DrawingBundle) -> Vec<DrawingBundle> {

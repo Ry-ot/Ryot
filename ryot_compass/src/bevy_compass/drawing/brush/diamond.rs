@@ -1,28 +1,10 @@
-use crate::{Brush, BrushAction};
+use crate::BrushAction;
 use bevy::prelude::*;
 use ryot::bevy_ryot::drawing::{DrawingBundle, Tile};
 use ryot::position::TilePosition;
 
 #[derive(Debug, Deref, Eq, PartialEq, Reflect, DerefMut, Copy, Clone, Hash)]
-pub struct DiamondBrush(i32);
-
-impl DiamondBrush {
-    pub fn new(size: i32) -> Self {
-        Self(size.abs().clamp(1, 50))
-    }
-}
-
-impl From<DiamondBrush> for Brush {
-    fn from(brush: DiamondBrush) -> Self {
-        Brush::Diamond(brush)
-    }
-}
-
-impl Default for DiamondBrush {
-    fn default() -> Self {
-        Self::new(3)
-    }
-}
+pub struct DiamondBrush(pub i32);
 
 impl BrushAction for DiamondBrush {
     fn apply(&self, center: DrawingBundle) -> Vec<DrawingBundle> {
