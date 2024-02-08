@@ -41,6 +41,7 @@ rstest = "0.18.2"
 # switch back to the upstream once https://github.com/johanhelsing/bevy_pancam/pull/55 is merged
 bevy_pancam = { version = "0.10.0", features = [
     "bevy_egui",
+    "leafwing-input-manager",
 ], git = "https://github.com/luan/bevy_pancam", branch = "luan/modifier-keys" }
 leafwing-input-manager = "0.11.2"
 
