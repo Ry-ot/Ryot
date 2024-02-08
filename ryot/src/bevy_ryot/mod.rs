@@ -31,6 +31,7 @@ use bevy_asset_loader::asset_collection::AssetCollection;
 use bevy_asset_loader::loading_state::{LoadingState, LoadingStateAppExt};
 use bevy_asset_loader::prelude::*;
 use bevy_common_assets::json::JsonAssetPlugin;
+use leafwing_input_manager::prelude::*;
 
 pub static RYOT_ANCHOR: Anchor = Anchor::BottomRight;
 pub static GRID_LAYER: Layer = Layer::Custom(998);
@@ -297,5 +298,20 @@ pub fn spawn_grid(
             material: materials.add(ColorMaterial::default()),
             ..default()
         });
+    }
+}
+
+/// A helper for leafwing-input-manager that checks if an action happened based on
+/// long-press triggers. If you have a long press trigger, then it checks for pressed,
+/// otherwise it checks for just_pressed.
+pub fn check_action<A: Actionlike>(
+    action: A,
+    long_press_triggered: bool,
+    action_state: &ActionState<A>,
+) -> bool {
+    if long_press_triggered {
+        action_state.pressed(action)
+    } else {
+        action_state.just_pressed(action)
     }
 }
