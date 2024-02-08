@@ -1,9 +1,9 @@
-use crate::Brush;
-use bevy::prelude::{Deref, DerefMut, Reflect, Resource};
+use crate::{Brush, BrushAction};
+use bevy::prelude::*;
 use ryot::bevy_ryot::drawing::{DrawingBundle, Tile};
 use ryot::position::TilePosition;
 
-#[derive(Debug, Default, Resource, Deref, Reflect, DerefMut)]
+#[derive(Debug, Deref, Eq, PartialEq, Reflect, DerefMut, Copy, Clone)]
 pub struct DiamondBrush(i32);
 
 impl DiamondBrush {
@@ -12,7 +12,19 @@ impl DiamondBrush {
     }
 }
 
-impl Brush for DiamondBrush {
+impl Into<Brush> for DiamondBrush {
+    fn into(self) -> Brush {
+        Brush::Diamond(self)
+    }
+}
+
+impl Default for DiamondBrush {
+    fn default() -> Self {
+        Self::new(3)
+    }
+}
+
+impl BrushAction for DiamondBrush {
     fn apply(&self, center: DrawingBundle) -> Vec<DrawingBundle> {
         let mut positions = Vec::new();
         let DrawingBundle {

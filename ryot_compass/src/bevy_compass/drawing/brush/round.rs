@@ -1,9 +1,9 @@
-use crate::Brush;
-use bevy::prelude::{Deref, DerefMut, Reflect, Resource};
+use crate::{Brush, BrushAction};
+use bevy::prelude::*;
 use ryot::bevy_ryot::drawing::{DrawingBundle, Tile};
 use ryot::position::TilePosition;
 
-#[derive(Debug, Default, Resource, Deref, Reflect, DerefMut)]
+#[derive(Debug, Eq, PartialEq, Deref, Reflect, DerefMut, Copy, Clone)]
 pub struct RoundBrush(i32);
 
 impl RoundBrush {
@@ -12,7 +12,19 @@ impl RoundBrush {
     }
 }
 
-impl Brush for RoundBrush {
+impl Into<Brush> for RoundBrush {
+    fn into(self) -> Brush {
+        Brush::Round(self)
+    }
+}
+
+impl Default for RoundBrush {
+    fn default() -> Self {
+        Self::new(3)
+    }
+}
+
+impl BrushAction for RoundBrush {
     fn apply(&self, center: DrawingBundle) -> Vec<DrawingBundle> {
         let mut positions = Vec::new();
         let DrawingBundle {
