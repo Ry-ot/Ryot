@@ -1,3 +1,5 @@
+#![feature(type_alias_impl_trait)]
+
 use bevy::app::{App, AppExit, Plugin};
 use bevy::asset::AssetMetaCheck;
 use bevy::input::common_conditions::input_toggle_active;
