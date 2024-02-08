@@ -88,5 +88,7 @@ pub(super) fn draw_to_tile<C: ContentAssets>(
         command_history
             .performed_commands
             .push(CommandBatchSize(queued).into());
+
+        command_history.reversed_commands.clear();
     }
 }
