@@ -6,6 +6,7 @@ use bevy::window::PrimaryWindow;
 use bevy_egui::EguiContexts;
 use bevy_pancam::*;
 use leafwing_input_manager::prelude::*;
+use leafwing_input_manager::user_input::InputKind;
 use ryot::bevy_ryot::drawing::Layer;
 use ryot::position::TilePosition;
 use ryot::prelude::drawing::DetailLevel;
@@ -127,20 +128,30 @@ fn spawn_cursor(mut commands: Commands) {
 }
 
 fn spawn_camera(content: Res<CompassContentAssets>, mut commands: Commands) {
+    let mut input_map = InputMap::default();
+    input_map.insert_chord(
+        [
+            InputKind::Mouse(MouseButton::Left),
+            InputKind::Keyboard(KeyCode::AltLeft),
+        ],
+        bevy_pancam::Action::Grab,
+    );
     commands.spawn((
         Camera2dBundle::default(),
         Edges::default(),
         DetailLevel::default(),
         PanCam {
-            grab_buttons: vec![KeyMouseCombo::KeyMouse(
-                vec![KeyCode::AltLeft],
-                MouseButton::Left,
-            )],
             enabled: true,
             zoom_to_cursor: true,
             min_scale: 0.2,
             max_scale: Some(8.75),
             ..default()
+        },
+        InputManagerBundle::<bevy_pancam::Action> {
+            // Stores "which actions are currently pressed"
+            action_state: ActionState::default(),
+            // Describes how to convert from player inputs into those actions
+            input_map,
         },
     ));
 
