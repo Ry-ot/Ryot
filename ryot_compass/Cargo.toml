@@ -38,6 +38,10 @@ bevy_asset_loader = { version = "0.19.1", features = ["2d"] }
 thiserror = "1.0.56"
 color-eyre = "0.6.2"
 rstest = "0.18.2"
+# switch back to the upstream once https://github.com/johanhelsing/bevy_pancam/pull/55 is merged
+bevy_pancam = { version = "0.10.0", features = [
+    "bevy_egui",
+], git = "https://github.com/luan/bevy_pancam", branch = "luan/modifier-keys" }
 
 [dependencies.bevy]
 version = "0.12.1"

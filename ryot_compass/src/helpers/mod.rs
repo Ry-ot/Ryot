@@ -1,8 +1,6 @@
 use rfd::AsyncFileDialog;
 use std::future::Future;
 
-pub mod camera;
-
 #[cfg(not(target_arch = "wasm32"))]
 pub fn execute<F: Future<Output = ()> + Send + 'static>(f: F) {
     async_std::task::spawn(f);

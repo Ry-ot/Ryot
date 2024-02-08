@@ -1,10 +1,10 @@
 use crate::bevy_compass::CompassAssets;
-use crate::helpers::camera::movement;
 use crate::{CompassContentAssets, PaletteState};
 use bevy::math::{Vec2, Vec3};
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy_egui::EguiContexts;
+use bevy_pancam::*;
 use ryot::bevy_ryot::drawing::Layer;
 use ryot::position::TilePosition;
 use ryot::prelude::*;
@@ -26,21 +26,22 @@ impl<C: CompassAssets> Default for CameraPlugin<C> {
 
 impl<C: CompassAssets> Plugin for CameraPlugin<C> {
     fn build(&self, app: &mut App) {
-        app.add_systems(
-            OnExit(InternalContentState::LoadingContent),
-            (spawn_camera, spawn_cursor).chain(),
-        )
-        .add_systems(
-            Update,
-            (
-                movement,
-                update_cursor_pos.map(drop),
-                update_cursor_palette_sprite,
-                update_cursor_visibility.map(drop),
+        app.insert_resource(Msaa::Off)
+            .add_plugins(PanCamPlugin)
+            .add_systems(
+                OnExit(InternalContentState::LoadingContent),
+                (spawn_camera, spawn_cursor).chain(),
             )
-                .chain()
-                .run_if(in_state(InternalContentState::Ready)),
-        );
+            .add_systems(
+                Update,
+                (
+                    update_cursor_pos.map(drop),
+                    update_cursor_palette_sprite,
+                    update_cursor_visibility.map(drop),
+                )
+                    .chain()
+                    .run_if(in_state(InternalContentState::Ready)),
+            );
     }
 }
 
@@ -57,7 +58,17 @@ fn spawn_cursor(mut commands: Commands) {
 }
 
 fn spawn_camera(content: Res<CompassContentAssets>, mut commands: Commands) {
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2dBundle::default()).insert(PanCam {
+        grab_buttons: vec![KeyMouseCombo::KeyMouse(
+            vec![KeyCode::AltLeft],
+            MouseButton::Left,
+        )],
+        enabled: true,
+        zoom_to_cursor: true,
+        min_scale: 0.2,
+        max_scale: Some(10.),
+        ..default()
+    });
 
     commands.spawn(SpriteBundle {
         texture: content.mascot().clone(),
