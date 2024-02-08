@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use ryot::bevy_ryot::drawing::{DrawingBundle, Tile};
 use ryot::position::TilePosition;
 
-#[derive(Debug, Eq, PartialEq, Deref, Reflect, DerefMut, Copy, Clone)]
+#[derive(Debug, Eq, PartialEq, Deref, Reflect, DerefMut, Copy, Clone, Hash)]
 pub struct RoundBrush(i32);
 
 impl RoundBrush {
@@ -12,9 +12,9 @@ impl RoundBrush {
     }
 }
 
-impl Into<Brush> for RoundBrush {
-    fn into(self) -> Brush {
-        Brush::Round(self)
+impl From<RoundBrush> for Brush {
+    fn from(brush: RoundBrush) -> Self {
+        Brush::Round(brush)
     }
 }
 

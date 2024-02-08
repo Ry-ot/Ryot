@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use ryot::bevy_ryot::drawing::{DrawingBundle, Tile};
 use ryot::position::TilePosition;
 
-#[derive(Debug, Deref, Eq, PartialEq, Reflect, DerefMut, Copy, Clone)]
+#[derive(Debug, Deref, Eq, PartialEq, Reflect, DerefMut, Copy, Clone, Hash)]
 pub struct DiamondBrush(i32);
 
 impl DiamondBrush {
@@ -12,9 +12,9 @@ impl DiamondBrush {
     }
 }
 
-impl Into<Brush> for DiamondBrush {
-    fn into(self) -> Brush {
-        Brush::Diamond(self)
+impl From<DiamondBrush> for Brush {
+    fn from(brush: DiamondBrush) -> Self {
+        Brush::Diamond(brush)
     }
 }
 

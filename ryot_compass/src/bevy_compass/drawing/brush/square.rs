@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use ryot::bevy_ryot::drawing::{DrawingBundle, Tile};
 use ryot::position::TilePosition;
 
-#[derive(Debug, Deref, Eq, PartialEq, Reflect, DerefMut, Copy, Clone)]
+#[derive(Debug, Deref, Eq, PartialEq, Reflect, DerefMut, Copy, Clone, Hash)]
 pub struct SquareBrush(i32);
 
 impl SquareBrush {
@@ -12,9 +12,9 @@ impl SquareBrush {
     }
 }
 
-impl Into<Brush> for SquareBrush {
-    fn into(self) -> Brush {
-        Brush::Square(self)
+impl From<SquareBrush> for Brush {
+    fn from(brush: SquareBrush) -> Self {
+        Brush::Square(brush)
     }
 }
 
