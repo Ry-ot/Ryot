@@ -18,7 +18,10 @@ use winit::window::Icon;
 use rfd::AsyncFileDialog;
 
 use crate::error_handling::ErrorPlugin;
-use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
+use bevy::diagnostic::{
+    EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin,
+    SystemInformationDiagnosticsPlugin,
+};
 use bevy::window::PrimaryWindow;
 use ryot_compass::helpers::read_file;
 use std::marker::PhantomData;
@@ -252,6 +255,8 @@ fn main() {
             DrawingPlugin::<CompassContentAssets>::new(),
             ErrorPlugin,
             FrameTimeDiagnosticsPlugin,
+            EntityCountDiagnosticsPlugin,
+            SystemInformationDiagnosticsPlugin,
             LogDiagnosticsPlugin::default(),
         ))
         .add_systems(Startup, set_window_icon)
