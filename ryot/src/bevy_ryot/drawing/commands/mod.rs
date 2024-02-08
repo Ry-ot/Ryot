@@ -1,6 +1,6 @@
 use crate::bevy_ryot::drawing::Layer;
 use crate::position::TilePosition;
-use bevy::prelude::{Commands, Entity, Resource};
+use bevy::prelude::{Commands, Deref, DerefMut, Entity, Resource};
 
 mod update_tile_content;
 pub use update_tile_content::*;
@@ -31,18 +31,35 @@ pub trait ReversibleCommand: Send + Sync + 'static {
 /// position where the command was applied, and the command itself.
 #[derive(Default, Resource)]
 pub struct CommandHistory {
-    pub performed_commands: Vec<ReversibleCommandRecord>,
-    pub reversed_commands: Vec<ReversibleCommandRecord>,
+    pub performed_commands: Vec<CommandType>,
+    pub reversed_commands: Vec<CommandType>,
 }
 
-/// A record that holds the layer, position and command that was applied to the map.
-pub struct ReversibleCommandRecord {
+pub enum CommandType {
+    Batch(CommandBatchSize),
+    TileCommand(TileCommandRecord),
+}
+
+impl From<TileCommandRecord> for CommandType {
+    fn from(record: TileCommandRecord) -> Self {
+        Self::TileCommand(record)
+    }
+}
+
+impl From<CommandBatchSize> for CommandType {
+    fn from(size: CommandBatchSize) -> Self {
+        Self::Batch(size)
+    }
+}
+
+/// A record that holds the layer, position and command that was applied to a tile.
+pub struct TileCommandRecord {
     pub layer: Layer,
     pub tile_pos: TilePosition,
     pub command: Box<dyn ReversibleCommand>,
 }
 
-impl ReversibleCommandRecord {
+impl TileCommandRecord {
     pub fn new(layer: Layer, tile_pos: TilePosition, command: Box<dyn ReversibleCommand>) -> Self {
         Self {
             layer,
@@ -51,3 +68,6 @@ impl ReversibleCommandRecord {
         }
     }
 }
+
+#[derive(Debug, Default, Eq, PartialEq, Deref, DerefMut)]
+pub struct CommandBatchSize(pub usize);

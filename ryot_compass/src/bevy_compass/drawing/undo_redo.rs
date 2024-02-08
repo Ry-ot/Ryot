@@ -5,6 +5,7 @@ use rand::prelude::SliceRandom;
 use rand::thread_rng;
 use ryot::bevy_ryot::*;
 use ryot::prelude::drawing::*;
+use std::ops::Deref;
 
 /// This resource is used to configure the undo/redo system.
 /// Currently, it only contains a timer that is used to control the speed of the undo/redo actions.
@@ -56,10 +57,18 @@ fn redo(
     command_history: &mut ResMut<CommandHistory>,
 ) {
     if let Some(command_record) = command_history.reversed_commands.pop() {
-        command_record.command.redo(
-            commands,
-            get_entity_from_command_record(tiles, &command_record),
-        );
+        match &command_record {
+            CommandType::TileCommand(command_record) => command_record.command.redo(
+                commands,
+                get_entity_from_command_record(tiles, &command_record),
+            ),
+            CommandType::Batch(batch_size) => {
+                for _ in 0..*batch_size.deref() {
+                    redo(commands, tiles, command_history);
+                }
+            }
+        }
+
         command_history.performed_commands.push(command_record);
     }
 }
@@ -70,17 +79,25 @@ fn undo(
     command_history: &mut ResMut<CommandHistory>,
 ) {
     if let Some(command_record) = command_history.performed_commands.pop() {
-        command_record.command.undo(
-            commands,
-            get_entity_from_command_record(tiles, &command_record),
-        );
+        match &command_record {
+            CommandType::TileCommand(command_record) => command_record.command.undo(
+                commands,
+                get_entity_from_command_record(tiles, &command_record),
+            ),
+            CommandType::Batch(batch_size) => {
+                for _ in 0..*batch_size.deref() {
+                    undo(commands, tiles, command_history);
+                }
+            }
+        }
+
         command_history.reversed_commands.push(command_record);
     }
 }
 
 fn get_entity_from_command_record(
     tiles: &ResMut<MapTiles>,
-    command_record: &ReversibleCommandRecord,
+    command_record: &TileCommandRecord,
 ) -> Option<Entity> {
     tiles
         .get(&command_record.tile_pos)

@@ -1,4 +1,4 @@
-use crate::bevy_compass::drawing::brush::{Brush, RoundBrush, SingleTileBrush, SquareBrush};
+use crate::bevy_compass::drawing::brush::{Brush, RoundBrush};
 use crate::{Cursor, DrawingAction};
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
@@ -51,9 +51,10 @@ pub(super) fn draw_to_tile<C: ContentAssets>(
         let layer = prepared_appearance.layer;
         let appearance = AppearanceDescriptor::new(*group, *id, default());
 
-        for new_bundle in
-            RoundBrush::new(5).to_paint(DrawingBundle::new(layer, *tile_pos, appearance))
-        {
+        let bundles = RoundBrush::new(5).to_paint(DrawingBundle::new(layer, *tile_pos, appearance));
+        let mut queued = 0;
+
+        for new_bundle in bundles {
             let entity = tiles
                 .entry(new_bundle.tile_pos)
                 .or_default()
@@ -76,11 +77,13 @@ pub(super) fn draw_to_tile<C: ContentAssets>(
             commands.add(command.with_entity(entity));
             command_history
                 .performed_commands
-                .push(ReversibleCommandRecord::new(
-                    layer,
-                    new_bundle.tile_pos,
-                    Box::new(command),
-                ));
+                .push(TileCommandRecord::new(layer, new_bundle.tile_pos, Box::new(command)).into());
+
+            queued += 1;
         }
+
+        command_history
+            .performed_commands
+            .push(CommandBatchSize(queued).into());
     }
 }
