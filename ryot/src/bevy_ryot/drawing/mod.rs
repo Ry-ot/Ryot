@@ -60,6 +60,13 @@ impl DrawingBundle {
         }
     }
 
+    pub fn from_tile_position(tile_pos: TilePosition) -> Self {
+        Self {
+            tile_pos,
+            ..Default::default()
+        }
+    }
+
     pub fn object(layer: Layer, tile_pos: TilePosition, id: u32) -> Self {
         Self::new(layer, tile_pos, AppearanceDescriptor::object(id))
     }

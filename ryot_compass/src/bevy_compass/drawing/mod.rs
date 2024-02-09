@@ -92,6 +92,7 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
         app.init_resource::<UndoRedoConfig>()
             .init_resource::<CommandHistory>()
             .init_resource::<MapTiles>()
+            .init_resource::<Brushes>()
             .add_plugins(drawing::DrawingPlugin)
             .add_plugins(InputManagerPlugin::<DrawingAction>::default())
             .add_systems(
