@@ -1,4 +1,4 @@
-use crate::gui_is_not_in_use;
+use crate::{gui_is_not_in_use, MAP_GRAB_INPUTS};
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
 use leafwing_input_manager::user_input::InputKind;
@@ -33,17 +33,23 @@ impl DrawingAction {
             (MouseButton::Right, DrawingAction::Erase),
         ]);
 
-        input_map.insert_chord([KeyCode::ControlLeft, KeyCode::Z], DrawingAction::Undo);
-        input_map.insert_chord([KeyCode::ControlLeft, KeyCode::R], DrawingAction::Redo);
-
-        // Small hack to remove clash with the pancam plugin
         input_map.insert_chord(
             [
-                InputKind::Mouse(MouseButton::Left),
-                InputKind::Keyboard(KeyCode::AltLeft),
+                InputKind::Modifier(Modifier::Control),
+                InputKind::Keyboard(KeyCode::Z),
             ],
-            DrawingAction::Stop,
+            DrawingAction::Undo,
         );
+        input_map.insert_chord(
+            [
+                InputKind::Modifier(Modifier::Control),
+                InputKind::Keyboard(KeyCode::R),
+            ],
+            DrawingAction::Redo,
+        );
+
+        // Small hack to remove clash with the pancam plugin
+        input_map.insert_chord(MAP_GRAB_INPUTS, DrawingAction::Stop);
 
         input_map
     }

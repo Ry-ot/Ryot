@@ -127,16 +127,16 @@ fn spawn_cursor(mut commands: Commands) {
     ));
 }
 
+pub static MAP_GRAB_INPUTS: [InputKind; 2] = [
+    InputKind::Modifier(Modifier::Alt),
+    InputKind::Mouse(MouseButton::Left),
+];
+
 fn spawn_camera(content: Res<CompassContentAssets>, mut commands: Commands) {
     let mut input_map = InputMap::default();
-    input_map.insert_chord(
-        [
-            InputKind::Modifier(Modifier::Alt),
-            InputKind::Mouse(MouseButton::Left),
-        ],
-        bevy_pancam::Action::Grab,
-    );
+    input_map.insert_chord(MAP_GRAB_INPUTS, bevy_pancam::Action::Grab);
     input_map.insert(SingleAxis::mouse_wheel_y(), bevy_pancam::Action::Zoom);
+
     commands.spawn((
         Camera2dBundle::default(),
         Edges::default(),
