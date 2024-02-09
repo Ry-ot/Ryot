@@ -1,36 +1,26 @@
-use crate::Brush;
-use ryot::bevy_ryot::drawing::{DrawingBundle, Tile};
+use crate::{Brush, BrushItem};
 use ryot::position::TilePosition;
 
 pub struct Random;
 
-impl From<Random> for Brush {
+impl<B: BrushItem> From<Random> for Brush<B> {
     fn from(_: Random) -> Self {
-        Brush::new(random)
+        Brush::new(random::<B>)
     }
 }
 
-pub fn random(size: i32, center: DrawingBundle) -> Vec<DrawingBundle> {
-    let mut positions = vec![center];
-    let DrawingBundle {
-        layer,
-        tile_pos,
-        appearance,
-        visibility,
-        ..
-    } = center;
+pub fn random<B: BrushItem>(size: i32, center: B) -> Vec<B> {
+    let mut elements = vec![center];
+    let center_pos = center.get_position();
 
     for _ in 0..size {
-        let x = tile_pos.x + rand::random::<i32>() % size;
-        let y = tile_pos.y + rand::random::<i32>() % size;
-        positions.push(DrawingBundle {
-            layer,
-            tile_pos: TilePosition::new(x, y, tile_pos.z),
-            appearance,
-            visibility,
-            tile: Tile,
-        });
+        let x = center_pos.x + rand::random::<i32>() % size;
+        let y = center_pos.y + rand::random::<i32>() % size;
+        elements.push(B::from_position(
+            center,
+            TilePosition::new(x, y, center_pos.z),
+        ));
     }
 
-    positions
+    elements
 }

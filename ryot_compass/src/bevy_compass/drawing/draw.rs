@@ -10,7 +10,7 @@ pub(super) fn draw_to_tile<C: ContentAssets>(
     mut tiles: ResMut<MapTiles>,
     mut command_history: ResMut<CommandHistory>,
     content_assets: Res<C>,
-    brushes: Res<Brushes>,
+    brushes: Res<Brushes<DrawingBundle>>,
     current_appearance_query: Query<(&mut AppearanceDescriptor, &Visibility), Without<Cursor>>,
     cursor_query: Query<(
         &ActionState<DrawingAction>,
