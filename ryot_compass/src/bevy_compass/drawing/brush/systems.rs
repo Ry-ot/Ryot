@@ -1,9 +1,10 @@
 use crate::*;
 use leafwing_input_manager::action_state::ActionState;
+use ryot::bevy_ryot::drawing::DrawingBundle;
 
 pub fn update_brush(
     mut cursor_query: Query<(&mut Cursor, &ActionState<DrawingAction>)>,
-    brushes: Res<Brushes>,
+    brushes: Res<Brushes<DrawingBundle>>,
 ) {
     for (mut cursor, action_state) in cursor_query.iter_mut() {
         if action_state.just_pressed(DrawingAction::ChangeBrush) {

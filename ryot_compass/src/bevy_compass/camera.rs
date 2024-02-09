@@ -66,7 +66,7 @@ impl Default for DrawingState {
     fn default() -> Self {
         Self {
             enabled: true,
-            brush_size: 0,
+            brush_size: 3,
             brush_index: 0,
         }
     }

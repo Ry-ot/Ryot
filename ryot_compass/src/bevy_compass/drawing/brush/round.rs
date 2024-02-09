@@ -1,39 +1,29 @@
-use crate::Brush;
-use ryot::bevy_ryot::drawing::{DrawingBundle, Tile};
+use crate::{Brush, BrushItem};
 use ryot::position::TilePosition;
 
 pub struct Round;
 
-impl From<Round> for Brush {
+impl<B: BrushItem> From<Round> for Brush<B> {
     fn from(_: Round) -> Self {
-        Brush::new(round)
+        Brush::new(round::<B>)
     }
 }
 
-pub fn round(size: i32, center: DrawingBundle) -> Vec<DrawingBundle> {
-    let mut positions = Vec::new();
-    let DrawingBundle {
-        layer,
-        tile_pos,
-        appearance,
-        visibility,
-        ..
-    } = center;
+pub fn round<B: BrushItem>(size: i32, center: B) -> Vec<B> {
+    let mut elements = Vec::new();
+    let center_pos = center.get_position();
 
-    for x in tile_pos.x.saturating_sub(size)..=tile_pos.x.saturating_add(size) {
-        for y in tile_pos.y.saturating_sub(size)..=tile_pos.y.saturating_add(size) {
-            let distance = tile_pos.distance(TilePosition::new(x, y, tile_pos.z));
+    for x in center_pos.x.saturating_sub(size)..=center_pos.x.saturating_add(size) {
+        for y in center_pos.y.saturating_sub(size)..=center_pos.y.saturating_add(size) {
+            let distance = center_pos.distance(TilePosition::new(x, y, center_pos.z));
             if distance <= size as f32 {
-                positions.push(DrawingBundle {
-                    layer,
-                    tile_pos: TilePosition::new(x, y, tile_pos.z),
-                    appearance,
-                    visibility,
-                    tile: Tile,
-                });
+                elements.push(B::from_position(
+                    center,
+                    TilePosition::new(x, y, center_pos.z),
+                ));
             }
         }
     }
 
-    positions
+    elements
 }

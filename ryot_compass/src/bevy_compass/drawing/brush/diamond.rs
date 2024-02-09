@@ -1,40 +1,32 @@
-use crate::Brush;
-use ryot::bevy_ryot::drawing::{DrawingBundle, Tile};
+use crate::{Brush, BrushItem};
 use ryot::position::TilePosition;
 
 pub struct Diamond;
 
-impl From<Diamond> for Brush {
+impl<B: BrushItem> From<Diamond> for Brush<B> {
     fn from(_: Diamond) -> Self {
-        Brush::new(diamond)
+        Brush::new(diamond::<B>)
     }
 }
 
-pub fn diamond(size: i32, center: DrawingBundle) -> Vec<DrawingBundle> {
-    let mut positions = Vec::new();
-    let DrawingBundle {
-        layer,
-        tile_pos,
-        appearance,
-        visibility,
-        ..
-    } = center;
+pub fn diamond<B: BrushItem>(size: i32, center: B) -> Vec<B> {
+    let mut elements = Vec::new();
+    let center_pos = center.get_position();
 
     for x_offset in -size..=size {
         for y_offset in -size..=size {
             if x_offset.abs() + y_offset.abs() <= size {
-                let new_pos =
-                    TilePosition::new(tile_pos.x + x_offset, tile_pos.y + y_offset, tile_pos.z);
-                positions.push(DrawingBundle {
-                    layer,
-                    tile_pos: new_pos,
-                    appearance,
-                    visibility,
-                    tile: Tile,
-                });
+                elements.push(B::from_position(
+                    center,
+                    TilePosition::new(
+                        center_pos.x + x_offset,
+                        center_pos.y + y_offset,
+                        center_pos.z,
+                    ),
+                ));
             }
         }
     }
 
-    positions
+    elements
 }

@@ -9,7 +9,7 @@ use ryot::prelude::{drawing::*, position::*};
 /// It always delete the topmost content of the tile, following the Z-ordering.
 pub(super) fn delete_tile_content(
     mut commands: Commands,
-    brushes: Res<Brushes>,
+    brushes: Res<Brushes<DrawingBundle>>,
     tiles: ResMut<MapTiles>,
     mut command_history: ResMut<CommandHistory>,
     current_appearance_query: Query<(&mut AppearanceDescriptor, &Visibility), Without<Cursor>>,
