@@ -131,11 +131,12 @@ fn spawn_camera(content: Res<CompassContentAssets>, mut commands: Commands) {
     let mut input_map = InputMap::default();
     input_map.insert_chord(
         [
+            InputKind::Modifier(Modifier::Alt),
             InputKind::Mouse(MouseButton::Left),
-            InputKind::Keyboard(KeyCode::AltLeft),
         ],
         bevy_pancam::Action::Grab,
     );
+    input_map.insert(SingleAxis::mouse_wheel_y(), bevy_pancam::Action::Zoom);
     commands.spawn((
         Camera2dBundle::default(),
         Edges::default(),

@@ -30,21 +30,26 @@ impl DrawingAction {
             (MouseButton::Right, DrawingAction::Erase),
         ]);
 
-        input_map.insert_chord([KeyCode::ControlLeft, KeyCode::Z], DrawingAction::Undo);
-        input_map.insert_chord([KeyCode::ControlLeft, KeyCode::R], DrawingAction::Redo);
+        input_map.insert_chord(
+            [
+                InputKind::Modifier(Modifier::Control),
+                InputKind::Keyboard(KeyCode::Z),
+            ],
+            DrawingAction::Undo,
+        );
+        input_map.insert_chord(
+            [
+                InputKind::Modifier(Modifier::Control),
+                InputKind::Keyboard(KeyCode::R),
+            ],
+            DrawingAction::Redo,
+        );
 
         // Small hack to remove clash with the pancam plugin
         input_map.insert_chord(
             [
+                InputKind::Modifier(Modifier::Alt),
                 InputKind::Mouse(MouseButton::Left),
-                InputKind::Keyboard(KeyCode::AltLeft),
-            ],
-            DrawingAction::Stop,
-        );
-        input_map.insert_chord(
-            [
-                InputKind::Mouse(MouseButton::Left),
-                InputKind::Keyboard(KeyCode::AltRight),
             ],
             DrawingAction::Stop,
         );

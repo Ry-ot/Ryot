@@ -242,6 +242,7 @@ impl<C: ContentAssets> Plugin for UIPlugin<C> {
 }
 
 fn main() {
+    color_eyre::install().unwrap();
     App::new()
         .add_plugins((
             AppPlugin,
