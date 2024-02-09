@@ -8,7 +8,7 @@ use bevy::prelude::*;
 use bevy::utils::{HashMap, StableHashSet};
 use std::path::PathBuf;
 
-use self::drawing::Layer;
+use self::position::Layer;
 
 /// An event that is sent when a sprite sheet texture loading is completed.
 #[derive(Debug, Clone, Event)]
@@ -470,7 +470,7 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
             .entity(entity)
             .insert(LoadedSprites(sprites.clone()))
             .insert(SpriteSheetBundle {
-                transform: Transform::from_translation(position.with_z(100 + layer.z()).into()),
+                transform: Transform::from_translation(position.to_vec3(layer)),
                 sprite: TextureAtlasSprite {
                     index: sprite.get_sprite_index(),
                     anchor: RYOT_ANCHOR,

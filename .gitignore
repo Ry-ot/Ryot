@@ -16,3 +16,4 @@ Cargo.lock
 ryot_compass/assets/assets/
 
 .DS_Store
+.vscode/

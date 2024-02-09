@@ -19,8 +19,7 @@ pub mod sprites;
 
 use crate::appearances::{ContentType, SpriteSheetDataSet};
 use crate::bevy_ryot::sprites::SpritesToBeLoaded;
-use crate::position::{update_sprite_position, TilePosition};
-use crate::prelude::drawing::Layer;
+use crate::position::{update_sprite_position, Layer, TilePosition};
 use crate::CONTENT_CONFIG;
 use bevy::app::{App, Plugin, Update};
 use bevy::asset::{Asset, Assets, Handle};

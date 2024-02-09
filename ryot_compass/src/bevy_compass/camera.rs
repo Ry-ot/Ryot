@@ -7,8 +7,8 @@ use bevy_egui::EguiContexts;
 use bevy_pancam::*;
 use leafwing_input_manager::prelude::*;
 use leafwing_input_manager::user_input::InputKind;
-use ryot::bevy_ryot::drawing::{DrawingBundle, Layer};
-use ryot::position::TilePosition;
+use ryot::bevy_ryot::drawing::DrawingBundle;
+use ryot::position::{Layer, TilePosition};
 use ryot::prelude::drawing::{Brushes, DetailLevel};
 use ryot::prelude::*;
 use std::fmt;
@@ -124,7 +124,7 @@ impl Edges {
 fn spawn_cursor(mut commands: Commands) {
     commands.spawn((
         Cursor::default(),
-        Layer::Cursor,
+        Layer::Max,
         TilePosition::default(),
         AppearanceDescriptor::default(),
         InputManagerBundle::<DrawingAction> {
@@ -167,7 +167,8 @@ fn spawn_camera(content: Res<CompassContentAssets>, mut commands: Commands) {
 
     commands.spawn(SpriteBundle {
         texture: content.mascot().clone(),
-        transform: Transform::from_translation(Vec2::ZERO.extend(1.)).with_scale(Vec3::splat(0.5)),
+        transform: Transform::from_translation(Vec2::ZERO.extend(-100.))
+            .with_scale(Vec3::splat(0.5)),
         ..Default::default()
     });
 }

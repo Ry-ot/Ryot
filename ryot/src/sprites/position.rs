@@ -11,13 +11,8 @@ use serde::{Deserialize, Serialize};
 /// A 2d position in the tile grid. This is is not the position of the tile on
 /// the screen, because it doesn't take into account the tile size. Z is used to
 /// calculate the rendering order of the tile.
-#[cfg(feature = "bevy")]
-#[derive(
-    Eq, PartialEq, Deserialize, Serialize, Component, Reflect, Default, Clone, Copy, Debug, Hash,
-)]
-pub struct TilePosition(pub IVec3);
-#[cfg(not(feature = "bevy"))]
 #[derive(Eq, PartialEq, Deserialize, Serialize, Default, Clone, Copy, Debug, Hash)]
+#[cfg_attr(feature = "bevy", derive(Component, Reflect))]
 pub struct TilePosition(pub IVec3);
 
 /// This system syncs the sprite position with the TilePosition.
@@ -40,12 +35,12 @@ pub struct TilePosition(pub IVec3);
 #[cfg(feature = "bevy")]
 pub fn update_sprite_position(
     mut cursor_query: Query<
-        (&TilePosition, &mut Transform),
+        (&TilePosition, &Layer, &mut Transform),
         Or<(Changed<TilePosition>, Added<TilePosition>)>,
     >,
 ) {
-    for (tile_pos, mut transform) in cursor_query.iter_mut() {
-        transform.translation = tile_pos.into()
+    for (tile_pos, layer, mut transform) in cursor_query.iter_mut() {
+        transform.translation = tile_pos.to_vec3(layer)
     }
 }
 
@@ -76,11 +71,15 @@ impl TilePosition {
             .as_vec2()
             .distance(other.truncate().as_vec2())
     }
-}
 
-impl fmt::Display for TilePosition {
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "TilePosition({}, {}, {})", self.x, self.y, self.z)
+    pub fn to_vec3(self, layer: &Layer) -> Vec3 {
+        let pos = Vec2::from(self);
+        let weight = u16::MAX as f32;
+
+        // z for 2d sprites define the rendering order, for 45 degrees top-down
+        // perspective we always want right bottom items to be drawn on top.
+        // Calculations must be done in f32 otherwise decimals are lost.
+        pos.extend(layer.z() as f32 + 1. + pos.x / weight - pos.y / weight)
     }
 }
 
@@ -89,6 +88,12 @@ impl Deref for TilePosition {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl fmt::Display for TilePosition {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "TilePosition({}, {}, {})", self.x, self.y, self.z)
     }
 }
 
@@ -109,37 +114,62 @@ impl From<TilePosition> for Vec2 {
     }
 }
 
-impl From<TilePosition> for Vec3 {
-    fn from(tile_pos: TilePosition) -> Self {
-        let pos = Vec2::from(tile_pos);
-        let weight = u16::MAX as f32;
-
-        // Static objects are drawn on top of the ground, so we don't need to tweak the Z based
-        // on the tile position.
-        if tile_pos.z >= Layer::StaticLowerBound.z() {
-            return Vec2::from(tile_pos).extend(tile_pos.z as f32);
-        }
-
-        // z for 2d sprites define the rendering order, for 45 degrees top-down
-        // perspective we always want right bottom items to be drawn on top.
-        // Calculations must be done in f32 otherwise decimals are lost.
-        Vec2::from(tile_pos).extend(tile_pos.z as f32 + 1. + pos.x / weight - pos.y / weight)
-    }
-}
-
-impl From<&TilePosition> for Vec3 {
-    fn from(tile_pos: &TilePosition) -> Self {
-        Vec3::from(*tile_pos)
-    }
-}
-
 impl From<&TilePosition> for Vec2 {
     fn from(tile_pos: &TilePosition) -> Self {
         Vec2::from(*tile_pos)
     }
 }
 
-use crate::prelude::drawing::Layer;
+/// This enum defines the layers that composes a game.
+/// The base layers are defined in the enum and custom layers can be added.
+/// The layers are used to define the rendering order of the tiles.
+/// There are two types of layers: dynamic and static.
+///     - Dynamic layers are used for elements that can change their rendering order
+///     depending on their attributes like position or floor. E.g.: creatures, items, effects.
+///    - Static layers are used for elements that have a fixed rendering order and are always
+///    rendered on top of dynamic layers. E.g.: mouse, grid, ui elements.
+///
+/// Static layers are separated from dynamic layers by the StaticLowerBound layer.
+#[derive(Eq, Hash, PartialEq, Debug, Copy, Clone, Default)]
+#[cfg_attr(feature = "bevy", derive(Component, Reflect))]
+pub enum Layer {
+    #[default]
+    Items,
+    Top,
+    Bottom,
+    Ground,
+    Creature,
+    Effect,
+    StaticLowerBound,
+    Max,
+    Custom(i32),
+}
+
+impl Layer {
+    /// Z is calculated based on floor position and layer.
+    /// The base Z is floor * 100 and the layer adds an offset.
+    /// The offset is used to calculate the rendering order of the tile.
+    /// Tiles with higher Z are rendered on top of tiles with lower Z.
+    /// The tile Z for the game is always the floor (Z / 100).floor().
+    ///
+    /// We leave a gap of 10 between layers to allow for more layers to be added
+    /// in the future and to make it possible to place custom layers between
+    /// the default ones.
+    pub fn z(&self) -> i32 {
+        match self {
+            Self::Top => 90,
+            Self::Bottom => 80,
+            Self::Effect => 60,
+            Self::Creature => 40,
+            Self::Items => 20,
+            Self::Ground => 0,
+            Self::StaticLowerBound => 900,
+            Self::Max => 999,
+            Self::Custom(z) => *z,
+        }
+    }
+}
+
 #[cfg(not(test))]
 use crate::CONTENT_CONFIG;
 
