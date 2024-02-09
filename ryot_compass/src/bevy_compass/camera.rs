@@ -16,6 +16,8 @@ use std::marker::PhantomData;
 
 pub struct CameraPlugin<C: CompassAssets>(PhantomData<C>);
 
+pub const CURSOR_COLOR: Color = Color::rgba(0.7, 0.7, 0.7, 0.7);
+
 impl<C: CompassAssets> CameraPlugin<C> {
     pub fn new() -> Self {
         Self(PhantomData)
@@ -220,9 +222,14 @@ fn update_cursor_visibility(
     palette_state: Res<PaletteState>,
     mut egui_ctx: EguiContexts,
     mut windows: Query<&mut Window>,
-    mut cursor_query: Query<(&TilePosition, &mut Visibility), With<Cursor>>,
+    mut cursor_query: Query<
+        (&TilePosition, &mut Visibility, &mut TextureAtlasSprite),
+        With<Cursor>,
+    >,
 ) -> color_eyre::Result<()> {
-    let (tile_pos, mut visibility) = cursor_query.get_single_mut()?;
+    let (tile_pos, mut visibility, mut sprite) = cursor_query.get_single_mut()?;
+
+    sprite.color = CURSOR_COLOR;
 
     if egui_ctx.ctx_mut().is_pointer_over_area() || palette_state.selected_tile.is_none() {
         *visibility = Visibility::Hidden;
@@ -276,7 +283,7 @@ type CursorBrushPreviewFilter = (With<BrushPreviewTile>, Without<Cursor>);
 /// deleting/spawning components can be expensive.
 ///
 /// We always update the preview tiles position, appearance, visibility and sprite color, the
-/// first three according to the main cursor definition and the color is always rgba(0.7, 0.7, 0.7, 0.7).
+/// first three according to the main cursor definition and the color is always CURSOR_COLOR.
 fn update_cursor_brush_preview(
     brushes: Res<Brushes<DrawingBundle>>,
     cursor: Query<
@@ -321,7 +328,7 @@ fn update_cursor_brush_preview(
         // If the sprite is already loaded, TextureAtlasSprite exists, so we change its color to
         // differentiate the preview tiles from the rest, making them grayish and transparent.
         if let Some(mut sprite) = sprite {
-            sprite.color = Color::rgba(0.7, 0.7, 0.7, 0.7)
+            sprite.color = CURSOR_COLOR
         }
 
         // If we finished iterating over the positions, we hide the remaining preview tiles.
@@ -332,8 +339,9 @@ fn update_cursor_brush_preview(
 
         // If the new position is not valid, we hide the tile and continue to the next one.
         // This is only relevant in the borders of the map, where the preview tiles would be
-        // partially or completely outside the map.
-        if !new_pos.is_valid() {
+        // partially or completely outside the map. We also don't want to add a preview tile
+        // for the cursor center, that is already there.
+        if !new_pos.is_valid() || new_pos == *cursor_pos {
             *visibility = Visibility::Hidden;
             continue;
         }
@@ -358,7 +366,7 @@ fn update_cursor_brush_preview(
     // If after covering all the existing preview tiles, we still have positions to preview
     // we spawn new tiles for the remaining positions.
     for new_pos in positions {
-        if !new_pos.is_valid() {
+        if !new_pos.is_valid() || new_pos == *cursor_pos {
             continue;
         }
 

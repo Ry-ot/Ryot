@@ -33,7 +33,7 @@ pub struct TilePosition(pub IVec3);
 /// use bevy::prelude::*;
 /// use ryot::sprites::position::update_sprite_position;
 ///
-/// App::build()
+/// App::new()
 ///     .add_system(PostUpdate, update_sprite_position)
 ///     .run();
 /// ```
