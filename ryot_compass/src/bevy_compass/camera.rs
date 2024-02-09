@@ -7,9 +7,9 @@ use bevy_egui::EguiContexts;
 use bevy_pancam::*;
 use leafwing_input_manager::prelude::*;
 use leafwing_input_manager::user_input::InputKind;
-use ryot::bevy_ryot::drawing::Layer;
+use ryot::bevy_ryot::drawing::{DrawingBundle, Layer};
 use ryot::position::TilePosition;
-use ryot::prelude::drawing::DetailLevel;
+use ryot::prelude::drawing::{Brushes, DetailLevel};
 use ryot::prelude::*;
 use std::fmt;
 use std::marker::PhantomData;
@@ -41,6 +41,7 @@ impl<C: CompassAssets> Plugin for CameraPlugin<C> {
                 (
                     update_cursor_pos.map(drop),
                     update_cursor_preview,
+                    update_cursor_brush_preview,
                     update_cursor_visibility.map(drop),
                     update_camera_edges,
                 )
@@ -249,6 +250,126 @@ fn update_cursor_visibility(
     }
 
     Ok(())
+}
+
+#[derive(Component)]
+struct BrushPreviewTile;
+
+type CursorHasChangedFilter = (
+    Without<BrushPreviewTile>,
+    Or<(
+        Changed<Cursor>,
+        Changed<Visibility>,
+        Changed<TilePosition>,
+        Changed<AppearanceDescriptor>,
+    )>,
+);
+
+type CursorBrushPreviewFilter = (With<BrushPreviewTile>, Without<Cursor>);
+
+/// This function listens for changes in the cursor's main tile and updates its brush preview
+/// accordingly. The brush preview is a set of tiles that show the area that the brush will cover,
+/// depending on the current brush size and shape.
+///
+/// When the cursor grows we draw new preview tiles, and when it shrinks we hide the extra ones.
+/// We never remove the tiles once added, as the cost of keeping them hidden is good enough and
+/// deleting/spawning components can be expensive.
+///
+/// We always update the preview tiles position, appearance, visibility and sprite color, the
+/// first three according to the main cursor definition and the color is always rgba(0.7, 0.7, 0.7, 0.7).
+fn update_cursor_brush_preview(
+    brushes: Res<Brushes<DrawingBundle>>,
+    cursor: Query<
+        (&Cursor, &TilePosition, &AppearanceDescriptor, &Visibility),
+        (Without<BrushPreviewTile>, CursorHasChangedFilter),
+    >,
+    mut commands: Commands,
+    mut brush_preview_tiles: Query<
+        (
+            &mut TilePosition,
+            &mut AppearanceDescriptor,
+            &mut Visibility,
+            Option<&mut TextureAtlasSprite>,
+        ),
+        CursorBrushPreviewFilter,
+    >,
+) {
+    let Ok((cursor, cursor_pos, cursor_appearance, cursor_visibility)) = cursor.get_single() else {
+        return;
+    };
+
+    // Here we get the positions of the tiles that will be part of the brush preview
+    let mut positions: Vec<TilePosition> = brushes(
+        cursor.drawing_state.brush_index,
+        cursor.drawing_state.brush_size,
+        DrawingBundle::from_tile_position(*cursor_pos),
+    )
+    .into_iter()
+    .map(|bundle| bundle.tile_pos)
+    .collect();
+
+    // We first iterate over all the existing brush preview tiles and update them according to
+    // the cursor state and the brush preview positions. We do that to avoid spawning new tiles
+    // unnecessarily.
+    for (mut tile_pos, mut appearance, mut visibility, sprite) in brush_preview_tiles.iter_mut() {
+        // If the drawing_state is disable we are probably interacting with the UI, so we hide the preview.
+        if !cursor.drawing_state.enabled {
+            *visibility = Visibility::Hidden;
+            continue;
+        }
+
+        // If the sprite is already loaded, TextureAtlasSprite exists, so we change its color to
+        // differentiate the preview tiles from the rest, making them grayish and transparent.
+        if let Some(mut sprite) = sprite {
+            sprite.color = Color::rgba(0.7, 0.7, 0.7, 0.7)
+        }
+
+        // If we finished iterating over the positions, we hide the remaining preview tiles.
+        let Some(new_pos) = positions.pop() else {
+            *visibility = Visibility::Hidden;
+            continue;
+        };
+
+        // If the new position is not valid, we hide the tile and continue to the next one.
+        // This is only relevant in the borders of the map, where the preview tiles would be
+        // partially or completely outside the map.
+        if !new_pos.is_valid() {
+            *visibility = Visibility::Hidden;
+            continue;
+        }
+
+        // Here we update the existing preview tile with the new position, appearance and visibility.
+        *visibility = *cursor_visibility;
+        *tile_pos = new_pos;
+        *appearance = *cursor_appearance;
+    }
+
+    // We never proceed if the drawing state is disabled, since we don't want to spawn new tiles
+    // and we never preview when interacting with the UI.
+    if !cursor.drawing_state.enabled {
+        return;
+    }
+
+    // If there are no more positions to preview, we don't need to spawn new tiles.
+    if positions.is_empty() {
+        return;
+    }
+
+    // If after covering all the existing preview tiles, we still have positions to preview
+    // we spawn new tiles for the remaining positions.
+    for new_pos in positions {
+        if !new_pos.is_valid() {
+            continue;
+        }
+
+        commands.spawn((
+            BrushPreviewTile,
+            new_pos,
+            *cursor_appearance,
+            *cursor_visibility,
+            Layer::Cursor,
+        ));
+    }
 }
 
 fn update_camera_edges(
