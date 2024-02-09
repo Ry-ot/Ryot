@@ -24,10 +24,7 @@ pub enum DrawingAction {
     Erase,
     Undo,
     Redo,
-    SetSingleTileBrush,
-    SetRoundBrush,
-    SetSquareBrush,
-    SetDiamondBrush,
+    ChangeBrush,
     IncreaseBrush,
     DecreaseBrush,
 }
@@ -54,12 +51,7 @@ impl DrawingAction {
             DrawingAction::Redo,
         );
 
-        input_map.insert_multiple([
-            (KeyCode::Key1, DrawingAction::SetSingleTileBrush),
-            (KeyCode::Key2, DrawingAction::SetSquareBrush),
-            (KeyCode::Key3, DrawingAction::SetDiamondBrush),
-            (KeyCode::Key4, DrawingAction::SetRoundBrush),
-        ]);
+        input_map.insert_multiple([(KeyCode::Key1, DrawingAction::ChangeBrush)]);
 
         input_map.insert_chord(
             [KeyCode::ControlLeft, KeyCode::Plus],
