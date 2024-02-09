@@ -1,4 +1,4 @@
-use crate::{Brushes, Cursor, DrawingAction};
+use crate::{Cursor, DrawingAction};
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
@@ -51,11 +51,8 @@ pub(super) fn draw_to_tile<C: ContentAssets>(
         let layer = prepared_appearance.layer;
         let appearance = AppearanceDescriptor::new(*group, *id, default());
 
-        let Some(brush) = brushes.get(cursor.drawing_state.brush_index) else {
-            return;
-        };
-
-        let to_draw = brush(
+        let to_draw = brushes(
+            cursor.drawing_state.brush_index,
             cursor.drawing_state.brush_size,
             DrawingBundle::new(layer, *tile_pos, appearance),
         );
