@@ -1,11 +1,8 @@
 use bevy::prelude::*;
-use ryot::prelude::{drawing::*, position::*, *};
+use ryot::prelude::drawing::*;
 
 mod diamond;
 pub use diamond::DiamondBrush;
-
-mod geometric;
-pub use geometric::GeometricBrush;
 
 mod round;
 pub use round::RoundBrush;
@@ -18,7 +15,7 @@ pub use square::SquareBrush;
 mod systems;
 pub use systems::update_brush;
 
-pub trait BrushAction: Eq + PartialEq + Clone + Reflect + Send + Sync + 'static {
+pub trait BrushAction {
     fn apply(&self, center: DrawingBundle) -> Vec<DrawingBundle>;
     fn get_positions(&self, center: TilePosition) -> Vec<TilePosition> {
         self.apply(DrawingBundle::new(
@@ -32,42 +29,32 @@ pub trait BrushAction: Eq + PartialEq + Clone + Reflect + Send + Sync + 'static 
     }
 }
 
-#[derive(Component, Eq, Default, PartialEq, Reflect, Copy, Clone, Hash)]
-pub enum Brush {
+#[derive(Debug, Eq, Default, PartialEq, Reflect, Copy, Clone, Hash)]
+pub enum BrushType {
+    Round,
+    Square,
     #[default]
-    SingleTile,
-    Geometric(GeometricBrush),
+    Diamond,
+}
+
+#[derive(Component, Default, Eq, PartialEq, Reflect, Copy, Clone, Hash)]
+pub struct Brush {
+    pub size: i32,
+    pub brush_type: BrushType,
 }
 
 impl Brush {
-    fn increase(&mut self) {
-        match self {
-            Brush::SingleTile => (),
-            Brush::Geometric(brush) => brush.increase(),
-        }
-    }
-
-    fn decrease(&mut self) {
-        match self {
-            Brush::SingleTile => (),
-            Brush::Geometric(brush) => brush.decrease(),
-        }
+    pub fn new(size: i32, brush_type: BrushType) -> Self {
+        Brush { size, brush_type }
     }
 }
 
 impl BrushAction for Brush {
     fn apply(&self, center: DrawingBundle) -> Vec<DrawingBundle> {
-        match self {
-            Brush::SingleTile => SingleTileBrush.apply(center),
-            Brush::Geometric(brush) => brush.apply(center),
+        match self.brush_type {
+            BrushType::Round => RoundBrush(self.size).apply(center),
+            BrushType::Square => SquareBrush(self.size).apply(center),
+            BrushType::Diamond => DiamondBrush(self.size).apply(center),
         }
-    }
-}
-
-#[derive(Debug, Default, Eq, PartialEq, Reflect, Copy, Clone, Hash)]
-pub struct SingleTileBrush;
-impl BrushAction for SingleTileBrush {
-    fn apply(&self, center: DrawingBundle) -> Vec<DrawingBundle> {
-        vec![center]
     }
 }
