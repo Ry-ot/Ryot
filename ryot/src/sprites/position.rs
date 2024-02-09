@@ -20,6 +20,35 @@ pub struct TilePosition(pub IVec3);
 #[derive(Eq, PartialEq, Deserialize, Serialize, Default, Clone, Copy, Debug, Hash)]
 pub struct TilePosition(pub IVec3);
 
+/// This system syncs the sprite position with the TilePosition.
+/// Every spawned sprite has a Transform component, which is used to position the sprite on
+/// the screen. However, in this library our world components are treated in terms of TilePosition.
+/// So, we need to sync the sprite position with the TilePosition.
+///
+/// This system listen to all new and changed TilePosition components and update the Transform
+/// component of the sprite accordingly, if it exist. Ideally this should run in the end of
+/// the Update stage, so it can be sure that all TilePosition components have been updated.
+///
+/// ```rust
+/// use bevy::prelude::*;
+/// use ryot::sprites::position::update_sprite_position;
+///
+/// App::build()
+///     .add_system(PostUpdate, update_sprite_position)
+///     .run();
+/// ```
+#[cfg(feature = "bevy")]
+pub fn update_sprite_position(
+    mut cursor_query: Query<
+        (&TilePosition, &mut Transform),
+        Or<(Changed<TilePosition>, Added<TilePosition>)>,
+    >,
+) {
+    for (tile_pos, mut transform) in cursor_query.iter_mut() {
+        transform.translation = tile_pos.into()
+    }
+}
+
 impl TilePosition {
     /// The minimum possible tile position. This has to be something that when multiplied by the tile size does not overflow f32.
     pub const MIN: TilePosition = TilePosition(IVec3::new(i16::MIN as i32, i16::MIN as i32, 0));
