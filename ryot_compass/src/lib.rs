@@ -1,3 +1,5 @@
+#![feature(fn_traits)]
+#![feature(unboxed_closures)]
 #![feature(type_alias_impl_trait)]
 
 use bevy::app::{App, AppExit, Plugin};

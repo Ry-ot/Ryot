@@ -1,5 +1,5 @@
 use crate::bevy_compass::CompassAssets;
-use crate::{Brush, CompassContentAssets, DrawingAction, PaletteState};
+use crate::{CompassContentAssets, DrawingAction, PaletteState};
 use bevy::math::{Vec2, Vec3};
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
@@ -58,14 +58,16 @@ pub struct Cursor {
 #[derive(Eq, PartialEq, Clone, Copy, Reflect)]
 pub struct DrawingState {
     pub enabled: bool,
-    pub brush: Brush,
+    pub brush_size: i32,
+    pub brush_index: usize,
 }
 
 impl Default for DrawingState {
     fn default() -> Self {
         Self {
             enabled: true,
-            brush: Brush::default(),
+            brush_size: 0,
+            brush_index: 0,
         }
     }
 }

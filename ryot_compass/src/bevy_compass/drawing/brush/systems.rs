@@ -1,17 +1,20 @@
 use crate::*;
 use leafwing_input_manager::action_state::ActionState;
 
-pub fn update_brush(mut cursor_query: Query<(&mut Cursor, &ActionState<DrawingAction>)>) {
+pub fn update_brush(
+    mut cursor_query: Query<(&mut Cursor, &ActionState<DrawingAction>)>,
+    brushes: Res<Brushes>,
+) {
     for (mut cursor, action_state) in cursor_query.iter_mut() {
         if action_state.just_pressed(DrawingAction::ChangeBrush) {
-            cursor.drawing_state.brush.brush_type = match cursor.drawing_state.brush.brush_type {
-                BrushType::Round => BrushType::Square,
-                BrushType::Square => BrushType::Diamond,
-                BrushType::Diamond => BrushType::Round,
-            };
+            cursor.drawing_state.brush_index += 1;
+
+            if cursor.drawing_state.brush_index >= brushes.len() {
+                cursor.drawing_state.brush_index = 0;
+            }
         }
 
-        let mut size = cursor.drawing_state.brush.size;
+        let mut size = cursor.drawing_state.brush_size;
 
         if action_state.just_pressed(DrawingAction::IncreaseBrush) {
             size += 1;
@@ -19,6 +22,6 @@ pub fn update_brush(mut cursor_query: Query<(&mut Cursor, &ActionState<DrawingAc
             size -= 1;
         }
 
-        cursor.drawing_state.brush.size = size.clamp(0, 50);
+        cursor.drawing_state.brush_size = size.clamp(0, 50);
     }
 }

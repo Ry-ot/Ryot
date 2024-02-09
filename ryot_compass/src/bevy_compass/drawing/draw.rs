@@ -1,4 +1,4 @@
-use crate::{BrushAction, Cursor, DrawingAction};
+use crate::{Brushes, Cursor, DrawingAction};
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
@@ -10,6 +10,7 @@ pub(super) fn draw_to_tile<C: ContentAssets>(
     mut tiles: ResMut<MapTiles>,
     mut command_history: ResMut<CommandHistory>,
     content_assets: Res<C>,
+    brushes: Res<Brushes>,
     current_appearance_query: Query<(&mut AppearanceDescriptor, &Visibility), Without<Cursor>>,
     cursor_query: Query<(
         &ActionState<DrawingAction>,
@@ -50,14 +51,18 @@ pub(super) fn draw_to_tile<C: ContentAssets>(
         let layer = prepared_appearance.layer;
         let appearance = AppearanceDescriptor::new(*group, *id, default());
 
-        let bundles = cursor
-            .drawing_state
-            .brush
-            .apply(DrawingBundle::new(layer, *tile_pos, appearance));
+        let Some(brush) = brushes.get(cursor.drawing_state.brush_index) else {
+            return;
+        };
+
+        let to_draw = brush(
+            cursor.drawing_state.brush_size,
+            DrawingBundle::new(layer, *tile_pos, appearance),
+        );
 
         let mut queued = 0;
 
-        for new_bundle in bundles {
+        for new_bundle in to_draw {
             let entity = tiles
                 .entry(new_bundle.tile_pos)
                 .or_default()

@@ -1,4 +1,4 @@
-use crate::{BrushAction, Cursor, DrawingAction};
+use crate::{Brushes, Cursor, DrawingAction};
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
@@ -9,6 +9,7 @@ use ryot::prelude::{drawing::*, position::*};
 /// It always delete the topmost content of the tile, following the Z-ordering.
 pub(super) fn delete_tile_content(
     mut commands: Commands,
+    brushes: Res<Brushes>,
     tiles: ResMut<MapTiles>,
     mut command_history: ResMut<CommandHistory>,
     current_appearance_query: Query<(&mut AppearanceDescriptor, &Visibility), Without<Cursor>>,
@@ -24,7 +25,18 @@ pub(super) fn delete_tile_content(
             return;
         }
 
-        let positions = cursor.drawing_state.brush.get_positions(*tile_pos);
+        let Some(brush) = brushes.get(cursor.drawing_state.brush_index) else {
+            return;
+        };
+
+        let positions: Vec<TilePosition> = brush(
+            cursor.drawing_state.brush_size,
+            DrawingBundle::from_tile_position(*tile_pos),
+        )
+        .into_iter()
+        .map(|bundle| bundle.tile_pos)
+        .collect();
+
         let mut queued = 0;
 
         for tile_pos in positions {
