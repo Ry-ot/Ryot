@@ -10,6 +10,9 @@ pub use round::*;
 mod square;
 pub use square::*;
 
+mod random;
+pub use random::*;
+
 mod systems;
 pub use systems::update_brush;
 
@@ -37,7 +40,11 @@ impl Brushes {
 
 impl Default for Brushes {
     fn default() -> Self {
-        Self::new().insert(Diamond).insert(Round).insert(Square)
+        Self::new()
+            .insert(Diamond)
+            .insert(Round)
+            .insert(Square)
+            .insert(Random)
     }
 }
 
