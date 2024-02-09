@@ -40,7 +40,7 @@ impl<C: CompassAssets> Plugin for CameraPlugin<C> {
                 Update,
                 (
                     update_cursor_pos.map(drop),
-                    update_cursor_palette_sprite,
+                    update_cursor_preview,
                     update_cursor_visibility.map(drop),
                     update_camera_edges,
                 )
@@ -169,7 +169,7 @@ fn spawn_camera(content: Res<CompassContentAssets>, mut commands: Commands) {
     });
 }
 
-fn update_cursor_palette_sprite(
+fn update_cursor_preview(
     palette_state: Res<PaletteState>,
     mut cursor_query: Query<(&mut Cursor, &mut AppearanceDescriptor)>,
 ) {
@@ -191,7 +191,7 @@ fn update_cursor_palette_sprite(
 fn update_cursor_pos(
     camera_query: Query<(&Camera, &GlobalTransform)>,
     window_query: Query<&Window, With<PrimaryWindow>>,
-    mut cursor_query: Query<(&mut TilePosition, Option<&mut Transform>, &Layer), With<Cursor>>,
+    mut cursor_query: Query<(&mut TilePosition, &Layer), With<Cursor>>,
 ) -> color_eyre::Result<()> {
     let (camera, camera_transform) = camera_query.get_single()?;
 
@@ -203,7 +203,7 @@ fn update_cursor_pos(
         return Ok(());
     };
 
-    let (mut cursor_pos, transform, layer) = cursor_query.get_single_mut()?;
+    let (mut cursor_pos, layer) = cursor_query.get_single_mut()?;
     let new_pos = TilePosition::from(point).with_z(layer.z());
 
     if *cursor_pos == new_pos {
@@ -211,10 +211,6 @@ fn update_cursor_pos(
     }
 
     *cursor_pos = new_pos;
-
-    if let Some(mut transform) = transform {
-        transform.translation = new_pos.into();
-    }
 
     Ok(())
 }
