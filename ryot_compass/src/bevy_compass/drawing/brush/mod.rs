@@ -9,6 +9,8 @@ pub use geometric::GeometricBrush;
 
 mod round;
 pub use round::RoundBrush;
+use ryot::bevy_ryot::AppearanceDescriptor;
+use ryot::position::TilePosition;
 
 mod square;
 pub use square::SquareBrush;
@@ -18,6 +20,16 @@ pub use systems::update_brush;
 
 pub trait BrushAction: Eq + PartialEq + Clone + Reflect + Send + Sync + 'static {
     fn apply(&self, center: DrawingBundle) -> Vec<DrawingBundle>;
+    fn get_positions(&self, center: TilePosition) -> Vec<TilePosition> {
+        self.apply(DrawingBundle::new(
+            Layer::Ground,
+            center,
+            AppearanceDescriptor::default(),
+        ))
+        .into_iter()
+        .map(|bundle| bundle.tile_pos)
+        .collect()
+    }
 }
 
 #[derive(Component, Eq, Default, PartialEq, Reflect, Copy, Clone, Hash)]
