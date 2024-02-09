@@ -4,6 +4,9 @@ use crate::position::TilePosition;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 
+mod brushes;
+pub use brushes::*;
+
 mod commands;
 pub use commands::*;
 
@@ -47,6 +50,30 @@ pub struct DrawingBundle {
     pub appearance: AppearanceDescriptor,
     pub visibility: Visibility,
     pub tile: Tile,
+}
+
+impl BrushItem for DrawingBundle {
+    fn from_position(original: Self, tile_pos: TilePosition) -> Self {
+        let DrawingBundle {
+            layer,
+            appearance,
+            visibility,
+            tile,
+            ..
+        } = original;
+
+        DrawingBundle {
+            layer,
+            tile_pos,
+            appearance,
+            visibility,
+            tile,
+        }
+    }
+
+    fn get_position(&self) -> TilePosition {
+        self.tile_pos
+    }
 }
 
 impl DrawingBundle {

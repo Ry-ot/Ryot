@@ -1,4 +1,4 @@
-use crate::{Brushes, Cursor, DrawingAction};
+use crate::{Cursor, DrawingAction};
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
@@ -25,11 +25,8 @@ pub(super) fn delete_tile_content(
             return;
         }
 
-        let Some(brush) = brushes.get(cursor.drawing_state.brush_index) else {
-            return;
-        };
-
-        let positions: Vec<TilePosition> = brush(
+        let positions: Vec<TilePosition> = brushes(
+            cursor.drawing_state.brush_index,
             cursor.drawing_state.brush_size,
             DrawingBundle::from_tile_position(*tile_pos),
         )
