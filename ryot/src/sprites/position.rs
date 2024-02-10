@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use std::{
     fmt::{self, Formatter},
     ops::Deref,
+    time::Duration,
 };
 
 use glam::{IVec3, UVec2, Vec2, Vec3};
@@ -15,6 +16,28 @@ use serde::{Deserialize, Serialize};
 #[cfg_attr(feature = "bevy", derive(Component, Reflect))]
 pub struct TilePosition(pub IVec3);
 
+#[cfg(feature = "bevy")]
+#[derive(Component, Debug, Clone)]
+pub struct SpriteMovement {
+    pub origin: TilePosition,
+    pub timer: Timer,
+}
+
+#[cfg(feature = "bevy")]
+impl SpriteMovement {
+    pub fn new(origin: TilePosition, duration: Duration) -> Self {
+        Self {
+            origin,
+            timer: Timer::new(duration, TimerMode::Once),
+        }
+    }
+}
+
+type MovingSpriteFilter = Or<(
+    Changed<TilePosition>,
+    Added<TilePosition>,
+    With<SpriteMovement>,
+)>;
 /// This system syncs the sprite position with the TilePosition.
 /// Every spawned sprite has a Transform component, which is used to position the sprite on
 /// the screen. However, in this library our world components are treated in terms of TilePosition.
@@ -34,13 +57,32 @@ pub struct TilePosition(pub IVec3);
 /// ```
 #[cfg(feature = "bevy")]
 pub fn update_sprite_position(
-    mut cursor_query: Query<
-        (&TilePosition, &Layer, &mut Transform),
-        Or<(Changed<TilePosition>, Added<TilePosition>)>,
+    mut commands: Commands,
+    mut query: Query<
+        (
+            Entity,
+            &TilePosition,
+            &Layer,
+            &mut Transform,
+            Option<&mut SpriteMovement>,
+        ),
+        MovingSpriteFilter,
     >,
+    time: Res<Time>,
 ) {
-    for (tile_pos, layer, mut transform) in cursor_query.iter_mut() {
-        transform.translation = tile_pos.to_vec3(layer)
+    for (entity, tile_pos, layer, mut transform, movement) in query.iter_mut() {
+        if let Some(mut movement) = movement {
+            movement.timer.tick(time.delta());
+            transform.translation = movement
+                .origin
+                .to_vec3(layer)
+                .lerp(tile_pos.to_vec3(layer), movement.timer.percent());
+            if movement.timer.just_finished() {
+                commands.entity(entity).remove::<SpriteMovement>();
+            }
+        } else {
+            transform.translation = tile_pos.to_vec3(layer)
+        }
     }
 }
 
@@ -93,7 +135,7 @@ impl Deref for TilePosition {
 
 impl fmt::Display for TilePosition {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "TilePosition({}, {}, {})", self.x, self.y, self.z)
+        write!(f, "({}, {}, {})", self.x, self.y, self.z)
     }
 }
 
@@ -105,6 +147,20 @@ impl From<Vec2> for TilePosition {
                 .as_ivec2()
                 .extend(0),
         )
+    }
+}
+
+#[cfg(feature = "bevy")]
+impl From<Transform> for TilePosition {
+    fn from(transform: Transform) -> Self {
+        transform.translation.truncate().into()
+    }
+}
+
+#[cfg(feature = "bevy")]
+impl From<&Transform> for TilePosition {
+    fn from(transform: &Transform) -> Self {
+        TilePosition::from(*transform)
     }
 }
 
