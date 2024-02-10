@@ -119,16 +119,16 @@ impl TilePosition {
         let pos = Vec2::from(self);
         let weight = u16::MAX as f32;
 
-        // Static objects are drawn on top of the ground, so we don't need to tweak the Z based
-        // on the tile position.
-        if self.z >= Layer::StaticLowerBound.z() {
-            return pos.extend(self.z as f32);
-        }
-
-        // z for 2d sprites define the rendering order, for 45 degrees top-down
-        // perspective we always want right bottom items to be drawn on top.
-        // Calculations must be done in f32 otherwise decimals are lost.
-        pos.extend(layer.z() as f32 + 1. + pos.x / weight - pos.y / weight)
+        pos.extend(match layer {
+            // Static objects are drawn on top of the ground, so we don't need to tweak the Z based
+            // on the tile position.
+            Layer::Max => self.z as f32,
+            Layer::Custom(z) if *z > Layer::STATIC_LAYER_BASELINE => *z as f32,
+            // z for 2d sprites define the rendering order, for 45 degrees top-down
+            // perspective we always want right bottom items to be drawn on top.
+            // Calculations must be done in f32 otherwise decimals are lost.
+            _ => layer.z() as f32 + 1. + pos.x / weight - pos.y / weight,
+        })
     }
 }
 
@@ -191,8 +191,6 @@ impl From<&TilePosition> for Vec2 {
 ///     depending on their attributes like position or floor. E.g.: creatures, items, effects.
 ///    - Static layers are used for elements that have a fixed rendering order and are always
 ///    rendered on top of dynamic layers. E.g.: mouse, grid, ui elements.
-///
-/// Static layers are separated from dynamic layers by the StaticLowerBound layer.
 #[derive(Eq, Hash, PartialEq, Debug, Copy, Clone, Default)]
 #[cfg_attr(feature = "bevy", derive(Component, Reflect))]
 pub enum Layer {
@@ -203,12 +201,13 @@ pub enum Layer {
     Ground,
     Creature,
     Effect,
-    StaticLowerBound,
     Max,
     Custom(i32),
 }
 
 impl Layer {
+    const STATIC_LAYER_BASELINE: i32 = 900;
+
     /// Z is calculated based on floor position and layer.
     /// The base Z is floor * 100 and the layer adds an offset.
     /// The offset is used to calculate the rendering order of the tile.
@@ -226,7 +225,6 @@ impl Layer {
             Self::Creature => 40,
             Self::Items => 20,
             Self::Ground => 0,
-            Self::StaticLowerBound => 900,
             Self::Max => 999,
             Self::Custom(z) => *z,
         }
