@@ -1,4 +1,4 @@
-use crate::{draw_palette_window, get_egui_parameters_for_texture, PaletteState, TilesetCategory};
+use crate::{get_egui_parameters_for_texture, PaletteState, TilesetCategory};
 use bevy::asset::Assets;
 use bevy::log::warn;
 use bevy::prelude::*;
@@ -33,7 +33,7 @@ impl<C: ContentAssets> Plugin for PalettePlugin<C> {
                 (
                     update_palette_category::<C>,
                     update_palette_items::<C>,
-                    draw_palette_window,
+                    // draw_palette_window,
                 )
                     .chain()
                     .run_if(in_state(InternalContentState::Ready)),

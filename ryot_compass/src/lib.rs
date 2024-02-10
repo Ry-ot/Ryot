@@ -56,7 +56,7 @@ impl Plugin for AppPlugin {
                     .set(entitled_window("Compass".to_string()))
                     .set(ImagePlugin::default_nearest()),
                 ContentPlugin::<CompassContentAssets>::new(),
-                WorldInspectorPlugin::default().run_if(input_toggle_active(true, KeyCode::Escape)),
+                WorldInspectorPlugin::default().run_if(input_toggle_active(false, KeyCode::Escape)),
             ))
             .add_systems(
                 Update,

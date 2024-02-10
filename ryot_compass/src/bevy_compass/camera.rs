@@ -1,9 +1,11 @@
 use crate::bevy_compass::CompassAssets;
-use crate::{CompassContentAssets, DrawingAction, PaletteState};
+use crate::{
+    CompassContentAssets, DrawingAction, {PaletteState, UiState},
+};
 use bevy::math::{Vec2, Vec3};
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
-use bevy_egui::EguiContexts;
+use bevy_egui::EguiContext;
 use bevy_pancam::*;
 use leafwing_input_manager::prelude::*;
 use leafwing_input_manager::user_input::InputKind;
@@ -221,23 +223,25 @@ fn update_cursor_pos(
 
 fn update_cursor_visibility(
     palette_state: Res<PaletteState>,
-    mut egui_ctx: EguiContexts,
+    mut egui_ctx: Query<&mut EguiContext>,
     mut windows: Query<&mut Window>,
     mut cursor_query: Query<
         (&TilePosition, &mut Visibility, &mut TextureAtlasSprite),
         With<Cursor>,
     >,
+    gui_state: Res<UiState>,
 ) -> color_eyre::Result<()> {
+    let mut egui_ctx = egui_ctx.single_mut();
     let (tile_pos, mut visibility, mut sprite) = cursor_query.get_single_mut()?;
 
     sprite.color = CURSOR_COLOR;
 
-    if egui_ctx.ctx_mut().is_pointer_over_area() || palette_state.selected_tile.is_none() {
+    if !gui_state.is_being_used || palette_state.selected_tile.is_none() {
         *visibility = Visibility::Hidden;
 
         windows.single_mut().cursor.visible = true;
         windows.single_mut().cursor.icon = CursorIcon::Default;
-        egui_ctx.ctx().set_cursor_icon(egui::CursorIcon::Default);
+        egui_ctx.get().set_cursor_icon(egui::CursorIcon::Default);
 
         return Ok(());
     }
@@ -245,13 +249,13 @@ fn update_cursor_visibility(
     if tile_pos.is_valid() {
         *visibility = Visibility::Visible;
         egui_ctx
-            .ctx_mut()
+            .get_mut()
             .set_cursor_icon(egui::CursorIcon::Crosshair);
         windows.single_mut().cursor.icon = CursorIcon::Crosshair;
     } else {
         *visibility = Visibility::Hidden;
         egui_ctx
-            .ctx_mut()
+            .get_mut()
             .set_cursor_icon(egui::CursorIcon::NotAllowed);
         windows.single_mut().cursor.icon = CursorIcon::NotAllowed;
         windows.single_mut().cursor.visible = true;

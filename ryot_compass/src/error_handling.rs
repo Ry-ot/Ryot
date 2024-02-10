@@ -1,7 +1,7 @@
 use crate::InternalContentState;
 use bevy::app::AppExit;
 use bevy::prelude::*;
-use bevy_egui::EguiContexts;
+use bevy_egui::EguiContext;
 
 pub struct ErrorPlugin;
 
@@ -31,9 +31,13 @@ impl ErrorState {
         }
     }
 }
-pub fn display_error_window(mut egui_ctx: EguiContexts, mut error_state: ResMut<ErrorState>) {
+pub fn display_error_window(
+    mut egui_ctx: Query<&mut EguiContext>,
+    mut error_state: ResMut<ErrorState>,
+) {
+    let mut egui_ctx = egui_ctx.single_mut();
     if error_state.has_error {
-        egui::Window::new("Error").show(egui_ctx.ctx_mut(), |ui| {
+        egui::Window::new("Error").show(egui_ctx.get_mut(), |ui| {
             ui.label(&error_state.error_message);
             if ui.button("OK").clicked() {
                 error_state.close_requested = true;
