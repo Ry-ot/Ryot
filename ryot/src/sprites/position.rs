@@ -52,6 +52,7 @@ type MovingSpriteFilter = Or<(
 /// use ryot::sprites::position::update_sprite_position;
 ///
 /// App::new()
+///     .init_resource::<Time>()
 ///     .add_systems(PostUpdate, update_sprite_position)
 ///     .run();
 /// ```
