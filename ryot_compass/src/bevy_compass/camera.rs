@@ -376,7 +376,7 @@ fn update_cursor_brush_preview(
             new_pos,
             *cursor_appearance,
             *cursor_visibility,
-            Layer::Cursor,
+            Layer::Max,
         ));
     }
 }
