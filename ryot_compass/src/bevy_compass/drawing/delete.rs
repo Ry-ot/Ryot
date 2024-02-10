@@ -30,7 +30,6 @@ fn delete_tile_content<F: ReadOnlyWorldQuery>(
     current_appearance_query: Query<(&mut AppearanceDescriptor, &Visibility), Without<Cursor>>,
 ) {
     for (cursor, tile_pos) in &cursor_query {
-        info!("Deleting content at {:?}", tile_pos);
         let positions: Vec<TilePosition> = brushes(
             cursor.drawing_state.brush_index,
             cursor.drawing_state.brush_size,

@@ -30,11 +30,14 @@ impl EntityCommand for UpdateTileContent {
 
         let Some(new_bundle) = bundle else {
             if let Some(mut visibility) = world.get_mut::<Visibility>(id) {
-                *visibility = Visibility::Hidden
+                *visibility = Visibility::Hidden;
+                world.entity_mut(id).insert(Deleted);
             }
 
             return;
         };
+
+        world.entity_mut(id).remove::<Deleted>();
 
         if old_bundle.is_some() {
             let Some(mut descriptor) = world.get_mut::<AppearanceDescriptor>(id) else {

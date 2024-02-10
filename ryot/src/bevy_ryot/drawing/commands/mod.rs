@@ -1,6 +1,6 @@
 use crate::bevy_ryot::drawing::Layer;
 use crate::position::TilePosition;
-use bevy::prelude::{Commands, Deref, DerefMut, Entity, Resource};
+use bevy::prelude::*;
 
 mod update_tile_content;
 pub use update_tile_content::*;
@@ -34,6 +34,11 @@ pub struct CommandHistory {
     pub performed_commands: Vec<CommandType>,
     pub reversed_commands: Vec<CommandType>,
 }
+
+#[derive(Debug, Copy, Clone, Reflect, Component)]
+pub struct Deleted;
+#[derive(Debug, Copy, Clone, Reflect, Component)]
+pub struct InTheScreen;
 
 pub enum CommandType {
     Batch(CommandBatchSize),

@@ -11,10 +11,9 @@ use leafwing_input_manager::prelude::*;
 use leafwing_input_manager::user_input::InputKind;
 use ryot::bevy_ryot::drawing::DrawingBundle;
 use ryot::layer::Layer;
-use ryot::position::TilePosition;
-use ryot::prelude::drawing::{Brushes, DetailLevel};
+use ryot::position::{Edges, TilePosition};
+use ryot::prelude::drawing::Brushes;
 use ryot::prelude::*;
-use std::fmt;
 use std::marker::PhantomData;
 
 pub struct CameraPlugin<C: CompassAssets>(PhantomData<C>);
@@ -83,52 +82,6 @@ impl Default for DrawingState {
     }
 }
 
-#[derive(Eq, PartialEq, Component, Reflect, Default, Clone, Copy, Debug)]
-pub struct Edges {
-    pub min: TilePosition,
-    pub max: TilePosition,
-}
-
-impl fmt::Display for Edges {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Edges({}, {})", self.min, self.max)
-    }
-}
-
-impl Edges {
-    pub fn from_transform_and_projection(
-        transform: &Transform,
-        projection: &OrthographicProjection,
-    ) -> Self {
-        let visible_width = projection.area.max.x - projection.area.min.x;
-        let visible_height = projection.area.max.y - projection.area.min.y;
-
-        // Adjust by the camera scale if necessary
-        let visible_width = visible_width * transform.scale.x;
-        let visible_height = visible_height * transform.scale.y;
-
-        // Calculate boundaries based on the camera's position
-        let camera_position = transform.translation;
-        let left_bound = camera_position.x - visible_width / 2.0;
-        let right_bound = camera_position.x + visible_width / 2.0;
-        let bottom_bound = camera_position.y - visible_height / 2.0;
-        let top_bound = camera_position.y + visible_height / 2.0;
-
-        Self {
-            min: TilePosition::from(Vec2::new(left_bound, bottom_bound)),
-            max: TilePosition::from(Vec2::new(right_bound, top_bound)),
-        }
-    }
-
-    pub fn size(&self) -> IVec2 {
-        IVec2::new(self.max.x - self.min.x, self.max.y - self.min.y)
-    }
-
-    pub fn area(&self) -> u32 {
-        (self.size().x * self.size().y).unsigned_abs()
-    }
-}
-
 fn spawn_cursor(mut commands: Commands) {
     commands.spawn((
         Cursor::default(),
@@ -147,7 +100,6 @@ fn spawn_camera(content: Res<CompassContentAssets>, mut commands: Commands) {
     commands.spawn((
         Camera2dBundle::default(),
         Edges::default(),
-        DetailLevel::default(),
         PanCamBundle {
             pan_cam: PanCam {
                 enabled: true,
@@ -197,7 +149,7 @@ fn update_cursor_pos(
     contexts: EguiContexts,
     camera_query: Query<(&Camera, &GlobalTransform)>,
     window_query: Query<&Window, With<PrimaryWindow>>,
-    mut cursor_query: Query<(&mut TilePosition, &Layer), With<Cursor>>,
+    mut cursor_query: Query<&mut TilePosition, With<Cursor>>,
 ) -> color_eyre::Result<()> {
     let (camera, camera_transform) = camera_query.get_single()?;
 
@@ -214,8 +166,8 @@ fn update_cursor_pos(
         return Ok(());
     };
 
-    let (mut cursor_pos, layer) = cursor_query.get_single_mut()?;
-    let new_pos = TilePosition::from(point).with_z(layer.z());
+    let mut cursor_pos = cursor_query.get_single_mut()?;
+    let new_pos = TilePosition::from(point).with_z(0);
 
     if *cursor_pos == new_pos {
         return Ok(());
@@ -391,17 +343,9 @@ fn update_cursor_brush_preview(
 }
 
 fn update_camera_edges(
-    mut camera_query: Query<
-        (
-            &mut Edges,
-            &mut DetailLevel,
-            &Transform,
-            &OrthographicProjection,
-        ),
-        With<Camera>,
-    >,
+    mut camera_query: Query<(&mut Edges, &Transform, &OrthographicProjection), With<Camera>>,
 ) {
-    for (mut edges, mut detail_level, transform, projection) in camera_query.iter_mut() {
+    for (mut edges, transform, projection) in camera_query.iter_mut() {
         let new_edges = Edges::from_transform_and_projection(transform, projection);
 
         if new_edges == *edges {
@@ -409,11 +353,6 @@ fn update_camera_edges(
         }
 
         *edges = new_edges;
-        let new_detail_level = DetailLevel::from_area(edges.area());
-
-        if *detail_level != new_detail_level {
-            *detail_level = new_detail_level;
-        }
     }
 }
 
