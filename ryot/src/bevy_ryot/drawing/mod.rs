@@ -1,7 +1,7 @@
 use crate::appearances::{self, FixedFrameGroup};
 use crate::bevy_ryot::{AppearanceDescriptor, InternalContentState};
 use crate::layer::*;
-use crate::position::TilePosition;
+use crate::position::{Edges, TilePosition};
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 
@@ -17,10 +17,9 @@ impl Plugin for DrawingPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Layers>()
             .register_type::<Layer>()
-            .register_type::<DetailLevel>()
             .add_systems(
                 Update,
-                (reduce_detail_level, increase_detail_level)
+                (reset_screen, update_detail_level)
                     .chain()
                     .run_if(in_state(InternalContentState::Ready)),
             );
@@ -119,9 +118,6 @@ impl DrawingBundle {
     }
 }
 
-#[derive(Debug, Copy, Clone, Reflect, Component)]
-pub struct WontDraw;
-
 /// Drawing levels (we try to keep a maximum of 100k visible sprites per level):
 ///     - Max details: 1 floor, 1 top, 1 bottom, 1 ground and 10 contents - ~64x64
 ///     - Medium details: 1 floor: 1 top, 1 bottom, 1 ground and 5 content - ~112x112
@@ -158,8 +154,8 @@ impl DetailLevel {
         }
     }
 
-    pub fn visible_layers(&self) -> Vec<Layer> {
-        match self {
+    pub fn is_layer_visible(&self, layer: &Layer) -> bool {
+        let visible_layers = match self {
             Self::Max => Layers::default().0,
             Self::Medium => vec![
                 CipLayer::Items.into(),
@@ -175,7 +171,15 @@ impl DetailLevel {
             Self::GroundBottom => vec![CipLayer::Bottom.into(), CipLayer::Ground.into()],
             Self::GroundOnly => vec![CipLayer::Ground.into()],
             Self::None => vec![],
+        };
+
+        for visible_layer in visible_layers {
+            if visible_layer.z() == layer.z() {
+                return true;
+            }
         }
+
+        false
     }
 }
 
@@ -190,39 +194,55 @@ impl From<Option<appearances::AppearanceFlags>> for Layer {
     }
 }
 
-fn reduce_detail_level(
+fn reset_screen(
     mut commands: Commands,
-    camera_query: Query<&DetailLevel, (With<Camera>, Changed<DetailLevel>)>,
-    mut visible_entities: Query<(Entity, &mut Visibility, &Layer), (Without<WontDraw>, With<Tile>)>,
+    edges_changed: Query<Changed<Edges>>,
+    mut in_the_screen_query: Query<(Entity, &mut Visibility), With<InTheScreen>>,
 ) {
-    for detail_level in camera_query.iter() {
-        for (entity, mut visibility, layer) in visible_entities.iter_mut() {
-            if *visibility == Visibility::Hidden {
-                continue;
-            }
+    for changed in edges_changed.iter() {
+        if !changed {
+            continue;
+        }
 
-            if !detail_level.visible_layers().contains(layer) {
-                *visibility = Visibility::Hidden;
-                commands.entity(entity).insert(WontDraw);
-            }
+        for (entity, mut visibility) in in_the_screen_query.iter_mut() {
+            *visibility = Visibility::Hidden;
+            commands.entity(entity).remove::<InTheScreen>();
         }
     }
 }
 
-fn increase_detail_level(
+fn update_detail_level(
     mut commands: Commands,
-    camera_query: Query<&DetailLevel, (With<Camera>, Changed<DetailLevel>)>,
-    mut invisible_entities: Query<(Entity, &mut Visibility, &Layer), (With<WontDraw>, With<Tile>)>,
+    tiles: Res<MapTiles>,
+    edges_query: Query<&Edges, (With<Camera>, Changed<Edges>)>,
+    mut tiles_query: Query<&mut Visibility, (Without<Deleted>, With<Tile>)>,
 ) {
-    for detail_level in camera_query.iter() {
-        for (entity, mut visibility, layer) in invisible_entities.iter_mut() {
-            if *visibility == Visibility::Visible {
-                continue;
-            }
+    for edges in edges_query.iter() {
+        let detail_level = DetailLevel::from_area(edges.area());
 
-            if detail_level.visible_layers().contains(layer) {
-                *visibility = Visibility::Visible;
-                commands.entity(entity).remove::<WontDraw>();
+        let size = edges.size() / IVec2::new(20, 20);
+
+        for x in (edges.min.x - size.x)..=(edges.max.x + size.x) {
+            for y in (edges.min.y - size.y)..=(edges.max.y + size.y) {
+                let tile_pos = TilePosition::new(x, y, 0);
+
+                let Some(tile_content) = tiles.get(&tile_pos) else {
+                    continue;
+                };
+
+                for (layer, entity) in tile_content.iter() {
+                    let Ok(mut visibility) = tiles_query.get_mut(*entity) else {
+                        continue;
+                    };
+
+                    if !detail_level.is_layer_visible(layer) {
+                        *visibility = Visibility::Hidden;
+                        continue;
+                    }
+
+                    *visibility = Visibility::Visible;
+                    commands.entity(*entity).insert(InTheScreen);
+                }
             }
         }
     }

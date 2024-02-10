@@ -35,60 +35,6 @@ impl SpriteMovement {
     }
 }
 
-type MovingSpriteFilter = Or<(
-    Changed<TilePosition>,
-    Added<TilePosition>,
-    With<SpriteMovement>,
-)>;
-/// This system syncs the sprite position with the TilePosition.
-/// Every spawned sprite has a Transform component, which is used to position the sprite on
-/// the screen. However, in this library our world components are treated in terms of TilePosition.
-/// So, we need to sync the sprite position with the TilePosition.
-///
-/// This system listen to all new and changed TilePosition components and update the Transform
-/// component of the sprite accordingly, if it exist. Ideally this should run in the end of
-/// the Update stage, so it can be sure that all TilePosition components have been updated.
-///
-/// ```rust
-/// use bevy::prelude::*;
-/// use ryot::sprites::position::update_sprite_position;
-///
-/// App::new()
-///     .init_resource::<Time>()
-///     .add_systems(PostUpdate, update_sprite_position)
-///     .run();
-/// ```
-#[cfg(feature = "bevy")]
-pub fn update_sprite_position(
-    mut commands: Commands,
-    mut query: Query<
-        (
-            Entity,
-            &TilePosition,
-            &Layer,
-            &mut Transform,
-            Option<&mut SpriteMovement>,
-        ),
-        MovingSpriteFilter,
-    >,
-    time: Res<Time>,
-) {
-    for (entity, tile_pos, layer, mut transform, movement) in query.iter_mut() {
-        if let Some(mut movement) = movement {
-            movement.timer.tick(time.delta());
-            transform.translation = movement
-                .origin
-                .to_vec3(layer)
-                .lerp(tile_pos.to_vec3(layer), movement.timer.percent());
-            if movement.timer.just_finished() {
-                commands.entity(entity).remove::<SpriteMovement>();
-            }
-        } else {
-            transform.translation = tile_pos.to_vec3(layer)
-        }
-    }
-}
-
 impl TilePosition {
     /// The minimum possible tile position. This has to be something that when multiplied by the tile size does not overflow f32.
     pub const MIN: TilePosition = TilePosition(IVec3::new(i16::MIN as i32, i16::MIN as i32, 0));
@@ -196,3 +142,104 @@ pub fn tile_size() -> UVec2 {
 pub fn tile_size() -> UVec2 {
     UVec2::new(32, 32)
 }
+
+#[derive(Eq, PartialEq, Component, Reflect, Default, Clone, Copy, Debug)]
+pub struct Edges {
+    pub min: TilePosition,
+    pub max: TilePosition,
+}
+
+impl fmt::Display for Edges {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "Edges({}, {})", self.min, self.max)
+    }
+}
+
+impl Edges {
+    pub fn from_transform_and_projection(
+        transform: &Transform,
+        projection: &OrthographicProjection,
+    ) -> Self {
+        let visible_width = projection.area.max.x - projection.area.min.x;
+        let visible_height = projection.area.max.y - projection.area.min.y;
+
+        // Adjust by the camera scale if necessary
+        let visible_width = visible_width * transform.scale.x;
+        let visible_height = visible_height * transform.scale.y;
+
+        // Calculate boundaries based on the camera's position
+        let camera_position = transform.translation;
+        let left_bound = camera_position.x - visible_width / 2.0;
+        let right_bound = camera_position.x + visible_width / 2.0;
+        let bottom_bound = camera_position.y - visible_height / 2.0;
+        let top_bound = camera_position.y + visible_height / 2.0;
+
+        Self {
+            min: TilePosition::from(Vec2::new(left_bound, bottom_bound)),
+            max: TilePosition::from(Vec2::new(right_bound, top_bound)),
+        }
+    }
+
+    pub fn size(&self) -> IVec2 {
+        IVec2::new(self.max.x - self.min.x, self.max.y - self.min.y)
+    }
+
+    pub fn area(&self) -> u32 {
+        (self.size().x * self.size().y).unsigned_abs()
+    }
+}
+
+/// This system syncs the sprite position with the TilePosition.
+/// Every spawned sprite has a Transform component, which is used to position the sprite on
+/// the screen. However, in this library our world components are treated in terms of TilePosition.
+/// So, we need to sync the sprite position with the TilePosition.
+///
+/// This system listen to all new and changed TilePosition components and update the Transform
+/// component of the sprite accordingly, if it exist. Ideally this should run in the end of
+/// the Update stage, so it can be sure that all TilePosition components have been updated.
+///
+/// ```rust
+/// use bevy::prelude::*;
+/// use ryot::sprites::position::update_sprite_position;
+///
+/// App::new()
+///     .init_resource::<Time>()
+///     .add_systems(PostUpdate, update_sprite_position)
+///     .run();
+/// ```
+#[cfg(feature = "bevy")]
+pub fn update_sprite_position(
+    mut commands: Commands,
+    mut query: Query<
+        (
+            Entity,
+            &TilePosition,
+            &Layer,
+            &mut Transform,
+            Option<&mut SpriteMovement>,
+        ),
+        MovingSpriteFilter,
+    >,
+    time: Res<Time>,
+) {
+    for (entity, tile_pos, layer, mut transform, movement) in query.iter_mut() {
+        if let Some(mut movement) = movement {
+            movement.timer.tick(time.delta());
+            transform.translation = movement
+                .origin
+                .to_vec3(layer)
+                .lerp(tile_pos.to_vec3(layer), movement.timer.percent());
+            if movement.timer.just_finished() {
+                commands.entity(entity).remove::<SpriteMovement>();
+            }
+        } else {
+            transform.translation = tile_pos.to_vec3(layer)
+        }
+    }
+}
+
+type MovingSpriteFilter = Or<(
+    Changed<TilePosition>,
+    Added<TilePosition>,
+    With<SpriteMovement>,
+)>;
