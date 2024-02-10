@@ -1,10 +1,8 @@
 use crate::sprites::LoadedSprite;
-use crate::{Palette, TilesetCategory};
+use crate::TilesetCategory;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
-use bevy_egui::EguiContexts;
-use egui::load::SizedTexture;
-use egui::{Align, TextureId, Ui};
+use egui::{Align, Ui};
 use ryot::bevy_ryot::AppearanceDescriptor;
 use std::ops::Range;
 
@@ -25,10 +23,10 @@ pub struct PaletteState {
 impl Default for PaletteState {
     fn default() -> Self {
         Self {
-            min: 4,
+            min: 2,
             max: 9,
             width: 424.,
-            grid_size: 64,
+            grid_size: 48,
             tile_padding: 15.,
             selected_tile: None,
             selected_category: TilesetCategory::Raw,
@@ -40,6 +38,10 @@ impl Default for PaletteState {
 }
 
 impl PaletteState {
+    pub fn min_width(&self) -> f32 {
+        self.min as f32 * self.get_tile_size()
+    }
+
     pub fn get_chunk_size(&self) -> usize {
         ((self.width / self.get_tile_size()) as usize).clamp(self.min, self.max)
     }
@@ -77,38 +79,9 @@ pub fn get_egui_parameters_for_texture(
     Some((rect_vec2, uv))
 }
 
-pub fn draw_palette_window(
-    palettes: Res<Palette>,
-    mut egui_ctx: EguiContexts,
-    mut palette_state: ResMut<PaletteState>,
-) {
-    let categories = palettes.get_categories();
-    let binding = palette_state.loaded_images.clone();
-
-    let egui_images = binding
-        .iter()
-        .map(|(sprite, image, rect, uv)| {
-            let tex: TextureId = egui_ctx.add_image(image.clone_weak());
-            (
-                sprite,
-                egui::Image::new(SizedTexture::new(tex, *rect)).uv(*uv),
-            )
-        })
-        .collect::<Vec<_>>();
-
-    egui::Window::new("Palette")
-        .max_width(palette_state.width)
-        .show(egui_ctx.ctx_mut(), |ui| {
-            draw_palette_bottom_panel(ui, &mut palette_state);
-            draw_palette_picker(ui, categories, &mut palette_state);
-            draw_palette_items(ui, egui_images, palette_state);
-        });
-}
-
 pub fn draw_palette_bottom_panel(ui: &mut Ui, palette_state: &mut ResMut<PaletteState>) {
     egui::TopBottomPanel::bottom("bottom_panel").show_inside(ui, |ui| {
         ui.with_layout(egui::Layout::top_down(egui::Align::Center), |ui| {
-            ui.set_width(palette_state.width);
             ui.add_space(5.0); // Add some space from the top border
             ui.with_layout(egui::Layout::right_to_left(Align::Center), |ui| {
                 let mut slider_value = palette_state.grid_size as f32;
@@ -169,12 +142,13 @@ pub fn draw_palette_picker(
                 }
             }
         });
+    ui.add_space(5.0)
 }
 
 pub fn draw_palette_items(
     ui: &mut Ui,
     egui_images: Vec<(&LoadedSprite, egui::Image)>,
-    mut palette_state: ResMut<PaletteState>,
+    palette_state: &mut ResMut<PaletteState>,
 ) {
     let row_padding = 3.;
     let row_height = palette_state.grid_size as f32 + row_padding;
@@ -186,82 +160,64 @@ pub fn draw_palette_items(
             row_height,
             palette_state.get_total_rows(palette_state.category_sprites.len()),
             |ui, row_range| {
-                ui.set_width(palette_state.width);
                 palette_state.visible_rows = row_range.clone();
-                egui_images
-                    .chunks(palette_state.get_chunk_size())
-                    .for_each(|chunk| {
-                        ui.horizontal(|ui| {
-                            chunk.iter().enumerate().for_each(|(i, (sprite, image))| {
-                                let spacing = (palette_state.width
-                                    - palette_state.get_tile_size()
-                                        * palette_state.get_chunk_size() as f32)
-                                    / (palette_state.get_chunk_size() - 1) as f32;
+                egui::Grid::new("palette").show(ui, |ui| {
+                    let extra = palette_state.width
+                        - (palette_state.get_chunk_size() as f32 * palette_state.get_tile_size());
+                    ui.set_width(palette_state.width);
+                    egui_images
+                        .chunks(palette_state.get_chunk_size())
+                        .for_each(|chunk| {
+                            ui.add_space(extra / 2.0);
+                            chunk.iter().for_each(|(sprite, image)| {
                                 let size = palette_state.grid_size as f32;
 
-                                ui.vertical(|ui| {
-                                    let tile = image
-                                        .clone()
-                                        .fit_to_exact_size(egui::Vec2::new(size, size));
+                                let tile =
+                                    image.clone().fit_to_exact_size(egui::Vec2::new(size, size));
 
-                                    let Some(content_id) = palette_state
-                                        .category_sprites
-                                        .get(&sprite.sprite_id)
-                                        .copied()
-                                    else {
-                                        return;
-                                    };
+                                let Some(content_id) = palette_state
+                                    .category_sprites
+                                    .get(&sprite.sprite_id)
+                                    .copied()
+                                else {
+                                    return;
+                                };
 
-                                    let selected = match &palette_state.selected_tile {
-                                        Some(AppearanceDescriptor { id, .. }) => *id == content_id,
-                                        _ => false,
-                                    };
+                                let selected = match &palette_state.selected_tile {
+                                    Some(AppearanceDescriptor { id, .. }) => *id == content_id,
+                                    _ => false,
+                                };
 
-                                    let ui_button =
-                                        ui.add(egui::ImageButton::new(tile).selected(selected));
+                                let ui_button =
+                                    ui.add(egui::ImageButton::new(tile).selected(selected));
 
-                                    let ui_button = ui_button
-                                        .on_hover_text(format!("{}", content_id))
-                                        .on_hover_cursor(egui::CursorIcon::PointingHand);
+                                let ui_button = ui_button
+                                    .on_hover_text(format!("{}", content_id))
+                                    .on_hover_cursor(egui::CursorIcon::PointingHand);
 
-                                    if ui_button.clicked() {
-                                        match palette_state.selected_tile {
-                                            Some(AppearanceDescriptor { id, .. })
-                                                if id == content_id =>
-                                            {
-                                                palette_state.selected_tile = None;
-                                                debug!("Tile: {:?} deselected", content_id);
-                                            }
-                                            _ => {
-                                                palette_state.selected_tile =
-                                                    Some(AppearanceDescriptor::new(
-                                                        sprite.group,
-                                                        content_id,
-                                                        default(),
-                                                    ));
-                                                debug!("Tile: {:?} selected", content_id);
-                                            }
+                                if ui_button.clicked() {
+                                    match palette_state.selected_tile {
+                                        Some(AppearanceDescriptor { id, .. })
+                                            if id == content_id =>
+                                        {
+                                            palette_state.selected_tile = None;
+                                            debug!("Tile: {:?} deselected", content_id);
+                                        }
+                                        _ => {
+                                            palette_state.selected_tile =
+                                                Some(AppearanceDescriptor::new(
+                                                    sprite.group,
+                                                    content_id,
+                                                    default(),
+                                                ));
+                                            debug!("Tile: {:?} selected", content_id);
                                         }
                                     }
-
-                                    ui.add_space(row_padding);
-                                });
-
-                                let tile_size = sprite.sprite_sheet.get_tile_size(&sprite.config);
-                                let ratio = tile_size.x as f32 / tile_size.y as f32;
-
-                                if i == palette_state.get_chunk_size() - 1 {
-                                    return;
-                                }
-
-                                ui.add_space(spacing);
-
-                                if ratio > 1.0 && i < palette_state.get_chunk_size() - 1 {
-                                    ui.add_space(size / 2.);
                                 }
                             });
+                            ui.end_row();
                         });
-                    });
+                });
             },
         );
 }
