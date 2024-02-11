@@ -13,7 +13,7 @@ pub use square::*;
 mod random;
 pub use random::*;
 
-pub trait BrushItem: Copy + Clone {
+pub trait BrushItem: PartialEq + Copy + Clone {
     fn from_position(original: Self, pos: TilePosition) -> Self;
     fn get_position(&self) -> TilePosition;
 }
@@ -36,9 +36,9 @@ impl<E: BrushItem> Default for Brush<E> {
 }
 
 #[derive(Resource, Deref, DerefMut)]
-pub struct Brushes<E: BrushItem>(pub Vec<Brush<E>>);
+pub struct Brushes<E: BrushItem + std::cmp::PartialEq>(pub Vec<Brush<E>>);
 
-impl<E: BrushItem> Default for Brushes<E> {
+impl<E: BrushItem + std::cmp::PartialEq> Default for Brushes<E> {
     fn default() -> Self {
         Self::new()
             .insert(Diamond)
@@ -63,6 +63,14 @@ impl<E: BrushItem> Brushes<E> {
             next if next < self.len() => next,
             _ => 0,
         }
+    }
+
+    pub fn get_index<B>(&self, target_brush: B) -> Option<usize>
+    where
+        B: Into<Brush<E>>,
+    {
+        let target_brush = target_brush.into();
+        self.0.iter().position(|brush| *brush == target_brush)
     }
 }
 

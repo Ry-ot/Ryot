@@ -1,5 +1,4 @@
 #![feature(type_alias_impl_trait)]
-
 use bevy::app::{App, AppExit, Plugin};
 use bevy::asset::AssetMetaCheck;
 use bevy::prelude::*;
