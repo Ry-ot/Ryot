@@ -33,3 +33,12 @@ pub static CONTROL_COMMAND: Modifier = Modifier::Win;
 
 #[cfg(not(target_os = "macos"))]
 pub static CONTROL_COMMAND: Modifier = Modifier::Control;
+
+#[macro_export]
+macro_rules! inputs {
+    ( $($input:expr),* ) => {
+        [
+            $( InputKind::from($input) ),*
+        ]
+    };
+}
