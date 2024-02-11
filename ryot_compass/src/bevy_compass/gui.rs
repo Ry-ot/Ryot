@@ -29,7 +29,9 @@ impl<C: ContentAssets> Plugin for UiPlugin<C> {
             .add_systems(OnEnter(InternalContentState::Ready), add_editor)
             .add_systems(
                 Update,
-                ui_system::<C>.run_if(in_state(InternalContentState::Ready)),
+                (ui_menu_system::<C>, ui_about_system, ui_dock_system)
+                    .chain()
+                    .run_if(in_state(InternalContentState::Ready)),
             );
     }
 }
@@ -37,16 +39,11 @@ impl<C: ContentAssets> Plugin for UiPlugin<C> {
 #[derive(Resource, Default)]
 struct AboutMeOpened(bool);
 
-#[allow(clippy::too_many_arguments)]
-fn ui_system<C: ContentAssets>(
+fn ui_menu_system<C: ContentAssets>(
     content_assets: Res<C>,
     mut contexts: Query<&mut EguiContext>,
-    mut ui_state: ResMut<UiState>,
     mut about_me: ResMut<AboutMeOpened>,
     mut exit: EventWriter<AppExit>,
-    egui_user_textures: ResMut<EguiUserTextures>,
-    palettes: Res<Palette>,
-    palette_state: ResMut<PaletteState>,
     mut _windows: NonSend<WinitWindows>,
 ) {
     let mut egui_ctx = contexts.single_mut();
@@ -171,7 +168,10 @@ fn ui_system<C: ContentAssets>(
             });
         });
     });
+}
 
+fn ui_about_system(mut contexts: Query<&mut EguiContext>, mut about_me: ResMut<AboutMeOpened>) {
+    let mut egui_ctx = contexts.single_mut();
     egui::Window::new("About Ryot Compass")
         .auto_sized()
         .collapsible(false)
@@ -181,6 +181,15 @@ fn ui_system<C: ContentAssets>(
         .show(egui_ctx.get_mut(), |ui| {
             ui.label("About Me information...");
         });
+}
+
+fn ui_dock_system(
+    mut contexts: Query<&mut EguiContext>,
+    mut ui_state: ResMut<UiState>,
+    egui_user_textures: ResMut<EguiUserTextures>,
+    palettes: Res<Palette>,
+    palette_state: ResMut<PaletteState>,
+) {
     let mut ctx = contexts.single_mut();
     ui_state.ui(ctx.get_mut(), egui_user_textures, palettes, palette_state);
 }
