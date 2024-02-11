@@ -90,7 +90,9 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
                     draw_to_tile::<C>,
                     delete_tile_content,
                     undo_redo_tile_action,
-                    update_brush.run_if(action_just_pressed(DrawingAction::ChangeBrush)),
+                    change_brush_shape.run_if(action_just_pressed(DrawingAction::ChangeBrush)),
+                    change_brush_size(1).run_if(action_just_pressed(DrawingAction::IncreaseBrush)),
+                    change_brush_size(-1).run_if(action_just_pressed(DrawingAction::DecreaseBrush)),
                 )
                     .run_if(in_state(InternalContentState::Ready))
                     .run_if(gui_is_not_in_use()),
