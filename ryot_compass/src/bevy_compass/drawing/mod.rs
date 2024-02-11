@@ -1,6 +1,6 @@
 use crate::{gui_is_not_in_use, helpers::CONTROL_COMMAND, MAP_GRAB_INPUTS};
 use bevy::prelude::*;
-use leafwing_input_manager::prelude::*;
+use leafwing_input_manager::{common_conditions::action_just_pressed, prelude::*};
 use ryot::prelude::{drawing::*, *};
 use std::marker::PhantomData;
 
@@ -90,7 +90,7 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
                     draw_to_tile::<C>,
                     delete_tile_content,
                     undo_redo_tile_action,
-                    update_brush,
+                    update_brush.run_if(action_just_pressed(DrawingAction::ChangeBrush)),
                 )
                     .run_if(in_state(InternalContentState::Ready))
                     .run_if(gui_is_not_in_use()),

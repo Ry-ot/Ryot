@@ -1,7 +1,7 @@
 use std::marker::PhantomData;
 
 use crate::{
-    draw_palette_bottom_panel, draw_palette_items, draw_palette_picker, helpers::read_file,
+    draw_palette_bottom_panel, draw_palette_items, draw_palette_picker, helpers::read_file, Cursor,
     OptionalPlugin, Palette, PaletteState,
 };
 
@@ -10,7 +10,10 @@ use bevy_egui::{EguiContext, EguiContexts, EguiPlugin, EguiUserTextures};
 use egui::{load::SizedTexture, TextureId};
 use egui_dock::{DockArea, DockState, NodeIndex, Style};
 use rfd::AsyncFileDialog;
-use ryot::bevy_ryot::{ContentAssets, InternalContentState};
+use ryot::bevy_ryot::{
+    drawing::{Brushes, Diamond, DrawingBundle, Random, Round, Square},
+    ContentAssets, InternalContentState,
+};
 
 pub struct UiPlugin<C: ContentAssets>(PhantomData<C>);
 
@@ -44,13 +47,39 @@ impl<C: ContentAssets> Plugin for UiPlugin<C> {
 #[derive(Resource, Default)]
 struct AboutMeOpened(bool);
 
+macro_rules! image_button {
+    ($ui:ident, $path:expr, $tooltip:expr, $framed:expr, $selected:expr, $action:expr) => {
+        if $ui
+            .add_sized(
+                if $framed {
+                    egui::Vec2::new(28., 28.)
+                } else {
+                    egui::Vec2::new(22., 22.)
+                },
+                egui::ImageButton::new(egui::include_image!($path))
+                    .frame($framed)
+                    .selected($selected),
+            )
+            .on_hover_text($tooltip)
+            .clicked()
+        {
+            $action;
+        }
+    };
+}
+
 fn ui_menu_system<C: ContentAssets>(
     content_assets: Res<C>,
+    brushes: Res<Brushes<DrawingBundle>>,
+    mut cursor_query: Query<&mut Cursor>,
     mut contexts: Query<&mut EguiContext>,
     mut about_me: ResMut<AboutMeOpened>,
     mut exit: EventWriter<AppExit>,
     mut _windows: NonSend<WinitWindows>,
 ) {
+    let Ok(mut cursor) = cursor_query.get_single_mut() else {
+        return;
+    };
     let mut egui_ctx = contexts.single_mut();
     egui::TopBottomPanel::top("top_panel").show(egui_ctx.get_mut(), |ui| {
         egui::menu::bar(ui, |ui| {
@@ -172,6 +201,38 @@ fn ui_menu_system<C: ContentAssets>(
                 // })
             });
         });
+
+        macro_rules! brush_button {
+            ($ui:ident, $path:expr, $tooltip:expr, $brush:ident) => {
+                if let Some(index) = brushes.get_index($brush) {
+                    image_button!(
+                        $ui,
+                        $path,
+                        $tooltip,
+                        true,
+                        cursor.drawing_state.brush_index == index,
+                        {
+                            cursor.drawing_state.brush_index = index;
+                        }
+                    );
+                }
+            };
+        }
+
+        ui.horizontal_centered(|ui| {
+            let mut style = (*ui.ctx().style()).clone();
+            style.visuals.interact_cursor = Some(egui::CursorIcon::PointingHand);
+
+            image_button!(ui, "../../assets/ui/brush.svg", "Brush", false, false, {
+                info!("Brush button clicked");
+            });
+            brush_button!(ui, "../../assets/ui/square.svg", "Square", Square);
+            brush_button!(ui, "../../assets/ui/circle.svg", "Circle", Round);
+            brush_button!(ui, "../../assets/ui/diamond.svg", "Diamond", Diamond);
+            brush_button!(ui, "../../assets/ui/shuffle.svg", "Random", Random);
+        });
+
+        ui.add_space(4.);
     });
 }
 
