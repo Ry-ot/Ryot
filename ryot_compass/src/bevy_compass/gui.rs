@@ -11,7 +11,7 @@ use egui::{load::SizedTexture, TextureId};
 use egui_dock::{DockArea, DockState, NodeIndex, Style};
 use rfd::AsyncFileDialog;
 use ryot::bevy_ryot::{
-    drawing::{Brushes, Diamond, DrawingBundle, Random, Round, SelectableTool, Square},
+    drawing::{Brushes, DrawingBundle},
     ContentAssets, InternalContentState,
 };
 
@@ -181,33 +181,18 @@ fn ui_menu_system<C: ContentAssets>(
             });
         });
 
-        macro_rules! brush_button {
-            ($ui:expr, $brush:expr) => {
-                if let Some(index) = brushes.get_index($brush) {
-                    if $ui
-                        .add_sized(
-                            egui::Vec2::new(24., 24.),
-                            $brush
-                                .button()
-                                .selected(cursor.drawing_state.brush_index == index),
-                        )
-                        .on_hover_text($brush.name())
-                        .clicked()
-                    {
-                        cursor.drawing_state.brush_index = index;
-                    }
-                }
-            };
-        }
-
         ui.horizontal_centered(|ui| {
             let mut style = (*ui.ctx().style()).clone();
             style.visuals.interact_cursor = Some(egui::CursorIcon::PointingHand);
 
-            brush_button!(ui, Square);
-            brush_button!(ui, Round);
-            brush_button!(ui, Diamond);
-            brush_button!(ui, Random);
+            for (index, brush) in brushes.iter().enumerate() {
+                let is_selected = cursor.drawing_state.brush_index == index;
+                let button = brush.button().selected(is_selected);
+                let button = ui.add_sized(egui::Vec2::new(24., 24.), button);
+                if button.on_hover_text(brush.name()).clicked() {
+                    cursor.drawing_state.brush_index = index;
+                }
+            }
         });
 
         ui.add_space(4.);
