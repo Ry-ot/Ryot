@@ -5,6 +5,7 @@ use leafwing_input_manager::prelude::*;
 use ryot::bevy_ryot::*;
 use ryot::prelude::{drawing::*, position::*};
 
+#[allow(clippy::too_many_arguments)]
 pub(super) fn draw_to_tile<C: ContentAssets>(
     mut commands: Commands,
     mut tiles: ResMut<MapTiles>,
@@ -12,8 +13,8 @@ pub(super) fn draw_to_tile<C: ContentAssets>(
     content_assets: Res<C>,
     brushes: Res<Brushes<DrawingBundle>>,
     current_appearance_query: Query<(&mut AppearanceDescriptor, &Visibility), Without<Cursor>>,
+    action_state: Res<ActionState<DrawingAction>>,
     cursor_query: Query<(
-        &ActionState<DrawingAction>,
         &AppearanceDescriptor,
         &TilePosition,
         &Cursor,
@@ -25,13 +26,8 @@ pub(super) fn draw_to_tile<C: ContentAssets>(
         return;
     };
 
-    for (
-        action_state,
-        AppearanceDescriptor { group, id, .. },
-        tile_pos,
-        cursor,
-        position_changed,
-    ) in &cursor_query
+    for (AppearanceDescriptor { group, id, .. }, tile_pos, cursor, position_changed) in
+        &cursor_query
     {
         if !cursor.drawing_state.enabled {
             continue;
@@ -44,7 +40,7 @@ pub(super) fn draw_to_tile<C: ContentAssets>(
             return;
         };
 
-        if !check_action(DrawingAction::Draw, position_changed, action_state) {
+        if !check_action(DrawingAction::Draw, position_changed, &action_state) {
             return;
         }
 

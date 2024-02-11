@@ -1,4 +1,4 @@
-use crate::{Cursor, DrawingAction};
+use crate::DrawingAction;
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
 use rand::prelude::SliceRandom;
@@ -29,18 +29,17 @@ pub(super) fn undo_redo_tile_action(
     tiles: ResMut<MapTiles>,
     mut undo_redo_config: ResMut<UndoRedoConfig>,
     mut command_history: ResMut<CommandHistory>,
-    action_state_query: Query<&ActionState<DrawingAction>, With<Cursor>>,
+    action_state: Res<ActionState<DrawingAction>>,
 ) {
     undo_redo_config.timer.tick(time.delta());
 
-    let action_state = action_state_query.single();
     let mut actions = [DrawingAction::Undo, DrawingAction::Redo];
     actions.shuffle(&mut thread_rng());
 
     for action in actions {
         let is_timer_finished = undo_redo_config.timer.just_finished();
 
-        if check_action(action, is_timer_finished, action_state) {
+        if check_action(action, is_timer_finished, &action_state) {
             undo_redo_config.timer.reset();
             match action {
                 DrawingAction::Undo => undo(&mut commands, &tiles, &mut command_history),

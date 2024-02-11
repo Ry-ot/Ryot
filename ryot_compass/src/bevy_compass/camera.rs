@@ -41,6 +41,7 @@ impl<C: CompassAssets> Plugin for CameraPlugin<C> {
                 OnExit(InternalContentState::LoadingContent),
                 (spawn_camera, spawn_cursor).chain(),
             )
+            .insert_resource(DrawingAction::get_default_input_map())
             .add_systems(
                 Update,
                 (
@@ -133,12 +134,6 @@ fn spawn_cursor(mut commands: Commands) {
         Layer::Max,
         TilePosition::default(),
         AppearanceDescriptor::default(),
-        InputManagerBundle::<DrawingAction> {
-            // Stores "which actions are currently pressed"
-            action_state: ActionState::default(),
-            // Describes how to convert from player inputs into those actions
-            input_map: DrawingAction::get_default_input_map(),
-        },
     ));
 }
 

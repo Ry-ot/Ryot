@@ -13,15 +13,11 @@ pub(super) fn delete_tile_content(
     tiles: ResMut<MapTiles>,
     mut command_history: ResMut<CommandHistory>,
     current_appearance_query: Query<(&mut AppearanceDescriptor, &Visibility), Without<Cursor>>,
-    cursor_query: Query<(
-        &Cursor,
-        &ActionState<DrawingAction>,
-        &TilePosition,
-        Changed<TilePosition>,
-    )>,
+    action_state: Res<ActionState<DrawingAction>>,
+    cursor_query: Query<(&Cursor, &TilePosition, Changed<TilePosition>)>,
 ) {
-    for (cursor, action_state, tile_pos, position_changed) in &cursor_query {
-        if !check_action(DrawingAction::Erase, position_changed, action_state) {
+    for (cursor, tile_pos, position_changed) in &cursor_query {
+        if !check_action(DrawingAction::Erase, position_changed, &action_state) {
             return;
         }
 
