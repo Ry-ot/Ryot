@@ -42,8 +42,13 @@ prost = "0.12.3"
 prost-types = "0.12.3"
 
 leafwing-input-manager = { version = "0.11.2", optional = true }
-bevy_common_assets = { version = "0.9.0", features = ["toml", "json"], optional = true }
+bevy_common_assets = { version = "0.9.0", features = [
+    "toml",
+    "json",
+], optional = true }
 bevy_asset_loader = { version = "0.19.1", features = ["2d"], optional = true }
+egui = { version = "0.24.0", optional = true }
+
 [dependencies.bevy]
 version = "0.12.1"
 default-features = false
@@ -81,7 +86,13 @@ rstest = "0.18.2"
 default = ["compression", "bevy"]
 lmdb = ["dep:heed", "dep:postcard"]
 compression = ["dep:zstd"]
-bevy = ["dep:bevy", "dep:bevy_common_assets", "dep:bevy_asset_loader", "dep:leafwing-input-manager"]
+bevy = [
+    "dep:bevy",
+    "dep:bevy_common_assets",
+    "dep:bevy_asset_loader",
+    "dep:leafwing-input-manager",
+    "dep:egui",
+]
 
 [lints.clippy]
 enum_glob_use = "deny"
