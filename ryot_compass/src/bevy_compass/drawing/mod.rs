@@ -1,7 +1,6 @@
-use crate::{gui_is_not_in_use, MAP_GRAB_INPUTS};
+use crate::{gui_is_not_in_use, helpers::CONTROL_COMMAND, MAP_GRAB_INPUTS};
 use bevy::prelude::*;
 use leafwing_input_manager::prelude::*;
-use leafwing_input_manager::user_input::InputKind;
 use ryot::prelude::{drawing::*, *};
 use std::marker::PhantomData;
 
@@ -31,41 +30,28 @@ pub enum DrawingAction {
 
 impl DrawingAction {
     pub fn get_default_input_map() -> InputMap<DrawingAction> {
-        let mut input_map = InputMap::new([
-            (MouseButton::Left, DrawingAction::Draw),
-            (MouseButton::Right, DrawingAction::Erase),
-        ]);
-
-        input_map.insert_chord(
-            [
-                InputKind::Modifier(Modifier::Control),
-                InputKind::Keyboard(KeyCode::Z),
-            ],
-            DrawingAction::Undo,
-        );
-        input_map.insert_chord(
-            [
-                InputKind::Modifier(Modifier::Control),
-                InputKind::Keyboard(KeyCode::R),
-            ],
-            DrawingAction::Redo,
-        );
-
-        input_map.insert_multiple([(KeyCode::Key1, DrawingAction::ChangeBrush)]);
-
-        input_map.insert_chord(
-            [KeyCode::ControlLeft, KeyCode::Plus],
-            DrawingAction::IncreaseBrush,
-        );
-        input_map.insert_chord(
-            [KeyCode::ControlLeft, KeyCode::Minus],
-            DrawingAction::DecreaseBrush,
-        );
-
-        // Small hack to remove clash with the pancam plugin
-        input_map.insert_chord(MAP_GRAB_INPUTS, DrawingAction::Stop);
-
-        input_map
+        InputMap::default()
+            .insert_multiple([
+                (MouseButton::Left, DrawingAction::Draw),
+                (MouseButton::Right, DrawingAction::Erase),
+            ])
+            .insert_modified(CONTROL_COMMAND, KeyCode::Z, DrawingAction::Undo)
+            .insert_modified(CONTROL_COMMAND, KeyCode::R, DrawingAction::Redo)
+            .insert(KeyCode::Key1, DrawingAction::ChangeBrush)
+            .insert_modified(CONTROL_COMMAND, KeyCode::Plus, DrawingAction::IncreaseBrush)
+            .insert_modified(
+                CONTROL_COMMAND,
+                KeyCode::Equals,
+                DrawingAction::IncreaseBrush,
+            )
+            .insert_modified(
+                CONTROL_COMMAND,
+                KeyCode::Minus,
+                DrawingAction::DecreaseBrush,
+            )
+            // Small hack to remove clash with the pancam plugin
+            .insert_chord(MAP_GRAB_INPUTS, DrawingAction::Stop)
+            .build()
     }
 }
 

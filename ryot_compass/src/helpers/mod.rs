@@ -25,3 +25,11 @@ pub fn read_file(
         }
     });
 }
+
+use leafwing_input_manager::user_input::Modifier;
+
+#[cfg(target_os = "macos")]
+pub static CONTROL_COMMAND: Modifier = Modifier::Win;
+
+#[cfg(not(target_os = "macos"))]
+pub static CONTROL_COMMAND: Modifier = Modifier::Control;
