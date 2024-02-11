@@ -35,6 +35,7 @@ impl<C: CompassAssets> Default for CameraPlugin<C> {
 impl<C: CompassAssets> Plugin for CameraPlugin<C> {
     fn build(&self, app: &mut App) {
         app.insert_resource(Msaa::Off)
+            .init_resource::<ToggleActions<bevy_pancam::Action>>()
             .add_plugins(PanCamPlugin)
             .add_systems(
                 OnExit(InternalContentState::LoadingContent),
@@ -43,13 +44,16 @@ impl<C: CompassAssets> Plugin for CameraPlugin<C> {
             .add_systems(
                 Update,
                 (
-                    update_cursor_pos.map(drop),
-                    update_cursor_preview,
-                    update_cursor_brush_preview,
-                    update_cursor_visibility.map(drop),
-                    update_camera_edges,
+                    (
+                        update_cursor_pos.map(drop),
+                        update_cursor_preview,
+                        update_cursor_brush_preview,
+                        update_cursor_visibility.map(drop),
+                        update_camera_edges,
+                    )
+                        .chain(),
+                    update_pan_cam_actions.run_if(resource_changed::<UiState>()),
                 )
-                    .chain()
                     .run_if(in_state(InternalContentState::Ready)),
             );
     }
@@ -416,4 +420,11 @@ fn update_camera_edges(
             *detail_level = new_detail_level;
         }
     }
+}
+
+fn update_pan_cam_actions(
+    mut toggle: ResMut<ToggleActions<bevy_pancam::Action>>,
+    ui_state: Res<UiState>,
+) {
+    toggle.enabled = !ui_state.is_being_used;
 }
