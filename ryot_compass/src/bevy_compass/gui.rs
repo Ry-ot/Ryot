@@ -11,7 +11,7 @@ use egui::{load::SizedTexture, TextureId};
 use egui_dock::{DockArea, DockState, NodeIndex, Style};
 use rfd::AsyncFileDialog;
 use ryot::bevy_ryot::{
-    drawing::{Brushes, Diamond, DrawingBundle, Random, Round, Square},
+    drawing::{Brushes, Diamond, DrawingBundle, Random, Round, SelectableTool, Square},
     ContentAssets, InternalContentState,
 };
 
@@ -46,27 +46,6 @@ impl<C: ContentAssets> Plugin for UiPlugin<C> {
 
 #[derive(Resource, Default)]
 struct AboutMeOpened(bool);
-
-macro_rules! image_button {
-    ($ui:ident, $path:expr, $tooltip:expr, $framed:expr, $selected:expr, $action:expr) => {
-        if $ui
-            .add_sized(
-                if $framed {
-                    egui::Vec2::new(28., 28.)
-                } else {
-                    egui::Vec2::new(22., 22.)
-                },
-                egui::ImageButton::new(egui::include_image!($path))
-                    .frame($framed)
-                    .selected($selected),
-            )
-            .on_hover_text($tooltip)
-            .clicked()
-        {
-            $action;
-        }
-    };
-}
 
 fn ui_menu_system<C: ContentAssets>(
     content_assets: Res<C>,
@@ -203,18 +182,20 @@ fn ui_menu_system<C: ContentAssets>(
         });
 
         macro_rules! brush_button {
-            ($ui:ident, $path:expr, $tooltip:expr, $brush:ident) => {
+            ($ui:expr, $brush:expr) => {
                 if let Some(index) = brushes.get_index($brush) {
-                    image_button!(
-                        $ui,
-                        $path,
-                        $tooltip,
-                        true,
-                        cursor.drawing_state.brush_index == index,
-                        {
-                            cursor.drawing_state.brush_index = index;
-                        }
-                    );
+                    if $ui
+                        .add_sized(
+                            egui::Vec2::new(24., 24.),
+                            $brush
+                                .button()
+                                .selected(cursor.drawing_state.brush_index == index),
+                        )
+                        .on_hover_text($brush.name())
+                        .clicked()
+                    {
+                        cursor.drawing_state.brush_index = index;
+                    }
                 }
             };
         }
@@ -223,13 +204,10 @@ fn ui_menu_system<C: ContentAssets>(
             let mut style = (*ui.ctx().style()).clone();
             style.visuals.interact_cursor = Some(egui::CursorIcon::PointingHand);
 
-            image_button!(ui, "../../assets/ui/brush.svg", "Brush", false, false, {
-                info!("Brush button clicked");
-            });
-            brush_button!(ui, "../../assets/ui/square.svg", "Square", Square);
-            brush_button!(ui, "../../assets/ui/circle.svg", "Circle", Round);
-            brush_button!(ui, "../../assets/ui/diamond.svg", "Diamond", Diamond);
-            brush_button!(ui, "../../assets/ui/shuffle.svg", "Random", Random);
+            brush_button!(ui, Square);
+            brush_button!(ui, Round);
+            brush_button!(ui, Diamond);
+            brush_button!(ui, Random);
         });
 
         ui.add_space(4.);
