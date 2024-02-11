@@ -5,8 +5,8 @@ use crate::{
     OptionalPlugin, Palette, PaletteState,
 };
 
-use bevy::{app::AppExit, prelude::*, winit::WinitWindows};
-use bevy_egui::{EguiContext, EguiPlugin, EguiUserTextures};
+use bevy::{app::AppExit, prelude::*, render::camera::Viewport, winit::WinitWindows};
+use bevy_egui::{EguiContext, EguiContexts, EguiPlugin, EguiUserTextures};
 use egui::{load::SizedTexture, TextureId};
 use egui_dock::{DockArea, DockState, NodeIndex, Style};
 use rfd::AsyncFileDialog;
@@ -29,7 +29,12 @@ impl<C: ContentAssets> Plugin for UiPlugin<C> {
             .add_systems(OnEnter(InternalContentState::Ready), add_editor)
             .add_systems(
                 Update,
-                (ui_menu_system::<C>, ui_about_system, ui_dock_system)
+                (
+                    ui_menu_system::<C>,
+                    ui_about_system,
+                    ui_dock_system,
+                    resize_camera_viewport_system.map(drop),
+                )
                     .chain()
                     .run_if(in_state(InternalContentState::Ready)),
             );
@@ -192,6 +197,30 @@ fn ui_dock_system(
 ) {
     let mut ctx = contexts.single_mut();
     ui_state.ui(ctx.get_mut(), egui_user_textures, palettes, palette_state);
+}
+
+fn resize_camera_viewport_system(
+    contexts: EguiContexts,
+    mut camera_query: Query<&mut Camera>,
+    ui_state: Res<UiState>,
+) -> Option<()> {
+    let ctx = contexts.ctx();
+    let scale = ctx.pixels_per_point();
+    for mut camera in camera_query.iter_mut() {
+        for tab in ui_state.state.iter_all_tabs() {
+            if let ((sfc_idx, node_idx), EguiWindow::Editor(_)) = tab {
+                let rect = ui_state.state[sfc_idx][node_idx].rect()?;
+                camera.viewport = Some(Viewport {
+                    physical_position: (scale * Vec2::new(rect.min.x, rect.min.y)).as_uvec2(),
+                    physical_size: (scale * Vec2::new(rect.width(), rect.height())).as_uvec2(),
+                    ..default()
+                });
+                continue;
+            }
+        }
+    }
+
+    Some(())
 }
 
 fn add_editor(mut ui_state: ResMut<UiState>) {
