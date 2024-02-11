@@ -136,13 +136,9 @@ pub fn update_palette_items<C: ContentAssets>(
         return;
     }
 
-    let begin = palette_state
-        .begin()
-        .min(palette_state.category_sprites.len() - 5);
-
-    let end = palette_state
-        .end()
-        .min(palette_state.category_sprites.len());
+    let len = palette_state.category_sprites.len();
+    let begin = palette_state.begin().min(if len < 5 { 0 } else { len - 5 });
+    let end = palette_state.end().min(len);
 
     let mut sprite_ids = palette_state
         .category_sprites
