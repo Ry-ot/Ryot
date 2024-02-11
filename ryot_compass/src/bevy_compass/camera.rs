@@ -242,7 +242,7 @@ fn update_cursor_visibility(
 
     sprite.color = CURSOR_COLOR;
 
-    if !gui_state.is_being_used || palette_state.selected_tile.is_none() {
+    if gui_state.is_being_used || palette_state.selected_tile.is_none() {
         *visibility = Visibility::Hidden;
 
         windows.single_mut().cursor.visible = true;

@@ -393,14 +393,32 @@ pub fn gui_is_not_in_use() -> impl FnMut(Res<UiState>) -> bool + Clone {
     move |gui_state| !gui_state.is_being_used
 }
 
+fn is_cursor_over_editor(egui: &Query<&EguiContext>, gui_state: &ResMut<UiState>) -> bool {
+    let egui = egui.single();
+    if let Some(cursor_pos) = egui.get().pointer_hover_pos() {
+        gui_state
+            .state
+            .iter_all_tabs()
+            .filter(|(_, window)| matches!(window, EguiWindow::Editor(_)))
+            .any(|((sfc_idx, node_idx), _)| {
+                if let Some(rect) = gui_state.state[sfc_idx][node_idx].rect() {
+                    if rect.contains(cursor_pos) {
+                        return true;
+                    }
+                }
+                false
+            })
+    } else {
+        false
+    }
+}
+
 /// This system updates the GUIState resource to indicate whether EGUI is being used or not.
 pub fn check_egui_usage(egui: Query<&EguiContext>, mut gui_state: ResMut<UiState>) {
-    let egui = egui.single();
-    if let Some((rect, EguiWindow::Editor(_))) = gui_state.state.find_active_focused() {
-        if let Some(cursor_pos) = egui.get().pointer_hover_pos() {
-            gui_state.is_being_used = !rect.contains(cursor_pos);
-            return;
-        }
+    if is_cursor_over_editor(&egui, &gui_state) {
+        gui_state.is_being_used = false;
+        return;
     }
-    gui_state.is_being_used = egui.get().wants_pointer_input() || egui.get().wants_keyboard_input()
+    let egui = egui.single();
+    gui_state.is_being_used = egui.get().wants_pointer_input() || egui.get().wants_keyboard_input();
 }
