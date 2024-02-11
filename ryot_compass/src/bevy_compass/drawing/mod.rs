@@ -26,6 +26,7 @@ pub enum DrawingAction {
     ChangeBrush,
     IncreaseBrush,
     DecreaseBrush,
+    ClearSelection,
 }
 
 impl DrawingAction {
@@ -38,6 +39,7 @@ impl DrawingAction {
             .insert_modified(CONTROL_COMMAND, KeyCode::Z, DrawingAction::Undo)
             .insert_modified(CONTROL_COMMAND, KeyCode::R, DrawingAction::Redo)
             .insert(KeyCode::Key1, DrawingAction::ChangeBrush)
+            .insert(KeyCode::Escape, DrawingAction::ClearSelection)
             .insert_modified(CONTROL_COMMAND, KeyCode::Plus, DrawingAction::IncreaseBrush)
             .insert_modified(
                 CONTROL_COMMAND,
@@ -81,6 +83,7 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
             .init_resource::<Brushes<DrawingBundle>>()
             .add_plugins(drawing::DrawingPlugin)
             .add_plugins(InputManagerPlugin::<DrawingAction>::default())
+            .init_resource::<ActionState<DrawingAction>>()
             .add_systems(
                 Update,
                 (

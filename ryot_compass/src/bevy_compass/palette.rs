@@ -1,9 +1,10 @@
-use crate::{get_egui_parameters_for_texture, PaletteState, TilesetCategory};
+use crate::{get_egui_parameters_for_texture, DrawingAction, PaletteState, TilesetCategory};
 use bevy::asset::Assets;
 use bevy::log::warn;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use bevy_egui::EguiPlugin;
+use leafwing_input_manager::common_conditions::action_just_pressed;
 use ryot::bevy_ryot::sprites::{load_sprites, SpritesToBeLoaded};
 use ryot::prelude::*;
 use std::marker::PhantomData;
@@ -31,11 +32,9 @@ impl<C: ContentAssets> Plugin for PalettePlugin<C> {
             .add_systems(
                 Update,
                 (
-                    update_palette_category::<C>,
-                    update_palette_items::<C>,
-                    // draw_palette_window,
+                    clear_selection.run_if(action_just_pressed(DrawingAction::ClearSelection)),
+                    (update_palette_category::<C>, update_palette_items::<C>).chain(),
                 )
-                    .chain()
                     .run_if(in_state(InternalContentState::Ready)),
             );
     }
@@ -181,4 +180,8 @@ pub fn update_palette_items<C: ContentAssets>(
             .loaded_images
             .push((sprite, atlas.texture.clone_weak(), rect_vec2, uv));
     }
+}
+
+fn clear_selection(mut palette_state: ResMut<PaletteState>) {
+    palette_state.selected_tile = None;
 }
