@@ -5,7 +5,7 @@ use crate::{
 use bevy::math::{Vec2, Vec3};
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
-use bevy_egui::EguiContext;
+use bevy_egui::{EguiContext, EguiContexts};
 use bevy_pancam::*;
 use leafwing_input_manager::prelude::*;
 use leafwing_input_manager::user_input::InputKind;
@@ -195,6 +195,7 @@ fn update_cursor_preview(
 }
 
 fn update_cursor_pos(
+    contexts: EguiContexts,
     camera_query: Query<(&Camera, &GlobalTransform)>,
     window_query: Query<&Window, With<PrimaryWindow>>,
     mut cursor_query: Query<(&mut TilePosition, &Layer), With<Cursor>>,
@@ -205,7 +206,12 @@ fn update_cursor_pos(
         return Ok(());
     };
 
-    let Some(point) = camera.viewport_to_world_2d(camera_transform, cursor_position) else {
+    let mut base_positon = Vec2::ZERO;
+    if let Some(vlewport) = &camera.viewport {
+        base_positon = vlewport.physical_position.as_vec2() / contexts.ctx().pixels_per_point();
+    }
+    let Some(point) = camera.viewport_to_world_2d(camera_transform, cursor_position - base_positon)
+    else {
         return Ok(());
     };
 
