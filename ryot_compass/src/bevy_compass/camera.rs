@@ -10,7 +10,8 @@ use bevy_pancam::*;
 use leafwing_input_manager::prelude::*;
 use leafwing_input_manager::user_input::InputKind;
 use ryot::bevy_ryot::drawing::DrawingBundle;
-use ryot::position::{Layer, TilePosition};
+use ryot::layer::Layer;
+use ryot::position::TilePosition;
 use ryot::prelude::drawing::{Brushes, DetailLevel};
 use ryot::prelude::*;
 use std::fmt;
@@ -131,7 +132,7 @@ impl Edges {
 fn spawn_cursor(mut commands: Commands) {
     commands.spawn((
         Cursor::default(),
-        Layer::Max,
+        Layer::TOP_MOST_LAYER,
         TilePosition::default(),
         AppearanceDescriptor::default(),
     ));
@@ -384,7 +385,7 @@ fn update_cursor_brush_preview(
             new_pos,
             *cursor_appearance,
             *cursor_visibility,
-            Layer::Max,
+            Layer::TOP_MOST_LAYER,
         ));
     }
 }

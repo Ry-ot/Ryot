@@ -1,14 +1,13 @@
 //! Sprite loading and drawing.
 use crate::appearances::{FixedFrameGroup, SpriteSheetData, SpriteSheetDataSet};
 use crate::bevy_ryot::InternalContentState;
+use crate::layer::Layer;
 use crate::position::TilePosition;
 use crate::prelude::*;
 use crate::{get_decompressed_file_name, SpriteSheetConfig, SPRITE_SHEET_FOLDER};
 use bevy::prelude::*;
 use bevy::utils::{HashMap, StableHashSet};
 use std::path::PathBuf;
-
-use self::position::Layer;
 
 /// An event that is sent when a sprite sheet texture loading is completed.
 #[derive(Debug, Clone, Event)]

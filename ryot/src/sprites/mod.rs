@@ -7,6 +7,8 @@ pub use config::*;
 mod sheet_loading;
 pub use sheet_loading::*;
 
+pub mod layer;
+
 pub mod position;
 
 pub mod error;

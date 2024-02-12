@@ -1,11 +1,13 @@
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;
+use std::hash::Hash;
 use std::{
     fmt::{self, Formatter},
     ops::Deref,
     time::Duration,
 };
 
+use crate::layer::Layer;
 use glam::{IVec3, UVec2, Vec2, Vec3};
 use serde::{Deserialize, Serialize};
 
@@ -122,12 +124,11 @@ impl TilePosition {
         pos.extend(match layer {
             // Static objects are drawn on top of the ground, so we don't need to tweak the Z based
             // on the tile position.
-            Layer::Max => self.z as f32,
-            Layer::Custom(z) if *z > Layer::STATIC_LAYER_BASELINE => *z as f32,
+            Layer::Fixed(z) => *z as f32,
             // z for 2d sprites define the rendering order, for 45 degrees top-down
             // perspective we always want right bottom items to be drawn on top.
             // Calculations must be done in f32 otherwise decimals are lost.
-            _ => layer.z() as f32 + 1. + pos.x / weight - pos.y / weight,
+            Layer::TopDown45(z) => *z as f32 + 1. + pos.x / weight - pos.y / weight,
         })
     }
 }
@@ -180,54 +181,6 @@ impl From<TilePosition> for Vec2 {
 impl From<&TilePosition> for Vec2 {
     fn from(tile_pos: &TilePosition) -> Self {
         Vec2::from(*tile_pos)
-    }
-}
-
-/// This enum defines the layers that composes a game.
-/// The base layers are defined in the enum and custom layers can be added.
-/// The layers are used to define the rendering order of the tiles.
-/// There are two types of layers: dynamic and static.
-///     - Dynamic layers are used for elements that can change their rendering order
-///     depending on their attributes like position or floor. E.g.: creatures, items, effects.
-///    - Static layers are used for elements that have a fixed rendering order and are always
-///    rendered on top of dynamic layers. E.g.: mouse, grid, ui elements.
-#[derive(Eq, Hash, PartialEq, Debug, Copy, Clone, Default)]
-#[cfg_attr(feature = "bevy", derive(Component, Reflect))]
-pub enum Layer {
-    #[default]
-    Items,
-    Top,
-    Bottom,
-    Ground,
-    Creature,
-    Effect,
-    Max,
-    Custom(i32),
-}
-
-impl Layer {
-    const STATIC_LAYER_BASELINE: i32 = 900;
-
-    /// Z is calculated based on floor position and layer.
-    /// The base Z is floor * 100 and the layer adds an offset.
-    /// The offset is used to calculate the rendering order of the tile.
-    /// Tiles with higher Z are rendered on top of tiles with lower Z.
-    /// The tile Z for the game is always the floor (Z / 100).floor().
-    ///
-    /// We leave a gap of 10 between layers to allow for more layers to be added
-    /// in the future and to make it possible to place custom layers between
-    /// the default ones.
-    pub fn z(&self) -> i32 {
-        match self {
-            Self::Top => 90,
-            Self::Bottom => 80,
-            Self::Effect => 60,
-            Self::Creature => 40,
-            Self::Items => 20,
-            Self::Ground => 0,
-            Self::Max => 999,
-            Self::Custom(z) => *z,
-        }
     }
 }
 

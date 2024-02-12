@@ -3,6 +3,7 @@
 //! This file contains the information needed to load sprites and other content.
 use crate::appearances::{self, FixedFrameGroup};
 use crate::appearances::{AppearanceFlags, Appearances, FrameGroup};
+use crate::layer::Layer;
 use crate::prelude::*;
 use bevy::asset::io::Reader;
 use bevy::asset::{Asset, AssetLoader, AsyncReadExt, BoxedFuture, LoadContext};
@@ -12,8 +13,6 @@ use bevy::utils::HashMap;
 use prost::Message;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
-
-use self::position::Layer;
 
 /// A plugin to register the Appearance asset and its loader.
 pub struct AppearanceAssetPlugin;
