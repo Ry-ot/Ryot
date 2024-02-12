@@ -6,7 +6,9 @@ use crate::prelude::*;
 use crate::{get_decompressed_file_name, SpriteSheetConfig, SPRITE_SHEET_FOLDER};
 use bevy::prelude::*;
 use bevy::utils::{HashMap, StableHashSet};
+use rand::Rng;
 use std::path::PathBuf;
+use std::time::Duration;
 
 use self::position::Layer;
 
@@ -43,6 +45,10 @@ pub struct AnimationSprite {
     pub skip: usize,
     pub total_phases: usize,
 }
+
+/// An optional component to override animation timers.
+#[derive(Component, Default)]
+pub struct AnimationDuration(pub Duration);
 
 /// Struct that represents sprites that were requested but are not yet loaded.
 /// This resource will be consumed by the sprite loading system and cleaned up.
@@ -328,9 +334,26 @@ fn load_desired_appereance_sprite<C: ContentAssets>(
         .animation
         .as_ref()
         .map(|animation| AnimationSprite {
-            timer: Timer::from_seconds(0.1, TimerMode::Repeating),
+            timer: Timer::from_seconds(
+                animation
+                    .sprite_phase
+                    .first()
+                    .map(|phase| {
+                        let range = phase.duration_min()..phase.duration_max();
+                        if range.start == range.end {
+                            return range.start;
+                        }
+                        rand::thread_rng().gen_range(range)
+                    })
+                    .unwrap_or(300) as f32
+                    / 1000.,
+                TimerMode::Repeating,
+            ),
             sprites: sprites.clone(),
-            phase: 0,
+            phase: match animation.random_start_phase() {
+                true => rand::thread_rng().gen_range(0..animation.sprite_phase.len()) as usize,
+                false => animation.default_start_phase() as usize,
+            },
             initial_index: direction_index,
             total_phases: animation.sprite_phase.len(),
             skip: (sprite_info.layers()
@@ -498,9 +521,16 @@ pub fn animate_sprite_system(
         &mut AnimationSprite,
         &mut Handle<TextureAtlas>,
         &mut TextureAtlasSprite,
+        Option<&AnimationDuration>,
     )>,
 ) {
-    for (mut anim, mut atlas, mut atlas_sprite) in &mut sprites_to_animate {
+    for (mut anim, mut atlas, mut atlas_sprite, duration) in &mut sprites_to_animate {
+        if let Some(duration) = duration {
+            let frame_duration = duration.0 / anim.total_phases as u32;
+            if anim.timer.duration() != frame_duration {
+                anim.timer.set_duration(frame_duration)
+            }
+        }
         anim.timer.tick(time.delta());
         if anim.timer.just_finished() {
             anim.phase += 1;
