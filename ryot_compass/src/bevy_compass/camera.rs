@@ -35,7 +35,7 @@ impl<C: CompassAssets> Default for CameraPlugin<C> {
 impl<C: CompassAssets> Plugin for CameraPlugin<C> {
     fn build(&self, app: &mut App) {
         app.insert_resource(Msaa::Off)
-            .init_resource::<ToggleActions<bevy_pancam::Action>>()
+            .init_resource::<ToggleActions<PanCamAction>>()
             .add_plugins(PanCamPlugin)
             .add_systems(
                 OnExit(InternalContentState::LoadingContent),
@@ -143,26 +143,25 @@ pub static MAP_GRAB_INPUTS: [InputKind; 2] = [
 ];
 
 fn spawn_camera(content: Res<CompassContentAssets>, mut commands: Commands) {
-    let mut input_map = InputMap::default();
-    input_map.insert_chord(MAP_GRAB_INPUTS, bevy_pancam::Action::Grab);
-    input_map.insert(SingleAxis::mouse_wheel_y(), bevy_pancam::Action::Zoom);
-
     commands.spawn((
         Camera2dBundle::default(),
         Edges::default(),
         DetailLevel::default(),
-        PanCam {
-            enabled: true,
-            zoom_to_cursor: true,
-            min_scale: 0.2,
-            max_scale: Some(8.75),
-            ..default()
-        },
-        InputManagerBundle::<bevy_pancam::Action> {
-            // Stores "which actions are currently pressed"
-            action_state: ActionState::default(),
-            // Describes how to convert from player inputs into those actions
-            input_map,
+        PanCamBundle {
+            pan_cam: PanCam {
+                enabled: true,
+                zoom_to_cursor: true,
+                min_scale: 0.2,
+                max_scale: Some(8.75),
+                ..default()
+            },
+            inputs: InputManagerBundle::<PanCamAction> {
+                action_state: ActionState::default(),
+                input_map: InputMap::default()
+                    .insert_chord(MAP_GRAB_INPUTS, PanCamAction::Grab)
+                    .insert(SingleAxis::mouse_wheel_y(), PanCamAction::Zoom)
+                    .build(),
+            },
         },
     ));
 
@@ -417,9 +416,6 @@ fn update_camera_edges(
     }
 }
 
-fn update_pan_cam_actions(
-    mut toggle: ResMut<ToggleActions<bevy_pancam::Action>>,
-    ui_state: Res<UiState>,
-) {
+fn update_pan_cam_actions(mut toggle: ResMut<ToggleActions<PanCamAction>>, ui_state: Res<UiState>) {
     toggle.enabled = !ui_state.is_being_used;
 }
