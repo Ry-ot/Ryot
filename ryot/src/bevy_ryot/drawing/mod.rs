@@ -1,6 +1,7 @@
 use crate::appearances::{self, FixedFrameGroup};
 use crate::bevy_ryot::{AppearanceDescriptor, InternalContentState};
-use crate::position::{Layer, TilePosition};
+use crate::layer::*;
+use crate::position::TilePosition;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 
@@ -14,7 +15,8 @@ pub struct DrawingPlugin;
 
 impl Plugin for DrawingPlugin {
     fn build(&self, app: &mut App) {
-        app.register_type::<Layer>()
+        app.init_resource::<Layers>()
+            .register_type::<Layer>()
             .register_type::<DetailLevel>()
             .add_systems(
                 Update,
@@ -100,7 +102,7 @@ impl DrawingBundle {
 
     pub fn creature(tile_pos: TilePosition, id: u32, frame_group_index: FixedFrameGroup) -> Self {
         Self::new(
-            Layer::Creature,
+            CipLayer::Creature.into(),
             tile_pos,
             AppearanceDescriptor::outfit(id, frame_group_index),
         )
@@ -158,18 +160,20 @@ impl DetailLevel {
 
     pub fn visible_layers(&self) -> Vec<Layer> {
         match self {
-            Self::Max => vec![
-                Layer::Items,
-                Layer::Top,
-                Layer::Bottom,
-                Layer::Ground,
-                Layer::Creature,
-                Layer::Effect,
+            Self::Max => Layers::default().0,
+            Self::Medium => vec![
+                CipLayer::Items.into(),
+                CipLayer::Top.into(),
+                CipLayer::Bottom.into(),
+                CipLayer::Ground.into(),
             ],
-            Self::Medium => vec![Layer::Items, Layer::Top, Layer::Bottom, Layer::Ground],
-            Self::Minimal => vec![Layer::Items, Layer::Bottom, Layer::Ground],
-            Self::GroundBottom => vec![Layer::Bottom, Layer::Ground],
-            Self::GroundOnly => vec![Layer::Ground],
+            Self::Minimal => vec![
+                CipLayer::Items.into(),
+                CipLayer::Bottom.into(),
+                CipLayer::Ground.into(),
+            ],
+            Self::GroundBottom => vec![CipLayer::Bottom.into(), CipLayer::Ground.into()],
+            Self::GroundOnly => vec![CipLayer::Ground.into()],
             Self::None => vec![],
         }
     }
@@ -178,10 +182,10 @@ impl DetailLevel {
 impl From<Option<appearances::AppearanceFlags>> for Layer {
     fn from(flags: Option<appearances::AppearanceFlags>) -> Self {
         match flags {
-            Some(flags) if flags.top.is_some() => Self::Top,
-            Some(flags) if flags.bottom.is_some() => Self::Bottom,
-            Some(flags) if flags.bank.is_some() || flags.clip.is_some() => Self::Ground,
-            _ => Self::Items,
+            Some(flags) if flags.top.is_some() => CipLayer::Top.into(),
+            Some(flags) if flags.bottom.is_some() => CipLayer::Bottom.into(),
+            Some(flags) if flags.bank.is_some() || flags.clip.is_some() => CipLayer::Ground.into(),
+            _ => Self::default(),
         }
     }
 }

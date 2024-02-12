@@ -4,7 +4,7 @@ use bevy::ecs::schedule::SystemConfigs;
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
 use ryot::bevy_ryot::*;
-use ryot::prelude::{drawing::*, position::*};
+use ryot::prelude::{drawing::*, layer::*, position::*};
 
 pub fn erase_on_hold() -> SystemConfigs {
     on_hold(
@@ -22,6 +22,7 @@ pub fn erase_on_click() -> SystemConfigs {
 fn delete_tile_content<F: ReadOnlyWorldQuery>(
     mut commands: Commands,
     mut command_history: ResMut<CommandHistory>,
+    layers: Res<Layers>,
     tiles: ResMut<MapTiles>,
     brushes: Res<Brushes<DrawingBundle>>,
     cursor_query: Query<(&Cursor, &TilePosition), F>,
@@ -47,14 +48,14 @@ fn delete_tile_content<F: ReadOnlyWorldQuery>(
 
             let mut content: Option<(Entity, Layer, AppearanceDescriptor)> = None;
 
-            for layer in [Layer::Top, Layer::Items, Layer::Bottom, Layer::Ground] {
-                if let Some(entity) = tile_content.get(&layer) {
+            for layer in layers.get_sorted_by_z_desc() {
+                if let Some(entity) = tile_content.get(layer) {
                     if let Ok((current, visibility)) = current_appearance_query.get(*entity) {
                         if visibility == Visibility::Hidden {
                             continue;
                         }
 
-                        content = Some((*entity, layer, *current));
+                        content = Some((*entity, *layer, *current));
                         break;
                     }
                 }
