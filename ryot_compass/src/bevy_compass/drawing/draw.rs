@@ -1,34 +1,37 @@
 use crate::{Cursor, DrawingAction};
+use bevy::ecs::query::ReadOnlyWorldQuery;
+use bevy::ecs::schedule::SystemConfigs;
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
-use leafwing_input_manager::prelude::*;
 use ryot::bevy_ryot::*;
 use ryot::prelude::{drawing::*, position::*};
 
-#[allow(clippy::too_many_arguments)]
-pub(super) fn draw_to_tile<C: ContentAssets>(
+pub fn draw_on_hold<C: ContentAssets>() -> SystemConfigs {
+    on_hold(
+        draw_to_tile::<C, Changed<TilePosition>>,
+        DrawingAction::Draw,
+    )
+}
+
+pub fn draw_on_click<C: ContentAssets>() -> SystemConfigs {
+    on_press(draw_to_tile::<C, ()>, DrawingAction::Draw)
+}
+
+fn draw_to_tile<C: ContentAssets, F: ReadOnlyWorldQuery>(
     mut commands: Commands,
     mut tiles: ResMut<MapTiles>,
     mut command_history: ResMut<CommandHistory>,
     content_assets: Res<C>,
     brushes: Res<Brushes<DrawingBundle>>,
     current_appearance_query: Query<(&mut AppearanceDescriptor, &Visibility), Without<Cursor>>,
-    action_state: Res<ActionState<DrawingAction>>,
-    cursor_query: Query<(
-        &AppearanceDescriptor,
-        &TilePosition,
-        &Cursor,
-        Changed<TilePosition>,
-    )>,
+    cursor_query: Query<(&AppearanceDescriptor, &TilePosition, &Cursor), F>,
 ) {
     if content_assets.sprite_sheet_data_set().is_none() {
         warn!("Trying to draw a sprite without any loaded content");
         return;
     };
 
-    for (AppearanceDescriptor { group, id, .. }, tile_pos, cursor, position_changed) in
-        &cursor_query
-    {
+    for (AppearanceDescriptor { group, id, .. }, tile_pos, cursor) in &cursor_query {
         if !cursor.drawing_state.enabled {
             continue;
         }
@@ -39,10 +42,6 @@ pub(super) fn draw_to_tile<C: ContentAssets>(
         else {
             return;
         };
-
-        if !check_action(DrawingAction::Draw, position_changed, &action_state) {
-            return;
-        }
 
         let layer = prepared_appearance.layer;
         let appearance = AppearanceDescriptor::new(*group, *id, default());

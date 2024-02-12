@@ -1,26 +1,34 @@
 use crate::{Cursor, DrawingAction};
+use bevy::ecs::query::ReadOnlyWorldQuery;
+use bevy::ecs::schedule::SystemConfigs;
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
-use leafwing_input_manager::prelude::*;
 use ryot::bevy_ryot::*;
 use ryot::prelude::{drawing::*, position::*};
 
+pub fn erase_on_hold() -> SystemConfigs {
+    on_hold(
+        delete_tile_content::<Changed<TilePosition>>,
+        DrawingAction::Erase,
+    )
+}
+
+pub fn erase_on_click() -> SystemConfigs {
+    on_press(delete_tile_content::<()>, DrawingAction::Erase)
+}
+
 /// A function that listens to the right mouse button and deletes the content of the tile under the cursor.
 /// It always delete the topmost content of the tile, following the Z-ordering.
-pub(super) fn delete_tile_content(
+fn delete_tile_content<F: ReadOnlyWorldQuery>(
     mut commands: Commands,
-    brushes: Res<Brushes<DrawingBundle>>,
-    tiles: ResMut<MapTiles>,
     mut command_history: ResMut<CommandHistory>,
+    tiles: ResMut<MapTiles>,
+    brushes: Res<Brushes<DrawingBundle>>,
+    cursor_query: Query<(&Cursor, &TilePosition), F>,
     current_appearance_query: Query<(&mut AppearanceDescriptor, &Visibility), Without<Cursor>>,
-    action_state: Res<ActionState<DrawingAction>>,
-    cursor_query: Query<(&Cursor, &TilePosition, Changed<TilePosition>)>,
 ) {
-    for (cursor, tile_pos, position_changed) in &cursor_query {
-        if !check_action(DrawingAction::Erase, position_changed, &action_state) {
-            return;
-        }
-
+    for (cursor, tile_pos) in &cursor_query {
+        info!("Deleting content at {:?}", tile_pos);
         let positions: Vec<TilePosition> = brushes(
             cursor.drawing_state.brush_index,
             cursor.drawing_state.brush_size,
