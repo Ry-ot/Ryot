@@ -1,14 +1,14 @@
 use crate::{gui_is_not_in_use, helpers::CONTROL_COMMAND, MAP_GRAB_INPUTS};
 use bevy::prelude::*;
-use leafwing_input_manager::{common_conditions::action_just_pressed, prelude::*};
+use leafwing_input_manager::{common_conditions::*, prelude::*};
 use ryot::prelude::{drawing::*, *};
 use std::marker::PhantomData;
 
 mod draw;
-use draw::draw_to_tile;
+use draw::*;
 
 mod delete;
-use delete::delete_tile_content;
+use delete::*;
 
 mod undo_redo;
 use undo_redo::*;
@@ -87,12 +87,23 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
             .add_systems(
                 Update,
                 (
-                    draw_to_tile::<C>,
-                    delete_tile_content,
-                    undo_redo_tile_action,
-                    change_brush_shape.run_if(action_just_pressed(DrawingAction::ChangeBrush)),
-                    change_brush_size(1).run_if(action_just_pressed(DrawingAction::IncreaseBrush)),
-                    change_brush_size(-1).run_if(action_just_pressed(DrawingAction::DecreaseBrush)),
+                    (draw_on_click::<C>(), draw_on_hold::<C>()),
+                    (erase_on_click(), erase_on_hold()),
+                    (
+                        tick_undo_redo_timer,
+                        undo_on_hold(),
+                        undo_on_click(),
+                        redo_on_hold(),
+                        redo_on_click(),
+                    )
+                        .chain(),
+                    (
+                        change_brush_shape.run_if(action_just_pressed(DrawingAction::ChangeBrush)),
+                        change_brush_size(1)
+                            .run_if(action_just_pressed(DrawingAction::IncreaseBrush)),
+                        change_brush_size(-1)
+                            .run_if(action_just_pressed(DrawingAction::DecreaseBrush)),
+                    ),
                 )
                     .run_if(in_state(InternalContentState::Ready))
                     .run_if(gui_is_not_in_use()),

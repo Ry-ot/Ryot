@@ -23,6 +23,7 @@ use crate::position::{update_sprite_position, Layer, TilePosition};
 use crate::CONTENT_CONFIG;
 use bevy::app::{App, Plugin, Update};
 use bevy::asset::{Asset, Assets, Handle};
+use bevy::ecs::schedule::SystemConfigs;
 use bevy::prelude::*;
 use bevy::sprite::{Anchor, MaterialMesh2dBundle};
 use bevy::utils::HashMap;
@@ -30,6 +31,7 @@ use bevy_asset_loader::asset_collection::AssetCollection;
 use bevy_asset_loader::loading_state::{LoadingState, LoadingStateAppExt};
 use bevy_asset_loader::prelude::*;
 use bevy_common_assets::json::JsonAssetPlugin;
+use leafwing_input_manager::common_conditions::*;
 use leafwing_input_manager::prelude::*;
 
 pub static RYOT_ANCHOR: Anchor = Anchor::BottomRight;
@@ -301,17 +303,12 @@ pub fn spawn_grid(
     }
 }
 
-/// A helper for leafwing-input-manager that checks if an action happened based on
-/// long-press triggers. If you have a long press trigger, then it checks for pressed,
-/// otherwise it checks for just_pressed.
-pub fn check_action<A: Actionlike>(
-    action: A,
-    long_press_triggered: bool,
-    action_state: &ActionState<A>,
-) -> bool {
-    if long_press_triggered {
-        action_state.pressed(action)
-    } else {
-        action_state.just_pressed(action)
-    }
+/// A helper for leafwing-input-manager that sets up a system to only run if a given action is being held.
+pub fn on_hold<M, A: Actionlike>(systems: impl IntoSystemConfigs<M>, action: A) -> SystemConfigs {
+    systems.run_if(action_pressed(action.clone()).and_then(not(action_just_pressed(action))))
+}
+
+/// A helper for leafwing-input-manager that sets up a system to only run if a given action was pressed.
+pub fn on_press<M, A: Actionlike>(systems: impl IntoSystemConfigs<M>, action: A) -> SystemConfigs {
+    systems.run_if(action_just_pressed(action))
 }

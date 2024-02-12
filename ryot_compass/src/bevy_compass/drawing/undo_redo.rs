@@ -1,8 +1,6 @@
 use crate::DrawingAction;
+use bevy::ecs::schedule::SystemConfigs;
 use bevy::prelude::*;
-use leafwing_input_manager::prelude::*;
-use rand::prelude::SliceRandom;
-use rand::thread_rng;
 use ryot::bevy_ryot::*;
 use ryot::prelude::drawing::*;
 use std::ops::Deref;
@@ -23,30 +21,49 @@ impl Default for UndoRedoConfig {
     }
 }
 
-pub(super) fn undo_redo_tile_action(
-    time: Res<Time>,
+pub fn time_is_finished() -> impl FnMut(Res<UndoRedoConfig>) -> bool {
+    move |config: Res<UndoRedoConfig>| config.timer.just_finished()
+}
+
+pub fn undo_on_hold() -> SystemConfigs {
+    on_hold(undo_tile_action, DrawingAction::Undo).run_if(time_is_finished())
+}
+
+pub fn undo_on_click() -> SystemConfigs {
+    on_press(undo_tile_action, DrawingAction::Undo)
+}
+
+pub fn redo_on_hold() -> SystemConfigs {
+    on_hold(redo_tile_action, DrawingAction::Redo).run_if(time_is_finished())
+}
+
+pub fn redo_on_click() -> SystemConfigs {
+    on_press(redo_tile_action, DrawingAction::Redo)
+}
+
+pub fn tick_undo_redo_timer(mut config: ResMut<UndoRedoConfig>, time: Res<Time>) {
+    config.timer.tick(time.delta());
+}
+
+pub(super) fn redo_tile_action(
     mut commands: Commands,
     tiles: ResMut<MapTiles>,
     mut undo_redo_config: ResMut<UndoRedoConfig>,
     mut command_history: ResMut<CommandHistory>,
-    action_state: Res<ActionState<DrawingAction>>,
 ) {
-    undo_redo_config.timer.tick(time.delta());
+    if redo(&mut commands, &tiles, &mut command_history) {
+        undo_redo_config.timer.reset();
+    }
+}
 
-    let mut actions = [DrawingAction::Undo, DrawingAction::Redo];
-    actions.shuffle(&mut thread_rng());
-
-    for action in actions {
-        let is_timer_finished = undo_redo_config.timer.just_finished();
-
-        if check_action(action, is_timer_finished, &action_state) {
-            undo_redo_config.timer.reset();
-            match action {
-                DrawingAction::Undo => undo(&mut commands, &tiles, &mut command_history),
-                DrawingAction::Redo => redo(&mut commands, &tiles, &mut command_history),
-                _ => (),
-            }
-        }
+pub(super) fn undo_tile_action(
+    mut commands: Commands,
+    tiles: ResMut<MapTiles>,
+    mut undo_redo_config: ResMut<UndoRedoConfig>,
+    mut command_history: ResMut<CommandHistory>,
+) {
+    if undo(&mut commands, &tiles, &mut command_history) {
+        undo_redo_config.timer.reset();
     }
 }
 
@@ -54,7 +71,7 @@ fn redo(
     commands: &mut Commands,
     tiles: &ResMut<MapTiles>,
     command_history: &mut ResMut<CommandHistory>,
-) {
+) -> bool {
     if let Some(command_record) = command_history.reversed_commands.pop() {
         match &command_record {
             CommandType::TileCommand(command_record) => command_record.command.redo(
@@ -69,14 +86,18 @@ fn redo(
         }
 
         command_history.performed_commands.push(command_record);
+
+        return true;
     }
+
+    false
 }
 
 fn undo(
     commands: &mut Commands,
     tiles: &ResMut<MapTiles>,
     command_history: &mut ResMut<CommandHistory>,
-) {
+) -> bool {
     if let Some(command_record) = command_history.performed_commands.pop() {
         match &command_record {
             CommandType::TileCommand(command_record) => command_record.command.undo(
@@ -91,7 +112,11 @@ fn undo(
         }
 
         command_history.reversed_commands.push(command_record);
+
+        return true;
     }
+
+    false
 }
 
 fn get_entity_from_command_record(
