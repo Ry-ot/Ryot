@@ -38,7 +38,14 @@ impl DrawingAction {
                 (MouseButton::Right, DrawingAction::Erase),
             ])
             .insert_modified(CONTROL_COMMAND, KeyCode::Z, DrawingAction::Undo)
-            .insert_modified(CONTROL_COMMAND, KeyCode::R, DrawingAction::Redo)
+            .insert_chord(
+                [
+                    InputKind::Modifier(CONTROL_COMMAND),
+                    InputKind::Modifier(Modifier::Shift),
+                    InputKind::Keyboard(KeyCode::Z),
+                ],
+                DrawingAction::Redo,
+            )
             .insert(KeyCode::Key1, DrawingAction::ChangeBrush)
             .insert(KeyCode::Escape, DrawingAction::ClearSelection)
             .insert_modified(CONTROL_COMMAND, KeyCode::Plus, DrawingAction::IncreaseBrush)
