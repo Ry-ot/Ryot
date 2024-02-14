@@ -7,13 +7,13 @@ use ryot::prelude::{drawing::*, *};
 use std::marker::PhantomData;
 
 mod draw;
-use draw::*;
+pub use draw::*;
 
 mod delete;
-use delete::*;
+pub use delete::*;
 
 mod undo_redo;
-use undo_redo::*;
+pub use undo_redo::*;
 
 mod brush;
 pub use brush::*;

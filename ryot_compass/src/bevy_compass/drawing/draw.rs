@@ -5,6 +5,7 @@ use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
 use ryot::bevy_ryot::map::MapTiles;
 use ryot::bevy_ryot::*;
+use ryot::layer::Layer;
 use ryot::prelude::{drawing::*, position::*};
 
 pub fn draw_on_hold<C: ContentAssets>() -> SystemConfigs {
@@ -56,26 +57,16 @@ fn draw_to_tile<C: ContentAssets, F: ReadOnlyWorldQuery>(
         let mut queued = 0;
 
         for new_bundle in to_draw {
-            let entity = tiles
-                .entry(new_bundle.tile_pos)
-                .or_default()
-                .get(&layer)
-                .map_or_else(|| commands.spawn_empty().id(), |&e| e);
-
-            let old_bundle = match current_appearance_query.get(entity) {
-                Ok((appearance, visibility)) => Some(
-                    DrawingBundle::new(layer, new_bundle.tile_pos, *appearance)
-                        .with_visibility(*visibility),
-                ),
-                Err(_) => None,
+            let Some(command) = create_and_send_update_command(
+                layer,
+                new_bundle,
+                &mut commands,
+                &mut tiles,
+                &current_appearance_query,
+            ) else {
+                continue;
             };
 
-            if old_bundle == Some(new_bundle) {
-                continue;
-            }
-
-            let command = UpdateTileContent(Some(new_bundle), old_bundle);
-            commands.add(command.with_entity(entity));
             command_history
                 .performed_commands
                 .push(TileCommandRecord::new(layer, new_bundle.tile_pos, Box::new(command)).into());
@@ -89,4 +80,35 @@ fn draw_to_tile<C: ContentAssets, F: ReadOnlyWorldQuery>(
 
         command_history.reversed_commands.clear();
     }
+}
+
+pub fn create_and_send_update_command(
+    layer: Layer,
+    new_bundle: DrawingBundle,
+    commands: &mut Commands,
+    tiles: &mut ResMut<MapTiles>,
+    current_appearance_query: &Query<(&mut AppearanceDescriptor, &Visibility), Without<Cursor>>,
+) -> Option<UpdateTileContent> {
+    let entity = tiles
+        .entry(new_bundle.tile_pos)
+        .or_default()
+        .get(&layer)
+        .map_or_else(|| commands.spawn_empty().id(), |&e| e);
+
+    let old_bundle = match current_appearance_query.get(entity) {
+        Ok((appearance, visibility)) => Some(
+            DrawingBundle::new(layer, new_bundle.tile_pos, *appearance)
+                .with_visibility(*visibility),
+        ),
+        Err(_) => None,
+    };
+
+    if old_bundle == Some(new_bundle) {
+        return None;
+    }
+
+    let command = UpdateTileContent(Some(new_bundle), old_bundle);
+    commands.add(command.with_entity(entity));
+
+    Some(command)
 }
