@@ -85,7 +85,7 @@ ryot = { version = "0.1.0", path = "../ryot" }
 
 [features]
 default = []
-lmdb = ["dep:heed"]
+lmdb = ["dep:heed", "ryot/lmdb"]
 pre_loaded_sprites = []
 content_rebuild_on_change = []
 

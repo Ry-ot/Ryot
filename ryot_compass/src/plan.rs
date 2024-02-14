@@ -1,4 +1,7 @@
-use crate::{Header, House, Item, Position, RegionType, Spawn, Town, Waypoint, Zone};
+use crate::{Header, House, Item, RegionType, Spawn, Town, Waypoint, Zone};
+use ryot::layer::Layer;
+use ryot::position::TilePosition;
+use std::collections::HashMap;
 
 #[derive(Debug)]
 pub enum MapComponent {
@@ -38,20 +41,20 @@ impl Plan {
 
 #[derive(Debug, Default)]
 pub struct Tile {
-    pub position: Position,
-    pub item: Option<Item>,
+    pub position: TilePosition,
+    pub items: HashMap<Layer, Item>,
 }
 
 impl Tile {
-    pub fn new(position: Position) -> Self {
+    pub fn new(position: TilePosition) -> Self {
         Self {
             position,
             ..Default::default()
         }
     }
 
-    pub fn set_item(&mut self, item: Item) {
-        self.item = Some(item);
+    pub fn set_item(&mut self, item: Item, layer: Layer) {
+        self.items.insert(layer, item);
     }
 }
 

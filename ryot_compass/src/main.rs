@@ -8,6 +8,9 @@ use bevy_egui::EguiContexts;
 mod error_handling;
 use ryot::prelude::*;
 
+#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
+use ryot_compass::{read_area, LmdbEnv};
+
 use ryot_compass::{
     AppPlugin, CameraPlugin, CompassContentAssets, DrawingPlugin, PalettePlugin, UiPlugin,
 };
@@ -67,21 +70,30 @@ pub fn setup_window(
 }
 
 fn main() {
+    // lmdb_example().unwrap();
     color_eyre::install().unwrap();
-    App::new()
-        .add_plugins((
-            AppPlugin,
-            UiPlugin::<CompassContentAssets>::default(),
-            CameraPlugin::<CompassContentAssets>::default(),
-            PalettePlugin::<CompassContentAssets>::default(),
-            DrawingPlugin::<CompassContentAssets>::default(),
-            ErrorPlugin,
-            FrameTimeDiagnosticsPlugin,
-            EntityCountDiagnosticsPlugin,
-            SystemInformationDiagnosticsPlugin,
-            LogDiagnosticsPlugin::default(),
-        ))
-        .add_systems(Startup, set_window_icon)
-        .add_systems(Startup, setup_window)
-        .run();
+    let mut app = App::new();
+
+    app.add_plugins((
+        AppPlugin,
+        UiPlugin::<CompassContentAssets>::default(),
+        CameraPlugin::<CompassContentAssets>::default(),
+        PalettePlugin::<CompassContentAssets>::default(),
+        DrawingPlugin::<CompassContentAssets>::default(),
+        ErrorPlugin,
+        FrameTimeDiagnosticsPlugin,
+        EntityCountDiagnosticsPlugin,
+        SystemInformationDiagnosticsPlugin,
+        LogDiagnosticsPlugin::default(),
+    ))
+    .add_systems(Startup, set_window_icon)
+    .add_systems(Startup, setup_window);
+
+    #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
+    app.init_resource::<LmdbEnv>().add_systems(
+        Update,
+        read_area.run_if(in_state(InternalContentState::Ready)),
+    );
+
+    app.run();
 }

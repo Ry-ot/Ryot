@@ -79,35 +79,41 @@ house:id -> {
     beds: u8,
 }
  */
-use crate::{Item, ItemAttribute, MapComponent, Plan, Position, Tile};
+use crate::{Item, ItemAttribute, MapComponent, Plan, Tile};
 use rand::Rng;
+use ryot::layer::CipLayer;
+use ryot::position::TilePosition;
 
-pub fn build_map(z_size: u8) -> Plan {
+pub fn build_map(z_size: i32) -> Plan {
     let mut map = Plan::default();
 
-    for x in 60000..61100 {
-        for y in 60000..61100 {
+    for x in -550..550 {
+        for y in -550..550 {
             for z in 0..z_size {
-                let mut tile = Tile::new(Position::new(x, y, z));
-                let item1 = Item {
-                    id: rand::thread_rng().gen_range(300..=305),
-                    items: Vec::new(),
-                    attributes: get_attribute_array(),
-                };
+                let mut tile = Tile::new(TilePosition::new(x, y, z));
+                tile.set_item(
+                    Item {
+                        id: rand::thread_rng().gen_range(1261..=1269),
+                        attributes: get_attribute_array(),
+                    },
+                    CipLayer::Ground.into(),
+                );
 
-                let item2 = Item {
-                    id: rand::thread_rng().gen_range(300..=305),
-                    items: vec![item1],
-                    attributes: get_attribute_array(),
-                };
+                tile.set_item(
+                    Item {
+                        id: rand::thread_rng().gen_range(660..=810),
+                        attributes: get_attribute_array(),
+                    },
+                    CipLayer::Items.into(),
+                );
 
-                tile.set_item(Item {
-                    id: rand::thread_rng().gen_range(300..=400),
-                    // items: Vec::new(),
-                    // attributes: Vec::new(),
-                    items: vec![item2],
-                    attributes: get_attribute_array(),
-                });
+                tile.set_item(
+                    Item {
+                        id: rand::thread_rng().gen_range(2012..=2017),
+                        attributes: get_attribute_array(),
+                    },
+                    CipLayer::Bottom.into(),
+                );
 
                 map.add(MapComponent::Tile(tile));
             }
@@ -166,7 +172,10 @@ pub fn get_attribute_array() -> Vec<ItemAttribute> {
     Vec::new()
 }
 
-pub fn get_chunks_per_z(initial_pos: &Position, final_pos: &Position) -> Vec<(Position, Position)> {
+pub fn get_chunks_per_z(
+    initial_pos: &TilePosition,
+    final_pos: &TilePosition,
+) -> Vec<(TilePosition, TilePosition)> {
     let mut chunks = Vec::new();
     let n = 1;
 
@@ -174,8 +183,8 @@ pub fn get_chunks_per_z(initial_pos: &Position, final_pos: &Position) -> Vec<(Po
         for i in 1..=n {
             let y_divided_by_6 = (final_pos.y - initial_pos.y) / n;
             let chunk_start =
-                Position::new(initial_pos.x, initial_pos.y + y_divided_by_6 * (i - 1), z);
-            let chunk_end = Position::new(final_pos.x, initial_pos.y + y_divided_by_6 * i, z);
+                TilePosition::new(initial_pos.x, initial_pos.y + y_divided_by_6 * (i - 1), z);
+            let chunk_end = TilePosition::new(final_pos.x, initial_pos.y + y_divided_by_6 * i, z);
             chunks.push((chunk_start, chunk_end));
         }
     }
