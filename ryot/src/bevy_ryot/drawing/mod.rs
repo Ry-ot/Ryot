@@ -3,7 +3,6 @@ use crate::bevy_ryot::{AppearanceDescriptor, InternalContentState};
 use crate::layer::*;
 use crate::position::TilePosition;
 use bevy::prelude::*;
-use bevy::utils::HashMap;
 
 mod brushes;
 pub use brushes::*;
@@ -26,13 +25,6 @@ impl Plugin for DrawingPlugin {
             );
     }
 }
-
-/// A resource that holds the map tiles and the entities that are drawn on them.
-/// An entity location is represented by the combination of a Layer and a Position.
-/// The MapTiles are represented by a HashMap of TilePosition and a HashMap of Layer and Entity.
-/// The MapTiles is used to keep track of the entities that are drawn on the map and their position.
-#[derive(Debug, Default, Resource, Deref, Reflect, DerefMut)]
-pub struct MapTiles(pub HashMap<TilePosition, HashMap<Layer, Entity>>);
 
 #[derive(Component, Debug, Copy, Clone, Default, Eq, PartialEq)]
 pub struct Tile;

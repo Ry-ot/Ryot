@@ -13,6 +13,8 @@ use std::marker::PhantomData;
 mod async_events;
 pub use async_events::*;
 
+pub mod map;
+
 pub mod drawing;
 
 pub mod sprites;

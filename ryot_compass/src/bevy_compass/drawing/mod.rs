@@ -2,6 +2,7 @@ use crate::{gui_is_not_in_use, helpers::CONTROL_COMMAND, MAP_GRAB_INPUTS};
 use bevy::prelude::*;
 use leafwing_input_manager::user_input::InputKind;
 use leafwing_input_manager::{common_conditions::*, prelude::*};
+use ryot::bevy_ryot::map::MapTiles;
 use ryot::prelude::{drawing::*, *};
 use std::marker::PhantomData;
 
