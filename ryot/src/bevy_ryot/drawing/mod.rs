@@ -8,6 +8,7 @@ mod brushes;
 pub use brushes::*;
 
 mod commands;
+use crate::bevy_ryot::map::MapTiles;
 pub use commands::*;
 
 pub struct DrawingPlugin;
