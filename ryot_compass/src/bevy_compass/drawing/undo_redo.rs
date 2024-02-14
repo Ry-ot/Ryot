@@ -10,7 +10,7 @@ use std::ops::Deref;
 /// Currently, it only contains a timer that is used to control the speed of the undo/redo actions.
 /// The default cooldown for undo/redo is 100ms.
 #[derive(Resource)]
-pub(super) struct UndoRedoConfig {
+pub struct UndoRedoConfig {
     timer: Timer,
 }
 

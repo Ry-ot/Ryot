@@ -108,8 +108,6 @@ impl Minimap {
                     let x = x / (self.map_size.x / self.texture_size.width);
                     let y = y / (self.map_size.y / self.texture_size.height);
 
-                    // println!("{} {}", x, y);
-
                     let pixel_index = (y * self.texture_size.width + x) as usize * 4;
                     if pixel_index < data.len() {
                         // Example: Setting the pixel to white
