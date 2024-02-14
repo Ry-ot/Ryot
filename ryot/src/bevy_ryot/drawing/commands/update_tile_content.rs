@@ -1,4 +1,7 @@
-use crate::bevy_ryot::drawing::{commands::*, *};
+use crate::bevy_ryot::{
+    drawing::{commands::*, *},
+    map::MapTiles,
+};
 use bevy::ecs::system::EntityCommand;
 
 /// A command that updates the content of a tile. An entity location is represented by the

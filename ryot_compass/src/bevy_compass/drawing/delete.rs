@@ -3,6 +3,7 @@ use bevy::ecs::query::ReadOnlyWorldQuery;
 use bevy::ecs::schedule::SystemConfigs;
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
+use ryot::bevy_ryot::map::MapTiles;
 use ryot::bevy_ryot::*;
 use ryot::prelude::{drawing::*, layer::*, position::*};
 

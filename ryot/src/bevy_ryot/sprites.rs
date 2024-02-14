@@ -152,7 +152,7 @@ pub(crate) fn load_sprite_sheets_from_command<C: ContentAssets>(
 }
 
 /// A system that handles the loading of sprite sheets.
-/// It listens to the SpriteSheetTextureWasLoaded event, adds the loaded texture atlas to the   
+/// It listens to the SpriteSheetTextureWasLoaded event, adds the loaded texture atlas to the
 /// atlas handles resource and stores the handle to the atlas.
 pub(crate) fn store_atlases_assets_after_loading<C: PreloadedContentAssets>(
     mut content_assets: ResMut<C>,

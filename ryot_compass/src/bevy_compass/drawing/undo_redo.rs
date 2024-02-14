@@ -1,6 +1,7 @@
 use crate::DrawingAction;
 use bevy::ecs::schedule::SystemConfigs;
 use bevy::prelude::*;
+use ryot::bevy_ryot::map::MapTiles;
 use ryot::bevy_ryot::*;
 use ryot::prelude::drawing::*;
 use std::ops::Deref;

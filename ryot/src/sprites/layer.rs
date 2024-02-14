@@ -1,4 +1,5 @@
 use bevy::prelude::*;
+use serde::{Deserialize, Serialize};
 
 /// This enum defines the layers that composes a game.
 /// The base layers are defined in the enum and custom layers can be added.
@@ -8,7 +9,7 @@ use bevy::prelude::*;
 ///    position in the grid.
 ///    - Fixed layers are used for elements that have a fixed rendering order and are always
 ///    rendered on top of dynamic layers.
-#[derive(Eq, Hash, PartialEq, Debug, Copy, Clone)]
+#[derive(Eq, Hash, PartialEq, Debug, Copy, Clone, Serialize, Deserialize)]
 #[cfg_attr(feature = "bevy", derive(Component, Reflect))]
 pub enum Layer {
     Fixed(i32),
