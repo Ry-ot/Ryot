@@ -74,9 +74,13 @@ impl BrushItem for DrawingBundle {
 }
 
 impl DrawingBundle {
-    pub fn new(layer: Layer, tile_pos: TilePosition, appearance: AppearanceDescriptor) -> Self {
+    pub fn new(
+        layer: impl Into<Layer>,
+        tile_pos: TilePosition,
+        appearance: AppearanceDescriptor,
+    ) -> Self {
         Self {
-            layer,
+            layer: layer.into(),
             tile_pos,
             appearance,
             tile: Tile,
@@ -91,32 +95,29 @@ impl DrawingBundle {
         }
     }
 
-    pub fn object(layer: Layer, tile_pos: TilePosition, id: u32) -> Self {
+    pub fn object(layer: impl Into<Layer>, tile_pos: TilePosition, id: u32) -> Self {
         Self::new(layer, tile_pos, AppearanceDescriptor::object(id))
     }
 
-    pub fn creature(tile_pos: TilePosition, id: u32, frame_group_index: FixedFrameGroup) -> Self {
+    pub fn creature(
+        layer: impl Into<Layer>,
+        tile_pos: TilePosition,
+        id: u32,
+        frame_group_index: FixedFrameGroup,
+    ) -> Self {
         Self::new(
-            CipLayer::Creature.into(),
+            layer,
             tile_pos,
             AppearanceDescriptor::outfit(id, frame_group_index),
         )
     }
 
-    pub fn effect(tile_pos: TilePosition, id: u32) -> Self {
-        Self::new(
-            CipLayer::Effect.into(),
-            tile_pos,
-            AppearanceDescriptor::effect(id),
-        )
+    pub fn effect(layer: impl Into<Layer>, tile_pos: TilePosition, id: u32) -> Self {
+        Self::new(layer, tile_pos, AppearanceDescriptor::effect(id))
     }
 
-    pub fn missile(tile_pos: TilePosition, id: u32) -> Self {
-        Self::new(
-            CipLayer::Top.into(),
-            tile_pos,
-            AppearanceDescriptor::missile(id),
-        )
+    pub fn missile(layer: impl Into<Layer>, tile_pos: TilePosition, id: u32) -> Self {
+        Self::new(layer, tile_pos, AppearanceDescriptor::missile(id))
     }
 
     pub fn with_position(mut self, tile_pos: TilePosition) -> Self {
@@ -129,8 +130,8 @@ impl DrawingBundle {
         self
     }
 
-    pub fn with_layer(mut self, layer: Layer) -> Self {
-        self.layer = layer;
+    pub fn with_layer(mut self, layer: impl Into<Layer>) -> Self {
+        self.layer = layer.into();
         self
     }
 }
@@ -148,7 +149,7 @@ pub struct MovementBundle {
 }
 
 impl MovementBundle {
-    pub fn from_drawing(
+    pub fn new(
         drawing: DrawingBundle,
         start: TilePosition,
         end: TilePosition,
@@ -164,19 +165,36 @@ impl MovementBundle {
     pub fn object(
         start: TilePosition,
         end: TilePosition,
-        layer: Layer,
+        layer: impl Into<Layer>,
         id: u32,
         duration: Duration,
     ) -> Self {
-        Self::from_drawing(DrawingBundle::object(layer, end, id), start, end, duration)
+        Self::new(DrawingBundle::object(layer, end, id), start, end, duration)
     }
 
-    pub fn missile(start: TilePosition, end: TilePosition, id: u32, duration: Duration) -> Self {
-        Self::from_drawing(DrawingBundle::missile(end, id), start, end, duration)
+    pub fn missile(
+        layer: impl Into<Layer>,
+        start: TilePosition,
+        end: TilePosition,
+        id: u32,
+        duration: Duration,
+    ) -> Self {
+        Self::new(
+            DrawingBundle::missile(layer.into(), end, id),
+            start,
+            end,
+            duration,
+        )
     }
 
-    pub fn effect(start: TilePosition, end: TilePosition, id: u32, duration: Duration) -> Self {
-        Self::from_drawing(DrawingBundle::effect(end, id), start, end, duration)
+    pub fn effect(
+        layer: impl Into<Layer>,
+        start: TilePosition,
+        end: TilePosition,
+        id: u32,
+        duration: Duration,
+    ) -> Self {
+        Self::new(DrawingBundle::effect(layer, end, id), start, end, duration)
     }
 
     pub fn sticky(self) -> Self {
