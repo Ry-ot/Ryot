@@ -1,24 +1,15 @@
-use crate::{GetKey, Item, Tile};
-use ryot::position::TilePosition;
-use std::collections::HashMap;
+use crate::{GetKey, Tile};
+use ryot::position::{Edges, TilePosition};
 
 #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
 mod items_from_heed_lmdb;
 
 #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
 pub use items_from_heed_lmdb::ItemsFromHeedLmdb;
-use ryot::layer::Layer;
 
 pub trait ItemRepository {
-    fn get_for_area(
-        &self,
-        initial_pos: &TilePosition,
-        final_pos: &TilePosition,
-    ) -> crate::Result<Vec<(Vec<u8>, HashMap<Layer, Item>)>>;
-    fn get_for_keys(
-        &self,
-        keys: Vec<Vec<u8>>,
-    ) -> crate::Result<Vec<(Vec<u8>, HashMap<Layer, Item>)>>;
+    fn get_for_area(&self, edges: &Edges) -> crate::Result<Vec<Tile>>;
+    fn get_for_keys(&self, keys: Vec<Vec<u8>>) -> crate::Result<Vec<Tile>>;
     fn save_from_tiles(&self, items: Vec<Tile>) -> crate::Result<()>;
 }
 

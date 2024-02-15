@@ -7,13 +7,11 @@ use crate::layer::*;
 use crate::position::{Edges, SpriteMovement, TilePosition};
 use bevy::prelude::*;
 use bevy::render::view::{check_visibility, VisibilitySystems, VisibleEntities};
-use time_test::time_test;
 
 mod brushes;
 pub use brushes::*;
 
 mod commands;
-use crate::bevy_ryot::map::MapTiles;
 pub use commands::*;
 
 pub struct DrawingPlugin;
@@ -288,8 +286,6 @@ fn update_detail_level(
     mut q_visible_entities: Query<(&mut VisibleEntities, &Edges), (With<Camera>, Changed<Edges>)>,
     mut tiles_query: Query<(&mut ViewVisibility, &Layer), (Without<Deleted>, With<Tile>)>,
 ) {
-    time_test!("Update detail level");
-
     for (mut visible_entities, edges) in q_visible_entities.iter_mut() {
         info!("visible_entities: {}", visible_entities.entities.len());
         let detail_level = DetailLevel::from_area(edges.area());

@@ -4,7 +4,7 @@ use heed::types::Bytes;
 use rayon::prelude::*;
 use ryot::layer::Layer;
 use ryot::lmdb;
-use ryot::position::TilePosition;
+use ryot::position::{Edges, TilePosition};
 use ryot::prelude::{DatabaseName, SerdePostcard};
 use std::collections::HashMap;
 
@@ -20,17 +20,13 @@ impl ItemsFromHeedLmdb {
 }
 
 impl ItemRepository for ItemsFromHeedLmdb {
-    fn get_for_area(
-        &self,
-        initial_pos: &TilePosition,
-        final_pos: &TilePosition,
-    ) -> crate::Result<Vec<(Vec<u8>, HashMap<Layer, Item>)>> {
-        let chunks = get_chunks_per_z(initial_pos, final_pos);
+    fn get_for_area(&self, edges: &Edges) -> crate::Result<Vec<Tile>> {
+        let chunks = get_chunks_per_z(edges);
 
-        let result: Vec<(Vec<u8>, HashMap<Layer, Item>)> = chunks
+        let result: Vec<Tile> = chunks
             .par_iter()
-            .flat_map(|(start, end)| {
-                self.get_for_keys(build_keys_for_area(*start, *end))
+            .flat_map(|edges| {
+                self.get_for_keys(build_keys_for_area(edges.min, edges.max))
                     .unwrap_or_else(|_| Vec::new())
             })
             .collect();
@@ -38,10 +34,7 @@ impl ItemRepository for ItemsFromHeedLmdb {
         Ok(result)
     }
 
-    fn get_for_keys(
-        &self,
-        keys: Vec<Vec<u8>>,
-    ) -> crate::Result<Vec<(Vec<u8>, HashMap<Layer, Item>)>> {
+    fn get_for_keys(&self, keys: Vec<Vec<u8>>) -> crate::Result<Vec<Tile>> {
         let mut tiles = vec![];
 
         let (rtxn, rodb) =
@@ -50,7 +43,7 @@ impl ItemRepository for ItemsFromHeedLmdb {
         for key in keys {
             let tile: Option<HashMap<Layer, Item>> = rodb.get(&rtxn, &key)?;
             if let Some(tile) = tile {
-                tiles.push((key.clone(), tile));
+                tiles.push(Tile::new(TilePosition::from_binary_key(&key), tile));
             }
         }
 

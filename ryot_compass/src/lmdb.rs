@@ -1,5 +1,5 @@
 use crate::item::ItemRepository;
-use crate::{build_map, create_and_send_update_command, Cursor, GetKey};
+use crate::{build_map, create_and_send_update_command, Cursor};
 use bevy::prelude::{
     Camera, Changed, Commands, Deref, DerefMut, IVec2, Query, ResMut, Resource, Visibility, With,
     Without,
@@ -38,14 +38,13 @@ pub fn read_area(
 
     time_test!("Reading");
     let item_repository = crate::item::ItemsFromHeedLmdb::new(env.clone());
-    let area = item_repository.get_for_area(&min, &max).unwrap();
+    let area = item_repository.get_for_area(&Edges::new(min, max)).unwrap();
 
-    for (key, item) in area {
-        let tile_pos = TilePosition::from_binary_key(&key);
-        for (layer, item) in item {
+    for tile in area {
+        for (layer, item) in tile.items {
             let bundle = DrawingBundle::new(
                 layer,
-                tile_pos,
+                tile.position,
                 AppearanceDescriptor::object(item.id as u32),
             );
 
@@ -80,7 +79,7 @@ pub fn lmdb_example() -> Result<(), Box<dyn std::error::Error>> {
 
     {
         time_test!("Reading");
-        let area = item_repository.get_for_area(&initial_pos, &final_pos)?;
+        let area = item_repository.get_for_area(&Edges::new(initial_pos, final_pos))?;
         println!("Count: {}", area.len());
     }
 
