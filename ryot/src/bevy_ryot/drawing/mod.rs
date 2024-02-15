@@ -294,7 +294,9 @@ fn apply_detail_level_to_visibility(
             .iter()
             .filter_map(|entity| {
                 let Ok((mut view_visibility, layer)) = tiles_query.get_mut(*entity) else {
-                    return None;
+                    // If no tile is found we cannot infer anything about the detail level, so we
+                    // just keep the entity visible.
+                    return Some(*entity);
                 };
 
                 if !detail_level.is_layer_visible(layer) {
