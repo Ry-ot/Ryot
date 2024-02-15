@@ -1,9 +1,13 @@
+use std::ops::Deref;
+
 use glam::IVec2;
 use serde::{Deserialize, Serialize};
 use strum::EnumIter;
 
 #[cfg(feature = "bevy")]
 use bevy::ecs::component::Component;
+
+use crate::position::TilePosition;
 
 #[derive(Hash, PartialEq, Eq, Clone, Copy, Default, Debug)]
 #[cfg_attr(feature = "bevy", derive(Serialize, Deserialize))]
@@ -87,7 +91,7 @@ impl From<OrdinalDirection> for IVec2 {
 
 impl From<IVec2> for OrdinalDirection {
     fn from(value: IVec2) -> Self {
-        match value {
+        match value.clamp(IVec2::splat(-1), IVec2::splat(1)) {
             IVec2 { x: 0, y: 1 } => OrdinalDirection::North,
             IVec2 { x: 1, y: 1 } => OrdinalDirection::NorthEast,
             IVec2 { x: 1, y: 0 } => OrdinalDirection::East,
@@ -98,6 +102,12 @@ impl From<IVec2> for OrdinalDirection {
             IVec2 { x: -1, y: 1 } => OrdinalDirection::NorthWest,
             _ => OrdinalDirection::None,
         }
+    }
+}
+
+impl From<TilePosition> for OrdinalDirection {
+    fn from(value: TilePosition) -> Self {
+        value.deref().truncate().into()
     }
 }
 
