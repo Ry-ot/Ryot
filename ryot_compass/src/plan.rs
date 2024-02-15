@@ -46,7 +46,11 @@ pub struct Tile {
 }
 
 impl Tile {
-    pub fn new(position: TilePosition) -> Self {
+    pub fn new(position: TilePosition, items: HashMap<Layer, Item>) -> Self {
+        Self { position, items }
+    }
+
+    pub fn from_pos(position: TilePosition) -> Self {
         Self {
             position,
             ..Default::default()

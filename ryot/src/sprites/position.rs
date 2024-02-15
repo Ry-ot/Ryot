@@ -166,6 +166,10 @@ impl fmt::Display for Edges {
 }
 
 impl Edges {
+    pub fn new(min: TilePosition, max: TilePosition) -> Self {
+        Self { min, max }
+    }
+
     pub fn from_transform_and_projection(
         transform: &Transform,
         projection: &OrthographicProjection,
