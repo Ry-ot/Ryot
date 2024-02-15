@@ -1,5 +1,3 @@
-use crate::build_map;
-use crate::item::ItemRepository;
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::{Camera, Changed, Commands, Local, Query, Res, ResMut, With};
 use heed::Env;
@@ -7,6 +5,7 @@ use log::error;
 use ryot::bevy_ryot::drawing::UpdateTileContent;
 use ryot::bevy_ryot::map::MapTiles;
 use ryot::lmdb;
+use ryot::lmdb::{build_map, ItemRepository, ItemsFromHeedLmdb};
 use ryot::position::{Sector, TilePosition};
 use ryot::prelude::drawing::DrawingBundle;
 use ryot::prelude::lmdb::LmdbEnv;
@@ -35,7 +34,7 @@ pub fn read_area(
 
 pub fn load_area(sector: Sector, env: Env, commands: &mut Commands, tiles: &Res<MapTiles>) {
     time_test!("Reading");
-    let item_repository = crate::item::ItemsFromHeedLmdb::new(env);
+    let item_repository = ItemsFromHeedLmdb::new(env);
 
     match item_repository.get_for_area(&sector) {
         Ok(area) => {
@@ -67,7 +66,7 @@ pub fn load_area(sector: Sector, env: Env, commands: &mut Commands, tiles: &Res<
 
 pub fn lmdb_example() -> Result<(), Box<dyn std::error::Error>> {
     let env = lmdb::create_env(lmdb::get_storage_path())?;
-    let item_repository = crate::item::ItemsFromHeedLmdb::new(env.clone());
+    let item_repository = ItemsFromHeedLmdb::new(env.clone());
     let z_size = 1;
 
     let map = {

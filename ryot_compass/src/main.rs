@@ -9,6 +9,8 @@ mod error_handling;
 use ryot::prelude::*;
 
 #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
+use ryot::prelude::lmdb::LmdbEnv;
+#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
 use ryot_compass::read_area;
 
 use ryot_compass::{
@@ -22,7 +24,6 @@ use bevy::diagnostic::{
     SystemInformationDiagnosticsPlugin,
 };
 use bevy::window::PrimaryWindow;
-use ryot::prelude::lmdb::LmdbEnv;
 
 fn set_window_icon(
     windows: NonSend<WinitWindows>,

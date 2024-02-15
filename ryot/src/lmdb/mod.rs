@@ -1,9 +1,20 @@
-use heed::{CompactionOption, Env, EnvOpenOptions, Error, RoTxn, RwTxn};
+use heed::{CompactionOption, Env, EnvOpenOptions, RoTxn, RwTxn};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+pub mod error;
+
+mod generator;
+pub use generator::*;
+
+mod plan;
+pub use plan::*;
+
 mod serde;
 pub use serde::*;
+
+mod item_repository;
+pub use item_repository::*;
 
 #[derive(Debug, Clone, Copy)]
 pub enum DatabaseName {
@@ -19,7 +30,7 @@ impl DatabaseName {
 }
 
 pub const MDB_FILE_NAME: &str = "data.mdb";
-pub fn create_env(path: PathBuf) -> heed::Result<Env> {
+pub fn create_env(path: PathBuf) -> error::Result<Env> {
     fs::create_dir_all(path)?;
 
     let env = EnvOpenOptions::new()
@@ -33,7 +44,7 @@ pub fn create_env(path: PathBuf) -> heed::Result<Env> {
 pub fn rw<K: 'static, V: 'static>(
     env: &Env,
     name: DatabaseName,
-) -> heed::Result<(RwTxn, heed::Database<K, V>)> {
+) -> error::Result<(RwTxn, heed::Database<K, V>)> {
     let mut wtxn = env.write_txn()?;
     let db = env.create_database::<K, V>(&mut wtxn, Some(name.get_name()))?;
     Ok((wtxn, db))
@@ -42,17 +53,19 @@ pub fn rw<K: 'static, V: 'static>(
 pub fn ro<K: 'static, V: 'static>(
     env: &Env,
     name: DatabaseName,
-) -> heed::Result<(RoTxn, heed::Database<K, V>)> {
+) -> error::Result<(RoTxn, heed::Database<K, V>)> {
     let rtxn = env.read_txn()?;
     let db = env.open_database::<K, V>(&rtxn, Some(name.get_name()))?;
 
     match db {
         Some(db) => Ok((rtxn, db)),
-        None => Err(Error::InvalidDatabaseTyping),
+        None => Err(error::Error::DatabaseError(
+            heed::Error::InvalidDatabaseTyping,
+        )),
     }
 }
 
-pub fn compact() -> heed::Result<()> {
+pub fn compact() -> error::Result<()> {
     let env = create_env(get_storage_path())?;
     let backup_path = get_storage_path().join(MDB_FILE_NAME.to_string() + ".bkp");
     let old_path = get_storage_path().join(MDB_FILE_NAME);

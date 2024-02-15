@@ -1,12 +1,30 @@
-use crate::item::{build_keys_for_area, ItemRepository};
-use crate::{get_chunks_per_z, GetKey, Item, Tile};
+use crate::layer::Layer;
+use crate::lmdb;
+use crate::lmdb::*;
+use crate::position::{Sector, TilePosition};
 use heed::types::Bytes;
 use rayon::prelude::*;
-use ryot::layer::Layer;
-use ryot::lmdb;
-use ryot::position::{Sector, TilePosition};
-use ryot::prelude::{DatabaseName, SerdePostcard};
 use std::collections::HashMap;
+
+pub fn build_keys_for_area(initial_pos: TilePosition, final_pos: TilePosition) -> Vec<Vec<u8>> {
+    let mut keys = vec![];
+
+    for x in initial_pos.x..=final_pos.x {
+        for y in initial_pos.y..=final_pos.y {
+            for z in initial_pos.z..=final_pos.z {
+                keys.push(TilePosition::new(x, y, z).get_binary_key());
+            }
+        }
+    }
+
+    keys
+}
+
+pub trait ItemRepository {
+    fn get_for_area(&self, sector: &Sector) -> error::Result<Vec<Tile>>;
+    fn get_for_keys(&self, keys: Vec<Vec<u8>>) -> error::Result<Vec<Tile>>;
+    fn save_from_tiles(&self, items: Vec<Tile>) -> error::Result<()>;
+}
 
 #[derive(Clone)]
 pub struct ItemsFromHeedLmdb {
@@ -20,7 +38,7 @@ impl ItemsFromHeedLmdb {
 }
 
 impl ItemRepository for ItemsFromHeedLmdb {
-    fn get_for_area(&self, sector: &Sector) -> crate::Result<Vec<Tile>> {
+    fn get_for_area(&self, sector: &Sector) -> error::Result<Vec<Tile>> {
         let chunks = get_chunks_per_z(sector);
 
         let result: Vec<Tile> = chunks
@@ -34,7 +52,7 @@ impl ItemRepository for ItemsFromHeedLmdb {
         Ok(result)
     }
 
-    fn get_for_keys(&self, keys: Vec<Vec<u8>>) -> crate::Result<Vec<Tile>> {
+    fn get_for_keys(&self, keys: Vec<Vec<u8>>) -> error::Result<Vec<Tile>> {
         let mut tiles = vec![];
 
         let (rtxn, rodb) =
@@ -52,7 +70,7 @@ impl ItemRepository for ItemsFromHeedLmdb {
         Ok(tiles)
     }
 
-    fn save_from_tiles(&self, tiles: Vec<Tile>) -> crate::Result<()> {
+    fn save_from_tiles(&self, tiles: Vec<Tile>) -> error::Result<()> {
         let (mut wtxn, db) =
             lmdb::rw::<Bytes, SerdePostcard<HashMap<Layer, Item>>>(&self.env, DatabaseName::Tiles)?;
 

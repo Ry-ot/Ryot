@@ -1,6 +1,6 @@
 use crate::prelude::*;
-use std::fs;
 use std::path::{Path, PathBuf};
+use std::{fs, result};
 
 /// Builder for content.
 /// Builds the necessary content for the game to run from the original content folder.
@@ -37,7 +37,7 @@ impl ContentBuild {
         }
     }
 
-    pub fn run(self) -> Result<(), std::io::Error> {
+    pub fn run(self) -> result::Result<(), std::io::Error> {
         println!("cargo:warning=Running content build {:?}", self);
 
         let path = self
@@ -88,7 +88,10 @@ impl ContentBuild {
     }
 }
 
-fn copy_catalog(source_path: &Path, destination_path: &Path) -> Result<u64, std::io::Error> {
+fn copy_catalog(
+    source_path: &Path,
+    destination_path: &Path,
+) -> result::Result<u64, std::io::Error> {
     let file_name = "catalog-content.json";
 
     fs::copy(
@@ -97,7 +100,10 @@ fn copy_catalog(source_path: &Path, destination_path: &Path) -> Result<u64, std:
     )
 }
 
-fn copy_appearances(source_path: &Path, destination_path: &Path) -> Result<(), std::io::Error> {
+fn copy_appearances(
+    source_path: &Path,
+    destination_path: &Path,
+) -> result::Result<(), std::io::Error> {
     let entries = fs::read_dir(source_path)?;
 
     for entry in entries {
@@ -122,7 +128,7 @@ fn copy_appearances(source_path: &Path, destination_path: &Path) -> Result<(), s
     Ok(())
 }
 
-fn decompress_sprites(content_configs: ContentConfigs) -> Result<(), std::io::Error> {
+fn decompress_sprites(content_configs: ContentConfigs) -> result::Result<(), std::io::Error> {
     let ContentConfigs { directories, .. } = content_configs.clone();
 
     let files = fs::read_dir(directories.source_path)?
