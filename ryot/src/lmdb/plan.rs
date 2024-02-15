@@ -1,4 +1,4 @@
-use ryot::lmdb::{Header, House, RegionType, Spawn, Tile, Town, Waypoint, Zone};
+use crate::lmdb::{Header, House, RegionType, Spawn, Tile, Town, Waypoint, Zone};
 
 #[derive(Debug)]
 pub enum MapComponent {

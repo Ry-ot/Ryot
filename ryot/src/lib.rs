@@ -64,8 +64,6 @@ pub mod prelude {
     pub use crate::compression::{compress, decompress, Compression, Zstd};
     pub use crate::content::*;
     pub use crate::directional::*;
-    #[cfg(feature = "lmdb")]
-    pub use crate::lmdb::*;
     pub use crate::position::*;
     pub use crate::sprites::*;
 }

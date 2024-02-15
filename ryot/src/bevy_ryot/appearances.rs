@@ -11,6 +11,8 @@ use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
 use bevy::utils::HashMap;
 use prost::Message;
+use serde::{Deserialize, Serialize};
+use std::result;
 use thiserror::Error;
 
 /// A plugin to register the Appearance asset and its loader.
@@ -55,7 +57,7 @@ impl AssetLoader for AppearanceAssetLoader {
         reader: &'a mut Reader,
         _settings: &'a Self::Settings,
         _load_context: &'a mut LoadContext,
-    ) -> BoxedFuture<'a, Result<Self::Asset, Self::Error>> {
+    ) -> BoxedFuture<'a, result::Result<Self::Asset, Self::Error>> {
         Box::pin(async move {
             let mut bytes = Vec::new();
             reader.read_to_end(&mut bytes).await?;
