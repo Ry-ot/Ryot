@@ -1,7 +1,10 @@
+use std::time::Duration;
+
 use crate::appearances::{self, FixedFrameGroup};
 use crate::bevy_ryot::{AppearanceDescriptor, InternalContentState};
+use crate::directional::*;
 use crate::layer::*;
-use crate::position::{Edges, TilePosition};
+use crate::position::{Edges, SpriteMovement, TilePosition};
 use bevy::prelude::*;
 
 mod brushes;
@@ -124,6 +127,28 @@ impl DrawingBundle {
     pub fn with_layer(mut self, layer: Layer) -> Self {
         self.layer = layer;
         self
+    }
+}
+
+/// A bundle that represents a missile entity going from one position to another.
+/// The MissileBundle is a special case of the DrawingBundle, where the entity is drawn
+/// in the top layer and it has a start and end position along with a duration.
+/// The missile is drawn from the start position to the end position over the duration.
+/// The missile is removed from the map when the duration is over.
+#[derive(Bundle, Debug, Clone)]
+pub struct MissileBundle {
+    pub drawing: DrawingBundle,
+    pub movement: SpriteMovement,
+    pub direction: Directional,
+}
+
+impl MissileBundle {
+    pub fn new(start: TilePosition, end: TilePosition, id: u32, duration: Duration) -> Self {
+        Self {
+            drawing: DrawingBundle::missile(end, id),
+            movement: SpriteMovement::new(start, duration).delete_on_end(true),
+            direction: Directional::Ordinal(OrdinalDirection::from(end - start)),
+        }
     }
 }
 
