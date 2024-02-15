@@ -11,17 +11,9 @@ use ryot::bevy_ryot::map::MapTiles;
 use ryot::lmdb;
 use ryot::position::{Sector, TilePosition};
 use ryot::prelude::drawing::DrawingBundle;
+use ryot::prelude::lmdb::LmdbEnv;
 use ryot::prelude::{compress, decompress, AppearanceDescriptor, Zstd};
 use time_test::time_test;
-
-#[derive(Resource, Deref, DerefMut)]
-pub struct LmdbEnv(pub Env);
-
-impl Default for LmdbEnv {
-    fn default() -> Self {
-        Self(lmdb::create_env(lmdb::get_storage_path()).expect("Failed to create LMDB env"))
-    }
-}
 
 pub fn read_area(
     tiles: Res<MapTiles>,

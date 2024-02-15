@@ -13,6 +13,9 @@ use std::marker::PhantomData;
 mod async_events;
 pub use async_events::*;
 
+#[cfg(feature = "lmdb")]
+pub mod lmdb;
+
 pub mod map;
 
 pub mod drawing;
