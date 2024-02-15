@@ -36,7 +36,7 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - name: Build & run tests
-        run: cargo test
+        run: cargo test --all-features
   all-doc-tests:
     runs-on: ubuntu-latest
     steps:
