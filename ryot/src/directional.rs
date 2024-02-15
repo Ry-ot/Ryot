@@ -9,8 +9,7 @@ use bevy::ecs::component::Component;
 
 use crate::position::TilePosition;
 
-#[derive(Hash, PartialEq, Eq, Clone, Copy, Default, Debug)]
-#[cfg_attr(feature = "bevy", derive(Serialize, Deserialize))]
+#[derive(Hash, PartialEq, Eq, Clone, Copy, Default, Debug, Serialize, Deserialize)]
 pub enum CardinalDirection {
     #[default]
     North,
@@ -31,8 +30,7 @@ impl From<IVec2> for CardinalDirection {
     }
 }
 
-#[derive(Hash, PartialEq, Eq, EnumIter, Default, Clone, Copy, Debug)]
-#[cfg_attr(feature = "bevy", derive(Serialize, Deserialize))]
+#[derive(Hash, PartialEq, Eq, EnumIter, Default, Clone, Copy, Debug, Serialize, Deserialize)]
 pub enum OrdinalDirection {
     NorthWest,
     North,
@@ -111,8 +109,8 @@ impl From<TilePosition> for OrdinalDirection {
     }
 }
 
-#[derive(Hash, PartialEq, Eq, Clone, Copy, Debug)]
-#[cfg_attr(feature = "bevy", derive(Component, Serialize, Deserialize))]
+#[derive(Hash, PartialEq, Eq, Clone, Copy, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "bevy", derive(Component))]
 pub enum Directional {
     Cardinal(CardinalDirection),
     Ordinal(OrdinalDirection),
