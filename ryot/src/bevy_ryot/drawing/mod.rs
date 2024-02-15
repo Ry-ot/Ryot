@@ -22,7 +22,7 @@ impl Plugin for DrawingPlugin {
             .register_type::<Layer>()
             .add_systems(
                 PostUpdate,
-                update_detail_level
+                apply_detail_level_to_visibility
                     .in_set(VisibilitySystems::CheckVisibility)
                     .after(check_visibility)
                     .run_if(in_state(InternalContentState::Ready)),
@@ -282,12 +282,11 @@ impl From<Option<appearances::AppearanceFlags>> for Layer {
     }
 }
 
-fn update_detail_level(
-    mut q_visible_entities: Query<(&mut VisibleEntities, &Edges), (With<Camera>, Changed<Edges>)>,
+fn apply_detail_level_to_visibility(
+    mut q_visible_entities: Query<(&mut VisibleEntities, &Edges), With<Camera>>,
     mut tiles_query: Query<(&mut ViewVisibility, &Layer), (Without<Deleted>, With<Tile>)>,
 ) {
     for (mut visible_entities, edges) in q_visible_entities.iter_mut() {
-        info!("visible_entities: {}", visible_entities.entities.len());
         let detail_level = DetailLevel::from_area(edges.area());
 
         let entities = visible_entities
