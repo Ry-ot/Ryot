@@ -37,8 +37,6 @@ pub struct CommandHistory {
 
 #[derive(Debug, Copy, Clone, Reflect, Component)]
 pub struct Deleted;
-#[derive(Debug, Copy, Clone, Reflect, Component)]
-pub struct InTheScreen;
 
 pub enum CommandType {
     Batch(CommandBatchSize),

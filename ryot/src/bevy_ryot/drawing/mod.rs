@@ -6,6 +6,8 @@ use crate::directional::*;
 use crate::layer::*;
 use crate::position::{Edges, SpriteMovement, TilePosition};
 use bevy::prelude::*;
+use bevy::render::view::{check_visibility, VisibilitySystems, VisibleEntities};
+use time_test::time_test;
 
 mod brushes;
 pub use brushes::*;
@@ -21,9 +23,10 @@ impl Plugin for DrawingPlugin {
         app.init_resource::<Layers>()
             .register_type::<Layer>()
             .add_systems(
-                Update,
-                (reset_screen, update_detail_level)
-                    .chain()
+                PostUpdate,
+                update_detail_level
+                    .in_set(VisibilitySystems::CheckVisibility)
+                    .after(check_visibility)
                     .run_if(in_state(InternalContentState::Ready)),
             );
     }
@@ -281,56 +284,32 @@ impl From<Option<appearances::AppearanceFlags>> for Layer {
     }
 }
 
-fn reset_screen(
-    mut commands: Commands,
-    edges_changed: Query<Changed<Edges>>,
-    mut in_the_screen_query: Query<(Entity, &mut Visibility), With<InTheScreen>>,
-) {
-    for changed in edges_changed.iter() {
-        if !changed {
-            continue;
-        }
-
-        for (entity, mut visibility) in in_the_screen_query.iter_mut() {
-            *visibility = Visibility::Hidden;
-            commands.entity(entity).remove::<InTheScreen>();
-        }
-    }
-}
-
 fn update_detail_level(
-    mut commands: Commands,
-    tiles: Res<MapTiles>,
-    edges_query: Query<&Edges, (With<Camera>, Changed<Edges>)>,
-    mut tiles_query: Query<&mut Visibility, (Without<Deleted>, With<Tile>)>,
+    mut q_visible_entities: Query<(&mut VisibleEntities, &Edges), (With<Camera>, Changed<Edges>)>,
+    mut tiles_query: Query<(&mut ViewVisibility, &Layer), (Without<Deleted>, With<Tile>)>,
 ) {
-    for edges in edges_query.iter() {
+    time_test!("Update detail level");
+
+    for (mut visible_entities, edges) in q_visible_entities.iter_mut() {
+        info!("visible_entities: {}", visible_entities.entities.len());
         let detail_level = DetailLevel::from_area(edges.area());
 
-        let size = edges.size() / IVec2::new(20, 20);
-
-        for x in (edges.min.x - size.x)..=(edges.max.x + size.x) {
-            for y in (edges.min.y - size.y)..=(edges.max.y + size.y) {
-                let tile_pos = TilePosition::new(x, y, 0);
-
-                let Some(tile_content) = tiles.get(&tile_pos) else {
-                    continue;
+        let entities = visible_entities
+            .entities
+            .iter()
+            .filter_map(|entity| {
+                let Ok((mut view_visibility, layer)) = tiles_query.get_mut(*entity) else {
+                    return None;
                 };
 
-                for (layer, entity) in tile_content.iter() {
-                    let Ok(mut visibility) = tiles_query.get_mut(*entity) else {
-                        continue;
-                    };
-
-                    if !detail_level.is_layer_visible(layer) {
-                        *visibility = Visibility::Hidden;
-                        continue;
-                    }
-
-                    *visibility = Visibility::Visible;
-                    commands.entity(*entity).insert(InTheScreen);
+                if !detail_level.is_layer_visible(layer) {
+                    *view_visibility = ViewVisibility::HIDDEN;
                 }
-            }
-        }
+
+                Some(*entity)
+            })
+            .collect::<Vec<_>>();
+
+        visible_entities.entities = entities;
     }
 }
