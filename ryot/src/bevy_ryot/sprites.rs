@@ -18,6 +18,12 @@ pub(crate) struct SpriteSheetTextureWasLoaded {
     pub atlas: TextureAtlas,
 }
 
+/// An even that is sent when a sprite sheet is requested to be loaded.
+#[derive(Debug, Clone, Event)]
+pub struct LoadSpriteBatch {
+    pub sprite_ids: Vec<u32>,
+}
+
 /// A component that holds the loaded sprites in a vector.
 #[derive(Component, Debug, Clone, Default)]
 pub struct LoadedSprites(pub Vec<LoadedSprite>);
@@ -49,13 +55,6 @@ pub struct AnimationSprite {
 #[derive(Component, Default)]
 pub struct AnimationDuration(pub Duration);
 
-/// Struct that represents sprites that were requested but are not yet loaded.
-/// This resource will be consumed by the sprite loading system and cleaned up.
-#[derive(Debug, Default, Resource)]
-pub struct SpritesToBeLoaded {
-    pub sprite_ids: StableHashSet<u32>,
-}
-
 impl LoadedSprite {
     pub fn new(
         group: AppearanceGroup,
@@ -86,13 +85,13 @@ impl LoadedSprite {
 }
 
 /// A system helper that gets the LoadedSprite from the resources.
-/// If the sprite sheet is not loaded yet, it adds the sprite to SpritesToBeLoaded resource
+/// If the sprite sheet is not loaded yet, it emits a LoadSpriteBatch event.
 /// It returns only the loaded sprites.
 pub fn load_sprites<C: ContentAssets>(
     group: AppearanceGroup,
     sprite_ids: &[u32],
     content_assets: &Res<C>,
-    sprites_to_be_loaded: &mut ResMut<SpritesToBeLoaded>,
+    load_sprite_batch_events: &mut EventWriter<LoadSpriteBatch>,
 ) -> Vec<LoadedSprite> {
     let Some(sprite_sheets) = content_assets.sprite_sheet_data_set() else {
         warn!("No sprite sheets loaded");
@@ -120,35 +119,40 @@ pub fn load_sprites<C: ContentAssets>(
             }
             None => {
                 to_be_loaded.push(*sprite_id);
-                sprites_to_be_loaded.sprite_ids.insert(*sprite_id);
             }
         }
     }
 
+    load_sprite_batch_events.send(LoadSpriteBatch {
+        sprite_ids: to_be_loaded,
+    });
+
     loaded
 }
 
-/// A system that listens to the Checks the SpritesToBeLoaded, loads the sprite sheet
+/// A system that listens to the LoadSpriteBatch event and loads the sprite sheets
 /// from the '.png' files and sends the SpriteSheetTextureWasLoaded event once it's done.
 pub(crate) fn load_sprite_sheets_from_command<C: ContentAssets>(
     content_assets: Res<C>,
     asset_server: Res<AssetServer>,
-    mut sprites_to_be_loaded: ResMut<SpritesToBeLoaded>,
+    mut load_sprite_batch_events: EventReader<LoadSpriteBatch>,
     mut sprite_sheet_texture_was_loaded: EventWriter<SpriteSheetTextureWasLoaded>,
 ) {
     let Some(sprite_sheets) = content_assets.sprite_sheet_data_set() else {
         return;
     };
+    let to_load: StableHashSet<u32> = load_sprite_batch_events
+        .read()
+        .flat_map(|batch| batch.sprite_ids.iter().copied())
+        .collect();
 
     load_sprite_textures(
-        sprites_to_be_loaded.sprite_ids.iter().copied().collect(),
+        to_load.into_iter().collect(),
         &content_assets,
         &asset_server,
         sprite_sheets,
         &mut sprite_sheet_texture_was_loaded,
     );
-
-    sprites_to_be_loaded.sprite_ids.clear();
 }
 
 /// A system that handles the loading of sprite sheets.
@@ -297,7 +301,7 @@ fn load_desired_appereance_sprite<C: ContentAssets>(
     frame_group_index: i32,
     direction: Option<&Directional>,
     content_assets: &Res<C>,
-    sprites_to_be_loaded: &mut ResMut<SpritesToBeLoaded>,
+    load_sprite_batch_events: &mut EventWriter<LoadSpriteBatch>,
 ) -> Option<(LoadedSprite, Option<AnimationSprite>, Vec<LoadedSprite>)> {
     let Some(prepared_appearance) = content_assets
         .prepared_appearances()
@@ -329,7 +333,7 @@ fn load_desired_appereance_sprite<C: ContentAssets>(
         group,
         &sprite_info.sprite_id,
         content_assets,
-        sprites_to_be_loaded,
+        load_sprite_batch_events,
     );
 
     // This means that it was not loaded yet, and loading was requested
@@ -440,7 +444,7 @@ pub(crate) fn update_sprite_system<C: ContentAssets>(
             descriptor.frame_group_index(),
             direction,
             &content_assets,
-            &mut sprites_to_be_loaded,
+            &mut load_sprite_batch_events,
         ) {
             Some(value) => value,
             None => {
@@ -482,7 +486,7 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
         UninitializedSpriteFilter,
     >,
     content_assets: Res<C>,
-    mut sprites_to_be_loaded: ResMut<SpritesToBeLoaded>,
+    mut load_sprite_batch_events: EventWriter<LoadSpriteBatch>,
 ) {
     for (entity, position, descriptor, layer, direction) in &mut query {
         let (sprite, anim, sprites) = match load_desired_appereance_sprite(
@@ -491,7 +495,7 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
             descriptor.frame_group_index(),
             direction,
             &content_assets,
-            &mut sprites_to_be_loaded,
+            &mut load_sprite_batch_events,
         ) {
             Some(value) => value,
             None => {
