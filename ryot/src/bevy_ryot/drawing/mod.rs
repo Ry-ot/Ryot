@@ -119,6 +119,11 @@ impl DrawingBundle {
         )
     }
 
+    pub fn with_position(mut self, tile_pos: TilePosition) -> Self {
+        self.tile_pos = tile_pos;
+        self
+    }
+
     pub fn with_visibility(mut self, visibility: Visibility) -> Self {
         self.visibility = visibility;
         self
@@ -130,24 +135,54 @@ impl DrawingBundle {
     }
 }
 
-/// A bundle that represents a missile entity going from one position to another.
-/// The MissileBundle is a special case of the DrawingBundle, where the entity is drawn
+/// A bundle that represents a moving entity going from one position to another.
+/// The MovementBundle is a special case of the DrawingBundle, where the entity is drawn
 /// in the top layer and it has a start and end position along with a duration.
-/// The missile is drawn from the start position to the end position over the duration.
-/// The missile is removed from the map when the duration is over.
+/// The moving is drawn from the start position to the end position over the duration.
+/// The moving is removed from the map when the duration is over by default.
 #[derive(Bundle, Debug, Clone)]
-pub struct MissileBundle {
+pub struct MovementBundle {
     pub drawing: DrawingBundle,
     pub movement: SpriteMovement,
     pub direction: Directional,
 }
 
-impl MissileBundle {
-    pub fn new(start: TilePosition, end: TilePosition, id: u32, duration: Duration) -> Self {
+impl MovementBundle {
+    pub fn from_drawing(
+        drawing: DrawingBundle,
+        start: TilePosition,
+        end: TilePosition,
+        duration: Duration,
+    ) -> Self {
         Self {
-            drawing: DrawingBundle::missile(end, id),
+            drawing: drawing.with_position(end),
             movement: SpriteMovement::new(start, duration).delete_on_end(true),
             direction: Directional::Ordinal(OrdinalDirection::from(end - start)),
+        }
+    }
+
+    pub fn object(
+        start: TilePosition,
+        end: TilePosition,
+        layer: Layer,
+        id: u32,
+        duration: Duration,
+    ) -> Self {
+        Self::from_drawing(DrawingBundle::object(layer, end, id), start, end, duration)
+    }
+
+    pub fn missile(start: TilePosition, end: TilePosition, id: u32, duration: Duration) -> Self {
+        Self::from_drawing(DrawingBundle::missile(end, id), start, end, duration)
+    }
+
+    pub fn effect(start: TilePosition, end: TilePosition, id: u32, duration: Duration) -> Self {
+        Self::from_drawing(DrawingBundle::effect(end, id), start, end, duration)
+    }
+
+    pub fn sticky(self) -> Self {
+        Self {
+            movement: self.movement.delete_on_end(false),
+            ..self
         }
     }
 }
