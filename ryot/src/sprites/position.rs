@@ -24,7 +24,7 @@ pub struct TilePosition(pub IVec3);
 pub struct SpriteMovement {
     pub origin: TilePosition,
     pub timer: Timer,
-    pub delete_on_end: bool,
+    pub despawn_on_end: bool,
 }
 
 #[cfg(feature = "bevy")]
@@ -33,13 +33,13 @@ impl SpriteMovement {
         Self {
             origin,
             timer: Timer::new(duration, TimerMode::Once),
-            delete_on_end: false,
+            despawn_on_end: false,
         }
     }
 
-    pub fn delete_on_end(self, delete_on_end: bool) -> Self {
+    pub fn despawn_on_end(self, despawn_on_end: bool) -> Self {
         Self {
-            delete_on_end,
+            despawn_on_end,
             ..self
         }
     }
@@ -240,7 +240,7 @@ pub fn update_sprite_position(
                 .to_vec3(layer)
                 .lerp(tile_pos.to_vec3(layer), movement.timer.percent());
             if movement.timer.just_finished() {
-                if movement.delete_on_end {
+                if movement.despawn_on_end {
                     commands.entity(entity).despawn_recursive();
                 } else {
                     commands.entity(entity).remove::<SpriteMovement>();

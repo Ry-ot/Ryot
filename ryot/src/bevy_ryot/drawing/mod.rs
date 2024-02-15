@@ -156,7 +156,7 @@ impl MovementBundle {
     ) -> Self {
         Self {
             drawing: drawing.with_position(end),
-            movement: SpriteMovement::new(start, duration).delete_on_end(true),
+            movement: SpriteMovement::new(start, duration).despawn_on_end(true),
             direction: Directional::Ordinal(OrdinalDirection::from(end - start)),
         }
     }
@@ -181,7 +181,7 @@ impl MovementBundle {
 
     pub fn sticky(self) -> Self {
         Self {
-            movement: self.movement.delete_on_end(false),
+            movement: self.movement.despawn_on_end(false),
             ..self
         }
     }
