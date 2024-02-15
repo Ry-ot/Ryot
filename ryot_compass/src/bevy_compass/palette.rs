@@ -6,6 +6,7 @@ use bevy::utils::HashMap;
 use bevy_egui::EguiPlugin;
 use leafwing_input_manager::common_conditions::action_just_pressed;
 use ryot::bevy_ryot::sprites::load_sprites;
+use ryot::prelude::sprites::LoadSpriteBatch;
 use ryot::prelude::*;
 use std::marker::PhantomData;
 

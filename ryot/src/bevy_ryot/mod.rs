@@ -28,6 +28,7 @@ use bevy::render::render_resource::PrimitiveTopology;
 use std::marker::PhantomData;
 
 mod async_events;
+use crate::prelude::sprites::LoadSpriteBatch;
 pub use async_events::*;
 
 #[cfg(feature = "lmdb")]

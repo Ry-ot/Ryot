@@ -11,7 +11,6 @@ use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
 use bevy::utils::HashMap;
 use prost::Message;
-use serde::{Deserialize, Serialize};
 use std::result;
 use thiserror::Error;
 

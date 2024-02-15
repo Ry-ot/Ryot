@@ -311,7 +311,9 @@ fn load_desired_appereance_sprite<C: ContentAssets>(
         .prepared_appearances()
         .get_for_group(group, id)
     else {
-        warn!("Appearance id {:?} for group {:?} not found", id, group);
+        if id > 0 {
+            warn!("Appearance id {:?} for group {:?} not found", id, group);
+        }
         return None;
     };
 

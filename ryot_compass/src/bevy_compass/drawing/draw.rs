@@ -7,12 +7,15 @@ use ryot::bevy_ryot::map::MapTiles;
 use ryot::bevy_ryot::*;
 use ryot::layer::Layer;
 use ryot::prelude::{drawing::*, position::*};
-use std::collections::HashMap;
-use time_test::time_test;
 
 #[cfg(feature = "lmdb")]
 use ryot::bevy_ryot::lmdb::LmdbEnv;
+#[cfg(feature = "lmdb")]
 use ryot::lmdb::{GetKey, Item, ItemRepository, ItemsFromHeedLmdb, Tile};
+#[cfg(feature = "lmdb")]
+use std::collections::HashMap;
+#[cfg(feature = "lmdb")]
+use time_test::time_test;
 
 pub fn draw_on_hold<C: ContentAssets>() -> SystemConfigs {
     on_hold(
