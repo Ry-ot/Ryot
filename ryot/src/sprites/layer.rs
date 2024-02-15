@@ -58,6 +58,7 @@ impl Layers {
 impl Default for Layers {
     fn default() -> Self {
         Self(vec![
+            CipLayer::Missile.into(),
             CipLayer::Top.into(),
             CipLayer::Bottom.into(),
             CipLayer::Effect.into(),
@@ -70,6 +71,7 @@ impl Default for Layers {
 
 #[derive(Hash, Eq, Default, PartialEq, Debug, Copy, Clone)]
 pub enum CipLayer {
+    Missile,
     Top,
     Bottom,
     Effect,
@@ -82,6 +84,7 @@ pub enum CipLayer {
 impl From<CipLayer> for Layer {
     fn from(layer: CipLayer) -> Self {
         match layer {
+            CipLayer::Missile => Layer::TopDown45(100),
             CipLayer::Top => Layer::TopDown45(90),
             CipLayer::Bottom => Layer::TopDown45(80),
             CipLayer::Effect => Layer::TopDown45(60),
@@ -95,6 +98,7 @@ impl From<CipLayer> for Layer {
 impl From<Layer> for CipLayer {
     fn from(layer: Layer) -> Self {
         match layer {
+            Layer::TopDown45(100) => CipLayer::Missile,
             Layer::TopDown45(90) => CipLayer::Top,
             Layer::TopDown45(80) => CipLayer::Bottom,
             Layer::TopDown45(60) => CipLayer::Effect,
