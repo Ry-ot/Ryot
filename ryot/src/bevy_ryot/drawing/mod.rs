@@ -31,7 +31,7 @@ impl Plugin for DrawingPlugin {
 }
 
 #[derive(Component, Debug, Copy, Clone, Default, Eq, PartialEq)]
-pub struct Tile;
+pub struct TileComponent;
 
 /// A bundle that represents an entity drawn to a location (Layer + TilePosition) in the map.
 /// The DrawingBundle is used to create and update the entities that are drawn on the map.
@@ -47,7 +47,7 @@ pub struct DrawingBundle {
     pub tile_pos: TilePosition,
     pub appearance: AppearanceDescriptor,
     pub visibility: Visibility,
-    pub tile: Tile,
+    pub tile: TileComponent,
 }
 
 impl BrushItem for DrawingBundle {
@@ -84,7 +84,7 @@ impl DrawingBundle {
             layer: layer.into(),
             tile_pos,
             appearance,
-            tile: Tile,
+            tile: TileComponent,
             visibility: Visibility::Visible,
         }
     }
@@ -284,7 +284,7 @@ impl From<Option<appearances::AppearanceFlags>> for Layer {
 
 fn apply_detail_level_to_visibility(
     mut q_visible_entities: Query<(&mut VisibleEntities, &Sector), With<Camera>>,
-    mut tiles_query: Query<(&mut ViewVisibility, &Layer), (Without<Deleted>, With<Tile>)>,
+    mut tiles_query: Query<(&mut ViewVisibility, &Layer), (Without<Deleted>, With<TileComponent>)>,
 ) {
     for (mut visible_entities, sector) in q_visible_entities.iter_mut() {
         let detail_level = DetailLevel::from_area(sector.area());

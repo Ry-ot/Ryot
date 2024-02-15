@@ -3,6 +3,23 @@
 //! This module is intended to be used as a library dependency for RyOT games.
 //! It provides common ways of dealing with OT content, such as loading sprites and appearances,
 //! configuring the game, and handling asynchronous events.
+use crate::appearances::{ContentType, SpriteSheetDataSet};
+use crate::layer::Layer;
+use crate::position::{update_sprite_position, TilePosition};
+use crate::CONTENT_CONFIG;
+use bevy::app::{App, Plugin, Update};
+use bevy::asset::{Asset, Assets, Handle};
+use bevy::ecs::schedule::SystemConfigs;
+use bevy::prelude::*;
+use bevy::sprite::{Anchor, MaterialMesh2dBundle};
+use bevy::utils::HashMap;
+use bevy_asset_loader::asset_collection::AssetCollection;
+use bevy_asset_loader::loading_state::{LoadingState, LoadingStateAppExt};
+use bevy_asset_loader::prelude::*;
+use bevy_common_assets::json::JsonAssetPlugin;
+use leafwing_input_manager::common_conditions::*;
+use leafwing_input_manager::prelude::*;
+
 mod appearances;
 
 pub use appearances::*;
@@ -21,24 +38,6 @@ pub mod map;
 pub mod drawing;
 
 pub mod sprites;
-pub use sprites::*;
-
-use crate::appearances::{ContentType, SpriteSheetDataSet};
-use crate::layer::Layer;
-use crate::position::{update_sprite_position, TilePosition};
-use crate::CONTENT_CONFIG;
-use bevy::app::{App, Plugin, Update};
-use bevy::asset::{Asset, Assets, Handle};
-use bevy::ecs::schedule::SystemConfigs;
-use bevy::prelude::*;
-use bevy::sprite::{Anchor, MaterialMesh2dBundle};
-use bevy::utils::HashMap;
-use bevy_asset_loader::asset_collection::AssetCollection;
-use bevy_asset_loader::loading_state::{LoadingState, LoadingStateAppExt};
-use bevy_asset_loader::prelude::*;
-use bevy_common_assets::json::JsonAssetPlugin;
-use leafwing_input_manager::common_conditions::*;
-use leafwing_input_manager::prelude::*;
 
 pub static RYOT_ANCHOR: Anchor = Anchor::BottomRight;
 pub static GRID_LAYER: Layer = Layer::Fixed(998);

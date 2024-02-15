@@ -1,9 +1,7 @@
 use crate::build_map;
 use crate::item::ItemRepository;
 use bevy::ecs::system::EntityCommand;
-use bevy::prelude::{
-    Camera, Changed, Commands, Deref, DerefMut, Local, Query, Res, ResMut, Resource, With,
-};
+use bevy::prelude::{Camera, Changed, Commands, Local, Query, Res, ResMut, With};
 use heed::Env;
 use log::error;
 use ryot::bevy_ryot::drawing::UpdateTileContent;

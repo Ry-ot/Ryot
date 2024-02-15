@@ -1,9 +1,9 @@
-mod serde;
-pub use serde::SerdePostcard;
-
 use heed::{CompactionOption, Env, EnvOpenOptions, Error, RoTxn, RwTxn};
 use std::fs;
 use std::path::{Path, PathBuf};
+
+mod serde;
+pub use serde::*;
 
 #[derive(Debug, Clone, Copy)]
 pub enum DatabaseName {
