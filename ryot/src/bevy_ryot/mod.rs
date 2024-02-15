@@ -21,7 +21,6 @@ pub mod sprites;
 pub use sprites::*;
 
 use crate::appearances::{ContentType, SpriteSheetDataSet};
-use crate::bevy_ryot::sprites::SpritesToBeLoaded;
 use crate::layer::Layer;
 use crate::position::{update_sprite_position, TilePosition};
 use crate::CONTENT_CONFIG;
@@ -110,8 +109,8 @@ impl<C: PreloadedContentAssets> Default for ContentPlugin<C> {
 impl<C: PreloadedContentAssets + Default> Plugin for ContentPlugin<C> {
     fn build(&self, app: &mut App) {
         app.init_resource::<C>()
-            .init_resource::<SpritesToBeLoaded>()
             .register_type::<TilePosition>()
+            .add_event::<LoadSpriteBatch>()
             .add_plugins(JsonAssetPlugin::<Catalog>::new(&["json"]))
             .add_plugins(AppearanceAssetPlugin)
             .add_loading_state(
@@ -128,7 +127,10 @@ impl<C: PreloadedContentAssets + Default> Plugin for ContentPlugin<C> {
                 sprites::prepare_sprites::<C>,
             )
             .add_event::<sprites::SpriteSheetTextureWasLoaded>()
-            .add_systems(Update, sprites::load_sprite_sheets_from_command::<C>)
+            .add_systems(
+                Update,
+                sprites::load_sprite_sheets_from_command::<C>.run_if(on_event::<LoadSpriteBatch>()),
+            )
             .add_systems(Update, sprites::store_atlases_assets_after_loading::<C>)
             .add_systems(
                 Update,
