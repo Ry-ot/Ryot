@@ -1,10 +1,12 @@
+use crate::build_map;
 use crate::item::ItemRepository;
-use crate::{build_map, create_and_send_update_command, Cursor};
+use bevy::ecs::system::EntityCommand;
 use bevy::prelude::{
-    Camera, Changed, Commands, Deref, DerefMut, IVec2, Query, ResMut, Resource, Visibility, With,
-    Without,
+    Camera, Changed, Commands, Deref, DerefMut, IVec2, Local, Query, Res, ResMut, Resource, With,
 };
 use heed::Env;
+use log::error;
+use ryot::bevy_ryot::drawing::UpdateTileContent;
 use ryot::bevy_ryot::map::MapTiles;
 use ryot::lmdb;
 use ryot::position::{Edges, TilePosition};
@@ -22,11 +24,11 @@ impl Default for LmdbEnv {
 }
 
 pub fn read_area(
+    tiles: Res<MapTiles>,
     env: ResMut<LmdbEnv>,
     mut commands: Commands,
-    mut tiles: ResMut<MapTiles>,
+    mut last_area: Local<Edges>,
     edges_query: Query<&Edges, (With<Camera>, Changed<Edges>)>,
-    current_appearance_query: Query<(&mut AppearanceDescriptor, &Visibility), Without<Cursor>>,
 ) {
     let Ok(edges) = edges_query.get_single() else {
         return;
@@ -36,25 +38,43 @@ pub fn read_area(
     let min = TilePosition::new(edges.min.x - size.x, edges.min.y - size.y, 0);
     let max = TilePosition::new(edges.max.x + size.x, edges.max.y + size.y, 0);
 
+    let new_area = Edges::new(min, max);
+
+    for area in last_area.diff(&new_area) {
+        load_area(area, env.clone(), &mut commands, &tiles);
+    }
+
+    *last_area = new_area;
+}
+
+pub fn load_area(edges: Edges, env: Env, commands: &mut Commands, tiles: &Res<MapTiles>) {
     time_test!("Reading");
-    let item_repository = crate::item::ItemsFromHeedLmdb::new(env.clone());
-    let area = item_repository.get_for_area(&Edges::new(min, max)).unwrap();
+    let item_repository = crate::item::ItemsFromHeedLmdb::new(env);
 
-    for tile in area {
-        for (layer, item) in tile.items {
-            let bundle = DrawingBundle::new(
-                layer,
-                tile.position,
-                AppearanceDescriptor::object(item.id as u32),
-            );
+    match item_repository.get_for_area(&edges) {
+        Ok(area) => {
+            for tile in area {
+                for (layer, item) in tile.items {
+                    if let Some(tile) = tiles.get(&tile.position) {
+                        if tile.get(&layer).is_some() {
+                            continue;
+                        }
+                    }
 
-            create_and_send_update_command(
-                layer,
-                bundle,
-                &mut commands,
-                &mut tiles,
-                &current_appearance_query,
-            );
+                    let bundle = Some(DrawingBundle::new(
+                        layer,
+                        tile.position,
+                        AppearanceDescriptor::object(item.id as u32),
+                    ));
+
+                    let entity = commands.spawn_empty().id();
+
+                    commands.add(UpdateTileContent(bundle, None).with_entity(entity));
+                }
+            }
+        }
+        Err(e) => {
+            error!("Failed to read area: {}", e);
         }
     }
 }
