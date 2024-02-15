@@ -4,7 +4,7 @@ use heed::types::Bytes;
 use rayon::prelude::*;
 use ryot::layer::Layer;
 use ryot::lmdb;
-use ryot::position::{Edges, TilePosition};
+use ryot::position::{Sector, TilePosition};
 use ryot::prelude::{DatabaseName, SerdePostcard};
 use std::collections::HashMap;
 
@@ -20,13 +20,13 @@ impl ItemsFromHeedLmdb {
 }
 
 impl ItemRepository for ItemsFromHeedLmdb {
-    fn get_for_area(&self, edges: &Edges) -> crate::Result<Vec<Tile>> {
-        let chunks = get_chunks_per_z(edges);
+    fn get_for_area(&self, sector: &Sector) -> crate::Result<Vec<Tile>> {
+        let chunks = get_chunks_per_z(sector);
 
         let result: Vec<Tile> = chunks
             .par_iter()
-            .flat_map(|edges| {
-                self.get_for_keys(build_keys_for_area(edges.min, edges.max))
+            .flat_map(|sector| {
+                self.get_for_keys(build_keys_for_area(sector.min, sector.max))
                     .unwrap_or_else(|_| Vec::new())
             })
             .collect();

@@ -154,18 +154,18 @@ pub fn tile_size() -> UVec2 {
 }
 
 #[derive(Eq, PartialEq, Component, Reflect, Default, Clone, Copy, Debug)]
-pub struct Edges {
+pub struct Sector {
     pub min: TilePosition,
     pub max: TilePosition,
 }
 
-impl fmt::Display for Edges {
+impl fmt::Display for Sector {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "Edges({}, {})", self.min, self.max)
     }
 }
 
-impl Edges {
+impl Sector {
     pub fn new(min: TilePosition, max: TilePosition) -> Self {
         Self { min, max }
     }
