@@ -201,6 +201,44 @@ impl Edges {
     pub fn area(&self) -> u32 {
         (self.size().x * self.size().y).unsigned_abs()
     }
+
+    pub fn diff(&self, new: &Self) -> Vec<Self> {
+        let mut result = Vec::new();
+
+        // Left area (corrected to ensure no overlap and accurate representation)
+        if new.min.x < self.min.x {
+            result.push(Self {
+                min: TilePosition::new(new.min.x, new.min.y, 0),
+                max: TilePosition::new(self.min.x, new.max.y, 0),
+            });
+        }
+
+        // Bottom area
+        if new.min.y < self.min.y {
+            result.push(Self {
+                min: TilePosition::new(self.min.x, new.min.y, 0),
+                max: TilePosition::new(self.max.x, self.min.y, 0),
+            });
+        }
+
+        // Right area (corrected for the same reason as the left area)
+        if new.max.x > self.max.x {
+            result.push(Self {
+                min: TilePosition::new(self.max.x, new.min.y, 0),
+                max: TilePosition::new(new.max.x, new.max.y, 0),
+            });
+        }
+
+        // Top area
+        if new.max.y > self.max.y {
+            result.push(Self {
+                min: TilePosition::new(self.min.x, self.max.y, 0),
+                max: TilePosition::new(self.max.x, new.max.y, 0),
+            });
+        }
+
+        result
+    }
 }
 
 /// This system syncs the sprite position with the TilePosition.
