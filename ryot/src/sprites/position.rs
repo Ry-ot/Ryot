@@ -1,6 +1,7 @@
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;
 use std::hash::Hash;
+use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 use std::{
     fmt::{self, Formatter},
     ops::Deref,
@@ -201,43 +202,78 @@ impl Sector {
     pub fn area(&self) -> u32 {
         (self.size().x * self.size().y).unsigned_abs()
     }
+}
 
-    pub fn diff(&self, new: &Self) -> Vec<Self> {
+impl Sub<Sector> for Sector {
+    type Output = Vec<Sector>;
+
+    fn sub(self, rhs: Sector) -> Self::Output {
         let mut result = Vec::new();
 
         // Left area (corrected to ensure no overlap and accurate representation)
-        if new.min.x < self.min.x {
+        if rhs.min.x < self.min.x {
             result.push(Self {
-                min: TilePosition::new(new.min.x, new.min.y, 0),
-                max: TilePosition::new(self.min.x, new.max.y, 0),
+                min: TilePosition::new(rhs.min.x, rhs.min.y, 0),
+                max: TilePosition::new(self.min.x, rhs.max.y, 0),
             });
         }
 
         // Bottom area
-        if new.min.y < self.min.y {
+        if rhs.min.y < self.min.y {
             result.push(Self {
-                min: TilePosition::new(self.min.x, new.min.y, 0),
+                min: TilePosition::new(self.min.x, rhs.min.y, 0),
                 max: TilePosition::new(self.max.x, self.min.y, 0),
             });
         }
 
         // Right area (corrected for the same reason as the left area)
-        if new.max.x > self.max.x {
+        if rhs.max.x > self.max.x {
             result.push(Self {
-                min: TilePosition::new(self.max.x, new.min.y, 0),
-                max: TilePosition::new(new.max.x, new.max.y, 0),
+                min: TilePosition::new(self.max.x, rhs.min.y, 0),
+                max: TilePosition::new(rhs.max.x, rhs.max.y, 0),
             });
         }
 
         // Top area
-        if new.max.y > self.max.y {
+        if rhs.max.y > self.max.y {
             result.push(Self {
                 min: TilePosition::new(self.min.x, self.max.y, 0),
-                max: TilePosition::new(self.max.x, new.max.y, 0),
+                max: TilePosition::new(self.max.x, rhs.max.y, 0),
             });
         }
 
         result
+    }
+}
+
+impl Mul<f32> for Sector {
+    type Output = Self;
+
+    fn mul(self, rhs: f32) -> Self::Output {
+        let delta = (self.size().as_vec2() * (rhs - 1.0)) / 2.0;
+        let delta = delta.as_ivec2();
+
+        Sector::new(self.min - delta, self.max + delta)
+    }
+}
+
+impl MulAssign<f32> for Sector {
+    fn mul_assign(&mut self, rhs: f32) {
+        *self = *self * rhs;
+    }
+}
+
+impl Div<f32> for Sector {
+    type Output = Self;
+
+    fn div(self, rhs: f32) -> Self::Output {
+        self * (1.0 / rhs)
+    }
+}
+
+impl DivAssign<f32> for Sector {
+    fn div_assign(&mut self, rhs: f32) {
+        *self = *self / rhs;
     }
 }
 
@@ -299,3 +335,33 @@ type MovingSpriteFilter = Or<(
     Added<TilePosition>,
     With<SpriteMovement>,
 )>;
+
+impl Add<IVec2> for TilePosition {
+    type Output = Self;
+    #[inline]
+    fn add(self, rhs: IVec2) -> Self {
+        Self::new(self.x + rhs.x, self.y + rhs.y, self.z)
+    }
+}
+
+impl AddAssign<IVec2> for TilePosition {
+    #[inline]
+    fn add_assign(&mut self, rhs: IVec2) {
+        *self = *self + rhs;
+    }
+}
+
+impl Sub<IVec2> for TilePosition {
+    type Output = Self;
+    #[inline]
+    fn sub(self, rhs: IVec2) -> Self {
+        Self::new(self.x - rhs.x, self.y - rhs.y, self.z)
+    }
+}
+
+impl SubAssign<IVec2> for TilePosition {
+    #[inline]
+    fn sub_assign(&mut self, rhs: IVec2) {
+        *self = *self - rhs;
+    }
+}

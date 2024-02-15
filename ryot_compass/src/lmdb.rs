@@ -2,7 +2,7 @@ use crate::build_map;
 use crate::item::ItemRepository;
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::{
-    Camera, Changed, Commands, Deref, DerefMut, IVec2, Local, Query, Res, ResMut, Resource, With,
+    Camera, Changed, Commands, Deref, DerefMut, Local, Query, Res, ResMut, Resource, With,
 };
 use heed::Env;
 use log::error;
@@ -34,17 +34,13 @@ pub fn read_area(
         return;
     };
 
-    let size = sector.size() / IVec2::new(2, 2);
-    let min = TilePosition::new(sector.min.x - size.x, sector.min.y - size.y, 0);
-    let max = TilePosition::new(sector.max.x + size.x, sector.max.y + size.y, 0);
+    let sector = *sector * 1.5;
 
-    let new_area = Sector::new(min, max);
-
-    for area in last_area.diff(&new_area) {
+    for area in *last_area - sector {
         load_area(area, env.clone(), &mut commands, &tiles);
     }
 
-    *last_area = new_area;
+    *last_area = sector;
 }
 
 pub fn load_area(sector: Sector, env: Env, commands: &mut Commands, tiles: &Res<MapTiles>) {
