@@ -7,6 +7,12 @@ use ryot::bevy_ryot::map::MapTiles;
 use ryot::bevy_ryot::*;
 use ryot::layer::Layer;
 use ryot::prelude::{drawing::*, position::*};
+use std::collections::HashMap;
+use time_test::time_test;
+
+#[cfg(feature = "lmdb")]
+use ryot::bevy_ryot::lmdb::LmdbEnv;
+use ryot::lmdb::{GetKey, Item, ItemRepository, ItemsFromHeedLmdb, Tile};
 
 pub fn draw_on_hold<C: ContentAssets>() -> SystemConfigs {
     on_hold(
@@ -19,9 +25,17 @@ pub fn draw_on_click<C: ContentAssets>() -> SystemConfigs {
     on_press(draw_to_tile::<C, ()>, DrawingAction::Draw)
 }
 
+#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
+type LmdbResource<'a> = ResMut<'a, LmdbEnv>;
+
+#[cfg(not(feature = "lmdb"))]
+type LmdbResource<'a> = ();
+
+#[allow(clippy::too_many_arguments)]
 fn draw_to_tile<C: ContentAssets, F: ReadOnlyWorldQuery>(
     mut commands: Commands,
     mut tiles: ResMut<MapTiles>,
+    lmdb_env: LmdbResource,
     mut command_history: ResMut<CommandHistory>,
     content_assets: Res<C>,
     brushes: Res<Brushes<DrawingBundle>>,
@@ -56,10 +70,10 @@ fn draw_to_tile<C: ContentAssets, F: ReadOnlyWorldQuery>(
 
         let mut queued = 0;
 
-        for new_bundle in to_draw {
+        for new_bundle in &to_draw {
             let Some(command) = create_and_send_update_command(
                 layer,
-                new_bundle,
+                *new_bundle,
                 &mut commands,
                 &mut tiles,
                 &current_appearance_query,
@@ -79,6 +93,44 @@ fn draw_to_tile<C: ContentAssets, F: ReadOnlyWorldQuery>(
             .push(CommandBatchSize(queued).into());
 
         command_history.reversed_commands.clear();
+
+        #[cfg(feature = "lmdb")]
+        {
+            time_test!("Writing");
+            let item_repository = ItemsFromHeedLmdb::new(lmdb_env.clone());
+            let mut new_tiles: HashMap<TilePosition, Tile> = HashMap::new();
+
+            let binary_keys = to_draw
+                .iter()
+                .map(|bundle| bundle.tile_pos.get_binary_key())
+                .collect();
+
+            let Ok(tiles) = item_repository.get_for_keys(binary_keys) else {
+                continue;
+            };
+
+            for tile in tiles {
+                new_tiles.insert(tile.position, tile);
+            }
+
+            for bundle in &to_draw {
+                let tile = new_tiles
+                    .entry(bundle.tile_pos)
+                    .or_insert(Tile::from_pos(bundle.tile_pos));
+
+                tile.set_item(
+                    Item {
+                        id: bundle.appearance.id as u16,
+                        attributes: vec![],
+                    },
+                    bundle.layer,
+                );
+            }
+
+            if let Err(e) = item_repository.save_from_tiles(new_tiles.into_values().collect()) {
+                error!("Failed to save tile: {}", e);
+            }
+        };
     }
 }
 

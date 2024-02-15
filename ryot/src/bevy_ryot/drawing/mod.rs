@@ -301,6 +301,7 @@ fn apply_detail_level_to_visibility(
 
                 if !detail_level.is_layer_visible(layer) {
                     *view_visibility = ViewVisibility::HIDDEN;
+                    return None;
                 }
 
                 Some(*entity)
