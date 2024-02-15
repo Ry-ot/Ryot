@@ -8,13 +8,14 @@ use std::{
 };
 
 use crate::layer::Layer;
+use derive_more::{Add, Sub};
 use glam::{IVec3, UVec2, Vec2, Vec3};
 use serde::{Deserialize, Serialize};
 
 /// A 2d position in the tile grid. This is is not the position of the tile on
 /// the screen, because it doesn't take into account the tile size. Z is used to
 /// calculate the rendering order of the tile.
-#[derive(Eq, PartialEq, Deserialize, Serialize, Default, Clone, Copy, Debug, Hash)]
+#[derive(Eq, PartialEq, Deserialize, Serialize, Default, Clone, Copy, Debug, Hash, Add, Sub)]
 #[cfg_attr(feature = "bevy", derive(Component, Reflect))]
 pub struct TilePosition(pub IVec3);
 
@@ -23,6 +24,7 @@ pub struct TilePosition(pub IVec3);
 pub struct SpriteMovement {
     pub origin: TilePosition,
     pub timer: Timer,
+    pub delete_on_end: bool,
 }
 
 #[cfg(feature = "bevy")]
@@ -31,6 +33,14 @@ impl SpriteMovement {
         Self {
             origin,
             timer: Timer::new(duration, TimerMode::Once),
+            delete_on_end: false,
+        }
+    }
+
+    pub fn delete_on_end(self, delete_on_end: bool) -> Self {
+        Self {
+            delete_on_end,
+            ..self
         }
     }
 }
@@ -230,7 +240,11 @@ pub fn update_sprite_position(
                 .to_vec3(layer)
                 .lerp(tile_pos.to_vec3(layer), movement.timer.percent());
             if movement.timer.just_finished() {
-                commands.entity(entity).remove::<SpriteMovement>();
+                if movement.delete_on_end {
+                    commands.entity(entity).despawn_recursive();
+                } else {
+                    commands.entity(entity).remove::<SpriteMovement>();
+                }
             }
         } else {
             transform.translation = tile_pos.to_vec3(layer)

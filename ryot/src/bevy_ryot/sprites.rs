@@ -1,10 +1,10 @@
 //! Sprite loading and drawing.
-use crate::appearances::{FixedFrameGroup, SpriteSheetData, SpriteSheetDataSet};
+use crate::appearances::{SpriteSheetData, SpriteSheetDataSet};
 use crate::bevy_ryot::InternalContentState;
 use crate::layer::Layer;
 use crate::position::TilePosition;
-use crate::prelude::*;
 use crate::{get_decompressed_file_name, SpriteSheetConfig, SPRITE_SHEET_FOLDER};
+use crate::{prelude::*, Directional};
 use bevy::prelude::*;
 use bevy::utils::{HashMap, StableHashSet};
 use rand::Rng;
@@ -294,19 +294,36 @@ pub(crate) fn prepare_sprites<C: PreloadedContentAssets>(
 fn load_desired_appereance_sprite<C: ContentAssets>(
     group: AppearanceGroup,
     id: u32,
-    frame_group_index: FixedFrameGroup,
-    direction: Option<&CardinalDirection>,
+    frame_group_index: i32,
+    direction: Option<&Directional>,
     content_assets: &Res<C>,
     sprites_to_be_loaded: &mut ResMut<SpritesToBeLoaded>,
 ) -> Option<(LoadedSprite, Option<AnimationSprite>, Vec<LoadedSprite>)> {
-    let prepared_appearance = content_assets
+    let Some(prepared_appearance) = content_assets
         .prepared_appearances()
-        .get_for_group(group, id)?;
+        .get_for_group(group, id)
+    else {
+        warn!("Appearance id {:?} for group {:?} not found", id, group);
+        return None;
+    };
 
-    let frame_group = prepared_appearance
+    let Some(frame_group) = prepared_appearance
         .frame_groups
-        .get(frame_group_index as usize)?;
-    let sprite_info = frame_group.sprite_info.as_ref()?;
+        .get(frame_group_index as usize)
+    else {
+        warn!(
+            "Frame group {:?} for appearance {:?} not found",
+            frame_group_index, group
+        );
+        return None;
+    };
+    let Some(sprite_info) = frame_group.sprite_info.as_ref() else {
+        warn!(
+            "Sprite info for appearance {:?} and frame group {:?} not found",
+            group, frame_group_index
+        );
+        return None;
+    };
 
     let sprites = load_sprites(
         group,
@@ -317,17 +334,27 @@ fn load_desired_appereance_sprite<C: ContentAssets>(
 
     // This means that it was not loaded yet, and loading was requested
     if sprites.len() != sprite_info.sprite_id.len() {
+        debug!(
+            "Sprite for appearance {:?} and frame group {:?} not loaded yet expected {} got {}",
+            group,
+            frame_group_index,
+            sprite_info.sprite_id.len(),
+            sprites.len()
+        );
         return None;
     }
 
     let direction_index = match direction {
-        Some(CardinalDirection::North) => 0,
-        Some(CardinalDirection::East) => 1,
-        Some(CardinalDirection::South) => 2,
-        Some(CardinalDirection::West) => 3,
+        Some(dir) => dir.index(),
         None => 0,
     } * sprite_info.layers() as usize;
-    let sprite = sprites.get(direction_index)?;
+    let Some(sprite) = sprites.get(direction_index) else {
+        warn!(
+            "Sprite for appearance {:?} and frame group {:?} not found",
+            group, frame_group_index
+        );
+        return None;
+    };
 
     let animation_sprite = sprite_info
         .animation
@@ -371,7 +398,7 @@ type InitializedSpriteFilter = (
     Or<(
         With<LoadingAppearance>,
         Changed<AppearanceDescriptor>,
-        Changed<CardinalDirection>,
+        Changed<Directional>,
     )>,
 );
 
@@ -386,7 +413,7 @@ pub(crate) fn update_sprite_system<C: ContentAssets>(
         (
             Entity,
             &AppearanceDescriptor,
-            Option<&CardinalDirection>,
+            Option<&Directional>,
             &mut LoadedSprites,
             &mut Handle<TextureAtlas>,
             &mut TextureAtlasSprite,
@@ -395,15 +422,11 @@ pub(crate) fn update_sprite_system<C: ContentAssets>(
         InitializedSpriteFilter,
     >,
     content_assets: Res<C>,
-    mut sprites_to_be_loaded: ResMut<SpritesToBeLoaded>,
+    mut load_sprite_batch_events: EventWriter<LoadSpriteBatch>,
 ) {
     for (
         entity,
-        AppearanceDescriptor {
-            group,
-            id,
-            frame_group_index,
-        },
+        descriptor,
         direction,
         mut loaded_sprites,
         mut atlas,
@@ -412,9 +435,9 @@ pub(crate) fn update_sprite_system<C: ContentAssets>(
     ) in &mut query
     {
         let (sprite, anim, sprites) = match load_desired_appereance_sprite(
-            *group,
-            *id,
-            *frame_group_index,
+            descriptor.group,
+            descriptor.id,
+            descriptor.frame_group_index(),
             direction,
             &content_assets,
             &mut sprites_to_be_loaded,
@@ -454,29 +477,18 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
             &TilePosition,
             &AppearanceDescriptor,
             &Layer,
-            Option<&CardinalDirection>,
+            Option<&Directional>,
         ),
         UninitializedSpriteFilter,
     >,
     content_assets: Res<C>,
     mut sprites_to_be_loaded: ResMut<SpritesToBeLoaded>,
 ) {
-    for (
-        entity,
-        position,
-        AppearanceDescriptor {
-            group,
-            id,
-            frame_group_index,
-        },
-        layer,
-        direction,
-    ) in &mut query
-    {
+    for (entity, position, descriptor, layer, direction) in &mut query {
         let (sprite, anim, sprites) = match load_desired_appereance_sprite(
-            *group,
-            *id,
-            *frame_group_index,
+            descriptor.group,
+            descriptor.id,
+            descriptor.frame_group_index(),
             direction,
             &content_assets,
             &mut sprites_to_be_loaded,

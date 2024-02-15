@@ -8,6 +8,7 @@ mod sheet_loading;
 pub use sheet_loading::*;
 
 pub mod layer;
+pub use layer::{CipLayer, Layer, Layers};
 
 pub mod position;
 

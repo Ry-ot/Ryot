@@ -11,7 +11,6 @@ use bevy::prelude::*;
 use bevy::reflect::TypeUuid;
 use bevy::utils::HashMap;
 use prost::Message;
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 /// A plugin to register the Appearance asset and its loader.
@@ -71,33 +70,32 @@ impl AssetLoader for AppearanceAssetLoader {
     }
 }
 
-#[derive(Component, Default, Clone, Copy, Debug, Serialize, Deserialize)]
-pub enum CardinalDirection {
-    North,
-    East,
-    #[default]
-    South,
-    West,
-}
-
 #[derive(Component, Debug, Copy, Clone, Default, Eq, PartialEq)]
 pub struct AppearanceDescriptor {
     pub group: AppearanceGroup,
     pub id: u32,
-    pub frame_group_index: FixedFrameGroup,
+    pub fixed_frame_group: FixedFrameGroup,
 }
 
 impl AppearanceDescriptor {
-    pub fn new(group: AppearanceGroup, id: u32, frame_group_index: FixedFrameGroup) -> Self {
+    pub fn new(group: AppearanceGroup, id: u32, fixed_frame_group: FixedFrameGroup) -> Self {
         Self {
             group,
             id,
-            frame_group_index,
+            fixed_frame_group,
+        }
+    }
+
+    pub(crate) fn frame_group_index(&self) -> i32 {
+        match self.fixed_frame_group {
+            FixedFrameGroup::OutfitIdle => 0,
+            FixedFrameGroup::OutfitMoving => 1,
+            FixedFrameGroup::ObjectInitial => 0,
         }
     }
 
     pub fn object(id: u32) -> Self {
-        Self::new(AppearanceGroup::Object, id, FixedFrameGroup::default())
+        Self::new(AppearanceGroup::Object, id, FixedFrameGroup::ObjectInitial)
     }
 
     pub fn outfit(id: u32, frame_group_index: FixedFrameGroup) -> Self {
@@ -105,7 +103,23 @@ impl AppearanceDescriptor {
     }
 
     pub fn effect(id: u32) -> Self {
-        Self::new(AppearanceGroup::Effect, id, FixedFrameGroup::default())
+        Self::new(AppearanceGroup::Effect, id, FixedFrameGroup::ObjectInitial)
+    }
+
+    pub fn missile(id: u32) -> Self {
+        Self::new(AppearanceGroup::Missile, id, FixedFrameGroup::ObjectInitial)
+    }
+
+    pub fn moving(&mut self, value: bool) -> Self {
+        if self.fixed_frame_group == FixedFrameGroup::ObjectInitial {
+            return *self;
+        }
+        if value {
+            self.fixed_frame_group = FixedFrameGroup::OutfitMoving;
+        } else {
+            self.fixed_frame_group = FixedFrameGroup::OutfitIdle;
+        }
+        *self
     }
 }
 

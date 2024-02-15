@@ -100,6 +100,22 @@ impl DrawingBundle {
         )
     }
 
+    pub fn effect(tile_pos: TilePosition, id: u32) -> Self {
+        Self::new(
+            CipLayer::Effect.into(),
+            tile_pos,
+            AppearanceDescriptor::effect(id),
+        )
+    }
+
+    pub fn missile(tile_pos: TilePosition, id: u32) -> Self {
+        Self::new(
+            CipLayer::Top.into(),
+            tile_pos,
+            AppearanceDescriptor::missile(id),
+        )
+    }
+
     pub fn with_visibility(mut self, visibility: Visibility) -> Self {
         self.visibility = visibility;
         self

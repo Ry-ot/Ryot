@@ -18,6 +18,7 @@ pub mod map;
 pub mod drawing;
 
 pub mod sprites;
+pub use sprites::*;
 
 use crate::appearances::{ContentType, SpriteSheetDataSet};
 use crate::bevy_ryot::sprites::SpritesToBeLoaded;
