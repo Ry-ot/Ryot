@@ -53,6 +53,9 @@ pub mod sprites;
 
 pub use sprites::*;
 
+pub mod directional;
+pub use directional::*;
+
 pub mod prelude {
     #[cfg(feature = "bevy")]
     pub use crate::bevy_ryot::*;
@@ -60,7 +63,9 @@ pub mod prelude {
     #[cfg(feature = "compression")]
     pub use crate::compression::{compress, decompress, Compression, Zstd};
     pub use crate::content::*;
+    pub use crate::directional::*;
     #[cfg(feature = "lmdb")]
     pub use crate::lmdb::*;
+    pub use crate::position::*;
     pub use crate::sprites::*;
 }
