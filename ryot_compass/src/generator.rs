@@ -82,7 +82,7 @@ house:id -> {
 use crate::{Item, ItemAttribute, MapComponent, Plan, Tile};
 use rand::Rng;
 use ryot::layer::CipLayer;
-use ryot::position::{Edges, TilePosition};
+use ryot::position::{Sector, TilePosition};
 
 pub fn build_map(z_size: i32) -> Plan {
     let mut map = Plan::default();
@@ -172,17 +172,17 @@ pub fn get_attribute_array() -> Vec<ItemAttribute> {
     Vec::new()
 }
 
-pub fn get_chunks_per_z(edges: &Edges) -> Vec<Edges> {
+pub fn get_chunks_per_z(sector: &Sector) -> Vec<Sector> {
     let mut chunks = Vec::new();
     let n = 1;
 
-    for z in edges.min.z..=edges.max.z {
+    for z in sector.min.z..=sector.max.z {
         for i in 1..=n {
-            let y_divided_by_6 = (edges.max.y - edges.min.y) / n;
+            let y_divided_by_6 = (sector.max.y - sector.min.y) / n;
             let chunk_start =
-                TilePosition::new(edges.min.x, edges.min.y + y_divided_by_6 * (i - 1), z);
-            let chunk_end = TilePosition::new(edges.max.x, edges.min.y + y_divided_by_6 * i, z);
-            chunks.push(Edges::new(chunk_start, chunk_end));
+                TilePosition::new(sector.min.x, sector.min.y + y_divided_by_6 * (i - 1), z);
+            let chunk_end = TilePosition::new(sector.max.x, sector.min.y + y_divided_by_6 * i, z);
+            chunks.push(Sector::new(chunk_start, chunk_end));
         }
     }
 

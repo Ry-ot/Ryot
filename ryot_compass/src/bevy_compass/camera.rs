@@ -11,7 +11,7 @@ use leafwing_input_manager::prelude::*;
 use leafwing_input_manager::user_input::InputKind;
 use ryot::bevy_ryot::drawing::DrawingBundle;
 use ryot::layer::Layer;
-use ryot::position::{Edges, TilePosition};
+use ryot::position::{Sector, TilePosition};
 use ryot::prelude::drawing::Brushes;
 use ryot::prelude::*;
 use std::marker::PhantomData;
@@ -50,7 +50,7 @@ impl<C: CompassAssets> Plugin for CameraPlugin<C> {
                         update_cursor_preview,
                         update_cursor_brush_preview,
                         update_cursor_visibility.map(drop),
-                        update_camera_edges,
+                        update_camera_visible_sector,
                     )
                         .chain(),
                     update_pan_cam_actions.run_if(resource_changed::<UiState>()),
@@ -99,7 +99,7 @@ pub static MAP_GRAB_INPUTS: [InputKind; 2] = [
 fn spawn_camera(content: Res<CompassContentAssets>, mut commands: Commands) {
     commands.spawn((
         Camera2dBundle::default(),
-        Edges::default(),
+        Sector::default(),
         PanCamBundle {
             pan_cam: PanCam {
                 enabled: true,
@@ -342,17 +342,17 @@ fn update_cursor_brush_preview(
     }
 }
 
-fn update_camera_edges(
-    mut camera_query: Query<(&mut Edges, &Transform, &OrthographicProjection), With<Camera>>,
+fn update_camera_visible_sector(
+    mut camera_query: Query<(&mut Sector, &Transform, &OrthographicProjection), With<Camera>>,
 ) {
-    for (mut edges, transform, projection) in camera_query.iter_mut() {
-        let new_edges = Edges::from_transform_and_projection(transform, projection);
+    for (mut sector, transform, projection) in camera_query.iter_mut() {
+        let new_sector = Sector::from_transform_and_projection(transform, projection);
 
-        if new_edges == *edges {
+        if new_sector == *sector {
             continue;
         }
 
-        *edges = new_edges;
+        *sector = new_sector;
     }
 }
 

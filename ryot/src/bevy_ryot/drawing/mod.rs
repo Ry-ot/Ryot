@@ -4,7 +4,7 @@ use crate::appearances::{self, FixedFrameGroup};
 use crate::bevy_ryot::{AppearanceDescriptor, InternalContentState};
 use crate::directional::*;
 use crate::layer::*;
-use crate::position::{Edges, SpriteMovement, TilePosition};
+use crate::position::{Sector, SpriteMovement, TilePosition};
 use bevy::prelude::*;
 use bevy::render::view::{check_visibility, VisibilitySystems, VisibleEntities};
 
@@ -216,7 +216,7 @@ impl MovementBundle {
 ///     - Draw rules change per detail level
 ///
 /// We load 2-3x the current view but we only set as visible the 1.1 * view.
-/// As we move the camera, we set the new tiles as visible and the old ones as hidden and we deload/load the edges (as hidden)
+/// As we move the camera, we set the new tiles as visible and the old ones as hidden and we deload/load the sector (as hidden)
 /// As we zoom in and out, we change the detail level of the tiles and change visibility accordingly.
 #[derive(Eq, Hash, PartialEq, Debug, Copy, Clone, Default, Reflect, Component)]
 pub enum DetailLevel {
@@ -283,11 +283,11 @@ impl From<Option<appearances::AppearanceFlags>> for Layer {
 }
 
 fn apply_detail_level_to_visibility(
-    mut q_visible_entities: Query<(&mut VisibleEntities, &Edges), With<Camera>>,
+    mut q_visible_entities: Query<(&mut VisibleEntities, &Sector), With<Camera>>,
     mut tiles_query: Query<(&mut ViewVisibility, &Layer), (Without<Deleted>, With<Tile>)>,
 ) {
-    for (mut visible_entities, edges) in q_visible_entities.iter_mut() {
-        let detail_level = DetailLevel::from_area(edges.area());
+    for (mut visible_entities, sector) in q_visible_entities.iter_mut() {
+        let detail_level = DetailLevel::from_area(sector.area());
 
         let entities = visible_entities
             .entities
