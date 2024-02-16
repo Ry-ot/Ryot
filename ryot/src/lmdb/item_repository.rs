@@ -24,6 +24,8 @@ pub trait ItemRepository {
     fn get_for_area(&self, sector: &Sector) -> error::Result<Vec<Tile>>;
     fn get_for_keys(&self, keys: Vec<Vec<u8>>) -> error::Result<Vec<Tile>>;
     fn save_from_tiles(&self, items: Vec<Tile>) -> error::Result<()>;
+    fn delete(&self, key: Vec<u8>) -> error::Result<()>;
+    fn delete_multiple(&self, keys: Vec<Vec<u8>>) -> error::Result<()>;
 }
 
 #[derive(Clone)]
@@ -80,6 +82,30 @@ impl ItemRepository for ItemsFromHeedLmdb {
 
             db.delete(&mut wtxn, &key)?;
             db.put(&mut wtxn, &key, &item)?;
+        }
+
+        wtxn.commit()?;
+
+        Ok(())
+    }
+
+    fn delete(&self, key: Vec<u8>) -> error::Result<()> {
+        let (mut wtxn, db) =
+            lmdb::rw::<Bytes, SerdePostcard<HashMap<Layer, Item>>>(&self.env, DatabaseName::Tiles)?;
+
+        db.delete(&mut wtxn, &key)?;
+
+        wtxn.commit()?;
+
+        Ok(())
+    }
+
+    fn delete_multiple(&self, keys: Vec<Vec<u8>>) -> error::Result<()> {
+        let (mut wtxn, db) =
+            lmdb::rw::<Bytes, SerdePostcard<HashMap<Layer, Item>>>(&self.env, DatabaseName::Tiles)?;
+
+        for key in keys {
+            db.delete(&mut wtxn, &key)?;
         }
 
         wtxn.commit()?;
