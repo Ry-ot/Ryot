@@ -1,7 +1,7 @@
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;
 use std::hash::Hash;
-use std::ops::{Add, AddAssign, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
+use std::ops::{Add, AddAssign, DerefMut, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 use std::{
     fmt::{self, Formatter},
     ops::Deref,
@@ -95,6 +95,12 @@ impl Deref for TilePosition {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl DerefMut for TilePosition {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        &mut self.0
     }
 }
 

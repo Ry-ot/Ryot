@@ -1,11 +1,14 @@
 use crate::position::TilePosition;
 use bevy::prelude::{Deref, DerefMut, Resource};
+use egui::ImageSource;
 
 mod diamond;
 pub use diamond::*;
 
+mod line;
+pub use line::*;
+
 mod round;
-use egui::ImageSource;
 pub use round::*;
 
 mod rectangle;
@@ -113,6 +116,7 @@ impl<E: BrushItem + std::cmp::PartialEq> Default for Brushes<E> {
             .insert(Diamond)
             .insert(Round)
             .insert(Rectangle)
+            .insert(Line)
             .insert(Random)
     }
 }
