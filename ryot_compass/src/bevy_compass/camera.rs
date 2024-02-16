@@ -78,6 +78,12 @@ pub enum DrawingMode {
     TwoClicks(Option<TilePosition>),
 }
 
+impl Default for DrawingMode {
+    fn default() -> Self {
+        DrawingMode::Click(3)
+    }
+}
+
 impl<E: BrushItem> From<DrawingMode> for BrushParams<E> {
     fn from(mode: DrawingMode) -> Self {
         match mode {
@@ -91,7 +97,7 @@ impl<E: BrushItem> From<DrawingMode> for BrushParams<E> {
 impl Default for DrawingState {
     fn default() -> Self {
         Self {
-            mode: DrawingMode::Click(3),
+            mode: DrawingMode::default(),
             enabled: true,
             brush_index: 0,
         }

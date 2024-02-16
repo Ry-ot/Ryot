@@ -3,6 +3,7 @@ use bevy::ecs::query::ReadOnlyWorldQuery;
 use bevy::ecs::schedule::SystemConfigs;
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
+use leafwing_input_manager::action_state::ActionState;
 use ryot::bevy_ryot::map::MapTiles;
 use ryot::bevy_ryot::*;
 use ryot::layer::Layer;
@@ -171,27 +172,26 @@ pub fn create_and_send_update_command(
 pub fn update_drawing_mode(mut cursor_query: Query<(&TilePosition, &mut Cursor)>) {
     for (cursor_pos, mut cursor) in &mut cursor_query {
         cursor.drawing_state.mode = match cursor.drawing_state.mode {
-            DrawingMode::TwoClicks(Some(_)) => DrawingMode::TwoClicks(None),
-            DrawingMode::TwoClicks(None) => DrawingMode::TwoClicks(Some(*cursor_pos)),
+            DrawingMode::TwoClicks(_) => DrawingMode::TwoClicks(Some(*cursor_pos)),
             mode => mode,
         };
     }
 }
 
-pub fn change_drawing_mode(mut cursor_query: Query<&mut Cursor>) {
+pub fn set_drawing_mode(
+    mut previous_size: Local<i32>,
+    mut cursor_query: Query<&mut Cursor>,
+    action_state: Res<ActionState<DrawingAction>>,
+) {
     for mut cursor in &mut cursor_query {
-        cursor.drawing_state.mode = match cursor.drawing_state.mode {
-            DrawingMode::TwoClicks(_) => DrawingMode::Click(3),
-            DrawingMode::Click(_) => DrawingMode::TwoClicks(None),
-        };
-    }
-}
+        if let DrawingMode::Click(size) = cursor.drawing_state.mode {
+            *previous_size = size;
+        }
 
-pub fn clear_selection(mut cursor_query: Query<&mut Cursor>) {
-    for mut cursor in &mut cursor_query {
-        cursor.drawing_state.mode = match cursor.drawing_state.mode {
-            DrawingMode::TwoClicks(Some(_)) => DrawingMode::TwoClicks(None),
-            mode => mode,
-        };
+        if action_state.just_pressed(DrawingAction::StartConnectingPoints) {
+            cursor.drawing_state.mode = DrawingMode::TwoClicks(None);
+        } else {
+            cursor.drawing_state.mode = DrawingMode::Click(*previous_size);
+        }
     }
 }
