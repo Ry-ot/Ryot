@@ -303,6 +303,10 @@ fn load_desired_appereance_sprite<C: ContentAssets>(
     content_assets: &Res<C>,
     load_sprite_batch_events: &mut EventWriter<LoadSpriteBatch>,
 ) -> Option<(LoadedSprite, Option<AnimationSprite>, Vec<LoadedSprite>)> {
+    // If the id is 0, it means that the appearance is not set yet, so we return None
+    if id == 0 {
+        return None;
+    }
     let Some(prepared_appearance) = content_assets
         .prepared_appearances()
         .get_for_group(group, id)
