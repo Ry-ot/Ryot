@@ -1,4 +1,4 @@
-use crate::{Cursor, DrawingAction, DrawingMode};
+use crate::{Cursor, DrawingAction, DrawingMode, LmdbResource};
 use bevy::ecs::query::ReadOnlyWorldQuery;
 use bevy::ecs::schedule::SystemConfigs;
 use bevy::ecs::system::EntityCommand;
@@ -9,8 +9,6 @@ use ryot::bevy_ryot::*;
 use ryot::layer::Layer;
 use ryot::prelude::{drawing::*, position::*};
 
-#[cfg(feature = "lmdb")]
-use ryot::bevy_ryot::lmdb::LmdbEnv;
 #[cfg(feature = "lmdb")]
 use ryot::lmdb::{GetKey, Item, ItemRepository, ItemsFromHeedLmdb, Tile};
 #[cfg(feature = "lmdb")]
@@ -26,12 +24,6 @@ pub fn draw_on_hold<C: ContentAssets>() -> SystemConfigs {
 pub fn draw_on_click<C: ContentAssets>() -> SystemConfigs {
     on_press(draw_to_tile::<C, ()>, DrawingAction::Draw)
 }
-
-#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
-type LmdbResource<'a> = ResMut<'a, LmdbEnv>;
-
-#[cfg(not(feature = "lmdb"))]
-type LmdbResource<'a> = ();
 
 #[allow(clippy::too_many_arguments)]
 fn draw_to_tile<C: ContentAssets, F: ReadOnlyWorldQuery>(
@@ -130,8 +122,6 @@ fn draw_to_tile<C: ContentAssets, F: ReadOnlyWorldQuery>(
                     bundle.layer,
                 );
             }
-
-            info!("Saving tiles: {:?}", new_tiles.len());
 
             if let Err(e) = item_repository.save_from_tiles(new_tiles.into_values().collect()) {
                 error!("Failed to save tile: {}", e);

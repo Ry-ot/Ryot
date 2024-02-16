@@ -6,6 +6,9 @@ use ryot::bevy_ryot::map::MapTiles;
 use ryot::prelude::{drawing::*, *};
 use std::marker::PhantomData;
 
+#[cfg(feature = "lmdb")]
+use ryot::bevy_ryot::lmdb::LmdbEnv;
+
 mod draw;
 pub use draw::*;
 
@@ -17,6 +20,12 @@ pub use undo_redo::*;
 
 mod brush;
 pub use brush::*;
+
+#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
+pub type LmdbResource<'a> = ResMut<'a, LmdbEnv>;
+
+#[cfg(not(feature = "lmdb"))]
+pub type LmdbResource<'a> = ();
 
 #[derive(Actionlike, Reflect, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum DrawingAction {
