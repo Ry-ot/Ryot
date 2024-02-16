@@ -1,16 +1,28 @@
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::{Camera, Changed, Commands, Local, Query, Res, ResMut, With};
+use heed::types::Bytes;
 use heed::Env;
 use log::error;
 use ryot::bevy_ryot::drawing::UpdateTileContent;
 use ryot::bevy_ryot::map::MapTiles;
-use ryot::lmdb;
-use ryot::lmdb::{build_map, ItemRepository, ItemsFromHeedLmdb};
+use ryot::lmdb::{build_map, DatabaseName, Item, ItemRepository, ItemsFromHeedLmdb, SerdePostcard};
 use ryot::position::{Sector, TilePosition};
 use ryot::prelude::drawing::DrawingBundle;
 use ryot::prelude::lmdb::LmdbEnv;
 use ryot::prelude::{compress, decompress, AppearanceDescriptor, Zstd};
+use ryot::{lmdb, Layer};
+use std::collections::HashMap;
 use time_test::time_test;
+
+pub fn init_tiles_db(lmdb_env: Res<LmdbEnv>) -> color_eyre::Result<()> {
+    let env = lmdb_env.clone();
+    let (wtxn, _) =
+        lmdb::rw::<Bytes, SerdePostcard<HashMap<Layer, Item>>>(&env, DatabaseName::Tiles)?;
+
+    wtxn.commit()?;
+
+    Ok(())
+}
 
 pub fn read_area(
     tiles: Res<MapTiles>,
@@ -33,7 +45,6 @@ pub fn read_area(
 }
 
 pub fn load_area(sector: Sector, env: Env, commands: &mut Commands, tiles: &Res<MapTiles>) {
-    time_test!("Reading");
     let item_repository = ItemsFromHeedLmdb::new(env);
 
     match item_repository.get_for_area(&sector) {
