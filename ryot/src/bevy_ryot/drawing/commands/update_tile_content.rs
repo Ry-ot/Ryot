@@ -26,39 +26,11 @@ use bevy::ecs::system::EntityCommand;
 pub struct UpdateTileContent(pub Option<DrawingBundle>, pub Option<DrawingBundle>);
 impl EntityCommand for UpdateTileContent {
     fn apply(self, id: Entity, world: &mut World) {
-        let UpdateTileContent(bundle, old_bundle) = &self;
-
-        let Some(new_bundle) = bundle else {
-            if let Some(mut visibility) = world.get_mut::<Visibility>(id) {
-                *visibility = Visibility::Hidden;
-                world.entity_mut(id).insert(Deleted);
-            }
-
-            return;
-        };
-
-        world.entity_mut(id).remove::<Deleted>();
-
-        if old_bundle.is_some() {
-            let Some(mut descriptor) = world.get_mut::<AppearanceDescriptor>(id) else {
-                return;
-            };
-
-            if *descriptor != new_bundle.appearance {
-                *descriptor = new_bundle.appearance;
-            }
-
-            if let Some(mut visibility) = world.get_mut::<Visibility>(id) {
-                *visibility = new_bundle.visibility
-            }
-
-            return;
-        };
-
-        world.entity_mut(id).insert(*new_bundle);
-        let mut map_tiles = world.resource_mut::<MapTiles>();
-        let content = map_tiles.entry(new_bundle.tile_pos).or_default();
-        content.insert(new_bundle.layer, id);
+        match self {
+            UpdateTileContent(None, _) => delete(id, world),
+            UpdateTileContent(Some(new_bundle), None) => create(id, world, new_bundle),
+            UpdateTileContent(Some(new_bundle), Some(_)) => update(id, world, new_bundle),
+        }
     }
 }
 
@@ -76,4 +48,34 @@ impl ReversibleCommand for UpdateTileContent {
             commands.add(self.with_entity(entity));
         }
     }
+}
+
+fn delete(id: Entity, world: &mut World) {
+    if let Some(mut visibility) = world.get_mut::<Visibility>(id) {
+        *visibility = Visibility::Hidden;
+        world.entity_mut(id).insert(Deleted);
+    }
+}
+
+fn update(id: Entity, world: &mut World, bundle: DrawingBundle) {
+    world.entity_mut(id).remove::<Deleted>();
+
+    let Some(mut descriptor) = world.get_mut::<AppearanceDescriptor>(id) else {
+        return;
+    };
+
+    if *descriptor != bundle.appearance {
+        *descriptor = bundle.appearance;
+    }
+
+    if let Some(mut visibility) = world.get_mut::<Visibility>(id) {
+        *visibility = bundle.visibility
+    }
+}
+
+fn create(id: Entity, world: &mut World, bundle: DrawingBundle) {
+    world.entity_mut(id).insert(bundle);
+    let mut map_tiles = world.resource_mut::<MapTiles>();
+    let content = map_tiles.entry(bundle.tile_pos).or_default();
+    content.insert(bundle.layer, id);
 }
