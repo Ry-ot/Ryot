@@ -15,9 +15,11 @@ impl<B: BrushItem> From<Random> for Brush<B> {
     }
 }
 
-pub fn random<B: BrushItem>(size: i32, center: B) -> Vec<B> {
+pub fn random<B: BrushItem>(params: BrushParams<B>, center: B) -> Vec<B> {
     let mut elements = vec![center];
     let center_pos = center.get_position();
+
+    let size = params.get_size(center);
 
     for _ in 0..size {
         let x = center_pos.x + rand::random::<i32>() % size;

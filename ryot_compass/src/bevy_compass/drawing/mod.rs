@@ -25,6 +25,7 @@ pub enum DrawingAction {
     Erase,
     Undo,
     Redo,
+    ChangeDrawingMode,
     ChangeBrush,
     IncreaseBrush,
     DecreaseBrush,
@@ -49,6 +50,11 @@ impl DrawingAction {
             )
             .insert(KeyCode::Key1, DrawingAction::ChangeBrush)
             .insert(KeyCode::Escape, DrawingAction::ClearSelection)
+            .insert_modified(
+                CONTROL_COMMAND,
+                KeyCode::I,
+                DrawingAction::ChangeDrawingMode,
+            )
             .insert_modified(CONTROL_COMMAND, KeyCode::Plus, DrawingAction::IncreaseBrush)
             .insert_modified(
                 CONTROL_COMMAND,
@@ -113,7 +119,15 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
                         change_brush_size(-1)
                             .run_if(action_just_pressed(DrawingAction::DecreaseBrush)),
                     ),
+                    update_drawing_mode.run_if(
+                        action_just_pressed(DrawingAction::Draw)
+                            .or_else(action_just_pressed(DrawingAction::Erase)),
+                    ),
+                    change_drawing_mode
+                        .run_if(action_just_pressed(DrawingAction::ChangeDrawingMode)),
+                    clear_selection.run_if(action_just_pressed(DrawingAction::ClearSelection)),
                 )
+                    .chain()
                     .run_if(in_state(InternalContentState::Ready))
                     .run_if(gui_is_not_in_use()),
             )

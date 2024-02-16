@@ -15,9 +15,11 @@ impl<B: BrushItem> From<Round> for Brush<B> {
     }
 }
 
-pub fn round<B: BrushItem>(size: i32, center: B) -> Vec<B> {
+pub fn round<B: BrushItem>(params: BrushParams<B>, center: B) -> Vec<B> {
     let mut elements = Vec::new();
     let center_pos = center.get_position();
+
+    let size = params.get_size(center);
 
     for x in center_pos.x.saturating_sub(size)..=center_pos.x.saturating_add(size) {
         for y in center_pos.y.saturating_sub(size)..=center_pos.y.saturating_add(size) {
