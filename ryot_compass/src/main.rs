@@ -11,7 +11,7 @@ use ryot::prelude::*;
 #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
 use ryot::prelude::lmdb::LmdbEnv;
 #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
-use ryot_compass::read_area;
+use ryot_compass::{init_tiles_db, read_area};
 
 use ryot_compass::{
     AppPlugin, CameraPlugin, CompassContentAssets, DrawingPlugin, PalettePlugin, UiPlugin,
@@ -92,10 +92,12 @@ fn main() {
     .add_systems(Startup, setup_window);
 
     #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
-    app.init_resource::<LmdbEnv>().add_systems(
-        Update,
-        read_area.run_if(in_state(InternalContentState::Ready)),
-    );
+    app.init_resource::<LmdbEnv>()
+        .add_systems(Startup, init_tiles_db.map(drop))
+        .add_systems(
+            Update,
+            read_area.run_if(in_state(InternalContentState::Ready)),
+        );
 
     app.run();
 }

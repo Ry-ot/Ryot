@@ -15,8 +15,6 @@ use ryot::bevy_ryot::lmdb::LmdbEnv;
 use ryot::lmdb::{GetKey, Item, ItemRepository, ItemsFromHeedLmdb, Tile};
 #[cfg(feature = "lmdb")]
 use std::collections::HashMap;
-#[cfg(feature = "lmdb")]
-use time_test::time_test;
 
 pub fn draw_on_hold<C: ContentAssets>() -> SystemConfigs {
     on_hold(
@@ -100,7 +98,6 @@ fn draw_to_tile<C: ContentAssets, F: ReadOnlyWorldQuery>(
 
         #[cfg(feature = "lmdb")]
         {
-            time_test!("Writing");
             let item_repository = ItemsFromHeedLmdb::new(lmdb_env.clone());
             let mut new_tiles: HashMap<TilePosition, Tile> = HashMap::new();
 
@@ -109,11 +106,14 @@ fn draw_to_tile<C: ContentAssets, F: ReadOnlyWorldQuery>(
                 .map(|bundle| bundle.tile_pos.get_binary_key())
                 .collect();
 
-            let Ok(tiles) = item_repository.get_for_keys(binary_keys) else {
+            let tiles = item_repository.get_for_keys(binary_keys);
+
+            if let Err(err) = tiles {
+                warn!("Failed to get tiles: {}", err);
                 continue;
             };
 
-            for tile in tiles {
+            for tile in tiles.unwrap() {
                 new_tiles.insert(tile.position, tile);
             }
 
@@ -130,6 +130,8 @@ fn draw_to_tile<C: ContentAssets, F: ReadOnlyWorldQuery>(
                     bundle.layer,
                 );
             }
+
+            info!("Saving tiles: {:?}", new_tiles.len());
 
             if let Err(e) = item_repository.save_from_tiles(new_tiles.into_values().collect()) {
                 error!("Failed to save tile: {}", e);
