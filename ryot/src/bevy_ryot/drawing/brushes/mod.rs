@@ -8,8 +8,8 @@ mod round;
 use egui::ImageSource;
 pub use round::*;
 
-mod square;
-pub use square::*;
+mod rectangle;
+pub use rectangle::*;
 
 mod random;
 pub use random::*;
@@ -112,7 +112,7 @@ impl<E: BrushItem + std::cmp::PartialEq> Default for Brushes<E> {
         Self::new()
             .insert(Diamond)
             .insert(Round)
-            .insert(Square)
+            .insert(Rectangle)
             .insert(Random)
     }
 }
