@@ -12,7 +12,7 @@ use leafwing_input_manager::user_input::InputKind;
 use ryot::bevy_ryot::drawing::DrawingBundle;
 use ryot::layer::Layer;
 use ryot::position::{Sector, TilePosition};
-use ryot::prelude::drawing::Brushes;
+use ryot::prelude::drawing::{BrushItem, BrushParams, Brushes};
 use ryot::prelude::*;
 use std::marker::PhantomData;
 
@@ -67,16 +67,32 @@ pub struct Cursor {
 
 #[derive(Eq, PartialEq, Clone, Copy, Reflect)]
 pub struct DrawingState {
+    pub mode: DrawingMode,
     pub enabled: bool,
-    pub brush_size: i32,
     pub brush_index: usize,
+}
+
+#[derive(Eq, PartialEq, Clone, Copy, Reflect)]
+pub enum DrawingMode {
+    Click(i32),
+    TwoClicks(Option<TilePosition>),
+}
+
+impl<E: BrushItem> From<DrawingMode> for BrushParams<E> {
+    fn from(mode: DrawingMode) -> Self {
+        match mode {
+            DrawingMode::Click(size) => BrushParams::Size(size),
+            DrawingMode::TwoClicks(Some(pos)) => BrushParams::Position(pos),
+            DrawingMode::TwoClicks(None) => BrushParams::Size(0),
+        }
+    }
 }
 
 impl Default for DrawingState {
     fn default() -> Self {
         Self {
+            mode: DrawingMode::Click(3),
             enabled: true,
-            brush_size: 3,
             brush_index: 0,
         }
     }
@@ -270,7 +286,7 @@ fn update_cursor_brush_preview(
     // Here we get the positions of the tiles that will be part of the brush preview
     let mut positions: Vec<TilePosition> = brushes(
         cursor.drawing_state.brush_index,
-        cursor.drawing_state.brush_size,
+        cursor.drawing_state.mode.into(),
         DrawingBundle::from_tile_position(*cursor_pos),
     )
     .into_iter()

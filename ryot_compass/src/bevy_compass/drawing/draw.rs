@@ -1,4 +1,4 @@
-use crate::{Cursor, DrawingAction};
+use crate::{Cursor, DrawingAction, DrawingMode};
 use bevy::ecs::query::ReadOnlyWorldQuery;
 use bevy::ecs::schedule::SystemConfigs;
 use bevy::ecs::system::EntityCommand;
@@ -67,7 +67,7 @@ fn draw_to_tile<C: ContentAssets, F: ReadOnlyWorldQuery>(
 
         let to_draw = brushes(
             cursor.drawing_state.brush_index,
-            cursor.drawing_state.brush_size,
+            cursor.drawing_state.mode.into(),
             DrawingBundle::new(layer, *tile_pos, appearance),
         );
 
@@ -166,4 +166,32 @@ pub fn create_and_send_update_command(
     commands.add(command.with_entity(entity));
 
     Some(command)
+}
+
+pub fn update_drawing_mode(mut cursor_query: Query<(&TilePosition, &mut Cursor)>) {
+    for (cursor_pos, mut cursor) in &mut cursor_query {
+        cursor.drawing_state.mode = match cursor.drawing_state.mode {
+            DrawingMode::TwoClicks(Some(_)) => DrawingMode::TwoClicks(None),
+            DrawingMode::TwoClicks(None) => DrawingMode::TwoClicks(Some(*cursor_pos)),
+            mode => mode,
+        };
+    }
+}
+
+pub fn change_drawing_mode(mut cursor_query: Query<&mut Cursor>) {
+    for mut cursor in &mut cursor_query {
+        cursor.drawing_state.mode = match cursor.drawing_state.mode {
+            DrawingMode::TwoClicks(_) => DrawingMode::Click(3),
+            DrawingMode::Click(_) => DrawingMode::TwoClicks(None),
+        };
+    }
+}
+
+pub fn clear_selection(mut cursor_query: Query<&mut Cursor>) {
+    for mut cursor in &mut cursor_query {
+        cursor.drawing_state.mode = match cursor.drawing_state.mode {
+            DrawingMode::TwoClicks(Some(_)) => DrawingMode::TwoClicks(None),
+            mode => mode,
+        };
+    }
 }

@@ -1,4 +1,4 @@
-use crate::Cursor;
+use crate::{Cursor, DrawingMode};
 use bevy::prelude::*;
 use ryot::bevy_ryot::drawing::DrawingBundle;
 use ryot::prelude::drawing::*;
@@ -15,8 +15,9 @@ pub fn change_brush_shape(
 pub fn change_brush_size(delta: i32) -> impl FnMut(Query<&mut Cursor>) {
     move |mut cursor_query: Query<&mut Cursor>| {
         for mut cursor in cursor_query.iter_mut() {
-            cursor.drawing_state.brush_size =
-                (cursor.drawing_state.brush_size + delta).clamp(0, 50);
+            if let DrawingMode::Click(size) = &mut cursor.drawing_state.mode {
+                *size = (*size + delta).clamp(0, 50);
+            }
         }
     }
 }

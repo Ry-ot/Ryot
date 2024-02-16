@@ -15,9 +15,11 @@ impl<B: BrushItem> From<Diamond> for Brush<B> {
     }
 }
 
-pub fn diamond<B: BrushItem>(size: i32, center: B) -> Vec<B> {
+pub fn diamond<B: BrushItem>(params: BrushParams<B>, center: B) -> Vec<B> {
     let mut elements = Vec::new();
     let center_pos = center.get_position();
+
+    let size = params.get_size(center);
 
     for x_offset in -size..=size {
         for y_offset in -size..=size {

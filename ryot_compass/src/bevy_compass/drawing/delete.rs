@@ -32,7 +32,7 @@ fn delete_tile_content<F: ReadOnlyWorldQuery>(
     for (cursor, tile_pos) in &cursor_query {
         let positions: Vec<TilePosition> = brushes(
             cursor.drawing_state.brush_index,
-            cursor.drawing_state.brush_size,
+            cursor.drawing_state.mode.into(),
             DrawingBundle::from_tile_position(*tile_pos),
         )
         .into_iter()
