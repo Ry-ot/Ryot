@@ -25,7 +25,7 @@ pub enum DrawingAction {
     Erase,
     Undo,
     Redo,
-    ChangeDrawingMode,
+    StartConnectingPoints,
     ChangeBrush,
     IncreaseBrush,
     DecreaseBrush,
@@ -50,11 +50,7 @@ impl DrawingAction {
             )
             .insert(KeyCode::Key1, DrawingAction::ChangeBrush)
             .insert(KeyCode::Escape, DrawingAction::ClearSelection)
-            .insert_modified(
-                CONTROL_COMMAND,
-                KeyCode::I,
-                DrawingAction::ChangeDrawingMode,
-            )
+            .insert(Modifier::Shift, DrawingAction::StartConnectingPoints)
             .insert_modified(CONTROL_COMMAND, KeyCode::Plus, DrawingAction::IncreaseBrush)
             .insert_modified(
                 CONTROL_COMMAND,
@@ -102,6 +98,12 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
             .add_systems(
                 Update,
                 (
+                    set_drawing_mode.run_if(
+                        action_just_released(DrawingAction::StartConnectingPoints)
+                            .or_else(action_just_pressed(DrawingAction::ClearSelection).or_else(
+                                action_just_pressed(DrawingAction::StartConnectingPoints),
+                            )),
+                    ),
                     (draw_on_click::<C>(), draw_on_hold::<C>()),
                     (erase_on_click(), erase_on_hold()),
                     (
@@ -123,9 +125,6 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
                         action_just_pressed(DrawingAction::Draw)
                             .or_else(action_just_pressed(DrawingAction::Erase)),
                     ),
-                    change_drawing_mode
-                        .run_if(action_just_pressed(DrawingAction::ChangeDrawingMode)),
-                    clear_selection.run_if(action_just_pressed(DrawingAction::ClearSelection)),
                 )
                     .chain()
                     .run_if(in_state(InternalContentState::Ready))
