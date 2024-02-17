@@ -71,8 +71,7 @@ fn delete_tile_content<F: ReadOnlyWorldQuery>(
                 continue;
             };
 
-            let command =
-                UpdateTileContent(None, Some(DrawingBundle::new(layer, *tile_pos, appearance)));
+            let command = DeleteTileContent(DrawingBundle::new(layer, *tile_pos, appearance));
 
             commands.add(command.with_entity(entity));
             command_history

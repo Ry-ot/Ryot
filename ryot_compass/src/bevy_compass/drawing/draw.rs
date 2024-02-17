@@ -136,7 +136,7 @@ pub fn create_and_send_update_command(
     commands: &mut Commands,
     tiles: &mut ResMut<MapTiles>,
     current_appearance_query: &Query<(&mut AppearanceDescriptor, &Visibility), Without<Cursor>>,
-) -> Option<UpdateTileContent> {
+) -> Option<impl ReversibleCommand> {
     let entity = tiles
         .entry(new_bundle.tile_pos)
         .or_default()
@@ -155,10 +155,15 @@ pub fn create_and_send_update_command(
         return None;
     }
 
+    if old_bundle.is_none() {
+        let command = UpdateTileContent(Some(new_bundle), None);
+        commands.add(command.with_entity(entity));
+        return Some(command);
+    }
+
     let command = UpdateTileContent(Some(new_bundle), old_bundle);
     commands.add(command.with_entity(entity));
-
-    Some(command)
+    return Some(command);
 }
 
 pub fn update_drawing_mode(mut cursor_query: Query<(&TilePosition, &mut Cursor)>) {

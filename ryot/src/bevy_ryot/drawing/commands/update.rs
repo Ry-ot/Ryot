@@ -1,8 +1,7 @@
-use crate::bevy_ryot::{
-    drawing::{commands::*, *},
-    map::MapTiles,
-};
+use crate::bevy_ryot::drawing::{create, delete, Deleted, DrawingBundle, ReversibleCommand};
+use crate::bevy_ryot::AppearanceDescriptor;
 use bevy::ecs::system::EntityCommand;
+use bevy::prelude::{Commands, Entity, Visibility, World};
 
 /// A command that updates the content of a tile. An entity location is represented by the
 /// combination of a Layer and a Position.
@@ -43,6 +42,7 @@ impl ReversibleCommand for UpdateTileContent {
             commands.add(UpdateTileContent(self.1, self.0).with_entity(entity));
         }
     }
+
     fn redo(&self, commands: &mut Commands, entity: Option<Entity>) {
         if let Some(entity) = entity {
             commands.add(self.with_entity(entity));
@@ -50,14 +50,7 @@ impl ReversibleCommand for UpdateTileContent {
     }
 }
 
-fn delete(id: Entity, world: &mut World) {
-    if let Some(mut visibility) = world.get_mut::<Visibility>(id) {
-        *visibility = Visibility::Hidden;
-        world.entity_mut(id).insert(Deleted);
-    }
-}
-
-fn update(id: Entity, world: &mut World, bundle: DrawingBundle) {
+pub fn update(id: Entity, world: &mut World, bundle: DrawingBundle) {
     world.entity_mut(id).remove::<Deleted>();
 
     let Some(mut descriptor) = world.get_mut::<AppearanceDescriptor>(id) else {
@@ -71,11 +64,4 @@ fn update(id: Entity, world: &mut World, bundle: DrawingBundle) {
     if let Some(mut visibility) = world.get_mut::<Visibility>(id) {
         *visibility = bundle.visibility
     }
-}
-
-fn create(id: Entity, world: &mut World, bundle: DrawingBundle) {
-    world.entity_mut(id).insert(bundle);
-    let mut map_tiles = world.resource_mut::<MapTiles>();
-    let content = map_tiles.entry(bundle.tile_pos).or_default();
-    content.insert(bundle.layer, id);
 }
