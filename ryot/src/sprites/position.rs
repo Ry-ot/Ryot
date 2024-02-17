@@ -24,26 +24,9 @@ pub struct TilePosition(pub IVec3);
 #[derive(Component, Debug, Clone)]
 pub struct SpriteMovement {
     pub origin: TilePosition,
+    pub destination: TilePosition,
     pub timer: Timer,
     pub despawn_on_end: bool,
-}
-
-#[cfg(feature = "bevy")]
-impl SpriteMovement {
-    pub fn new(origin: TilePosition, duration: Duration) -> Self {
-        Self {
-            origin,
-            timer: Timer::new(duration, TimerMode::Once),
-            despawn_on_end: false,
-        }
-    }
-
-    pub fn despawn_on_end(self, despawn_on_end: bool) -> Self {
-        Self {
-            despawn_on_end,
-            ..self
-        }
-    }
 }
 
 impl TilePosition {
@@ -144,6 +127,25 @@ impl From<TilePosition> for Vec2 {
 impl From<&TilePosition> for Vec2 {
     fn from(tile_pos: &TilePosition) -> Self {
         Vec2::from(*tile_pos)
+    }
+}
+
+#[cfg(feature = "bevy")]
+impl SpriteMovement {
+    pub fn new(origin: TilePosition, destination: TilePosition, duration: Duration) -> Self {
+        Self {
+            origin,
+            destination,
+            timer: Timer::new(duration, TimerMode::Once),
+            despawn_on_end: false,
+        }
+    }
+
+    pub fn despawn_on_end(self, despawn_on_end: bool) -> Self {
+        Self {
+            despawn_on_end,
+            ..self
+        }
     }
 }
 
@@ -319,10 +321,10 @@ pub fn update_sprite_position(
     for (entity, tile_pos, layer, mut transform, movement) in query.iter_mut() {
         if let Some(mut movement) = movement {
             movement.timer.tick(time.delta());
-            transform.translation = movement
-                .origin
-                .to_vec3(layer)
-                .lerp(tile_pos.to_vec3(layer), movement.timer.percent());
+            transform.translation = movement.origin.to_vec3(layer).lerp(
+                movement.destination.to_vec3(layer),
+                movement.timer.percent(),
+            );
             if movement.timer.just_finished() {
                 if movement.despawn_on_end {
                     commands.entity(entity).despawn_recursive();

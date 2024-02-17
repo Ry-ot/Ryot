@@ -100,7 +100,7 @@ impl DrawingBundle {
         Self::new(layer, tile_pos, AppearanceDescriptor::object(id))
     }
 
-    pub fn creature(
+    pub fn outfit(
         layer: impl Into<Layer>,
         tile_pos: TilePosition,
         id: u32,
@@ -158,7 +158,7 @@ impl MovementBundle {
     ) -> Self {
         Self {
             drawing: drawing.with_position(end),
-            movement: SpriteMovement::new(start, duration).despawn_on_end(true),
+            movement: SpriteMovement::new(start, end, duration).despawn_on_end(true),
             direction: Directional::Ordinal(OrdinalDirection::from(end - start)),
         }
     }
