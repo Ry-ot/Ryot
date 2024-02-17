@@ -1,4 +1,4 @@
-use crate::{Cursor, DrawingAction, DrawingMode, LmdbResource};
+use crate::{Cursor, DrawingAction, DrawingMode};
 use bevy::ecs::query::ReadOnlyWorldQuery;
 use bevy::ecs::schedule::SystemConfigs;
 use bevy::ecs::system::EntityCommand;
@@ -29,7 +29,7 @@ pub fn draw_on_click<C: ContentAssets>() -> SystemConfigs {
 fn draw_to_tile<C: ContentAssets, F: ReadOnlyWorldQuery>(
     mut commands: Commands,
     mut tiles: ResMut<MapTiles>,
-    lmdb_env: LmdbResource,
+    #[cfg(feature = "lmdb")] lmdb_env: ResMut<lmdb::LmdbEnv>,
     mut command_history: ResMut<CommandHistory>,
     content_assets: Res<C>,
     brushes: Res<Brushes<DrawingBundle>>,

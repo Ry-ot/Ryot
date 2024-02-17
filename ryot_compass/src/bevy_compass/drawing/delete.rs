@@ -1,4 +1,4 @@
-use crate::{Cursor, DrawingAction, LmdbResource};
+use crate::{Cursor, DrawingAction};
 use bevy::ecs::query::ReadOnlyWorldQuery;
 use bevy::ecs::schedule::SystemConfigs;
 use bevy::ecs::system::EntityCommand;
@@ -28,7 +28,7 @@ pub fn erase_on_click() -> SystemConfigs {
 fn delete_tile_content<F: ReadOnlyWorldQuery>(
     mut commands: Commands,
     mut command_history: ResMut<CommandHistory>,
-    lmdb_env: LmdbResource,
+    #[cfg(feature = "lmdb")] lmdb_env: ResMut<lmdb::LmdbEnv>,
     layers: Res<Layers>,
     tiles: ResMut<MapTiles>,
     brushes: Res<Brushes<DrawingBundle>>,
