@@ -2,8 +2,14 @@ use crate::bevy_ryot::drawing::Layer;
 use crate::position::TilePosition;
 use bevy::prelude::*;
 
-mod update_tile_content;
-pub use update_tile_content::*;
+mod create;
+pub use create::*;
+
+mod delete;
+pub use delete::*;
+
+mod update;
+pub use update::*;
 
 /// A trait that represents a reversible command, that can be undone and redone.
 /// Due to limitations from the bevy commands, the undo and redo methods needs to be
