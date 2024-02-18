@@ -106,6 +106,7 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
                     ),
                     (draw_on_click::<C>(), draw_on_hold::<C>()),
                     (erase_on_click(), erase_on_hold()),
+                    (apply_deletion, persist_deletion),
                     (
                         tick_undo_redo_timer,
                         undo_on_hold(),

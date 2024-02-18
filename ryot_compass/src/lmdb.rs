@@ -57,11 +57,11 @@ pub fn load_area(sector: Sector, env: Env, commands: &mut Commands, tiles: &Res<
                         }
                     }
 
-                    let bundle = Some(DrawingBundle::new(
+                    let bundle = DrawingBundle::new(
                         layer,
                         tile.position,
                         AppearanceDescriptor::object(item.id as u32),
-                    ));
+                    );
 
                     let entity = commands.spawn_empty().id();
 
