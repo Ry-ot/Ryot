@@ -1,7 +1,6 @@
 use crate::{Cursor, DrawingAction};
 use bevy::ecs::query::ReadOnlyWorldQuery;
 use bevy::ecs::schedule::SystemConfigs;
-use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
 use ryot::bevy_ryot::map::MapTiles;
 use ryot::bevy_ryot::*;
@@ -43,18 +42,13 @@ fn delete_tile_content<F: ReadOnlyWorldQuery>(
         let top_most_content = positions
             .iter()
             .filter_map(|pos| get_top_most_visible(*pos, &tiles, &q_visibility))
+            .map(|(_, bundle)| bundle)
             .collect::<Vec<_>>();
 
-        top_most_content.iter().for_each(|(entity, bundle)| {
-            let command = DeleteTileContent(vec![*bundle]);
-            commands.add(command.clone().with_entity(*entity));
-            command_history.performed_commands.push(command.into());
-        });
-
-        command_history
-            .performed_commands
-            .push(CommandBatchSize(top_most_content.len()).into());
+        let command = DeleteTileContent(top_most_content);
+        commands.add(command.clone());
 
         command_history.reversed_commands.clear();
+        command_history.performed_commands.push(command.into());
     }
 }
