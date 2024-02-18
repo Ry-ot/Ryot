@@ -284,7 +284,7 @@ impl From<Option<appearances::AppearanceFlags>> for Layer {
 
 fn apply_detail_level_to_visibility(
     mut q_visible_entities: Query<(&mut VisibleEntities, &Sector), With<Camera>>,
-    mut tiles_query: Query<(&mut ViewVisibility, &Layer), (Without<Deleted>, With<TileComponent>)>,
+    mut tiles_query: Query<(&mut ViewVisibility, &Layer), (Without<Deletion>, With<TileComponent>)>,
 ) {
     for (mut visible_entities, sector) in q_visible_entities.iter_mut() {
         let detail_level = DetailLevel::from_area(sector.area());

@@ -1,4 +1,6 @@
-use crate::bevy_ryot::drawing::{create, delete, Deleted, DrawingBundle, ReversibleCommand};
+use crate::bevy_ryot::drawing::{
+    create, DeleteTileContent, Deletion, DrawingBundle, ReversibleCommand,
+};
 use crate::bevy_ryot::AppearanceDescriptor;
 use bevy::ecs::system::EntityCommand;
 use bevy::prelude::{Commands, Entity, Visibility, World};
@@ -22,13 +24,12 @@ use bevy::prelude::{Commands, Entity, Visibility, World};
 /// The old content is also used to revert the command, so that the previous state can be
 /// restored.
 #[derive(Debug, Copy, Clone)]
-pub struct UpdateTileContent(pub Option<DrawingBundle>, pub Option<DrawingBundle>);
+pub struct UpdateTileContent(pub DrawingBundle, pub Option<DrawingBundle>);
 impl EntityCommand for UpdateTileContent {
     fn apply(self, id: Entity, world: &mut World) {
         match self {
-            UpdateTileContent(None, _) => delete(id, world),
-            UpdateTileContent(Some(new_bundle), None) => create(id, world, new_bundle),
-            UpdateTileContent(Some(new_bundle), Some(_)) => update(id, world, new_bundle),
+            UpdateTileContent(new_bundle, None) => create(id, world, new_bundle),
+            UpdateTileContent(new_bundle, Some(_)) => update(id, world, new_bundle),
         }
     }
 }
@@ -39,7 +40,14 @@ impl EntityCommand for UpdateTileContent {
 impl ReversibleCommand for UpdateTileContent {
     fn undo(&self, commands: &mut Commands, entity: Option<Entity>) {
         if let Some(entity) = entity {
-            commands.add(UpdateTileContent(self.1, self.0).with_entity(entity));
+            match self {
+                UpdateTileContent(_, None) => {
+                    commands.add(DeleteTileContent(self.0).with_entity(entity))
+                }
+                UpdateTileContent(_, Some(old)) => {
+                    commands.add(UpdateTileContent(*old, Some(self.0)).with_entity(entity))
+                }
+            }
         }
     }
 
@@ -51,7 +59,7 @@ impl ReversibleCommand for UpdateTileContent {
 }
 
 pub fn update(id: Entity, world: &mut World, bundle: DrawingBundle) {
-    world.entity_mut(id).remove::<Deleted>();
+    world.entity_mut(id).remove::<Deletion>();
 
     let Some(mut descriptor) = world.get_mut::<AppearanceDescriptor>(id) else {
         return;

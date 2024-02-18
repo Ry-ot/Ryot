@@ -10,6 +10,8 @@ use ryot::layer::Layer;
 use ryot::prelude::{drawing::*, position::*};
 
 #[cfg(feature = "lmdb")]
+use ryot::bevy_ryot::lmdb::LmdbEnv;
+#[cfg(feature = "lmdb")]
 use ryot::lmdb::{GetKey, Item, ItemRepository, ItemsFromHeedLmdb, Tile};
 #[cfg(feature = "lmdb")]
 use std::collections::HashMap;
@@ -29,7 +31,7 @@ pub fn draw_on_click<C: ContentAssets>() -> SystemConfigs {
 fn draw_to_tile<C: ContentAssets, F: ReadOnlyWorldQuery>(
     mut commands: Commands,
     mut tiles: ResMut<MapTiles>,
-    #[cfg(feature = "lmdb")] lmdb_env: ResMut<lmdb::LmdbEnv>,
+    #[cfg(feature = "lmdb")] lmdb_env: Res<LmdbEnv>,
     mut command_history: ResMut<CommandHistory>,
     content_assets: Res<C>,
     brushes: Res<Brushes<DrawingBundle>>,
@@ -156,12 +158,12 @@ pub fn create_and_send_update_command(
     }
 
     if old_bundle.is_none() {
-        let command = UpdateTileContent(Some(new_bundle), None);
+        let command = UpdateTileContent(new_bundle, None);
         commands.add(command.with_entity(entity));
         return Some(command);
     }
 
-    let command = UpdateTileContent(Some(new_bundle), old_bundle);
+    let command = UpdateTileContent(new_bundle, old_bundle);
     commands.add(command.with_entity(entity));
     return Some(command);
 }

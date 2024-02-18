@@ -5,10 +5,7 @@ use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
 use ryot::bevy_ryot::map::MapTiles;
 use ryot::bevy_ryot::*;
-use ryot::prelude::{drawing::*, layer::*, position::*};
-
-#[cfg(feature = "lmdb")]
-use ryot::lmdb::{GetKey, ItemRepository, ItemsFromHeedLmdb};
+use ryot::prelude::{drawing::*, position::*};
 
 pub fn erase_on_hold() -> SystemConfigs {
     on_hold(
@@ -28,12 +25,10 @@ pub fn erase_on_click() -> SystemConfigs {
 fn delete_tile_content<F: ReadOnlyWorldQuery>(
     mut commands: Commands,
     mut command_history: ResMut<CommandHistory>,
-    #[cfg(feature = "lmdb")] lmdb_env: ResMut<lmdb::LmdbEnv>,
-    layers: Res<Layers>,
-    tiles: ResMut<MapTiles>,
+    tiles: Res<MapTiles>,
     brushes: Res<Brushes<DrawingBundle>>,
     cursor_query: Query<(&Cursor, &TilePosition), F>,
-    current_appearance_query: Query<(&mut AppearanceDescriptor, &Visibility), Without<Cursor>>,
+    q_visibility: Query<(&Visibility, &AppearanceDescriptor), With<TileComponent>>,
 ) {
     for (cursor, tile_pos) in &cursor_query {
         let positions: Vec<TilePosition> = brushes(
@@ -45,57 +40,21 @@ fn delete_tile_content<F: ReadOnlyWorldQuery>(
         .map(|bundle| bundle.tile_pos)
         .collect();
 
-        let mut queued = 0;
+        let top_most_content = positions
+            .iter()
+            .filter_map(|pos| get_top_most_visible(*pos, &tiles, &q_visibility))
+            .collect::<Vec<_>>();
 
-        for tile_pos in &positions {
-            let Some(tile_content) = tiles.get(tile_pos) else {
-                continue;
-            };
-
-            let mut content: Option<(Entity, Layer, AppearanceDescriptor)> = None;
-
-            for layer in layers.get_sorted_by_z_desc() {
-                if let Some(entity) = tile_content.get(layer) {
-                    if let Ok((current, visibility)) = current_appearance_query.get(*entity) {
-                        if visibility == Visibility::Hidden {
-                            continue;
-                        }
-
-                        content = Some((*entity, *layer, *current));
-                        break;
-                    }
-                }
-            }
-
-            let Some((entity, layer, appearance)) = content else {
-                continue;
-            };
-
-            let command = DeleteTileContent(DrawingBundle::new(layer, *tile_pos, appearance));
-
-            commands.add(command.with_entity(entity));
-            command_history
-                .performed_commands
-                .push(TileCommandRecord::new(layer, *tile_pos, Box::new(command)).into());
-
-            queued += 1;
-        }
+        top_most_content.iter().for_each(|(entity, bundle)| {
+            let command = DeleteTileContent(*bundle);
+            commands.add(command.with_entity(*entity));
+            command_history.performed_commands.push(command.into());
+        });
 
         command_history
             .performed_commands
-            .push(CommandBatchSize(queued).into());
+            .push(CommandBatchSize(top_most_content.len()).into());
 
         command_history.reversed_commands.clear();
-
-        #[cfg(feature = "lmdb")]
-        {
-            let item_repository = ItemsFromHeedLmdb::new(lmdb_env.clone());
-
-            let keys = positions.iter().map(|pos| pos.get_binary_key()).collect();
-
-            if let Err(e) = item_repository.delete_multiple(keys) {
-                error!("Failed to delete tile: {}", e);
-            }
-        };
     }
 }

@@ -16,6 +16,18 @@ pub enum Layer {
     TopDown45(i32),
 }
 
+impl PartialOrd for Layer {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Layer {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.z().cmp(&other.z())
+    }
+}
+
 impl Default for Layer {
     fn default() -> Self {
         CipLayer::Items.into()

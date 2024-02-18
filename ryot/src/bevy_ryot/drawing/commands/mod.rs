@@ -11,6 +11,14 @@ pub use delete::*;
 mod update;
 pub use update::*;
 
+#[derive(Eq, PartialEq, Default, Clone, Copy, Reflect)]
+pub enum CommandState {
+    #[default]
+    Requested,
+    Applied,
+    Persisted,
+}
+
 /// A trait that represents a reversible command, that can be undone and redone.
 /// Due to limitations from the bevy commands, the undo and redo methods needs to be
 /// implemented in each command. We cannot make a generic implementation and simplify
@@ -41,12 +49,10 @@ pub struct CommandHistory {
     pub reversed_commands: Vec<CommandType>,
 }
 
-#[derive(Debug, Copy, Clone, Reflect, Component)]
-pub struct Deleted;
-
 pub enum CommandType {
     Batch(CommandBatchSize),
     TileCommand(TileCommandRecord),
+    Command(Box<dyn ReversibleCommand>),
 }
 
 impl From<TileCommandRecord> for CommandType {
