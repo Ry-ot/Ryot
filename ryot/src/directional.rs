@@ -1,6 +1,7 @@
 use std::ops::Deref;
 
 use glam::IVec2;
+use rand::distributions::Distribution;
 use serde::{Deserialize, Serialize};
 use strum::EnumIter;
 
@@ -42,6 +43,22 @@ pub enum OrdinalDirection {
     SouthWest,
     South,
     SouthEast,
+}
+
+impl Distribution<OrdinalDirection> for rand::distributions::Standard {
+    fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> OrdinalDirection {
+        match rng.gen_range(0..8) {
+            0 => OrdinalDirection::North,
+            1 => OrdinalDirection::NorthEast,
+            2 => OrdinalDirection::East,
+            3 => OrdinalDirection::SouthEast,
+            4 => OrdinalDirection::South,
+            5 => OrdinalDirection::SouthWest,
+            6 => OrdinalDirection::West,
+            7 => OrdinalDirection::NorthWest,
+            _ => OrdinalDirection::None,
+        }
+    }
 }
 
 impl From<OrdinalDirection> for CardinalDirection {
