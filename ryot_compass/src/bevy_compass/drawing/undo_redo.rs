@@ -75,21 +75,19 @@ fn redo(
 ) -> bool {
     if let Some(command_record) = command_history.reversed_commands.pop() {
         match &command_record {
-            CommandType::TileCommand(tile_command) => {
-                tile_command.command.redo(
-                    commands,
-                    get_entity_from_command_record(tiles, tile_command),
-                );
-                command_history.performed_commands.push(command_record);
-            }
+            CommandType::TileCommand(tile_command) => tile_command.command.redo(
+                commands,
+                get_entity_from_command_record(tiles, tile_command),
+            ),
             CommandType::Batch(batch_size) => {
                 for _ in 0..*batch_size.deref() {
                     redo(commands, tiles, command_history);
                 }
-                command_history.performed_commands.push(command_record);
             }
             CommandType::Command(command) => command.redo(commands, None),
         }
+
+        command_history.performed_commands.push(command_record);
 
         return true;
     }
@@ -104,23 +102,19 @@ fn undo(
 ) -> bool {
     if let Some(command_record) = command_history.performed_commands.pop() {
         match &command_record {
-            CommandType::TileCommand(tile_command) => {
-                tile_command.command.undo(
-                    commands,
-                    get_entity_from_command_record(tiles, tile_command),
-                );
-
-                command_history.reversed_commands.push(command_record);
-            }
+            CommandType::TileCommand(tile_command) => tile_command.command.undo(
+                commands,
+                get_entity_from_command_record(tiles, tile_command),
+            ),
             CommandType::Batch(batch_size) => {
                 for _ in 0..*batch_size.deref() {
                     undo(commands, tiles, command_history);
                 }
-
-                command_history.reversed_commands.push(command_record);
             }
             CommandType::Command(command) => command.undo(commands, None),
         }
+
+        command_history.reversed_commands.push(command_record);
 
         return true;
     }

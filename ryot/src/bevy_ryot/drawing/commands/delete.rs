@@ -1,7 +1,7 @@
 use crate::bevy_ryot::drawing::*;
 use crate::bevy_ryot::map::MapTiles;
 use crate::position::TilePosition;
-use bevy::ecs::system::EntityCommand;
+use bevy::ecs::system::Command;
 use itertools::Itertools;
 
 #[cfg(feature = "lmdb")]
@@ -26,18 +26,7 @@ A system that read all entities with Insertion and:
 
 #[derive(Eq, PartialEq, Component, Default, Clone, Reflect)]
 pub struct Deletion {
-    #[reflect(ignore)]
-    pub command: DeleteTileContent,
     pub state: CommandState,
-}
-
-impl Deletion {
-    pub fn for_command(command: DeleteTileContent) -> Self {
-        Self {
-            command,
-            state: CommandState::Requested,
-        }
-    }
 }
 
 #[derive(Debug, Eq, PartialEq, Default, Clone)]
@@ -45,37 +34,41 @@ pub struct DeleteTileContent(pub Vec<DrawingBundle>);
 
 impl From<DeleteTileContent> for CommandType {
     fn from(command: DeleteTileContent) -> Self {
-        Self::TileCommand(TileCommandRecord::new(
-            command.0.first().unwrap().layer,
-            command.0.first().unwrap().tile_pos,
-            Box::new(command),
-        ))
+        CommandType::Command(Box::new(command))
     }
 }
 
-impl EntityCommand for DeleteTileContent {
-    fn apply(self, id: Entity, world: &mut World) {
-        world.entity_mut(id).insert(Deletion::for_command(self));
+impl Command for DeleteTileContent {
+    fn apply(self, world: &mut World) {
+        let mut ids = vec![];
+
+        let mut map_tiles = world.resource_mut::<MapTiles>();
+
+        for bundle in &self.0 {
+            let Some(tile_content) = map_tiles.get_mut(&bundle.tile_pos) else {
+                continue;
+            };
+
+            let Some(id) = tile_content.get(&bundle.layer) else {
+                continue;
+            };
+
+            ids.push(*id);
+        }
+
+        for id in ids {
+            world.entity_mut(id).insert(Deletion::default());
+        }
     }
 }
 
 impl ReversibleCommand for DeleteTileContent {
-    fn undo(&self, commands: &mut Commands, entity: Option<Entity>) {
-        let Some(entity) = entity else {
-            return;
-        };
-
-        let Some(bundle) = self.0.first() else {
-            return;
-        };
-
-        commands.add(CreateTileContent(*bundle).with_entity(entity));
+    fn undo(&self, commands: &mut Commands, _: Option<Entity>) {
+        commands.add(CreateTileContent(self.0.clone()));
     }
 
-    fn redo(&self, commands: &mut Commands, entity: Option<Entity>) {
-        if let Some(entity) = entity {
-            commands.add(self.clone().with_entity(entity));
-        }
+    fn redo(&self, commands: &mut Commands, _: Option<Entity>) {
+        commands.add(self.clone());
     }
 }
 
