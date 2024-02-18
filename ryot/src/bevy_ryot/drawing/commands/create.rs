@@ -14,7 +14,7 @@ impl EntityCommand for CreateTileContent {
 impl ReversibleCommand for CreateTileContent {
     fn undo(&self, commands: &mut Commands, entity: Option<Entity>) {
         if let Some(entity) = entity {
-            commands.add(DeleteTileContent(self.0).with_entity(entity));
+            commands.add(DeleteTileContent(vec![self.0]).with_entity(entity));
         }
     }
 

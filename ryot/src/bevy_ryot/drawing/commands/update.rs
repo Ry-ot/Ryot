@@ -42,7 +42,7 @@ impl ReversibleCommand for UpdateTileContent {
         if let Some(entity) = entity {
             match self {
                 UpdateTileContent(_, None) => {
-                    commands.add(DeleteTileContent(self.0).with_entity(entity))
+                    commands.add(DeleteTileContent(vec![self.0]).with_entity(entity))
                 }
                 UpdateTileContent(_, Some(old)) => {
                     commands.add(UpdateTileContent(*old, Some(self.0)).with_entity(entity))

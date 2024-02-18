@@ -46,8 +46,8 @@ fn delete_tile_content<F: ReadOnlyWorldQuery>(
             .collect::<Vec<_>>();
 
         top_most_content.iter().for_each(|(entity, bundle)| {
-            let command = DeleteTileContent(*bundle);
-            commands.add(command.with_entity(*entity));
+            let command = DeleteTileContent(vec![*bundle]);
+            commands.add(command.clone().with_entity(*entity));
             command_history.performed_commands.push(command.into());
         });
 

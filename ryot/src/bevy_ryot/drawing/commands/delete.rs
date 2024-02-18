@@ -24,7 +24,7 @@ A system that read all entities with Insertion and:
  - if created it adds the bundles to the entity and adds it to the e
 */
 
-#[derive(Eq, PartialEq, Component, Default, Clone, Copy, Reflect)]
+#[derive(Eq, PartialEq, Component, Default, Clone, Reflect)]
 pub struct Deletion {
     #[reflect(ignore)]
     pub command: DeleteTileContent,
@@ -40,14 +40,14 @@ impl Deletion {
     }
 }
 
-#[derive(Debug, Eq, PartialEq, Default, Clone, Copy)]
-pub struct DeleteTileContent(pub DrawingBundle);
+#[derive(Debug, Eq, PartialEq, Default, Clone)]
+pub struct DeleteTileContent(pub Vec<DrawingBundle>);
 
 impl From<DeleteTileContent> for CommandType {
     fn from(command: DeleteTileContent) -> Self {
         Self::TileCommand(TileCommandRecord::new(
-            command.0.layer,
-            command.0.tile_pos,
+            command.0.first().unwrap().layer,
+            command.0.first().unwrap().tile_pos,
             Box::new(command),
         ))
     }
@@ -61,14 +61,20 @@ impl EntityCommand for DeleteTileContent {
 
 impl ReversibleCommand for DeleteTileContent {
     fn undo(&self, commands: &mut Commands, entity: Option<Entity>) {
-        if let Some(entity) = entity {
-            commands.add(CreateTileContent(self.0).with_entity(entity));
-        }
+        let Some(entity) = entity else {
+            return;
+        };
+
+        let Some(bundle) = self.0.first() else {
+            return;
+        };
+
+        commands.add(CreateTileContent(*bundle).with_entity(entity));
     }
 
     fn redo(&self, commands: &mut Commands, entity: Option<Entity>) {
         if let Some(entity) = entity {
-            commands.add(self.with_entity(entity));
+            commands.add(self.clone().with_entity(entity));
         }
     }
 }
