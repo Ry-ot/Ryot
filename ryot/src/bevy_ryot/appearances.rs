@@ -115,11 +115,11 @@ impl AppearanceDescriptor {
         if self.fixed_frame_group == FixedFrameGroup::ObjectInitial {
             return *self;
         }
-        if value {
-            self.fixed_frame_group = FixedFrameGroup::OutfitMoving;
+        self.fixed_frame_group = if value {
+            FixedFrameGroup::OutfitMoving
         } else {
-            self.fixed_frame_group = FixedFrameGroup::OutfitIdle;
-        }
+            FixedFrameGroup::OutfitIdle
+        };
         *self
     }
 }
