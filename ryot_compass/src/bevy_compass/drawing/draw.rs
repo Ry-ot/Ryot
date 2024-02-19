@@ -1,12 +1,10 @@
 use crate::{Cursor, DrawingAction, DrawingMode};
 use bevy::ecs::query::ReadOnlyWorldQuery;
 use bevy::ecs::schedule::SystemConfigs;
-use bevy::ecs::system::EntityCommand;
 use bevy::prelude::*;
 use leafwing_input_manager::action_state::ActionState;
 use ryot::bevy_ryot::map::MapTiles;
 use ryot::bevy_ryot::*;
-use ryot::layer::Layer;
 use ryot::prelude::{drawing::*, position::*};
 
 #[cfg(feature = "lmdb")]
@@ -64,31 +62,41 @@ fn draw_to_tile<C: ContentAssets, F: ReadOnlyWorldQuery>(
             DrawingBundle::new(layer, *tile_pos, appearance),
         );
 
-        let mut queued = 0;
+        let mut old_info: Vec<DrawingInfo> = vec![];
 
         for new_bundle in &to_draw {
-            let Some(command) = create_and_send_update_command(
-                layer,
+            let (old_bundle, _) = get_current_bundle_and_entity(
                 *new_bundle,
                 &mut commands,
                 &mut tiles,
                 &current_appearance_query,
-            ) else {
-                continue;
+            );
+
+            let appearance = match old_bundle {
+                Some(old_bundle) => Some(old_bundle.appearance),
+                None => None,
             };
 
-            command_history
-                .performed_commands
-                .push(TileCommandRecord::new(layer, new_bundle.tile_pos, Box::new(command)).into());
-
-            queued += 1;
+            old_info.push((
+                new_bundle.tile_pos,
+                new_bundle.layer,
+                Visibility::default(),
+                appearance,
+            ));
         }
 
-        command_history
-            .performed_commands
-            .push(CommandBatchSize(queued).into());
+        let command = UpdateTileContent::new(
+            to_draw
+                .iter()
+                .copied()
+                .map(|bundle| bundle.into())
+                .collect::<Vec<DrawingInfo>>(),
+            old_info,
+        );
 
+        commands.add(command.clone());
         command_history.reversed_commands.clear();
+        command_history.performed_commands.push(command.into());
 
         #[cfg(feature = "lmdb")]
         {
@@ -132,40 +140,27 @@ fn draw_to_tile<C: ContentAssets, F: ReadOnlyWorldQuery>(
     }
 }
 
-pub fn create_and_send_update_command(
-    layer: Layer,
+pub fn get_current_bundle_and_entity(
     new_bundle: DrawingBundle,
     commands: &mut Commands,
     tiles: &mut ResMut<MapTiles>,
     current_appearance_query: &Query<(&mut AppearanceDescriptor, &Visibility), Without<Cursor>>,
-) -> Option<impl ReversibleCommand> {
+) -> (Option<DrawingBundle>, Entity) {
     let entity = tiles
         .entry(new_bundle.tile_pos)
         .or_default()
-        .get(&layer)
+        .get(&new_bundle.layer)
         .map_or_else(|| commands.spawn_empty().id(), |&e| e);
 
     let old_bundle = match current_appearance_query.get(entity) {
         Ok((appearance, visibility)) => Some(
-            DrawingBundle::new(layer, new_bundle.tile_pos, *appearance)
+            DrawingBundle::new(new_bundle.layer, new_bundle.tile_pos, *appearance)
                 .with_visibility(*visibility),
         ),
         Err(_) => None,
     };
 
-    if old_bundle == Some(new_bundle) {
-        return None;
-    }
-
-    if old_bundle.is_none() {
-        let command = UpdateTileContent(new_bundle, None);
-        commands.add(command.with_entity(entity));
-        return Some(command);
-    }
-
-    let command = UpdateTileContent(new_bundle, old_bundle);
-    commands.add(command.with_entity(entity));
-    return Some(command);
+    return (old_bundle, entity);
 }
 
 pub fn update_drawing_mode(mut cursor_query: Query<(&TilePosition, &mut Cursor)>) {
