@@ -64,10 +64,7 @@ fn draw_to_tile<C: ContentAssets, F: ReadOnlyWorldQuery>(
                 &current_appearance_query,
             );
 
-            let appearance = match old_bundle {
-                Some(old_bundle) => Some(old_bundle.appearance),
-                None => None,
-            };
+            let appearance = old_bundle.map(|old_bundle| old_bundle.appearance);
 
             old_info.push((
                 new_bundle.tile_pos,
@@ -112,7 +109,7 @@ pub fn get_current_bundle_and_entity(
         Err(_) => None,
     };
 
-    return (old_bundle, entity);
+    (old_bundle, entity)
 }
 
 pub fn update_drawing_mode(mut cursor_query: Query<(&TilePosition, &mut Cursor)>) {
