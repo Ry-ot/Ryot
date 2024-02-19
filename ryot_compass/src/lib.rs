@@ -44,12 +44,12 @@ impl Plugin for AppPlugin {
             .insert_resource(
                 InputMap::<ToggleFeatures>::default()
                     .insert_chord(
-                        inputs![CONTROL_COMMAND, Modifier::Alt, KeyCode::F],
                         ToggleFeatures::Inspector,
+                        inputs![CONTROL_COMMAND, Modifier::Alt, KeyCode::F],
                     )
                     .insert_chord(
-                        inputs![CONTROL_COMMAND, Modifier::Alt, KeyCode::X],
                         ToggleFeatures::Animation,
+                        inputs![CONTROL_COMMAND, Modifier::Alt, KeyCode::X],
                     )
                     .build(),
             )
