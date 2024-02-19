@@ -180,7 +180,7 @@ pub fn set_drawing_mode(
             *previous_size = size;
         }
 
-        if action_state.just_pressed(DrawingAction::StartConnectingPoints) {
+        if action_state.just_pressed(&DrawingAction::StartConnectingPoints) {
             cursor.drawing_state.mode = DrawingMode::TwoClicks(None);
         } else {
             cursor.drawing_state.mode = DrawingMode::Click(*previous_size);

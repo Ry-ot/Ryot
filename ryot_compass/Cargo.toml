@@ -43,7 +43,7 @@ bevy_pancam = { version = "0.10.0", features = [
     "bevy_egui",
     "leafwing-input-manager",
 ], git = "https://github.com/luan/bevy_pancam", branch = "luan/modifier-keys" }
-leafwing-input-manager = "0.11.2"
+leafwing-input-manager = "0.12"
 
 [dependencies.bevy]
 version = "0.12.1"

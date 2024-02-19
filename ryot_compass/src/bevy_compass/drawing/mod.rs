@@ -36,34 +36,34 @@ impl DrawingAction {
     pub fn get_default_input_map() -> InputMap<DrawingAction> {
         InputMap::default()
             .insert_multiple([
-                (MouseButton::Left, DrawingAction::Draw),
-                (MouseButton::Right, DrawingAction::Erase),
+                (DrawingAction::Draw, MouseButton::Left),
+                (DrawingAction::Erase, MouseButton::Right),
             ])
-            .insert_modified(CONTROL_COMMAND, KeyCode::Z, DrawingAction::Undo)
+            .insert_modified(DrawingAction::Undo, CONTROL_COMMAND, KeyCode::Z)
             .insert_chord(
+                DrawingAction::Redo,
                 [
                     InputKind::Modifier(CONTROL_COMMAND),
                     InputKind::Modifier(Modifier::Shift),
                     InputKind::Keyboard(KeyCode::Z),
                 ],
-                DrawingAction::Redo,
             )
-            .insert(KeyCode::Key1, DrawingAction::ChangeBrush)
-            .insert(KeyCode::Escape, DrawingAction::ClearSelection)
-            .insert(Modifier::Shift, DrawingAction::StartConnectingPoints)
-            .insert_modified(CONTROL_COMMAND, KeyCode::Plus, DrawingAction::IncreaseBrush)
+            .insert(DrawingAction::ChangeBrush, KeyCode::Key1)
+            .insert(DrawingAction::ClearSelection, KeyCode::Escape)
+            .insert(DrawingAction::StartConnectingPoints, Modifier::Shift)
+            .insert_modified(DrawingAction::IncreaseBrush, CONTROL_COMMAND, KeyCode::Plus)
             .insert_modified(
+                DrawingAction::IncreaseBrush,
                 CONTROL_COMMAND,
                 KeyCode::Equals,
-                DrawingAction::IncreaseBrush,
             )
             .insert_modified(
+                DrawingAction::DecreaseBrush,
                 CONTROL_COMMAND,
                 KeyCode::Minus,
-                DrawingAction::DecreaseBrush,
             )
             // Small hack to remove clash with the pancam plugin
-            .insert_chord(MAP_GRAB_INPUTS, DrawingAction::Stop)
+            .insert_chord(DrawingAction::Stop, MAP_GRAB_INPUTS)
             .build()
     }
 }

@@ -42,7 +42,7 @@ itertools = { version = "0.12.0", features = ["use_std"] }
 prost = "0.12.3"
 prost-types = "0.12.3"
 
-leafwing-input-manager = { version = "0.11.2", optional = true }
+leafwing-input-manager = { version = "0.12", optional = true }
 bevy_common_assets = { version = "0.9.0", features = [
     "toml",
     "json",

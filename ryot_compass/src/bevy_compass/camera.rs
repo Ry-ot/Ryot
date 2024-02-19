@@ -133,8 +133,8 @@ fn spawn_camera(content: Res<CompassContentAssets>, mut commands: Commands) {
             inputs: InputManagerBundle::<PanCamAction> {
                 action_state: ActionState::default(),
                 input_map: InputMap::default()
-                    .insert_chord(MAP_GRAB_INPUTS, PanCamAction::Grab)
-                    .insert(SingleAxis::mouse_wheel_y(), PanCamAction::Zoom)
+                    .insert_chord(PanCamAction::Grab, MAP_GRAB_INPUTS)
+                    .insert(PanCamAction::Zoom, SingleAxis::mouse_wheel_y())
                     .build(),
             },
         },
