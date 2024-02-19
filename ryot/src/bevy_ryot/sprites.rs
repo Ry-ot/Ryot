@@ -11,6 +11,16 @@ use rand::Rng;
 use std::path::PathBuf;
 use std::time::Duration;
 
+/// A resource to enable/disable sprite animation globally.
+#[derive(Resource, PartialEq, Debug, Clone)]
+pub struct SpriteAnimationEnabled(pub bool);
+
+impl Default for SpriteAnimationEnabled {
+    fn default() -> Self {
+        Self(true)
+    }
+}
+
 /// An event that is sent when a sprite sheet texture loading is completed.
 #[derive(Debug, Clone, Event)]
 pub(crate) struct SpriteSheetTextureWasLoaded {
@@ -412,6 +422,10 @@ type InitializedSpriteFilter = (
     )>,
 );
 
+pub fn toggle_sprite_animation(mut enabled: ResMut<SpriteAnimationEnabled>) {
+    enabled.0 = !enabled.0;
+}
+
 /// Update the sprite system, which updates the sprite appearance based on the
 /// `AppearanceDescriptor` component. It also updates the `LoadedSprites` component
 /// with the new sprites.
@@ -428,6 +442,7 @@ pub(crate) fn update_sprite_system<C: ContentAssets>(
             &mut Handle<TextureAtlas>,
             &mut TextureAtlasSprite,
             Option<&mut AnimationSprite>,
+            Has<LoadingAppearance>,
         ),
         InitializedSpriteFilter,
     >,
@@ -442,6 +457,7 @@ pub(crate) fn update_sprite_system<C: ContentAssets>(
         mut atlas,
         mut atlas_sprite,
         animation_sprite,
+        is_loading,
     ) in &mut query
     {
         let (sprite, anim, sprites) = match load_desired_appereance_sprite(
@@ -471,7 +487,9 @@ pub(crate) fn update_sprite_system<C: ContentAssets>(
             commands.entity(entity).remove::<AnimationSprite>();
         }
 
-        commands.entity(entity).remove::<LoadingAppearance>();
+        if is_loading {
+            commands.entity(entity).remove::<LoadingAppearance>();
+        }
     }
 }
 
@@ -536,7 +554,7 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
 /// A system that animates the sprites based on the `AnimationSprite` component.
 /// It's meant to run every frame to update the animation of the entities.
 /// It will only run if the entity has a `TextureAtlasSprite` and an `AnimationSprite` component.
-pub fn animate_sprite_system(
+pub(crate) fn animate_sprite_system(
     time: Res<Time>,
     mut sprites_to_animate: Query<(
         &mut AnimationSprite,
