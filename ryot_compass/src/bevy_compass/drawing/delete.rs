@@ -45,7 +45,7 @@ fn delete_tile_content<F: ReadOnlyWorldQuery>(
             .map(|(_, bundle)| bundle)
             .collect::<Vec<_>>();
 
-        let command = DeleteTileContent(top_most_content);
+        let command = UpdateTileContent::for_new_bundle(top_most_content).revert();
         commands.add(command.clone());
 
         command_history.reversed_commands.clear();

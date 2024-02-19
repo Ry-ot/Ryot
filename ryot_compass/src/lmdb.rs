@@ -1,4 +1,3 @@
-use bevy::ecs::system::EntityCommand;
 use bevy::prelude::{Camera, Changed, Commands, Local, Query, Res, ResMut, With};
 use heed::types::Bytes;
 use heed::Env;
@@ -49,6 +48,8 @@ pub fn load_area(sector: Sector, env: Env, commands: &mut Commands, tiles: &Res<
 
     match item_repository.get_for_area(&sector) {
         Ok(area) => {
+            let mut bundles = vec![];
+
             for tile in area {
                 for (layer, item) in tile.items {
                     if let Some(tile) = tiles.get(&tile.position) {
@@ -57,17 +58,15 @@ pub fn load_area(sector: Sector, env: Env, commands: &mut Commands, tiles: &Res<
                         }
                     }
 
-                    let bundle = DrawingBundle::new(
+                    bundles.push(DrawingBundle::new(
                         layer,
                         tile.position,
                         AppearanceDescriptor::object(item.id as u32),
-                    );
-
-                    let entity = commands.spawn_empty().id();
-
-                    commands.add(UpdateTileContent(bundle, None).with_entity(entity));
+                    ));
                 }
             }
+
+            commands.add(UpdateTileContent::for_new_bundle(bundles));
         }
         Err(e) => {
             error!("Failed to read area: {}", e);

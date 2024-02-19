@@ -1,15 +1,10 @@
-use crate::bevy_ryot::drawing::Layer;
-use crate::position::TilePosition;
 use bevy::prelude::*;
-
-mod create;
-pub use create::*;
-
-mod delete;
-pub use delete::*;
 
 mod update;
 pub use update::*;
+
+mod delete;
+pub use delete::*;
 
 #[derive(Eq, PartialEq, Default, Clone, Copy, Reflect)]
 pub enum CommandState {
@@ -33,8 +28,8 @@ pub enum CommandState {
 /// This also means that the CommandHistory needs to be controlled by the application, otherwise
 /// we would need to implement it for every command, which would be a lot of boilerplate.
 pub trait ReversibleCommand: Send + Sync + 'static {
-    fn undo(&self, commands: &mut Commands, entity: Option<Entity>);
-    fn redo(&self, commands: &mut Commands, entity: Option<Entity>);
+    fn undo(&self, commands: &mut Commands);
+    fn redo(&self, commands: &mut Commands);
 }
 
 /// A resource that holds the history of commands applied, used to perform undo/redo actions.
@@ -49,40 +44,4 @@ pub struct CommandHistory {
     pub reversed_commands: Vec<CommandType>,
 }
 
-pub enum CommandType {
-    Batch(CommandBatchSize),
-    TileCommand(TileCommandRecord),
-    Command(Box<dyn ReversibleCommand>),
-}
-
-impl From<TileCommandRecord> for CommandType {
-    fn from(record: TileCommandRecord) -> Self {
-        Self::TileCommand(record)
-    }
-}
-
-impl From<CommandBatchSize> for CommandType {
-    fn from(size: CommandBatchSize) -> Self {
-        Self::Batch(size)
-    }
-}
-
-/// A record that holds the layer, position and command that was applied to a tile.
-pub struct TileCommandRecord {
-    pub layer: Layer,
-    pub tile_pos: TilePosition,
-    pub command: Box<dyn ReversibleCommand>,
-}
-
-impl TileCommandRecord {
-    pub fn new(layer: Layer, tile_pos: TilePosition, command: Box<dyn ReversibleCommand>) -> Self {
-        Self {
-            layer,
-            tile_pos,
-            command,
-        }
-    }
-}
-
-#[derive(Debug, Default, Eq, PartialEq, Deref, DerefMut)]
-pub struct CommandBatchSize(pub usize);
+pub type CommandType = Box<dyn ReversibleCommand>;

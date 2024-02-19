@@ -1,10 +1,8 @@
 use crate::DrawingAction;
 use bevy::ecs::schedule::SystemConfigs;
 use bevy::prelude::*;
-use ryot::bevy_ryot::map::MapTiles;
 use ryot::bevy_ryot::*;
 use ryot::prelude::drawing::*;
-use std::ops::Deref;
 
 /// This resource is used to configure the undo/redo system.
 /// Currently, it only contains a timer that is used to control the speed of the undo/redo actions.
@@ -27,107 +25,45 @@ pub fn time_is_finished() -> impl FnMut(Res<UndoRedoConfig>) -> bool {
 }
 
 pub fn undo_on_hold() -> SystemConfigs {
-    on_hold(undo_tile_action, DrawingAction::Undo).run_if(time_is_finished())
+    on_hold(undo, DrawingAction::Undo).run_if(time_is_finished())
 }
 
 pub fn undo_on_click() -> SystemConfigs {
-    on_press(undo_tile_action, DrawingAction::Undo)
+    on_press(undo, DrawingAction::Undo)
 }
 
 pub fn redo_on_hold() -> SystemConfigs {
-    on_hold(redo_tile_action, DrawingAction::Redo).run_if(time_is_finished())
+    on_hold(redo, DrawingAction::Redo).run_if(time_is_finished())
 }
 
 pub fn redo_on_click() -> SystemConfigs {
-    on_press(redo_tile_action, DrawingAction::Redo)
+    on_press(redo, DrawingAction::Redo)
 }
 
 pub fn tick_undo_redo_timer(mut config: ResMut<UndoRedoConfig>, time: Res<Time>) {
     config.timer.tick(time.delta());
 }
 
-pub(super) fn redo_tile_action(
+pub(super) fn redo(
     mut commands: Commands,
-    tiles: ResMut<MapTiles>,
     mut undo_redo_config: ResMut<UndoRedoConfig>,
     mut command_history: ResMut<CommandHistory>,
 ) {
-    if redo(&mut commands, &tiles, &mut command_history) {
-        undo_redo_config.timer.reset();
-    }
-}
-
-pub(super) fn undo_tile_action(
-    mut commands: Commands,
-    tiles: ResMut<MapTiles>,
-    mut undo_redo_config: ResMut<UndoRedoConfig>,
-    mut command_history: ResMut<CommandHistory>,
-) {
-    if undo(&mut commands, &tiles, &mut command_history) {
-        undo_redo_config.timer.reset();
-    }
-}
-
-fn redo(
-    commands: &mut Commands,
-    tiles: &ResMut<MapTiles>,
-    command_history: &mut ResMut<CommandHistory>,
-) -> bool {
     if let Some(command_record) = command_history.reversed_commands.pop() {
-        match &command_record {
-            CommandType::TileCommand(tile_command) => tile_command.command.redo(
-                commands,
-                get_entity_from_command_record(tiles, tile_command),
-            ),
-            CommandType::Batch(batch_size) => {
-                for _ in 0..*batch_size.deref() {
-                    redo(commands, tiles, command_history);
-                }
-            }
-            CommandType::Command(command) => command.redo(commands, None),
-        }
-
+        command_record.redo(&mut commands);
         command_history.performed_commands.push(command_record);
-
-        return true;
+        undo_redo_config.timer.reset();
     }
-
-    false
 }
 
-fn undo(
-    commands: &mut Commands,
-    tiles: &ResMut<MapTiles>,
-    command_history: &mut ResMut<CommandHistory>,
-) -> bool {
+pub(super) fn undo(
+    mut commands: Commands,
+    mut undo_redo_config: ResMut<UndoRedoConfig>,
+    mut command_history: ResMut<CommandHistory>,
+) {
     if let Some(command_record) = command_history.performed_commands.pop() {
-        match &command_record {
-            CommandType::TileCommand(tile_command) => tile_command.command.undo(
-                commands,
-                get_entity_from_command_record(tiles, tile_command),
-            ),
-            CommandType::Batch(batch_size) => {
-                for _ in 0..*batch_size.deref() {
-                    undo(commands, tiles, command_history);
-                }
-            }
-            CommandType::Command(command) => command.undo(commands, None),
-        }
-
+        command_record.undo(&mut commands);
         command_history.reversed_commands.push(command_record);
-
-        return true;
+        undo_redo_config.timer.reset();
     }
-
-    false
-}
-
-fn get_entity_from_command_record(
-    tiles: &ResMut<MapTiles>,
-    command_record: &TileCommandRecord,
-) -> Option<Entity> {
-    tiles
-        .get(&command_record.tile_pos)
-        .and_then(|t| t.get(&command_record.layer))
-        .copied()
 }
