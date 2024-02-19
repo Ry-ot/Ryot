@@ -4,10 +4,10 @@ use bevy::asset::AssetMetaCheck;
 use bevy::prelude::*;
 use bevy::DefaultPlugins;
 use bevy_inspector_egui::quick::WorldInspectorPlugin;
-use leafwing_input_manager::common_conditions::action_toggle_active;
+use leafwing_input_manager::common_conditions::{action_just_pressed, action_toggle_active};
 use leafwing_input_manager::prelude::*;
 use leafwing_input_manager::user_input::InputKind;
-use ryot::bevy_ryot::sprites::animate_sprite_system;
+use ryot::bevy_ryot::sprites::toggle_sprite_animation;
 use ryot::prelude::*;
 
 #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
@@ -63,7 +63,7 @@ impl Plugin for AppPlugin {
             ))
             .add_systems(
                 Update,
-                animate_sprite_system.run_if(action_toggle_active(true, ToggleFeatures::Animation)),
+                toggle_sprite_animation.run_if(action_just_pressed(ToggleFeatures::Animation)),
             )
             .insert_resource(ClearColor(Color::rgb(0.12, 0.12, 0.12)));
     }

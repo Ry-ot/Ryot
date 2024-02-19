@@ -135,12 +135,17 @@ impl<C: PreloadedContentAssets + Default> Plugin for ContentPlugin<C> {
                 sprites::load_sprite_sheets_from_command::<C>.run_if(on_event::<LoadSpriteBatch>()),
             )
             .add_systems(Update, sprites::store_atlases_assets_after_loading::<C>)
+            .init_resource::<sprites::SpriteAnimationEnabled>()
             .add_systems(
                 Update,
                 (
+                    sprites::animate_sprite_system.run_if(resource_exists_and_equals(
+                        sprites::SpriteAnimationEnabled(true),
+                    )),
                     sprites::load_sprite_system::<C>,
                     sprites::update_sprite_system::<C>,
                 )
+                    .chain()
                     .run_if(in_state(InternalContentState::Ready)),
             )
             .add_systems(PostUpdate, update_sprite_position);
