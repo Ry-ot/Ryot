@@ -62,11 +62,7 @@ pub fn get_top_most_visible(
     map_tiles: &Res<MapTiles>,
     q_visibility: &Query<(&Visibility, &AppearanceDescriptor), With<TileComponent>>,
 ) -> Option<(Entity, DrawingBundle)> {
-    let Some(tile_content) = map_tiles.get(&tile_pos) else {
-        return None;
-    };
-
-    let tile_content = tile_content.clone();
+    let tile_content = map_tiles.get(&tile_pos)?.clone();
 
     let top_most_keys = tile_content
         .keys()
@@ -75,7 +71,7 @@ pub fn get_top_most_visible(
         .collect::<Vec<_>>();
 
     for layer in top_most_keys {
-        let entity = tile_content.get(&layer).unwrap();
+        let entity = tile_content.get(&layer)?;
 
         if let Ok((visibility, appearance)) = q_visibility.get(*entity) {
             if visibility == Visibility::Hidden {

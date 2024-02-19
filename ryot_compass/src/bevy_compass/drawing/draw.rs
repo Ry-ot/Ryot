@@ -7,13 +7,6 @@ use ryot::bevy_ryot::map::MapTiles;
 use ryot::bevy_ryot::*;
 use ryot::prelude::{drawing::*, position::*};
 
-#[cfg(feature = "lmdb")]
-use ryot::bevy_ryot::lmdb::LmdbEnv;
-#[cfg(feature = "lmdb")]
-use ryot::lmdb::{GetKey, Item, ItemRepository, ItemsFromHeedLmdb, Tile};
-#[cfg(feature = "lmdb")]
-use std::collections::HashMap;
-
 pub fn draw_on_hold<C: ContentAssets>() -> SystemConfigs {
     on_hold(
         draw_to_tile::<C, Changed<TilePosition>>,
@@ -29,7 +22,6 @@ pub fn draw_on_click<C: ContentAssets>() -> SystemConfigs {
 fn draw_to_tile<C: ContentAssets, F: ReadOnlyWorldQuery>(
     mut commands: Commands,
     mut tiles: ResMut<MapTiles>,
-    #[cfg(feature = "lmdb")] lmdb_env: Res<LmdbEnv>,
     mut command_history: ResMut<CommandHistory>,
     content_assets: Res<C>,
     brushes: Res<Brushes<DrawingBundle>>,
@@ -97,46 +89,6 @@ fn draw_to_tile<C: ContentAssets, F: ReadOnlyWorldQuery>(
         commands.add(command.clone());
         command_history.reversed_commands.clear();
         command_history.performed_commands.push(command.into());
-
-        #[cfg(feature = "lmdb")]
-        {
-            let item_repository = ItemsFromHeedLmdb::new(lmdb_env.clone());
-            let mut new_tiles: HashMap<TilePosition, Tile> = HashMap::new();
-
-            let binary_keys = to_draw
-                .iter()
-                .map(|bundle| bundle.tile_pos.get_binary_key())
-                .collect();
-
-            let tiles = item_repository.get_for_keys(binary_keys);
-
-            if let Err(err) = tiles {
-                warn!("Failed to get tiles: {}", err);
-                continue;
-            };
-
-            for tile in tiles.unwrap() {
-                new_tiles.insert(tile.position, tile);
-            }
-
-            for bundle in &to_draw {
-                let tile = new_tiles
-                    .entry(bundle.tile_pos)
-                    .or_insert(Tile::from_pos(bundle.tile_pos));
-
-                tile.set_item(
-                    Item {
-                        id: bundle.appearance.id as u16,
-                        attributes: vec![],
-                    },
-                    bundle.layer,
-                );
-            }
-
-            if let Err(e) = item_repository.save_from_tiles(new_tiles.into_values().collect()) {
-                error!("Failed to save tile: {}", e);
-            }
-        };
     }
 }
 

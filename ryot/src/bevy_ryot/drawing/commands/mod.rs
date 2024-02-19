@@ -6,7 +6,7 @@ pub use update::*;
 mod delete;
 pub use delete::*;
 
-#[derive(Eq, PartialEq, Default, Clone, Copy, Reflect)]
+#[derive(Eq, PartialEq, Default, Clone, Debug, Copy, Reflect)]
 pub enum CommandState {
     #[default]
     Requested,
