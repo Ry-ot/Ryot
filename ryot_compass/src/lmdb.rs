@@ -2,11 +2,10 @@ use bevy::prelude::{Camera, Changed, Commands, Local, Query, Res, ResMut, With};
 use heed::types::Bytes;
 use heed::Env;
 use log::error;
-use ryot::bevy_ryot::drawing::UpdateTileContent;
 use ryot::bevy_ryot::map::MapTiles;
 use ryot::lmdb::{build_map, DatabaseName, Item, ItemRepository, ItemsFromHeedLmdb, SerdePostcard};
 use ryot::position::{Sector, TilePosition};
-use ryot::prelude::drawing::DrawingBundle;
+use ryot::prelude::drawing::{DrawingBundle, LoadTileContent};
 use ryot::prelude::lmdb::LmdbEnv;
 use ryot::prelude::{compress, decompress, AppearanceDescriptor, Zstd};
 use ryot::{lmdb, Layer};
@@ -66,7 +65,7 @@ pub fn load_area(sector: Sector, env: Env, commands: &mut Commands, tiles: &Res<
                 }
             }
 
-            commands.add(UpdateTileContent::for_new_bundle(bundles));
+            commands.add(LoadTileContent::from_bundles(bundles));
         }
         Err(e) => {
             error!("Failed to read area: {}", e);

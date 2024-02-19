@@ -14,6 +14,8 @@ use crate::bevy_ryot::lmdb::LmdbEnv;
 #[cfg(feature = "lmdb")]
 use crate::lmdb::{GetKey, Item, ItemRepository, ItemsFromHeedLmdb, Tile};
 #[cfg(feature = "lmdb")]
+use bevy::log::{error, warn};
+#[cfg(feature = "lmdb")]
 use std::collections::HashMap;
 
 pub type DrawingInfo = (
@@ -35,13 +37,13 @@ impl From<DrawingBundle> for DrawingInfo {
 }
 
 #[derive(Eq, PartialEq, Component, Default, Copy, Clone)]
-pub struct Update {
+pub struct UpdateComponent {
     pub new: DrawingInfo,
     pub old: DrawingInfo,
     pub state: CommandState,
 }
 
-impl Update {
+impl UpdateComponent {
     pub fn new(new: DrawingInfo, old: DrawingInfo) -> Self {
         Self {
             new,
@@ -93,22 +95,28 @@ impl Command for UpdateTileContent {
         let (new, old) = (self.0, self.1);
 
         for (index, info) in new.iter().enumerate() {
-            let (pos, layer, ..) = info;
+            let id = get_or_create_entity_for_info(world, info);
 
-            let entity = world
-                .resource_mut::<MapTiles>()
-                .entry(*pos)
-                .or_default()
-                .get(layer)
-                .copied();
-
-            let id = match entity {
-                Some(entity) => entity,
-                None => world.spawn_empty().id(),
-            };
-
-            world.entity_mut(id).insert(Update::new(*info, old[index]));
+            world
+                .entity_mut(id)
+                .insert(UpdateComponent::new(*info, old[index]));
         }
+    }
+}
+
+pub fn get_or_create_entity_for_info(world: &mut World, info: &DrawingInfo) -> Entity {
+    let (pos, layer, ..) = info;
+
+    let entity = world
+        .resource_mut::<MapTiles>()
+        .entry(*pos)
+        .or_default()
+        .get(layer)
+        .copied();
+
+    match entity {
+        Some(entity) => entity,
+        None => world.spawn_empty().id(),
     }
 }
 
@@ -124,10 +132,14 @@ impl ReversibleCommand for UpdateTileContent {
 
 pub fn apply_update(
     mut commands: Commands,
-    mut q_inserted: Query<(Entity, &mut Update), Or<(Changed<Update>, Added<Update>)>>,
+    mut tiles: ResMut<MapTiles>,
+    mut q_inserted: Query<
+        (Entity, &mut UpdateComponent),
+        Or<(Changed<UpdateComponent>, Added<UpdateComponent>)>,
+    >,
 ) {
     for (entity, mut update) in q_inserted.iter_mut() {
-        if update.state != CommandState::Requested {
+        if update.state.applied {
             continue;
         }
 
@@ -138,7 +150,7 @@ pub fn apply_update(
             commands
                 .entity(entity)
                 .insert(Deletion::default())
-                .remove::<Update>();
+                .remove::<UpdateComponent>();
 
             continue;
         };
@@ -148,24 +160,28 @@ pub fn apply_update(
             .insert((pos, layer, appearance, visibility, TileComponent))
             .remove::<Deletion>();
 
-        update.state = CommandState::Applied;
+        tiles.entry(pos).or_default().entry(layer).or_insert(entity);
+
+        update.state.applied = true;
     }
 }
 
 pub fn persist_update(
-    mut tiles: ResMut<MapTiles>,
     #[cfg(feature = "lmdb")] lmdb_env: Res<LmdbEnv>,
-    mut q_inserted: Query<(&mut Update, Entity), Or<(Changed<Update>, Added<Update>)>>,
+    mut q_inserted: Query<
+        &mut UpdateComponent,
+        Or<(Changed<UpdateComponent>, Added<UpdateComponent>)>,
+    >,
 ) {
     #[cfg(feature = "lmdb")]
     {
         let mut keys = vec![];
         let mut to_draw = vec![];
 
-        for (update, ..) in q_inserted.iter_mut() {
+        for update in q_inserted.iter_mut() {
             let (tile_pos, layer, _, appearance) = update.new;
 
-            if update.state != CommandState::Applied {
+            if update.state.persisted {
                 continue;
             }
 
@@ -211,19 +227,11 @@ pub fn persist_update(
         }
     }
 
-    for (mut update, entity) in q_inserted.iter_mut() {
-        let (tile_pos, layer, ..) = update.new;
-
-        if update.state != CommandState::Applied {
+    for mut update in q_inserted.iter_mut() {
+        if update.state.persisted {
             continue;
         }
 
-        tiles
-            .entry(tile_pos)
-            .or_default()
-            .entry(layer)
-            .or_insert(entity);
-
-        update.state = CommandState::Persisted;
+        update.state.persisted = true;
     }
 }

@@ -1,17 +1,27 @@
 use bevy::prelude::*;
 
-mod update;
-pub use update::*;
-
 mod delete;
 pub use delete::*;
 
+mod load;
+pub use load::*;
+
+mod update;
+pub use update::*;
+
 #[derive(Eq, PartialEq, Default, Clone, Debug, Copy, Reflect)]
-pub enum CommandState {
-    #[default]
-    Requested,
-    Applied,
-    Persisted,
+pub struct CommandState {
+    pub applied: bool,
+    pub persisted: bool,
+}
+
+impl CommandState {
+    pub fn from_load() -> Self {
+        Self {
+            applied: false,
+            persisted: true,
+        }
+    }
 }
 
 /// A trait that represents a reversible command, that can be undone and redone.

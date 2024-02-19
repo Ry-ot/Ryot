@@ -21,9 +21,9 @@ pub fn apply_deletion(
     >,
 ) {
     for (mut visibility, mut deletion) in q_deleted.iter_mut() {
-        if deletion.state == CommandState::Requested {
+        if !deletion.state.applied {
             *visibility = Visibility::Hidden;
-            deletion.state = CommandState::Applied;
+            deletion.state.applied = true;
         }
     }
 }
@@ -37,7 +37,7 @@ pub fn persist_deletion(
         let mut keys = vec![];
 
         for (tile_pos, deletion) in q_deleted.iter() {
-            if deletion.state == CommandState::Applied {
+            if !deletion.state.persisted {
                 keys.push(tile_pos.get_binary_key());
             }
         }
@@ -51,8 +51,8 @@ pub fn persist_deletion(
     }
 
     for (_, mut deletion) in q_deleted.iter_mut() {
-        if deletion.state == CommandState::Applied {
-            deletion.state = CommandState::Persisted;
+        if !deletion.state.persisted {
+            deletion.state.persisted = true;
         }
     }
 }
