@@ -1,9 +1,12 @@
-use crate::{bevy_ryot::drawing::brushes::*, include_svg};
+use crate::bevy_ryot::drawing::brushes::*;
+#[cfg(feature = "egui")]
+use crate::include_svg;
 
 pub struct Rectangle;
 
 const NAME: &str = "Rectangle";
-const ICON: ImageSource = include_svg!(
+#[cfg(feature = "egui")]
+const ICON: egui::ImageSource = include_svg!(
     r##"
     <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="#fff6c2" viewBox="0 0 256 256"><rect x="24" y="40" width="208" height="176" rx="16"></rect></svg>
     "##
@@ -11,7 +14,12 @@ const ICON: ImageSource = include_svg!(
 
 impl<B: BrushItem> From<Rectangle> for Brush<B> {
     fn from(_: Rectangle) -> Self {
-        Brush::new(rectangle::<B>, NAME, ICON)
+        Brush::new(
+            rectangle::<B>,
+            NAME,
+            #[cfg(feature = "egui")]
+            ICON,
+        )
     }
 }
 

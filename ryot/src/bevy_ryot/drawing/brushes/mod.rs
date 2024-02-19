@@ -1,6 +1,5 @@
 use crate::position::TilePosition;
 use bevy::prelude::{Deref, DerefMut, Resource};
-use egui::ImageSource;
 
 mod diamond;
 pub use diamond::*;
@@ -17,6 +16,7 @@ pub use rectangle::*;
 mod random;
 pub use random::*;
 
+#[cfg(feature = "egui")]
 #[macro_export]
 macro_rules! include_svg {
     ($svg_content: literal) => {
@@ -75,7 +75,8 @@ impl<E: BrushItem> BrushParams<E> {
 #[derive(Clone)]
 pub struct Brush<E: BrushItem> {
     func: fn(size: BrushParams<E>, center: E) -> Vec<E>,
-    icon: ImageSource<'static>,
+    #[cfg(feature = "egui")]
+    icon: egui::ImageSource<'static>,
     name: String,
 }
 
@@ -83,15 +84,23 @@ impl<E: BrushItem> Brush<E> {
     pub fn new(
         func: fn(BrushParams<E>, E) -> Vec<E>,
         name: &str,
-        icon: ImageSource<'static>,
+        #[cfg(feature = "egui")] icon: egui::ImageSource<'static>,
     ) -> Self {
-        Self {
+        #[cfg(feature = "egui")]
+        let brush = Self {
             func,
             icon,
             name: name.into(),
-        }
+        };
+        #[cfg(not(feature = "egui"))]
+        let brush = Self {
+            func,
+            name: name.into(),
+        };
+        brush
     }
 
+    #[cfg(feature = "egui")]
     pub fn button(&self) -> egui::ImageButton {
         egui::ImageButton::new(self.icon.clone())
     }
