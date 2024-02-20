@@ -1,4 +1,4 @@
-use crate::{Cursor, DrawingAction, DrawingInputType};
+use crate::{delete_top_most_elements_in_positions, Cursor, DrawingAction, DrawingInputType};
 use bevy::ecs::query::ReadOnlyWorldQuery;
 use bevy::ecs::schedule::SystemConfigs;
 use bevy::prelude::*;
@@ -24,7 +24,7 @@ fn draw_to_tile<C: ContentAssets, F: ReadOnlyWorldQuery>(
     mut command_history: ResMut<CommandHistory>,
     content_assets: Res<C>,
     brushes: Res<Brushes<DrawingBundle>>,
-    current_appearance_query: Query<(&mut AppearanceDescriptor, &Visibility), Without<Cursor>>,
+    q_current_appearance: Query<(&Visibility, &AppearanceDescriptor), With<TileComponent>>,
     cursor_query: Query<(&AppearanceDescriptor, &TilePosition, &Cursor), F>,
 ) {
     if content_assets.sprite_sheet_data_set().is_none() {
@@ -33,9 +33,9 @@ fn draw_to_tile<C: ContentAssets, F: ReadOnlyWorldQuery>(
     };
 
     for (AppearanceDescriptor { group, id, .. }, tile_pos, cursor) in &cursor_query {
-        if !cursor.drawing_state.enabled {
-            continue;
-        }
+        // if !cursor.drawing_state.enabled {
+        //     continue;
+        // }
 
         let Some(prepared_appearance) = content_assets
             .prepared_appearances()
@@ -53,46 +53,68 @@ fn draw_to_tile<C: ContentAssets, F: ReadOnlyWorldQuery>(
             DrawingBundle::new(layer, *tile_pos, appearance),
         );
 
-        let mut old_info: Vec<DrawingInfo> = vec![];
-
-        for new_bundle in &to_draw {
-            let (old_bundle, _) = get_current_bundle_and_entity(
-                *new_bundle,
+        if cursor.drawing_state.enabled {
+            create_or_update_content_for_positions(
+                &to_draw,
                 &mut commands,
+                &mut command_history,
                 &mut tiles,
-                &current_appearance_query,
+                &q_current_appearance,
             );
-
-            let appearance = old_bundle.map(|old_bundle| old_bundle.appearance);
-
-            old_info.push((
-                new_bundle.tile_pos,
-                new_bundle.layer,
-                Visibility::default(),
-                appearance,
-            ));
+        } else {
+            delete_top_most_elements_in_positions(
+                &to_draw,
+                &mut commands,
+                &mut command_history,
+                &tiles,
+                &q_current_appearance,
+            );
         }
-
-        let command = UpdateTileContent::new(
-            to_draw
-                .iter()
-                .copied()
-                .map(|bundle| bundle.into())
-                .collect::<Vec<DrawingInfo>>(),
-            old_info,
-        );
-
-        commands.add(command.clone());
-        command_history.reversed_commands.clear();
-        command_history.performed_commands.push(command.into());
     }
+}
+
+fn create_or_update_content_for_positions(
+    to_draw: &Vec<DrawingBundle>,
+    commands: &mut Commands,
+    command_history: &mut ResMut<CommandHistory>,
+    tiles: &mut ResMut<MapTiles>,
+    q_current_appearance: &Query<(&Visibility, &AppearanceDescriptor), With<TileComponent>>,
+) {
+    let mut old_info: Vec<DrawingInfo> = vec![];
+
+    for new_bundle in to_draw {
+        let (old_bundle, _) =
+            get_current_bundle_and_entity(*new_bundle, commands, tiles, q_current_appearance);
+
+        let appearance = old_bundle.map(|old_bundle| old_bundle.appearance);
+
+        old_info.push((
+            new_bundle.tile_pos,
+            new_bundle.layer,
+            Visibility::default(),
+            appearance,
+        ));
+    }
+
+    let command = UpdateTileContent::new(
+        to_draw
+            .iter()
+            .copied()
+            .map(|bundle| bundle.into())
+            .collect::<Vec<DrawingInfo>>(),
+        old_info,
+    );
+
+    commands.add(command.clone());
+    command_history.reversed_commands.clear();
+    command_history.performed_commands.push(command.into());
 }
 
 pub fn get_current_bundle_and_entity(
     new_bundle: DrawingBundle,
     commands: &mut Commands,
     tiles: &mut ResMut<MapTiles>,
-    current_appearance_query: &Query<(&mut AppearanceDescriptor, &Visibility), Without<Cursor>>,
+    q_current_appearance: &Query<(&Visibility, &AppearanceDescriptor), With<TileComponent>>,
 ) -> (Option<DrawingBundle>, Entity) {
     let entity = tiles
         .entry(new_bundle.tile_pos)
@@ -100,8 +122,8 @@ pub fn get_current_bundle_and_entity(
         .get(&new_bundle.layer)
         .map_or_else(|| commands.spawn_empty().id(), |&e| e);
 
-    let old_bundle = match current_appearance_query.get(entity) {
-        Ok((appearance, visibility)) => Some(
+    let old_bundle = match q_current_appearance.get(entity) {
+        Ok((visibility, appearance)) => Some(
             DrawingBundle::new(new_bundle.layer, new_bundle.tile_pos, *appearance)
                 .with_visibility(*visibility),
         ),
