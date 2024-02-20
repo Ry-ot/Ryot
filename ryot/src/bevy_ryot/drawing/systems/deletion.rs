@@ -5,6 +5,7 @@
 use crate::bevy_ryot::drawing::*;
 use crate::bevy_ryot::map::MapTiles;
 use crate::position::TilePosition;
+use bevy::utils::HashMap;
 use itertools::Itertools;
 
 #[cfg(feature = "lmdb")]
@@ -47,27 +48,61 @@ pub fn apply_deletion(
 /// Runs during [`Persist`](DrawingSystems::Persist) and after [`Apply`](DrawingSystems::Apply).
 pub fn persist_deletion(
     #[cfg(feature = "lmdb")] lmdb_env: ResMut<LmdbEnv>,
-    mut q_deleted: Query<(&TilePosition, &mut Deletion), Changed<Deletion>>,
+    mut q_deleted: Query<(&TilePosition, &Layer, &mut Deletion), Changed<Deletion>>,
 ) {
     #[cfg(feature = "lmdb")]
     {
-        let mut keys = vec![];
+        let mut layer_per_pos: HashMap<Vec<u8>, Layer> = HashMap::new();
 
-        for (tile_pos, deletion) in q_deleted.iter() {
+        for (tile_pos, layer, deletion) in q_deleted.iter() {
             if !deletion.state.persisted {
-                keys.push(tile_pos.get_binary_key());
+                layer_per_pos.insert(tile_pos.get_binary_key(), *layer);
             }
         }
 
         let item_repository = ItemsFromHeedLmdb::new(lmdb_env.clone());
 
-        if let Err(e) = item_repository.delete_multiple(keys) {
+        let tiles =
+            item_repository.get_for_keys(layer_per_pos.clone().into_keys().collect::<Vec<_>>());
+
+        if let Err(e) = tiles {
+            error!("Failed to get tiles: {}", e);
+            return;
+        };
+
+        let mut to_update = vec![];
+        let mut to_delete = vec![];
+
+        for tile in tiles.unwrap().iter_mut() {
+            let key = tile.position.get_binary_key();
+
+            let Some(layer) = layer_per_pos.get(&key) else {
+                continue;
+            };
+
+            tile.items.remove(layer);
+
+            // We only delete if no items are left in the tile
+            // Otherwise we update the tile with the new content
+            if tile.items.is_empty() {
+                to_delete.push(key);
+            } else {
+                to_update.push(tile.clone());
+            }
+        }
+
+        if let Err(e) = item_repository.save_from_tiles(to_update) {
+            error!("Failed to delete tile: {}", e);
+            return;
+        }
+
+        if let Err(e) = item_repository.delete_multiple(to_delete) {
             error!("Failed to delete tile: {}", e);
             return;
         }
     }
 
-    for (_, mut deletion) in q_deleted.iter_mut() {
+    for (.., mut deletion) in q_deleted.iter_mut() {
         if !deletion.state.persisted {
             deletion.state.persisted = true;
         }
