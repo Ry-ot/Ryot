@@ -4,6 +4,9 @@ use ryot::bevy_ryot::map::MapTiles;
 use ryot::bevy_ryot::*;
 use ryot::prelude::drawing::*;
 
+/// System responsible for toggling the deletion mode. This system is called when the user presses the
+/// [`ToggleDeletion`](crate::DrawingAction::ToggleDeletion) action. When the deletion mode is active
+/// the inputs are used to delete the top most elements in the positions where the cursor is.
 pub fn toggle_deletion(mut q_cursor: Query<&mut Cursor>) {
     for mut cursor in q_cursor.iter_mut() {
         cursor.drawing_state.tool_mode = if cursor.drawing_state.tool_mode == ToolMode::Erase {
@@ -14,6 +17,8 @@ pub fn toggle_deletion(mut q_cursor: Query<&mut Cursor>) {
     }
 }
 
+/// Auxiliary function to delete the top most elements in the positions where the cursor is.
+/// This function is called when the deletion mode is active and the user clicks on the map.
 pub fn delete_top_most_elements_in_positions(
     to_delete: &[DrawingBundle],
     commands: &mut Commands,

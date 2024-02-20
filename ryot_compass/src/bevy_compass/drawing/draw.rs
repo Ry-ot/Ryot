@@ -18,6 +18,10 @@ pub fn draw_on_click<C: ContentAssets>() -> SystemConfigs {
     on_press(handle_drawing_input::<C, ()>, DrawingAction::Draw)
 }
 
+/// System responsible for handling the drawing inputs. Drawing inputs can be a multitude of things,
+/// such as drawing, erasing, selecting, etc. In our context, we are only handling drawing and erasing,
+/// keeping the possibility of adding more tools in the future (e.g. if we want special tools for marking
+/// some protection zone in the map, for drawing paths, creating areas/cities, etc).
 fn handle_drawing_input<C: ContentAssets, F: ReadOnlyWorldQuery>(
     mut commands: Commands,
     mut tiles: ResMut<MapTiles>,
