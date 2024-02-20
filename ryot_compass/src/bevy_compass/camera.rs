@@ -394,6 +394,6 @@ fn update_pan_cam_actions(mut toggle: ResMut<ToggleActions<PanCamAction>>, ui_st
 pub fn get_cursor_color(cursor: &Cursor) -> Color {
     match cursor.drawing_state.tool_mode {
         ToolMode::Draw => Color::rgba(0.7, 0.7, 0.7, 0.7),
-        ToolMode::Erase => Color::rgba(0., 0., 0., 0.7),
+        ToolMode::Erase => Color::rgba(1., 0.0, 0.0, 0.5),
     }
 }
