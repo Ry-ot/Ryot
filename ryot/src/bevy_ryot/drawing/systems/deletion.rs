@@ -5,7 +5,7 @@
 use crate::bevy_ryot::drawing::*;
 use crate::bevy_ryot::map::MapTiles;
 use crate::position::TilePosition;
-use bevy::utils::HashMap;
+
 use itertools::Itertools;
 
 #[cfg(feature = "lmdb")]
