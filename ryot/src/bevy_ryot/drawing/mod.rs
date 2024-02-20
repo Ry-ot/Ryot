@@ -14,6 +14,9 @@ pub use brushes::*;
 mod commands;
 pub use commands::*;
 
+mod systems;
+pub use systems::*;
+
 pub struct DrawingPlugin;
 
 impl Plugin for DrawingPlugin {
@@ -26,6 +29,19 @@ impl Plugin for DrawingPlugin {
                     .in_set(VisibilitySystems::CheckVisibility)
                     .after(check_visibility)
                     .run_if(in_state(InternalContentState::Ready)),
+            )
+            .add_systems(
+                PostUpdate,
+                (apply_update, apply_deletion)
+                    .in_set(DrawingSystems::Apply)
+                    .before(VisibilitySystems::VisibilityPropagate),
+            )
+            .add_systems(
+                PostUpdate,
+                (persist_update, persist_deletion)
+                    .in_set(DrawingSystems::Persist)
+                    .after(DrawingSystems::Apply)
+                    .before(VisibilitySystems::VisibilityPropagate),
             );
     }
 }
