@@ -38,7 +38,9 @@ pub mod map;
 
 pub mod drawing;
 
+pub(crate) mod sprite_animations;
 pub mod sprites;
+pub use sprite_animations::{toggle_sprite_animation, AnimationDuration};
 
 pub static RYOT_ANCHOR: Anchor = Anchor::BottomRight;
 pub static GRID_LAYER: Layer = Layer::Fixed(998);
@@ -135,13 +137,13 @@ impl<C: PreloadedContentAssets + Default> Plugin for ContentPlugin<C> {
                 sprites::load_sprite_sheets_from_command::<C>.run_if(on_event::<LoadSpriteBatch>()),
             )
             .add_systems(Update, sprites::store_atlases_assets_after_loading::<C>)
-            .init_resource::<sprites::SpriteAnimationEnabled>()
-            .init_resource::<sprites::SynchronizedAnimationTimers>()
+            .init_resource::<sprite_animations::SpriteAnimationEnabled>()
+            .init_resource::<sprite_animations::SynchronizedAnimationTimers>()
             .add_systems(
                 Update,
                 (
-                    sprites::animate_sprite_system.run_if(resource_exists_and_equals(
-                        sprites::SpriteAnimationEnabled(true),
+                    sprite_animations::animate_sprite_system.run_if(resource_exists_and_equals(
+                        sprite_animations::SpriteAnimationEnabled(true),
                     )),
                     sprites::load_sprite_system::<C>,
                     sprites::update_sprite_system::<C>,
