@@ -20,7 +20,6 @@ pub fn erase_on_click() -> SystemConfigs {
 /// A function that listens to the right mouse button and deletes the content of the tile under the cursor.
 /// It always delete the topmost content of the tile, following the Z-ordering.
 
-#[allow(clippy::too_many_arguments)]
 fn delete_tile_content<F: ReadOnlyWorldQuery>(
     mut commands: Commands,
     mut command_history: ResMut<CommandHistory>,
@@ -32,7 +31,7 @@ fn delete_tile_content<F: ReadOnlyWorldQuery>(
     for (cursor, tile_pos) in &cursor_query {
         let positions: Vec<TilePosition> = brushes(
             cursor.drawing_state.brush_index,
-            cursor.drawing_state.mode.into(),
+            cursor.drawing_state.input_type.into(),
             DrawingBundle::from_tile_position(*tile_pos),
         )
         .into_iter()

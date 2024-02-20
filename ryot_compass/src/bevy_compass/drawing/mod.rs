@@ -98,7 +98,7 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
             .add_systems(
                 Update,
                 (
-                    set_drawing_mode.run_if(
+                    set_drawing_input_type.run_if(
                         action_just_released(DrawingAction::StartConnectingPoints)
                             .or_else(action_just_pressed(DrawingAction::ClearSelection).or_else(
                                 action_just_pressed(DrawingAction::StartConnectingPoints),
@@ -128,7 +128,7 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
                         change_brush_size(-1)
                             .run_if(action_just_pressed(DrawingAction::DecreaseBrush)),
                     ),
-                    update_drawing_mode.run_if(
+                    update_drawing_input_type.run_if(
                         action_just_pressed(DrawingAction::Draw)
                             .or_else(action_just_pressed(DrawingAction::Erase)),
                     ),
