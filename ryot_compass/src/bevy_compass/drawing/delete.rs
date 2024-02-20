@@ -1,49 +1,21 @@
-use crate::{Cursor, DrawingAction};
-use bevy::ecs::query::ReadOnlyWorldQuery;
-use bevy::ecs::schedule::SystemConfigs;
+use crate::{Cursor, ToolMode};
 use bevy::prelude::*;
 use ryot::bevy_ryot::map::MapTiles;
 use ryot::bevy_ryot::*;
-use ryot::prelude::{drawing::*, position::*};
+use ryot::prelude::drawing::*;
 
-pub fn erase_on_hold() -> SystemConfigs {
-    on_hold(
-        delete_tile_content::<Changed<TilePosition>>,
-        DrawingAction::Erase,
-    )
-}
-
-pub fn erase_on_click() -> SystemConfigs {
-    on_press(delete_tile_content::<()>, DrawingAction::Erase)
-}
-
-/// A function that listens to the right mouse button and deletes the content of the tile under the cursor.
-/// It always delete the topmost content of the tile, following the Z-ordering.
-fn delete_tile_content<F: ReadOnlyWorldQuery>(
-    mut commands: Commands,
-    mut command_history: ResMut<CommandHistory>,
-    tiles: ResMut<MapTiles>,
-    brushes: Res<Brushes<DrawingBundle>>,
-    cursor_query: Query<(&Cursor, &TilePosition), F>,
-    q_current_appearance: Query<(&Visibility, &AppearanceDescriptor), With<TileComponent>>,
-) {
-    for (cursor, tile_pos) in &cursor_query {
-        delete_top_most_elements_in_positions(
-            &brushes(
-                cursor.drawing_state.brush_index,
-                cursor.drawing_state.input_type.into(),
-                DrawingBundle::from_tile_position(*tile_pos),
-            ),
-            &mut commands,
-            &mut command_history,
-            &tiles,
-            &q_current_appearance,
-        );
+pub fn toggle_deletion(mut q_cursor: Query<&mut Cursor>) {
+    for mut cursor in q_cursor.iter_mut() {
+        cursor.drawing_state.tool_mode = if cursor.drawing_state.tool_mode == ToolMode::Erase {
+            ToolMode::Draw
+        } else {
+            ToolMode::Erase
+        }
     }
 }
 
 pub fn delete_top_most_elements_in_positions(
-    to_delete: &Vec<DrawingBundle>,
+    to_delete: &[DrawingBundle],
     commands: &mut Commands,
     command_history: &mut ResMut<CommandHistory>,
     tiles: &ResMut<MapTiles>,

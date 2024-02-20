@@ -1,4 +1,4 @@
-use crate::{delete_top_most_elements_in_positions, Cursor, DrawingAction, DrawingInputType};
+use crate::{delete_top_most_elements_in_positions, Cursor, DrawingAction, InputType, ToolMode};
 use bevy::ecs::query::ReadOnlyWorldQuery;
 use bevy::ecs::schedule::SystemConfigs;
 use bevy::prelude::*;
@@ -9,16 +9,16 @@ use ryot::prelude::{drawing::*, position::*};
 
 pub fn draw_on_hold<C: ContentAssets>() -> SystemConfigs {
     on_hold(
-        draw_to_tile::<C, Changed<TilePosition>>,
+        handle_drawing_input::<C, Changed<TilePosition>>,
         DrawingAction::Draw,
     )
 }
 
 pub fn draw_on_click<C: ContentAssets>() -> SystemConfigs {
-    on_press(draw_to_tile::<C, ()>, DrawingAction::Draw)
+    on_press(handle_drawing_input::<C, ()>, DrawingAction::Draw)
 }
 
-fn draw_to_tile<C: ContentAssets, F: ReadOnlyWorldQuery>(
+fn handle_drawing_input<C: ContentAssets, F: ReadOnlyWorldQuery>(
     mut commands: Commands,
     mut tiles: ResMut<MapTiles>,
     mut command_history: ResMut<CommandHistory>,
@@ -27,54 +27,72 @@ fn draw_to_tile<C: ContentAssets, F: ReadOnlyWorldQuery>(
     q_current_appearance: Query<(&Visibility, &AppearanceDescriptor), With<TileComponent>>,
     cursor_query: Query<(&AppearanceDescriptor, &TilePosition, &Cursor), F>,
 ) {
+    get_cursor_inputs(
+        &content_assets,
+        &brushes,
+        &cursor_query,
+        |cursor: &Cursor, bundles: Vec<DrawingBundle>| match cursor.drawing_state.tool_mode {
+            ToolMode::Draw => {
+                create_or_update_content_for_positions(
+                    &bundles,
+                    &mut commands,
+                    &mut command_history,
+                    &mut tiles,
+                    &q_current_appearance,
+                );
+            }
+            ToolMode::Erase => {
+                delete_top_most_elements_in_positions(
+                    &bundles,
+                    &mut commands,
+                    &mut command_history,
+                    &tiles,
+                    &q_current_appearance,
+                );
+            }
+        },
+    );
+}
+
+fn get_cursor_inputs<C: ContentAssets, F: ReadOnlyWorldQuery>(
+    content_assets: &Res<C>,
+    brushes: &Res<Brushes<DrawingBundle>>,
+    cursor_query: &Query<(&AppearanceDescriptor, &TilePosition, &Cursor), F>,
+    mut callback: impl FnMut(&Cursor, Vec<DrawingBundle>),
+) {
     if content_assets.sprite_sheet_data_set().is_none() {
         warn!("Trying to draw a sprite without any loaded content");
         return;
     };
 
-    for (AppearanceDescriptor { group, id, .. }, tile_pos, cursor) in &cursor_query {
-        // if !cursor.drawing_state.enabled {
-        //     continue;
-        // }
+    for (appearance, tile_pos, cursor) in cursor_query {
+        if !cursor.drawing_state.enabled {
+            continue;
+        }
 
         let Some(prepared_appearance) = content_assets
             .prepared_appearances()
-            .get_for_group(*group, *id)
+            .get_for_group(appearance.group, appearance.id)
         else {
-            return;
+            continue;
         };
 
         let layer = prepared_appearance.layer;
-        let appearance = AppearanceDescriptor::new(*group, *id, default());
+        let appearance = AppearanceDescriptor::new(appearance.group, appearance.id, default());
 
-        let to_draw = brushes(
-            cursor.drawing_state.brush_index,
-            cursor.drawing_state.input_type.into(),
-            DrawingBundle::new(layer, *tile_pos, appearance),
+        callback(
+            cursor,
+            brushes(
+                cursor.drawing_state.brush_index,
+                cursor.drawing_state.input_type.into(),
+                DrawingBundle::new(layer, *tile_pos, appearance),
+            ),
         );
-
-        if cursor.drawing_state.enabled {
-            create_or_update_content_for_positions(
-                &to_draw,
-                &mut commands,
-                &mut command_history,
-                &mut tiles,
-                &q_current_appearance,
-            );
-        } else {
-            delete_top_most_elements_in_positions(
-                &to_draw,
-                &mut commands,
-                &mut command_history,
-                &tiles,
-                &q_current_appearance,
-            );
-        }
     }
 }
 
 fn create_or_update_content_for_positions(
-    to_draw: &Vec<DrawingBundle>,
+    to_draw: &[DrawingBundle],
     commands: &mut Commands,
     command_history: &mut ResMut<CommandHistory>,
     tiles: &mut ResMut<MapTiles>,
@@ -136,7 +154,7 @@ pub fn get_current_bundle_and_entity(
 pub fn update_drawing_input_type(mut cursor_query: Query<(&TilePosition, &mut Cursor)>) {
     for (cursor_pos, mut cursor) in &mut cursor_query {
         cursor.drawing_state.input_type = match cursor.drawing_state.input_type {
-            DrawingInputType::TwoClicks(_) => DrawingInputType::TwoClicks(Some(*cursor_pos)),
+            InputType::DoubleClick(_) => InputType::DoubleClick(Some(*cursor_pos)),
             input_type => input_type,
         };
     }
@@ -148,14 +166,14 @@ pub fn set_drawing_input_type(
     action_state: Res<ActionState<DrawingAction>>,
 ) {
     for mut cursor in &mut cursor_query {
-        if let DrawingInputType::Click(size) = cursor.drawing_state.input_type {
+        if let InputType::SingleClick(size) = cursor.drawing_state.input_type {
             *previous_size = size;
         }
 
         if action_state.just_pressed(&DrawingAction::StartConnectingPoints) {
-            cursor.drawing_state.input_type = DrawingInputType::TwoClicks(None);
+            cursor.drawing_state.input_type = InputType::DoubleClick(None);
         } else {
-            cursor.drawing_state.input_type = DrawingInputType::Click(*previous_size);
+            cursor.drawing_state.input_type = InputType::SingleClick(*previous_size);
         }
     }
 }
