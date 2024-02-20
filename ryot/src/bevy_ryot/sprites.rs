@@ -68,23 +68,28 @@ impl AnimationStartPhase {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub(crate) struct AnimationKey {
-    pub phase_duration: Duration,
+    pub phase_durations: Vec<Duration>,
     pub start_phase: AnimationStartPhase,
     pub total_phases: usize,
 }
 
 impl AnimationKey {
-    pub(crate) fn create_timer(&self) -> Timer {
-        Timer::new(self.phase_duration, TimerMode::Repeating)
+    pub(crate) fn create_timer(&self, phase: usize) -> Timer {
+        Timer::new(self.duration(phase), TimerMode::Once)
+    }
+
+    fn duration(&self, phase: usize) -> Duration {
+        self.phase_durations
+            .get(phase)
+            .cloned()
+            .unwrap_or(Duration::from_millis(300))
     }
 
     pub(crate) fn default_state(&self) -> AnimationState {
-        AnimationState {
-            current_phase: self.start_phase.get(self.total_phases),
-            timer: self.create_timer(),
-        }
+        let current_phase = self.start_phase.get(self.total_phases);
+        AnimationState::new(current_phase, self.create_timer(current_phase))
     }
 }
 
@@ -94,9 +99,9 @@ trait SpriteAnimationExt {
 
 impl SpriteAnimationExt for SpriteAnimation {
     fn get_animation_key(&self) -> AnimationKey {
-        let phase_duration = self
+        let phase_durations = self
             .sprite_phase
-            .first()
+            .iter()
             .map(|phase| -> Duration {
                 let range = phase.duration_min()..phase.duration_max();
                 if range.start == range.end {
@@ -104,10 +109,10 @@ impl SpriteAnimationExt for SpriteAnimation {
                 }
                 Duration::from_millis(rand::thread_rng().gen_range(range).into())
             })
-            .unwrap_or(Duration::from_millis(300));
+            .collect();
 
         AnimationKey {
-            phase_duration,
+            phase_durations,
             start_phase: match self.random_start_phase() {
                 true => AnimationStartPhase::Random,
                 false => AnimationStartPhase::Fixed(self.default_start_phase() as usize),
@@ -121,21 +126,34 @@ impl SpriteAnimationExt for SpriteAnimation {
 pub(crate) struct AnimationState {
     pub timer: Timer,
     pub current_phase: usize,
+    just_finished: bool,
 }
 
 impl AnimationState {
+    fn new(current_phase: usize, timer: Timer) -> Self {
+        Self {
+            timer,
+            current_phase,
+            just_finished: false,
+        }
+    }
+
     fn tick(&mut self, key: &AnimationKey, delta: Duration) {
         self.timer.tick(delta);
+        self.just_finished = false;
         if self.timer.just_finished() {
             self.current_phase += 1;
             if self.current_phase >= key.total_phases {
                 self.current_phase = 0;
             }
+            self.timer.set_duration(key.duration(self.current_phase));
+            self.timer.reset();
+            self.just_finished = true;
         }
     }
 
     fn just_finished(&self) -> bool {
-        self.timer.just_finished()
+        self.just_finished
     }
 }
 
@@ -404,7 +422,7 @@ pub(crate) fn prepare_sprites<C: PreloadedContentAssets>(
     debug!("Finished preparing sprites");
 }
 
-fn load_desired_appereance_sprite<'a, C: ContentAssets>(
+fn load_desired_appereance_sprite<C: ContentAssets>(
     group: AppearanceGroup,
     id: u32,
     frame_group_index: i32,
@@ -487,11 +505,13 @@ fn load_desired_appereance_sprite<'a, C: ContentAssets>(
                 * sprite_info.pattern_depth()) as usize,
         };
         if animation.synchronized() {
-            synced_timers.try_insert(key, key.default_state()).ok();
+            synced_timers
+                .try_insert(key.clone(), key.default_state())
+                .ok();
             AnimationSprite::Synchronized { key, descriptor }
         } else {
             AnimationSprite::Independent {
-                key,
+                key: key.clone(),
                 descriptor,
                 state: key.default_state(),
             }
