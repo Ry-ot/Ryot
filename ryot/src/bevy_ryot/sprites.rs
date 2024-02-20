@@ -1,5 +1,5 @@
 //! Sprite loading and drawing.
-use crate::appearances::{SpriteSheetData, SpriteSheetDataSet};
+use crate::appearances::{SpriteAnimation, SpriteSheetData, SpriteSheetDataSet};
 use crate::bevy_ryot::InternalContentState;
 use crate::layer::Layer;
 use crate::position::TilePosition;
@@ -50,15 +50,114 @@ pub struct LoadedSprite {
     pub atlas_texture_handle: Handle<TextureAtlas>,
 }
 
-/// A component that holds the information needed to animate a sprite.
-#[derive(Component, Default)]
-pub struct AnimationSprite {
+#[derive(Resource, Debug, Default, Deref, DerefMut)]
+pub(crate) struct SynchronizedAnimationTimers(HashMap<AnimationKey, AnimationState>);
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub(crate) enum AnimationStartPhase {
+    Random,
+    Fixed(usize),
+}
+
+impl AnimationStartPhase {
+    fn get(&self, total_phases: usize) -> usize {
+        match self {
+            AnimationStartPhase::Random => rand::thread_rng().gen_range(0..total_phases),
+            AnimationStartPhase::Fixed(phase) => *phase,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub(crate) struct AnimationKey {
+    pub phase_duration: Duration,
+    pub start_phase: AnimationStartPhase,
+    pub total_phases: usize,
+}
+
+impl AnimationKey {
+    pub(crate) fn create_timer(&self) -> Timer {
+        Timer::new(self.phase_duration, TimerMode::Repeating)
+    }
+
+    pub(crate) fn default_state(&self) -> AnimationState {
+        AnimationState {
+            current_phase: self.start_phase.get(self.total_phases),
+            timer: self.create_timer(),
+        }
+    }
+}
+
+trait SpriteAnimationExt {
+    fn get_animation_key(&self) -> AnimationKey;
+}
+
+impl SpriteAnimationExt for SpriteAnimation {
+    fn get_animation_key(&self) -> AnimationKey {
+        let phase_duration = self
+            .sprite_phase
+            .first()
+            .map(|phase| -> Duration {
+                let range = phase.duration_min()..phase.duration_max();
+                if range.start == range.end {
+                    return Duration::from_millis(range.start.into());
+                }
+                Duration::from_millis(rand::thread_rng().gen_range(range).into())
+            })
+            .unwrap_or(Duration::from_millis(300));
+
+        AnimationKey {
+            phase_duration,
+            start_phase: match self.random_start_phase() {
+                true => AnimationStartPhase::Random,
+                false => AnimationStartPhase::Fixed(self.default_start_phase() as usize),
+            },
+            total_phases: self.sprite_phase.len(),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct AnimationState {
     pub timer: Timer,
+    pub current_phase: usize,
+}
+
+impl AnimationState {
+    fn tick(&mut self, key: &AnimationKey, delta: Duration) {
+        self.timer.tick(delta);
+        if self.timer.just_finished() {
+            self.current_phase += 1;
+            if self.current_phase >= key.total_phases {
+                self.current_phase = 0;
+            }
+        }
+    }
+
+    fn just_finished(&self) -> bool {
+        self.timer.just_finished()
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct AnimationDescriptor {
     pub sprites: Vec<LoadedSprite>,
     pub initial_index: usize,
-    pub phase: usize,
     pub skip: usize,
-    pub total_phases: usize,
+}
+
+/// A component that holds the information needed to animate a sprite.
+#[derive(Component, Debug)]
+pub(crate) enum AnimationSprite {
+    Independent {
+        key: AnimationKey,
+        descriptor: AnimationDescriptor,
+        state: AnimationState,
+    },
+    Synchronized {
+        key: AnimationKey,
+        descriptor: AnimationDescriptor,
+    },
 }
 
 /// An optional component to override animation timers.
@@ -305,13 +404,14 @@ pub(crate) fn prepare_sprites<C: PreloadedContentAssets>(
     debug!("Finished preparing sprites");
 }
 
-fn load_desired_appereance_sprite<C: ContentAssets>(
+fn load_desired_appereance_sprite<'a, C: ContentAssets>(
     group: AppearanceGroup,
     id: u32,
     frame_group_index: i32,
     direction: Option<&Directional>,
     content_assets: &Res<C>,
     load_sprite_batch_events: &mut EventWriter<LoadSpriteBatch>,
+    synced_timers: &mut ResMut<SynchronizedAnimationTimers>,
 ) -> Option<(LoadedSprite, Option<AnimationSprite>, Vec<LoadedSprite>)> {
     // If the id is 0, it means that the appearance is not set yet, so we return None
     if id == 0 {
@@ -376,37 +476,27 @@ fn load_desired_appereance_sprite<C: ContentAssets>(
         return None;
     };
 
-    let animation_sprite = sprite_info
-        .animation
-        .as_ref()
-        .map(|animation| AnimationSprite {
-            timer: Timer::from_seconds(
-                animation
-                    .sprite_phase
-                    .first()
-                    .map(|phase| {
-                        let range = phase.duration_min()..phase.duration_max();
-                        if range.start == range.end {
-                            return range.start;
-                        }
-                        rand::thread_rng().gen_range(range)
-                    })
-                    .unwrap_or(300) as f32
-                    / 1000.,
-                TimerMode::Repeating,
-            ),
+    let animation_sprite = sprite_info.animation.as_ref().map(|animation| {
+        let key = animation.get_animation_key();
+        let descriptor = AnimationDescriptor {
             sprites: sprites.clone(),
-            phase: match animation.random_start_phase() {
-                true => rand::thread_rng().gen_range(0..animation.sprite_phase.len()) as usize,
-                false => animation.default_start_phase() as usize,
-            },
             initial_index: direction_index,
-            total_phases: animation.sprite_phase.len(),
             skip: (sprite_info.layers()
                 * sprite_info.pattern_width()
                 * sprite_info.pattern_height()
                 * sprite_info.pattern_depth()) as usize,
-        });
+        };
+        if animation.synchronized() {
+            synced_timers.try_insert(key, key.default_state()).ok();
+            AnimationSprite::Synchronized { key, descriptor }
+        } else {
+            AnimationSprite::Independent {
+                key,
+                descriptor,
+                state: key.default_state(),
+            }
+        }
+    });
     Some((sprite.clone(), animation_sprite, sprites))
 }
 
@@ -448,6 +538,7 @@ pub(crate) fn update_sprite_system<C: ContentAssets>(
     >,
     content_assets: Res<C>,
     mut load_sprite_batch_events: EventWriter<LoadSpriteBatch>,
+    mut synced_timers: ResMut<SynchronizedAnimationTimers>,
 ) {
     for (
         entity,
@@ -467,6 +558,7 @@ pub(crate) fn update_sprite_system<C: ContentAssets>(
             direction,
             &content_assets,
             &mut load_sprite_batch_events,
+            &mut synced_timers,
         ) {
             Some(value) => value,
             None => {
@@ -511,6 +603,7 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
     >,
     content_assets: Res<C>,
     mut load_sprite_batch_events: EventWriter<LoadSpriteBatch>,
+    mut synced_timers: ResMut<SynchronizedAnimationTimers>,
 ) {
     for (entity, position, descriptor, layer, direction) in &mut query {
         let (sprite, anim, sprites) = match load_desired_appereance_sprite(
@@ -520,6 +613,7 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
             direction,
             &content_assets,
             &mut load_sprite_batch_events,
+            &mut synced_timers,
         ) {
             Some(value) => value,
             None => {
@@ -556,34 +650,53 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
 /// It will only run if the entity has a `TextureAtlasSprite` and an `AnimationSprite` component.
 pub(crate) fn animate_sprite_system(
     time: Res<Time>,
-    mut sprites_to_animate: Query<(
+    mut synced_timers: ResMut<SynchronizedAnimationTimers>,
+    mut q_sprites: Query<(
         &mut AnimationSprite,
         &mut Handle<TextureAtlas>,
         &mut TextureAtlasSprite,
         Option<&AnimationDuration>,
     )>,
 ) {
-    for (mut anim, mut atlas, mut atlas_sprite, duration) in &mut sprites_to_animate {
-        if let Some(duration) = duration {
-            let frame_duration = duration.0 / anim.total_phases as u32;
-            if anim.timer.duration() != frame_duration {
-                anim.timer.set_duration(frame_duration)
+    let delta = time.delta();
+    synced_timers
+        .iter_mut()
+        .for_each(|(key, state)| state.tick(key, delta));
+
+    q_sprites
+        .par_iter_mut()
+        .for_each(|(mut anim, mut atlas, mut atlas_sprite, duration)| {
+            if let AnimationSprite::Independent { key, state, .. } = &mut *anim {
+                if let Some(duration) = duration {
+                    let frame_duration = duration.0 / key.total_phases as u32;
+                    if state.timer.duration() != frame_duration {
+                        state.timer.set_duration(frame_duration)
+                    }
+                }
+                state.tick(key, delta);
             }
-        }
-        anim.timer.tick(time.delta());
-        if anim.timer.just_finished() {
-            anim.phase += 1;
-            if anim.phase >= anim.total_phases {
-                anim.phase = 0;
-            }
-            let Some(sprite) = anim
-                .sprites
-                .get(anim.initial_index + anim.phase * anim.skip)
-            else {
-                return;
+
+            let (state, descriptor) = match anim.as_ref() {
+                AnimationSprite::Independent {
+                    state, descriptor, ..
+                } => (state, descriptor),
+                AnimationSprite::Synchronized { key, descriptor } => {
+                    let Some(state) = synced_timers.get(key) else {
+                        return;
+                    };
+                    (state, descriptor)
+                }
             };
-            *atlas = sprite.atlas_texture_handle.clone();
-            atlas_sprite.index = sprite.get_sprite_index();
-        }
-    }
+
+            if state.just_finished() {
+                let Some(sprite) = descriptor
+                    .sprites
+                    .get(descriptor.initial_index + state.current_phase * descriptor.skip)
+                else {
+                    return;
+                };
+                *atlas = sprite.atlas_texture_handle.clone();
+                atlas_sprite.index = sprite.get_sprite_index();
+            }
+        });
 }
