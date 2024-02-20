@@ -7,7 +7,7 @@ use std::borrow::Cow;
 use std::collections::HashMap;
 use std::marker::PhantomData;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct Tile {
     pub position: TilePosition,
     pub items: HashMap<Layer, Item>,
