@@ -18,9 +18,6 @@ use std::marker::PhantomData;
 
 pub struct CameraPlugin<C: CompassAssets>(PhantomData<C>);
 
-pub const CURSOR_COLOR: Color = Color::rgba(0.7, 0.7, 0.7, 0.7);
-// pub const DELETION_COLOR: Color = Color::rgba(0.5, 0.0, 0.0, 0.3);
-
 impl<C: CompassAssets> CameraPlugin<C> {
     pub fn new() -> Self {
         Self(PhantomData)
@@ -68,39 +65,48 @@ pub struct Cursor {
 
 #[derive(Eq, PartialEq, Clone, Copy, Reflect)]
 pub struct DrawingState {
-    pub input_type: DrawingInputType,
     pub enabled: bool,
     pub brush_index: usize,
-}
-
-#[derive(Eq, PartialEq, Clone, Copy, Reflect)]
-pub enum DrawingInputType {
-    Click(i32),
-    TwoClicks(Option<TilePosition>),
-}
-
-impl Default for DrawingInputType {
-    fn default() -> Self {
-        DrawingInputType::Click(3)
-    }
-}
-
-impl<E: BrushItem> From<DrawingInputType> for BrushParams<E> {
-    fn from(input_type: DrawingInputType) -> Self {
-        match input_type {
-            DrawingInputType::Click(size) => BrushParams::Size(size),
-            DrawingInputType::TwoClicks(Some(pos)) => BrushParams::Position(pos),
-            DrawingInputType::TwoClicks(None) => BrushParams::Size(0),
-        }
-    }
+    pub tool_mode: ToolMode,
+    pub input_type: InputType,
 }
 
 impl Default for DrawingState {
     fn default() -> Self {
         Self {
-            input_type: DrawingInputType::default(),
             enabled: true,
             brush_index: 0,
+            tool_mode: ToolMode::default(),
+            input_type: InputType::default(),
+        }
+    }
+}
+
+#[derive(Eq, PartialEq, Default, Clone, Copy, Reflect)]
+pub enum ToolMode {
+    #[default]
+    Draw,
+    Erase,
+}
+
+#[derive(Eq, PartialEq, Clone, Copy, Reflect)]
+pub enum InputType {
+    SingleClick(i32),
+    DoubleClick(Option<TilePosition>),
+}
+
+impl Default for InputType {
+    fn default() -> Self {
+        InputType::SingleClick(3)
+    }
+}
+
+impl<E: BrushItem> From<InputType> for BrushParams<E> {
+    fn from(input_type: InputType) -> Self {
+        match input_type {
+            InputType::SingleClick(size) => BrushParams::Size(size),
+            InputType::DoubleClick(Some(pos)) => BrushParams::Position(pos),
+            InputType::DoubleClick(None) => BrushParams::Size(0),
         }
     }
 }
@@ -205,16 +211,18 @@ fn update_cursor_visibility(
     palette_state: Res<PaletteState>,
     mut egui_ctx: Query<&mut EguiContext>,
     mut windows: Query<&mut Window>,
-    mut cursor_query: Query<
-        (&TilePosition, &mut Visibility, &mut TextureAtlasSprite),
-        With<Cursor>,
-    >,
+    mut cursor_query: Query<(
+        &TilePosition,
+        &mut Visibility,
+        &mut TextureAtlasSprite,
+        &Cursor,
+    )>,
     gui_state: Res<UiState>,
 ) -> color_eyre::Result<()> {
     let mut egui_ctx = egui_ctx.single_mut();
-    let (tile_pos, mut visibility, mut sprite) = cursor_query.get_single_mut()?;
+    let (tile_pos, mut visibility, mut sprite, cursor) = cursor_query.get_single_mut()?;
 
-    sprite.color = CURSOR_COLOR;
+    sprite.color = get_cursor_color(cursor);
 
     if gui_state.is_being_used || palette_state.selected_tile.is_none() {
         *visibility = Visibility::Hidden;
@@ -313,7 +321,7 @@ fn update_cursor_brush_preview(
         // If the sprite is already loaded, TextureAtlasSprite exists, so we change its color to
         // differentiate the preview tiles from the rest, making them grayish and transparent.
         if let Some(mut sprite) = sprite {
-            sprite.color = CURSOR_COLOR
+            sprite.color = get_cursor_color(cursor)
         }
 
         // If we finished iterating over the positions, we hide the remaining preview tiles.
@@ -381,4 +389,11 @@ fn update_camera_visible_sector(
 
 fn update_pan_cam_actions(mut toggle: ResMut<ToggleActions<PanCamAction>>, ui_state: Res<UiState>) {
     toggle.enabled = !ui_state.is_being_used;
+}
+
+pub fn get_cursor_color(cursor: &Cursor) -> Color {
+    match cursor.drawing_state.tool_mode {
+        ToolMode::Draw => Color::rgba(0.7, 0.7, 0.7, 0.7),
+        ToolMode::Erase => Color::rgba(0., 0., 0., 0.7),
+    }
 }

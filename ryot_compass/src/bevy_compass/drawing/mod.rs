@@ -22,7 +22,7 @@ pub use brush::*;
 pub enum DrawingAction {
     Stop,
     Draw,
-    Erase,
+    ToggleDeletion,
     Undo,
     Redo,
     StartConnectingPoints,
@@ -35,10 +35,8 @@ pub enum DrawingAction {
 impl DrawingAction {
     pub fn get_default_input_map() -> InputMap<DrawingAction> {
         InputMap::default()
-            .insert_multiple([
-                (DrawingAction::Draw, MouseButton::Left),
-                (DrawingAction::Erase, MouseButton::Right),
-            ])
+            .insert(DrawingAction::Draw, MouseButton::Left)
+            .insert_modified(DrawingAction::ToggleDeletion, CONTROL_COMMAND, KeyCode::D)
             .insert_modified(DrawingAction::Undo, CONTROL_COMMAND, KeyCode::Z)
             .insert_chord(
                 DrawingAction::Redo,
@@ -105,7 +103,7 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
                             )),
                     ),
                     (draw_on_click::<C>(), draw_on_hold::<C>()),
-                    (erase_on_click(), erase_on_hold()),
+                    toggle_deletion.run_if(action_just_pressed(DrawingAction::ToggleDeletion)),
                     (
                         apply_update,
                         persist_update,
@@ -128,10 +126,7 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
                         change_brush_size(-1)
                             .run_if(action_just_pressed(DrawingAction::DecreaseBrush)),
                     ),
-                    update_drawing_input_type.run_if(
-                        action_just_pressed(DrawingAction::Draw)
-                            .or_else(action_just_pressed(DrawingAction::Erase)),
-                    ),
+                    update_drawing_input_type.run_if(action_just_pressed(DrawingAction::Draw)),
                 )
                     .chain()
                     .run_if(in_state(InternalContentState::Ready))
