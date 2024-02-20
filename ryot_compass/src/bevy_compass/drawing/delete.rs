@@ -19,30 +19,24 @@ pub fn erase_on_click() -> SystemConfigs {
 
 /// A function that listens to the right mouse button and deletes the content of the tile under the cursor.
 /// It always delete the topmost content of the tile, following the Z-ordering.
-
 fn delete_tile_content<F: ReadOnlyWorldQuery>(
     mut commands: Commands,
     mut command_history: ResMut<CommandHistory>,
-    tiles: Res<MapTiles>,
+    tiles: ResMut<MapTiles>,
     brushes: Res<Brushes<DrawingBundle>>,
     cursor_query: Query<(&Cursor, &TilePosition), F>,
-    q_visibility: Query<(&Visibility, &AppearanceDescriptor), With<TileComponent>>,
+    q_current_appearance: Query<(&Visibility, &AppearanceDescriptor), With<TileComponent>>,
 ) {
     for (cursor, tile_pos) in &cursor_query {
-        let positions: Vec<TilePosition> = brushes(
+        let top_most_content = brushes(
             cursor.drawing_state.brush_index,
             cursor.drawing_state.input_type.into(),
             DrawingBundle::from_tile_position(*tile_pos),
         )
-        .into_iter()
-        .map(|bundle| bundle.tile_pos)
-        .collect();
-
-        let top_most_content = positions
-            .iter()
-            .filter_map(|pos| get_top_most_visible(*pos, &tiles, &q_visibility))
-            .map(|(_, bundle)| bundle)
-            .collect::<Vec<_>>();
+        .iter()
+        .filter_map(|bundle| get_top_most_visible(bundle.tile_pos, &tiles, &q_current_appearance))
+        .map(|(_, bundle)| bundle)
+        .collect::<Vec<_>>();
 
         let command = UpdateTileContent::for_new_bundle(top_most_content).revert();
         commands.add(command.clone());
