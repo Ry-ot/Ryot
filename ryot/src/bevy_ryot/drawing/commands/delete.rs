@@ -59,8 +59,8 @@ pub fn persist_deletion(
 
 pub fn get_top_most_visible(
     tile_pos: TilePosition,
-    map_tiles: &Res<MapTiles>,
-    q_visibility: &Query<(&Visibility, &AppearanceDescriptor), With<TileComponent>>,
+    map_tiles: &ResMut<MapTiles>,
+    q_current_appearance: &Query<(&Visibility, &AppearanceDescriptor), With<TileComponent>>,
 ) -> Option<(Entity, DrawingBundle)> {
     let tile_content = map_tiles.get(&tile_pos)?.clone();
 
@@ -73,7 +73,7 @@ pub fn get_top_most_visible(
     for layer in top_most_keys {
         let entity = tile_content.get(&layer)?;
 
-        if let Ok((visibility, appearance)) = q_visibility.get(*entity) {
+        if let Ok((visibility, appearance)) = q_current_appearance.get(*entity) {
             if visibility == Visibility::Hidden {
                 continue;
             }

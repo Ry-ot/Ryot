@@ -14,7 +14,7 @@ use crate::bevy_ryot::lmdb::LmdbEnv;
 #[cfg(feature = "lmdb")]
 use crate::lmdb::{GetKey, Item, ItemRepository, ItemsFromHeedLmdb, Tile};
 #[cfg(feature = "lmdb")]
-use bevy::log::{error, warn};
+use bevy::log::error;
 #[cfg(feature = "lmdb")]
 use std::collections::HashMap;
 
@@ -95,6 +95,10 @@ impl Command for UpdateTileContent {
         let (new, old) = (self.0, self.1);
 
         for (index, info) in new.iter().enumerate() {
+            if info.3.is_none() && old[index].3.is_none() {
+                continue;
+            }
+
             let id = get_or_create_entity_for_info(world, info);
 
             world
@@ -185,6 +189,10 @@ pub fn persist_update(
                 continue;
             }
 
+            let Some(appearance) = appearance else {
+                continue;
+            };
+
             keys.push(tile_pos.get_binary_key());
             to_draw.push((tile_pos, layer, appearance));
         }
@@ -207,11 +215,6 @@ pub fn persist_update(
             let tile = new_tiles
                 .entry(*tile_pos)
                 .or_insert(Tile::from_pos(*tile_pos));
-
-            let Some(appearance) = appearance else {
-                warn!("Updating tile with no appearance: {:?}", tile_pos);
-                continue;
-            };
 
             tile.set_item(
                 Item {
