@@ -168,6 +168,13 @@ pub struct Sector {
     pub max: TilePosition,
 }
 
+impl Sector {
+    pub const ZERO: Sector = Sector {
+        min: TilePosition::ZERO,
+        max: TilePosition::ZERO,
+    };
+}
+
 impl fmt::Display for Sector {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "Edges({}, {})", self.min, self.max)
@@ -216,6 +223,18 @@ impl Sub<Sector> for Sector {
     type Output = Vec<Sector>;
 
     fn sub(self, rhs: Sector) -> Self::Output {
+        if self == rhs {
+            return Vec::new();
+        }
+
+        if rhs == Sector::ZERO {
+            return vec![self];
+        }
+
+        if self == Sector::ZERO {
+            return vec![rhs];
+        }
+
         let mut result = Vec::new();
 
         // Left area (corrected to ensure no overlap and accurate representation)

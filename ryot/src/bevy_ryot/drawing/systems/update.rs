@@ -1,7 +1,7 @@
 use crate::bevy_ryot::drawing::{CommandState, Deletion, DrawingInfo, TileComponent};
 use crate::bevy_ryot::map::MapTiles;
 use crate::position::TilePosition;
-use bevy::prelude::{Added, Changed, Commands, Component, Entity, Or, Query, Res, ResMut, World};
+use bevy::prelude::{Added, Changed, Commands, Component, Entity, Or, Query, Res, World};
 
 #[cfg(feature = "lmdb")]
 use crate::bevy_ryot::lmdb::LmdbEnv;
@@ -38,6 +38,15 @@ impl UpdateComponent {
 pub fn update(world: &mut World, new: DrawingInfo, old: DrawingInfo, state: CommandState) {
     let id = get_or_create_entity_for_info(world, &new);
 
+    // We need to update MapTiles here already, otherwise it can lead to a race condition
+    // where another entity is created before the apply_update system runs.
+    world
+        .resource_mut::<MapTiles>()
+        .entry(new.0)
+        .or_default()
+        .entry(new.1)
+        .or_insert(id);
+
     world
         .entity_mut(id)
         .insert(UpdateComponent { new, old, state });
@@ -67,7 +76,6 @@ pub fn get_or_create_entity_for_info(world: &mut World, info: &DrawingInfo) -> E
 /// Runs during [`Apply`](DrawingSystems::Apply) and before [`Persist`](DrawingSystems::Persist).
 pub fn apply_update(
     mut commands: Commands,
-    mut tiles: ResMut<MapTiles>,
     mut q_inserted: Query<
         (Entity, &mut UpdateComponent),
         Or<(Changed<UpdateComponent>, Added<UpdateComponent>)>,
@@ -94,8 +102,6 @@ pub fn apply_update(
             .entity(entity)
             .insert((pos, layer, appearance, visibility, TileComponent))
             .remove::<Deletion>();
-
-        tiles.entry(pos).or_default().entry(layer).or_insert(entity);
 
         update.state.applied = true;
     }
