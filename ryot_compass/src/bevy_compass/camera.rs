@@ -19,6 +19,7 @@ use std::marker::PhantomData;
 pub struct CameraPlugin<C: CompassAssets>(PhantomData<C>);
 
 pub const CURSOR_COLOR: Color = Color::rgba(0.7, 0.7, 0.7, 0.7);
+// pub const DELETION_COLOR: Color = Color::rgba(0.5, 0.0, 0.0, 0.3);
 
 impl<C: CompassAssets> CameraPlugin<C> {
     pub fn new() -> Self {
@@ -67,29 +68,29 @@ pub struct Cursor {
 
 #[derive(Eq, PartialEq, Clone, Copy, Reflect)]
 pub struct DrawingState {
-    pub mode: DrawingMode,
+    pub input_type: DrawingInputType,
     pub enabled: bool,
     pub brush_index: usize,
 }
 
 #[derive(Eq, PartialEq, Clone, Copy, Reflect)]
-pub enum DrawingMode {
+pub enum DrawingInputType {
     Click(i32),
     TwoClicks(Option<TilePosition>),
 }
 
-impl Default for DrawingMode {
+impl Default for DrawingInputType {
     fn default() -> Self {
-        DrawingMode::Click(3)
+        DrawingInputType::Click(3)
     }
 }
 
-impl<E: BrushItem> From<DrawingMode> for BrushParams<E> {
-    fn from(mode: DrawingMode) -> Self {
-        match mode {
-            DrawingMode::Click(size) => BrushParams::Size(size),
-            DrawingMode::TwoClicks(Some(pos)) => BrushParams::Position(pos),
-            DrawingMode::TwoClicks(None) => BrushParams::Size(0),
+impl<E: BrushItem> From<DrawingInputType> for BrushParams<E> {
+    fn from(input_type: DrawingInputType) -> Self {
+        match input_type {
+            DrawingInputType::Click(size) => BrushParams::Size(size),
+            DrawingInputType::TwoClicks(Some(pos)) => BrushParams::Position(pos),
+            DrawingInputType::TwoClicks(None) => BrushParams::Size(0),
         }
     }
 }
@@ -97,7 +98,7 @@ impl<E: BrushItem> From<DrawingMode> for BrushParams<E> {
 impl Default for DrawingState {
     fn default() -> Self {
         Self {
-            mode: DrawingMode::default(),
+            input_type: DrawingInputType::default(),
             enabled: true,
             brush_index: 0,
         }
@@ -292,7 +293,7 @@ fn update_cursor_brush_preview(
     // Here we get the positions of the tiles that will be part of the brush preview
     let mut positions: Vec<TilePosition> = brushes(
         cursor.drawing_state.brush_index,
-        cursor.drawing_state.mode.into(),
+        cursor.drawing_state.input_type.into(),
         DrawingBundle::from_tile_position(*cursor_pos),
     )
     .into_iter()

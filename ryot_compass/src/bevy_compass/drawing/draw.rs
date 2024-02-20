@@ -1,4 +1,4 @@
-use crate::{Cursor, DrawingAction, DrawingMode};
+use crate::{Cursor, DrawingAction, DrawingInputType};
 use bevy::ecs::query::ReadOnlyWorldQuery;
 use bevy::ecs::schedule::SystemConfigs;
 use bevy::prelude::*;
@@ -18,7 +18,6 @@ pub fn draw_on_click<C: ContentAssets>() -> SystemConfigs {
     on_press(draw_to_tile::<C, ()>, DrawingAction::Draw)
 }
 
-#[allow(clippy::too_many_arguments)]
 fn draw_to_tile<C: ContentAssets, F: ReadOnlyWorldQuery>(
     mut commands: Commands,
     mut tiles: ResMut<MapTiles>,
@@ -50,7 +49,7 @@ fn draw_to_tile<C: ContentAssets, F: ReadOnlyWorldQuery>(
 
         let to_draw = brushes(
             cursor.drawing_state.brush_index,
-            cursor.drawing_state.mode.into(),
+            cursor.drawing_state.input_type.into(),
             DrawingBundle::new(layer, *tile_pos, appearance),
         );
 
@@ -112,29 +111,29 @@ pub fn get_current_bundle_and_entity(
     (old_bundle, entity)
 }
 
-pub fn update_drawing_mode(mut cursor_query: Query<(&TilePosition, &mut Cursor)>) {
+pub fn update_drawing_input_type(mut cursor_query: Query<(&TilePosition, &mut Cursor)>) {
     for (cursor_pos, mut cursor) in &mut cursor_query {
-        cursor.drawing_state.mode = match cursor.drawing_state.mode {
-            DrawingMode::TwoClicks(_) => DrawingMode::TwoClicks(Some(*cursor_pos)),
-            mode => mode,
+        cursor.drawing_state.input_type = match cursor.drawing_state.input_type {
+            DrawingInputType::TwoClicks(_) => DrawingInputType::TwoClicks(Some(*cursor_pos)),
+            input_type => input_type,
         };
     }
 }
 
-pub fn set_drawing_mode(
+pub fn set_drawing_input_type(
     mut previous_size: Local<i32>,
     mut cursor_query: Query<&mut Cursor>,
     action_state: Res<ActionState<DrawingAction>>,
 ) {
     for mut cursor in &mut cursor_query {
-        if let DrawingMode::Click(size) = cursor.drawing_state.mode {
+        if let DrawingInputType::Click(size) = cursor.drawing_state.input_type {
             *previous_size = size;
         }
 
         if action_state.just_pressed(&DrawingAction::StartConnectingPoints) {
-            cursor.drawing_state.mode = DrawingMode::TwoClicks(None);
+            cursor.drawing_state.input_type = DrawingInputType::TwoClicks(None);
         } else {
-            cursor.drawing_state.mode = DrawingMode::Click(*previous_size);
+            cursor.drawing_state.input_type = DrawingInputType::Click(*previous_size);
         }
     }
 }
