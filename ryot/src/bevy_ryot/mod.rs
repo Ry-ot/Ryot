@@ -136,6 +136,7 @@ impl<C: PreloadedContentAssets + Default> Plugin for ContentPlugin<C> {
             )
             .add_systems(Update, sprites::store_atlases_assets_after_loading::<C>)
             .init_resource::<sprites::SpriteAnimationEnabled>()
+            .init_resource::<sprites::SynchronizedAnimationTimers>()
             .add_systems(
                 Update,
                 (
