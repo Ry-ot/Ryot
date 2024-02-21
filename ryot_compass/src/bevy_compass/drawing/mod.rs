@@ -6,6 +6,9 @@ use ryot::bevy_ryot::map::MapTiles;
 use ryot::prelude::{drawing::*, *};
 use std::marker::PhantomData;
 
+mod commands;
+pub use commands::*;
+
 mod draw;
 pub use draw::*;
 
@@ -106,10 +109,10 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
                     toggle_deletion.run_if(action_just_pressed(DrawingAction::ToggleDeletion)),
                     (
                         tick_undo_redo_timer,
-                        undo_on_hold(),
-                        undo_on_click(),
-                        redo_on_hold(),
-                        redo_on_click(),
+                        on_press(undo.map(drop), DrawingAction::Undo),
+                        on_hold(undo.map(drop), DrawingAction::Undo).run_if(time_is_finished()),
+                        on_press(redo.map(drop), DrawingAction::Redo),
+                        on_hold(redo.map(drop), DrawingAction::Redo).run_if(time_is_finished()),
                     )
                         .chain(),
                     (

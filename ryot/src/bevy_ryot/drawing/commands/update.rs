@@ -42,12 +42,6 @@ impl UpdateTileContent {
     }
 }
 
-impl From<UpdateTileContent> for CommandType {
-    fn from(command: UpdateTileContent) -> Self {
-        Box::new(command)
-    }
-}
-
 impl Command for UpdateTileContent {
     fn apply(self, world: &mut World) {
         let (new, old) = (self.0, self.1);
@@ -59,15 +53,5 @@ impl Command for UpdateTileContent {
 
             update(world, *info, old[index], CommandState::default());
         }
-    }
-}
-
-impl ReversibleCommand for UpdateTileContent {
-    fn undo(&self, commands: &mut Commands) {
-        commands.add(self.revert());
-    }
-
-    fn redo(&self, commands: &mut Commands) {
-        commands.add(self.clone());
     }
 }
