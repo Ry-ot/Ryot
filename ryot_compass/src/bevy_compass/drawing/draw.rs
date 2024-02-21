@@ -1,4 +1,7 @@
-use crate::{delete_top_most_elements_in_positions, Cursor, DrawingAction, InputType, ToolMode};
+use crate::{
+    delete_top_most_elements_in_positions, CommandHistory, Cursor, DrawingAction, InputType,
+    ToolMode,
+};
 use bevy::ecs::query::ReadOnlyWorldQuery;
 use bevy::ecs::schedule::SystemConfigs;
 use bevy::prelude::*;

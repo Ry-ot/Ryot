@@ -1,4 +1,4 @@
-use crate::{Cursor, ToolMode};
+use crate::{CommandHistory, Cursor, ToolMode};
 use bevy::prelude::*;
 use ryot::bevy_ryot::map::MapTiles;
 use ryot::bevy_ryot::*;
