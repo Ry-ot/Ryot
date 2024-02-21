@@ -1,123 +1,117 @@
+use crate::position::TilePosition;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::cmp::Ordering;
+use strum::*;
 
-/// This enum defines the layers that composes a game.
-/// The base layers are defined in the enum and custom layers can be added.
-/// The layers are used to define the rendering order of the tiles.
-/// There are two types of layers: dynamic and static.
-///    - TopDown45 layers are used for elements that have their z displacement based on its
-///    position in the grid.
-///    - Fixed layers are used for elements that have a fixed rendering order and are always
-///    rendered on top of dynamic layers.
-#[derive(Eq, Hash, PartialEq, Debug, Copy, Clone, Serialize, Deserialize)]
+/// A type that represents the order of an item in an ordered layer. There is a virtual limit of
+/// 256 items in the ordered layers.
+type Order = u8;
+
+const MAX_Z: f32 = 999.;
+const MAX_Z_TILE: f32 = i8::MAX as f32;
+const MAX_Z_TRANSFORM: f32 = 900. - MAX_Z_TILE;
+const COUNT_LAYERS: f32 = Layer::COUNT as f32;
+const LAYER_WIDTH: f32 = MAX_Z_TRANSFORM / (2. * u16::MAX as f32);
+
+#[derive(
+    Debug,
+    Default,
+    PartialOrd,
+    Ord,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    Hash,
+    EnumIter,
+    EnumCount,
+    Serialize,
+    Deserialize,
+)]
 #[cfg_attr(feature = "bevy", derive(Component, Reflect))]
 pub enum Layer {
-    Fixed(i32),
-    TopDown45(i32),
+    #[default]
+    Ground,
+    Edge,
+    Bottom(BottomLayer),
+    Top,
+    Hud(Order),
 }
 
-impl PartialOrd for Layer {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+impl Layer {
+    pub const TOP_MOST_LAYER: Layer = Layer::Hud(0);
+
+    pub fn z(&self) -> f32 {
+        match *self {
+            Self::Ground => 0. * LAYER_WIDTH,
+            Self::Edge => 1. * LAYER_WIDTH,
+            Self::Bottom(layer) => 2. * LAYER_WIDTH + layer.z(),
+            Self::Top => MAX_Z_TRANSFORM + 1.,
+            Self::Hud(order) => (MAX_Z - order as f32).max(MAX_Z_TRANSFORM + 2.),
+        }
+    }
+}
+
+#[derive(
+    Debug, Default, Clone, Copy, PartialEq, Eq, Hash, EnumIter, EnumCount, Serialize, Deserialize,
+)]
+#[cfg_attr(feature = "bevy", derive(Reflect))]
+pub enum RelativeLayer {
+    #[default]
+    Object,
+    Creature,
+    Effect,
+    Missile,
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[cfg_attr(feature = "bevy", derive(Reflect))]
+pub struct BottomLayer {
+    order: Order,
+    relative_layer: RelativeLayer,
+}
+
+impl BottomLayer {
+    const COUNT_RELATIVE_LAYERS: f32 = RelativeLayer::COUNT as f32;
+    const RELATIVE_WIDTH: f32 = LAYER_WIDTH / COUNT_LAYERS;
+
+    pub fn new(order: Order, relative_layer: RelativeLayer) -> Self {
+        Self {
+            order,
+            relative_layer,
+        }
+    }
+
+    pub(crate) fn z(&self) -> f32 {
+        // Our layer number relative to others in the stack
+        let val = (self.relative_layer as usize) as f32;
+        // How much space we can use of the f32 value from 0.0..RELATIVE_WIDTH
+        let width = Self::RELATIVE_WIDTH / Self::COUNT_RELATIVE_LAYERS;
+        // Where our range starts
+        let min = val * width;
+        // Our order relative to other elements of the same layer in our stack weighed against our width window
+        let weight = self.order as f32 / Order::MAX as f32;
+        // Final number between 0.0..TOTAL_WIDTH
+        min + weight / Self::COUNT_RELATIVE_LAYERS
+    }
+}
+
+impl PartialOrd for BottomLayer {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         Some(self.cmp(other))
     }
 }
 
-impl Ord for Layer {
+impl Ord for BottomLayer {
     fn cmp(&self, other: &Self) -> std::cmp::Ordering {
-        self.z().cmp(&other.z())
+        self.z().partial_cmp(&other.z()).unwrap()
     }
 }
 
-impl Default for Layer {
-    fn default() -> Self {
-        CipLayer::Items.into()
-    }
-}
-
-impl Layer {
-    pub const TOP_MOST_LAYER: Layer = Layer::Fixed(999);
-    pub const BOTTOM_MOST_LAYER: Layer = Layer::Fixed(-999);
-
-    /// Z is calculated based on floor position and layer.
-    /// The base Z is floor * 100 and the layer adds an offset.
-    /// The offset is used to calculate the rendering order of the tile.
-    /// Tiles with higher Z are rendered on top of tiles with lower Z.
-    /// The tile Z for the game is always the floor (Z / 100).floor().
-    ///
-    /// We leave a gap of 10 between layers to allow for more layers to be added
-    /// in the future and to make it possible to place custom layers between
-    /// the default ones.
-    pub fn z(&self) -> i32 {
-        match self {
-            Self::Fixed(z) => *z,
-            Self::TopDown45(z) => *z,
-        }
-    }
-}
-
-#[derive(Deref, DerefMut)]
-#[cfg_attr(feature = "bevy", derive(Resource))]
-pub struct Layers(pub Vec<Layer>);
-
-impl Layers {
-    pub fn get_sorted_by_z_desc(&self) -> Vec<&Layer> {
-        let mut layers: Vec<_> = self.iter().collect();
-        layers.sort_by_key(|b| std::cmp::Reverse(b.z()));
-        layers
-    }
-}
-
-impl Default for Layers {
-    fn default() -> Self {
-        Self(vec![
-            CipLayer::Missile.into(),
-            CipLayer::Top.into(),
-            CipLayer::Bottom.into(),
-            CipLayer::Effect.into(),
-            CipLayer::Creature.into(),
-            CipLayer::Items.into(),
-            CipLayer::Ground.into(),
-        ])
-    }
-}
-
-#[derive(Hash, Eq, Default, PartialEq, Debug, Copy, Clone)]
-pub enum CipLayer {
-    Missile,
-    Top,
-    Bottom,
-    Effect,
-    Creature,
-    #[default]
-    Items,
-    Ground,
-}
-
-impl From<CipLayer> for Layer {
-    fn from(layer: CipLayer) -> Self {
-        match layer {
-            CipLayer::Missile => Layer::TopDown45(100),
-            CipLayer::Top => Layer::TopDown45(90),
-            CipLayer::Bottom => Layer::TopDown45(80),
-            CipLayer::Effect => Layer::TopDown45(60),
-            CipLayer::Creature => Layer::TopDown45(40),
-            CipLayer::Items => Layer::TopDown45(20),
-            CipLayer::Ground => Layer::TopDown45(0),
-        }
-    }
-}
-
-impl From<Layer> for CipLayer {
-    fn from(layer: Layer) -> Self {
-        match layer {
-            Layer::TopDown45(100) => CipLayer::Missile,
-            Layer::TopDown45(90) => CipLayer::Top,
-            Layer::TopDown45(80) => CipLayer::Bottom,
-            Layer::TopDown45(60) => CipLayer::Effect,
-            Layer::TopDown45(40) => CipLayer::Creature,
-            Layer::TopDown45(20) => CipLayer::Items,
-            Layer::TopDown45(0) => CipLayer::Ground,
-            _ => CipLayer::Items,
-        }
-    }
+pub fn compute_z_transform(pos: &TilePosition, layer: &Layer) -> f32 {
+    let weight = u16::MAX as f32;
+    let xy_weighed =
+        (MAX_Z_TRANSFORM * pos.x as f32 / weight) - (MAX_Z_TRANSFORM * pos.y as f32 / weight);
+    pos.z as f32 + xy_weighed + layer.z()
 }

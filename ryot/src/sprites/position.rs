@@ -8,7 +8,7 @@ use std::{
     time::Duration,
 };
 
-use crate::layer::Layer;
+use crate::layer::{compute_z_transform, Layer};
 use derive_more::{Add, Sub};
 use glam::{IVec3, UVec2, Vec2, Vec3};
 use serde::{Deserialize, Serialize};
@@ -58,18 +58,7 @@ impl TilePosition {
     }
 
     pub fn to_vec3(self, layer: &Layer) -> Vec3 {
-        let pos = Vec2::from(self);
-        let weight = u16::MAX as f32;
-
-        pos.extend(match layer {
-            // Static objects are drawn on top of the ground, so we don't need to tweak the Z based
-            // on the tile position.
-            Layer::Fixed(z) => *z as f32,
-            // z for 2d sprites define the rendering order, for 45 degrees top-down
-            // perspective we always want right bottom items to be drawn on top.
-            // Calculations must be done in f32 otherwise decimals are lost.
-            Layer::TopDown45(z) => *z as f32 + 1. + pos.x / weight - pos.y / weight,
-        })
+        Vec2::from(self).extend(compute_z_transform(&self, layer))
     }
 }
 
