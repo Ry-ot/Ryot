@@ -1,12 +1,14 @@
 use crate::bevy_ryot::drawing::{CommandState, Deletion, DrawingInfo, TileComponent};
 use crate::bevy_ryot::map::MapTiles;
 
-use bevy::prelude::{Added, Changed, Commands, Component, Entity, Or, Query, World};
+use bevy::prelude::*;
 
 #[cfg(feature = "lmdb")]
 use crate::bevy_ryot::lmdb::LmdbEnv;
 #[cfg(feature = "lmdb")]
 use crate::lmdb::{GetKey, Item, ItemRepository, ItemsFromHeedLmdb, Tile};
+#[cfg(feature = "lmdb")]
+use crate::position::TilePosition;
 #[cfg(feature = "lmdb")]
 use bevy::log::error;
 #[cfg(feature = "lmdb")]
