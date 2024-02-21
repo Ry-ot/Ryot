@@ -8,7 +8,7 @@ mod sheet_loading;
 pub use sheet_loading::*;
 
 pub mod layer;
-pub use layer::{CipLayer, Layer, Layers};
+pub use layer::Layer;
 
 pub mod position;
 
@@ -44,6 +44,5 @@ impl SpriteLayout {
     }
 }
 
-pub mod layer2;
 #[cfg(test)]
 mod tests;

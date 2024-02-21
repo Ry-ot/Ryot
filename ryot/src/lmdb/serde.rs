@@ -89,41 +89,6 @@ impl GetKey for TilePosition {
     }
 }
 
-impl GetKey for Layer {
-    fn get_binary_key(&self) -> Vec<u8> {
-        let value = match self {
-            Layer::Fixed(value) => *value,
-            Layer::TopDown45(value) => *value,
-        } as i16;
-
-        let mut key = Vec::with_capacity(2);
-        key.extend_from_slice(&value.to_be_bytes());
-        key
-    }
-
-    fn from_binary_key(key: &[u8]) -> Self {
-        let value = i16::from_be_bytes([key[0], key[1]]);
-        Layer::TopDown45(value as i32)
-    }
-}
-
-impl GetKey for (TilePosition, Layer) {
-    fn get_binary_key(&self) -> Vec<u8> {
-        let (position, layer) = self;
-        let mut key = Vec::with_capacity(11);
-
-        key.extend_from_slice(&position.get_binary_key());
-        key.extend_from_slice(&layer.get_binary_key());
-        key
-    }
-
-    fn from_binary_key(key: &[u8]) -> Self {
-        let position = TilePosition::from_binary_key(&key[0..9]);
-        let layer = Layer::from_binary_key(&key[9..11]);
-        (position, layer)
-    }
-}
-
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Header {
     // header

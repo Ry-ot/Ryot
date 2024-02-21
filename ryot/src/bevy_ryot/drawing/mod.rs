@@ -21,8 +21,7 @@ pub struct DrawingPlugin;
 
 impl Plugin for DrawingPlugin {
     fn build(&self, app: &mut App) {
-        app.init_resource::<Layers>()
-            .register_type::<Layer>()
+        app.register_type::<Layer>()
             .add_systems(
                 PostUpdate,
                 apply_detail_level_to_visibility
@@ -258,26 +257,35 @@ impl DetailLevel {
     }
 
     pub fn is_layer_visible(&self, layer: &Layer) -> bool {
-        let visible_layers = match self {
-            Self::Max => Layers::default().0,
+        let visible_layers: Vec<Layer> = match self {
+            Self::Max => vec![
+                Layer::Ground,
+                Layer::Edge,
+                Layer::Bottom(BottomLayer::new(10, RelativeLayer::Object)),
+                Layer::Top,
+            ],
             Self::Medium => vec![
-                CipLayer::Items.into(),
-                CipLayer::Top.into(),
-                CipLayer::Bottom.into(),
-                CipLayer::Ground.into(),
+                Layer::Ground,
+                Layer::Edge,
+                Layer::Bottom(BottomLayer::new(5, RelativeLayer::Object)),
+                Layer::Top,
             ],
             Self::Minimal => vec![
-                CipLayer::Items.into(),
-                CipLayer::Bottom.into(),
-                CipLayer::Ground.into(),
+                Layer::Ground,
+                Layer::Edge,
+                Layer::Bottom(BottomLayer::new(3, RelativeLayer::Object)),
             ],
-            Self::GroundBottom => vec![CipLayer::Bottom.into(), CipLayer::Ground.into()],
-            Self::GroundOnly => vec![CipLayer::Ground.into()],
+            Self::GroundBottom => vec![
+                Layer::Ground,
+                Layer::Edge,
+                Layer::Bottom(BottomLayer::new(1, RelativeLayer::Object)),
+            ],
+            Self::GroundOnly => vec![Layer::Ground, Layer::Edge],
             Self::None => vec![],
         };
 
         for visible_layer in visible_layers {
-            if visible_layer.z() == layer.z() {
+            if layer.z() >= visible_layer.z() {
                 return true;
             }
         }
@@ -289,10 +297,10 @@ impl DetailLevel {
 impl From<Option<appearances::AppearanceFlags>> for Layer {
     fn from(flags: Option<appearances::AppearanceFlags>) -> Self {
         match flags {
-            Some(flags) if flags.top.is_some() => CipLayer::Top.into(),
-            Some(flags) if flags.bottom.is_some() => CipLayer::Bottom.into(),
-            Some(flags) if flags.bank.is_some() || flags.clip.is_some() => CipLayer::Ground.into(),
-            _ => Self::default(),
+            Some(flags) if flags.top.is_some() => Layer::Top,
+            Some(flags) if flags.bank.is_some() => Layer::Ground,
+            Some(flags) if flags.clip.is_some() => Layer::Edge,
+            _ => Layer::Bottom(BottomLayer::new(0, RelativeLayer::Object)),
         }
     }
 }

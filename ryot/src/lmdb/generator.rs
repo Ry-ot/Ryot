@@ -79,9 +79,10 @@ house:id -> {
     beds: u8,
 }
  */
-use crate::layer::CipLayer;
+use crate::layer::{BottomLayer, RelativeLayer};
 use crate::lmdb::*;
 use crate::position::{Sector, TilePosition};
+use crate::Layer;
 use rand::Rng;
 
 pub fn build_map(z_size: i32) -> Plan {
@@ -96,7 +97,7 @@ pub fn build_map(z_size: i32) -> Plan {
                         id: rand::thread_rng().gen_range(1261..=1269),
                         attributes: get_attribute_array(),
                     },
-                    CipLayer::Ground.into(),
+                    Layer::Ground,
                 );
 
                 tile.set_item(
@@ -104,7 +105,7 @@ pub fn build_map(z_size: i32) -> Plan {
                         id: rand::thread_rng().gen_range(660..=810),
                         attributes: get_attribute_array(),
                     },
-                    CipLayer::Items.into(),
+                    Layer::Bottom(BottomLayer::new(0, RelativeLayer::Object)),
                 );
 
                 tile.set_item(
@@ -112,7 +113,7 @@ pub fn build_map(z_size: i32) -> Plan {
                         id: rand::thread_rng().gen_range(2012..=2017),
                         attributes: get_attribute_array(),
                     },
-                    CipLayer::Bottom.into(),
+                    Layer::Bottom(BottomLayer::new(1, RelativeLayer::Object)),
                 );
 
                 map.add(MapComponent::Tile(tile));
