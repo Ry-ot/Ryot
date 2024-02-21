@@ -44,5 +44,6 @@ impl SpriteLayout {
     }
 }
 
+pub mod layer2;
 #[cfg(test)]
 mod tests;
