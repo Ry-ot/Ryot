@@ -55,9 +55,6 @@ impl Command for UpdateTileContent {
                 continue;
             }
 
-            info!("Updating tile content: {:?}", info.3);
-            info!("Old content: {:?}", old[index].3);
-
             update(world, *info, old[index], CommandState::default());
         }
     }

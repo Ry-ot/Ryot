@@ -132,11 +132,8 @@ fn create_or_update_content_for_positions(
         .filter_map(|info| Some(info.3?.id))
         .eq(old_info.iter().filter_map(|info| Some(info.3?.id)))
     {
-        info!("No changes to apply");
         return;
     }
-
-    info!("Changes to apply: {:?} {:?}", new_info, old_info);
 
     let command = UpdateTileContent::new(new_info, old_info);
 
