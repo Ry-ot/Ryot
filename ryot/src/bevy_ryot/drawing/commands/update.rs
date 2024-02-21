@@ -47,9 +47,16 @@ impl Command for UpdateTileContent {
         let (new, old) = (self.0, self.1);
 
         for (index, info) in new.iter().enumerate() {
+            if *info == old[index] {
+                continue;
+            }
+
             if info.3.is_none() && old[index].3.is_none() {
                 continue;
             }
+
+            info!("Updating tile content: {:?}", info.3);
+            info!("Old content: {:?}", old[index].3);
 
             update(world, *info, old[index], CommandState::default());
         }
