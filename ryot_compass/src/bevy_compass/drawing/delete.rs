@@ -32,9 +32,13 @@ pub fn delete_top_most_elements_in_positions(
         .map(|(_, bundle)| bundle)
         .collect::<Vec<_>>();
 
-    let command = UpdateTileContent::for_new_bundle(top_most_content).revert();
-    commands.add(command.clone());
+    if top_most_content.is_empty() {
+        return;
+    }
 
+    let command = UpdateTileContent::for_new_bundle(top_most_content).revert();
+
+    commands.add(command.clone());
     command_history.reversed_commands.clear();
     command_history.performed_commands.push(command.into());
 }

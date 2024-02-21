@@ -121,14 +121,24 @@ fn create_or_update_content_for_positions(
         ));
     }
 
-    let command = UpdateTileContent::new(
-        to_draw
-            .iter()
-            .copied()
-            .map(|bundle| bundle.into())
-            .collect::<Vec<DrawingInfo>>(),
-        old_info,
-    );
+    let new_info = to_draw
+        .iter()
+        .copied()
+        .map(|bundle| bundle.into())
+        .collect::<Vec<DrawingInfo>>();
+
+    if new_info
+        .iter()
+        .filter_map(|info| Some(info.3?.id))
+        .eq(old_info.iter().filter_map(|info| Some(info.3?.id)))
+    {
+        info!("No changes to apply");
+        return;
+    }
+
+    info!("Changes to apply: {:?} {:?}", new_info, old_info);
+
+    let command = UpdateTileContent::new(new_info, old_info);
 
     commands.add(command.clone());
     command_history.reversed_commands.clear();
@@ -148,11 +158,10 @@ pub fn get_current_bundle_and_entity(
         .map_or_else(|| commands.spawn_empty().id(), |&e| e);
 
     let old_bundle = match q_current_appearance.get(entity) {
-        Ok((visibility, appearance)) => Some(
-            DrawingBundle::new(new_bundle.layer, new_bundle.tile_pos, *appearance)
-                .with_visibility(*visibility),
+        Ok((visibility, appearance)) if visibility != Visibility::Hidden => Some(
+            DrawingBundle::new(new_bundle.layer, new_bundle.tile_pos, *appearance),
         ),
-        Err(_) => None,
+        _ => None,
     };
 
     (old_bundle, entity)

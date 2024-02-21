@@ -34,14 +34,13 @@ impl Plugin for DrawingPlugin {
                 PostUpdate,
                 (apply_update, apply_deletion)
                     .in_set(DrawingSystems::Apply)
-                    .before(VisibilitySystems::VisibilityPropagate),
+                    .after(VisibilitySystems::VisibilityPropagate),
             )
             .add_systems(
                 PostUpdate,
                 (persist_update, persist_deletion)
                     .in_set(DrawingSystems::Persist)
-                    .after(DrawingSystems::Apply)
-                    .before(VisibilitySystems::VisibilityPropagate),
+                    .after(DrawingSystems::Apply),
             );
     }
 }
