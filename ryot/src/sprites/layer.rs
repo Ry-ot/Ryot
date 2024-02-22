@@ -6,7 +6,7 @@ use strum::*;
 
 /// A type that represents the order of an item in an ordered layer. There is a virtual limit of
 /// 256 items in the ordered layers.
-type Order = u8;
+pub type Order = u8;
 
 const MAX_Z: f32 = 999.;
 const MAX_Z_TILE: f32 = i8::MAX as f32;
@@ -39,6 +39,35 @@ pub enum Layer {
     Hud(Order),
 }
 
+impl Iterator for Layer {
+    type Item = Self;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match *self {
+            Self::Ground => Some(Self::Edge),
+            Self::Edge => Some(Self::Bottom(Default::default())),
+            Self::Bottom(mut bottom_layer) => bottom_layer
+                .relative_layer
+                .next()
+                .map(|relative_layer| {
+                    Self::Bottom(BottomLayer {
+                        order: 0,
+                        relative_layer,
+                    })
+                })
+                .or(Some(Self::Top)),
+            Self::Top => Some(Self::Hud(0)),
+            Self::Hud(order) => {
+                if order < Order::MAX {
+                    Some(Self::Hud(order + 1))
+                } else {
+                    None
+                }
+            }
+        }
+    }
+}
+
 impl Layer {
     pub fn z(&self) -> f32 {
         match *self {
@@ -63,11 +92,48 @@ pub enum RelativeLayer {
     Missile,
 }
 
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+impl Iterator for RelativeLayer {
+    type Item = Self;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        match *self {
+            Self::Object => Some(Self::Creature),
+            Self::Creature => Some(Self::Effect),
+            Self::Effect => Some(Self::Missile),
+            Self::Missile => None,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[cfg_attr(feature = "bevy", derive(Reflect))]
 pub struct BottomLayer {
     pub order: Order,
     pub relative_layer: RelativeLayer,
+}
+
+impl Default for BottomLayer {
+    fn default() -> Self {
+        Self {
+            order: Order::MAX,
+            relative_layer: Default::default(),
+        }
+    }
+}
+
+impl Iterator for BottomLayer {
+    type Item = Self;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.order < BottomLayer::MAX_ENTITIES {
+            Some(Self {
+                order: self.order + 1,
+                relative_layer: self.relative_layer,
+            })
+        } else {
+            None
+        }
+    }
 }
 
 impl BottomLayer {
@@ -78,6 +144,13 @@ impl BottomLayer {
     pub fn new(order: Order, relative_layer: RelativeLayer) -> Self {
         Self {
             order,
+            relative_layer,
+        }
+    }
+
+    pub fn stack(relative_layer: RelativeLayer) -> Self {
+        Self {
+            order: Order::MAX,
             relative_layer,
         }
     }

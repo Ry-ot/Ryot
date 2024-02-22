@@ -114,7 +114,6 @@ fn create_or_update_content_for_positions(
         if let Some(layer) = get_next_bottom_layer_stack(*new_bundle, tiles, q_current_appearance) {
             new_bundle.layer = layer;
             old_info.push((new_bundle.tile_pos, layer, Visibility::default(), None));
-
             continue;
         }
 
@@ -199,7 +198,6 @@ pub fn get_next_bottom_layer_stack(
                 return Some(Layer::Bottom(next_layer));
             }
 
-            info!("Layer {:?} is full, trying next layer", next_layer);
             next_layer.order += 1;
         }
     }
