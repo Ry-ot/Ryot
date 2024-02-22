@@ -66,11 +66,12 @@ pub enum RelativeLayer {
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[cfg_attr(feature = "bevy", derive(Reflect))]
 pub struct BottomLayer {
-    order: Order,
-    relative_layer: RelativeLayer,
+    pub order: Order,
+    pub relative_layer: RelativeLayer,
 }
 
 impl BottomLayer {
+    pub const MAX_ENTITIES: u8 = 10;
     const COUNT_RELATIVE_LAYERS: f32 = RelativeLayer::COUNT as f32;
     const RELATIVE_WIDTH: f32 = LAYER_WIDTH / COUNT_LAYERS;
 

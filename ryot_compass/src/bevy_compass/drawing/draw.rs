@@ -8,7 +8,9 @@ use bevy::prelude::*;
 use leafwing_input_manager::action_state::ActionState;
 use ryot::bevy_ryot::map::MapTiles;
 use ryot::bevy_ryot::*;
+use ryot::layer::BottomLayer;
 use ryot::prelude::{drawing::*, position::*};
+use ryot::Layer;
 
 pub fn draw_on_hold<C: ContentAssets>() -> SystemConfigs {
     on_hold(
@@ -106,8 +108,16 @@ fn create_or_update_content_for_positions(
     q_current_appearance: &Query<(&Visibility, &AppearanceDescriptor), With<TileComponent>>,
 ) {
     let mut old_info: Vec<DrawingInfo> = vec![];
+    let mut to_draw = to_draw.to_vec();
 
-    for new_bundle in to_draw {
+    for new_bundle in to_draw.iter_mut() {
+        if let Some(layer) = get_next_bottom_layer_stack(*new_bundle, tiles, q_current_appearance) {
+            new_bundle.layer = layer;
+            old_info.push((new_bundle.tile_pos, layer, Visibility::default(), None));
+
+            continue;
+        }
+
         let (old_bundle, _) =
             get_current_bundle_and_entity(*new_bundle, commands, tiles, q_current_appearance);
 
@@ -162,6 +172,39 @@ pub fn get_current_bundle_and_entity(
     };
 
     (old_bundle, entity)
+}
+
+pub fn get_next_bottom_layer_stack(
+    new_bundle: DrawingBundle,
+    tiles: &mut ResMut<MapTiles>,
+    q_current_appearance: &Query<(&Visibility, &AppearanceDescriptor), With<TileComponent>>,
+) -> Option<Layer> {
+    if let Layer::Bottom(bottom) = new_bundle.layer {
+        let mut next_layer = bottom;
+
+        while next_layer.order < BottomLayer::MAX_ENTITIES {
+            let Some(entity) = tiles
+                .entry(new_bundle.tile_pos)
+                .or_default()
+                .get(&Layer::Bottom(next_layer))
+            else {
+                return Some(Layer::Bottom(next_layer));
+            };
+
+            let Ok((visibility, _)) = q_current_appearance.get(*entity) else {
+                return Some(Layer::Bottom(next_layer));
+            };
+
+            if visibility == Visibility::Hidden {
+                return Some(Layer::Bottom(next_layer));
+            }
+
+            info!("Layer {:?} is full, trying next layer", next_layer);
+            next_layer.order += 1;
+        }
+    }
+
+    None
 }
 
 pub fn update_drawing_input_type(mut cursor_query: Query<(&TilePosition, &mut Cursor)>) {
