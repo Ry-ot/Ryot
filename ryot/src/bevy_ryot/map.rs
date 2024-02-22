@@ -20,53 +20,53 @@ pub struct MapTile {
     top: Option<Entity>,
 }
 
+#[derive(Debug)]
 pub struct MapTileIter<'a> {
     map_tile: &'a MapTile,
-    layer: Layer,
+    layer: Option<Layer>,
+    back_layer: Option<Layer>,
 }
 
 impl<'a> Iterator for MapTileIter<'a> {
     type Item = (Layer, Entity);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let entity = self.map_tile.peek_for_layer(self.layer);
-        if entity.is_none() {
-            self.layer = self.layer.next()?;
-            return self.next();
-        }
-        self.layer = match self.layer {
+        let mut layer = self.layer?;
+        let entity = self.map_tile.peek_for_layer(layer);
+
+        self.layer = match layer {
             Layer::Bottom(mut bottom_layer) => bottom_layer
                 .next()
                 .map(Layer::Bottom)
-                .or_else(|| self.layer.next())?,
-            _ => self.layer.next()?,
+                .or_else(|| layer.next()),
+            _ => layer.next(),
         };
-        if entity.is_none() {
-            self.next()
+
+        if entity.is_some() {
+            entity.map(|entity| (layer, entity))
         } else {
-            entity.map(|entity| (self.layer, entity))
+            self.next()
         }
     }
 }
 
 impl DoubleEndedIterator for MapTileIter<'_> {
     fn next_back(&mut self) -> Option<Self::Item> {
-        let entity = self.map_tile.peek_for_layer(self.layer);
-        if entity.is_none() {
-            self.layer = self.layer.next_back()?;
-            return self.next_back();
-        }
-        self.layer = match self.layer {
+        let mut back_layer = self.back_layer?;
+        let entity = self.map_tile.peek_for_layer(back_layer);
+
+        self.back_layer = match back_layer {
             Layer::Bottom(mut bottom_layer) => bottom_layer
                 .next_back()
                 .map(Layer::Bottom)
-                .or_else(|| self.layer.next_back())?,
-            _ => self.layer.next_back()?,
+                .or_else(|| back_layer.next_back()),
+            _ => back_layer.next_back(),
         };
-        if entity.is_none() {
-            self.next_back()
+
+        if entity.is_some() {
+            entity.map(|entity| (back_layer, entity)).or(None)
         } else {
-            entity.map(|entity| (self.layer, entity))
+            self.next_back()
         }
     }
 }
@@ -78,7 +78,8 @@ impl<'a> IntoIterator for &'a MapTile {
     fn into_iter(self) -> Self::IntoIter {
         MapTileIter {
             map_tile: self,
-            layer: Layer::default(),
+            layer: Some(Layer::default()),
+            back_layer: Some(Layer::Hud(Order::MAX)),
         }
     }
 }
@@ -125,14 +126,7 @@ impl MapTile {
         match layer {
             Layer::Ground => self.ground = Some(entity),
             Layer::Edge => self.edge = Some(entity),
-            Layer::Bottom(BottomLayer {
-                order: Order::MAX,
-                relative_layer,
-            }) => self.push_bottom(relative_layer, entity),
-            Layer::Bottom(BottomLayer {
-                order,
-                relative_layer,
-            }) => self.insert_bottom(relative_layer, order, entity),
+            Layer::Bottom(bottom) => self.push_bottom(bottom, entity),
             Layer::Top => self.top = Some(entity),
             Layer::Hud(_) => (),
         }
@@ -183,16 +177,14 @@ impl MapTile {
             .and_then(|entities| entities.get(order as usize).copied())
     }
 
-    fn push_bottom(&mut self, relative_layer: RelativeLayer, entity: Entity) {
-        self.bottom.entry(relative_layer).or_default().push(entity);
-    }
+    fn push_bottom(&mut self, bottom_layer: BottomLayer, entity: Entity) {
+        let entities = self.bottom.entry(bottom_layer.relative_layer).or_default();
 
-    fn insert_bottom(&mut self, relative_layer: RelativeLayer, order: Order, entity: Entity) {
-        let v = self.bottom.entry(relative_layer).or_default();
-        if order as usize <= v.len() {
-            v.insert(order as usize, entity);
-        } else {
-            v.push(entity);
+        match bottom_layer.order {
+            Order::MAX if entities.len() >= Order::MAX as usize => {
+                entities.insert(Order::MAX as usize, entity)
+            }
+            0..=Order::MAX => entities.push(entity),
         }
     }
 }
@@ -245,7 +237,8 @@ mod test {
         let entity = Entity::from_raw(0);
         map_tile.push_for_layer(Layer::Ground, entity);
         let mut iter = map_tile.into_iter();
-        assert_eq!(iter.next(), Some(entity));
+
+        assert_eq!(iter.next(), Some((Layer::Ground, entity)));
         assert_eq!(iter.next(), None);
     }
 
@@ -269,12 +262,72 @@ mod test {
             entity,
         );
         let mut iter = map_tile.into_iter();
-        assert_eq!(iter.next(), Some(Entity::from_raw(0)));
-        assert_eq!(iter.next(), Some(Entity::from_raw(1)));
-        assert_eq!(iter.next(), Some(Entity::from_raw(3)));
-        assert_eq!(iter.next(), Some(Entity::from_raw(4)));
-        assert_eq!(iter.next(), Some(Entity::from_raw(2)));
+
+        assert_eq!(iter.next(), Some((Layer::Ground, Entity::from_raw(0))));
+        assert_eq!(iter.next(), Some((Layer::Edge, Entity::from_raw(1))));
+        assert_eq!(
+            iter.next(),
+            Some((
+                Layer::Bottom(BottomLayer::new(0, RelativeLayer::Creature)),
+                Entity::from_raw(3)
+            ))
+        );
+        assert_eq!(
+            iter.next(),
+            Some((
+                Layer::Bottom(BottomLayer::new(1, RelativeLayer::Creature)),
+                Entity::from_raw(4)
+            ))
+        );
+        assert_eq!(iter.next(), Some((Layer::Top, Entity::from_raw(2))));
         assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn test_map_tile_reverse_iterator() {
+        let mut map_tile = MapTile::default();
+        map_tile.push_for_layer(Layer::Ground, Entity::from_raw(0));
+        map_tile.push_for_layer(Layer::Edge, Entity::from_raw(0));
+        map_tile.push_for_layer(
+            Layer::Bottom(BottomLayer::new(0, RelativeLayer::Creature)),
+            Entity::from_raw(0),
+        );
+        map_tile.push_for_layer(
+            Layer::Bottom(BottomLayer::new(4, RelativeLayer::Creature)),
+            Entity::from_raw(0),
+        );
+        map_tile.push_for_layer(
+            Layer::Bottom(BottomLayer::new(10, RelativeLayer::Creature)),
+            Entity::from_raw(0),
+        );
+        map_tile.push_for_layer(Layer::Top, Entity::from_raw(0));
+
+        let mut iter = map_tile.into_iter();
+        assert_eq!(iter.next_back(), Some((Layer::Top, Entity::from_raw(0))));
+        assert_eq!(
+            iter.next_back(),
+            Some((
+                Layer::Bottom(BottomLayer::new(2, RelativeLayer::Creature)),
+                Entity::from_raw(0)
+            ))
+        );
+        assert_eq!(
+            iter.next_back(),
+            Some((
+                Layer::Bottom(BottomLayer::new(1, RelativeLayer::Creature)),
+                Entity::from_raw(0)
+            ))
+        );
+        assert_eq!(
+            iter.next_back(),
+            Some((
+                Layer::Bottom(BottomLayer::new(0, RelativeLayer::Creature)),
+                Entity::from_raw(0)
+            ))
+        );
+        assert_eq!(iter.next_back(), Some((Layer::Edge, Entity::from_raw(0))));
+        assert_eq!(iter.next_back(), Some((Layer::Ground, Entity::from_raw(0))));
+        assert_eq!(iter.next_back(), None);
     }
 
     #[test]

@@ -113,7 +113,7 @@ fn create_or_update_content_for_positions(
         let current_info = get_current_info(*new_bundle, tiles, q_current_appearance);
 
         if let Layer::Bottom(mut bottom) = current_info.1 {
-            if let Some(_) = current_info.3 {
+            if current_info.3.is_some() {
                 new_bundle.layer = Layer::Bottom(bottom.next().unwrap_or(bottom));
             }
         }
@@ -203,27 +203,6 @@ pub fn get_current_info(
     };
 
     old_info
-}
-
-pub fn get_next_bottom_layer_stack(
-    new_bundle: DrawingBundle,
-    tiles: &mut ResMut<MapTiles>,
-) -> Option<Layer> {
-    let Some(_) = tiles
-        .entry(new_bundle.tile_pos)
-        .or_default()
-        .peek_for_layer(new_bundle.layer)
-    else {
-        return Some(new_bundle.layer);
-    };
-
-    match new_bundle.layer {
-        Layer::Bottom(mut bottom) => match bottom.next() {
-            Some(bottom) => Some(Layer::Bottom(bottom)),
-            _ => None,
-        },
-        _ => None,
-    }
 }
 
 pub fn update_drawing_input_type(mut cursor_query: Query<(&TilePosition, &mut Cursor)>) {
