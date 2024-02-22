@@ -112,7 +112,7 @@ impl MapTile {
                 relative_layer,
             }) => self.insert_bottom(relative_layer, order, entity),
             Layer::Top => self.top = Some(entity),
-            Layer::Hud(_) => {}
+            Layer::Hud(_) => (),
         }
     }
 

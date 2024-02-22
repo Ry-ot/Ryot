@@ -75,7 +75,7 @@ impl Layer {
             Self::Edge => 1. * LAYER_WIDTH,
             Self::Bottom(layer) => 2. * LAYER_WIDTH + layer.z(),
             Self::Top => MAX_Z_TRANSFORM + 1.,
-            Self::Hud(order) => (MAX_Z - order as f32).max(MAX_Z_TRANSFORM + 2.),
+            Self::Hud(order) => (MAX_Z_TRANSFORM + 2. - order as f32).min(MAX_Z),
         }
     }
 }
