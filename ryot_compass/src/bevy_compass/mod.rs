@@ -13,3 +13,6 @@ pub use palette::*;
 
 mod drawing;
 pub use drawing::*;
+
+mod hud;
+pub use hud::*;

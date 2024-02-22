@@ -40,8 +40,6 @@ pub enum Layer {
 }
 
 impl Layer {
-    pub const TOP_MOST_LAYER: Layer = Layer::Hud(0);
-
     pub fn z(&self) -> f32 {
         match *self {
             Self::Ground => 0. * LAYER_WIDTH,
