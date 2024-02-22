@@ -68,6 +68,34 @@ impl Iterator for Layer {
     }
 }
 
+impl DoubleEndedIterator for Layer {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        match *self {
+            Self::Ground => None,
+            Self::Edge => Some(Self::Ground),
+            Self::Bottom(mut bottom_layer) => {
+                bottom_layer
+                    .relative_layer
+                    .next_back()
+                    .map(|relative_layer| {
+                        Self::Bottom(BottomLayer {
+                            order: BottomLayer::TOP_MOST_LAYER,
+                            relative_layer,
+                        })
+                    })
+            }
+            Self::Top => Some(Self::Bottom(Default::default())),
+            Self::Hud(order) => {
+                if order == 0 {
+                    Some(Self::Top)
+                } else {
+                    Some(Self::Hud(order - 1))
+                }
+            }
+        }
+    }
+}
+
 impl Layer {
     pub fn z(&self) -> f32 {
         match *self {
@@ -105,6 +133,17 @@ impl Iterator for RelativeLayer {
     }
 }
 
+impl DoubleEndedIterator for RelativeLayer {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        match *self {
+            Self::Object => None,
+            Self::Creature => Some(Self::Object),
+            Self::Effect => Some(Self::Creature),
+            Self::Missile => Some(Self::Effect),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[cfg_attr(feature = "bevy", derive(Reflect))]
 pub struct BottomLayer {
@@ -125,7 +164,7 @@ impl Iterator for BottomLayer {
     type Item = Self;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.order < BottomLayer::MAX_ENTITIES {
+        if self.order < BottomLayer::TOP_MOST_LAYER {
             Some(Self {
                 order: self.order + 1,
                 relative_layer: self.relative_layer,
@@ -136,8 +175,21 @@ impl Iterator for BottomLayer {
     }
 }
 
+impl DoubleEndedIterator for BottomLayer {
+    fn next_back(&mut self) -> Option<Self::Item> {
+        if self.order > 0 {
+            Some(Self {
+                order: self.order - 1,
+                relative_layer: self.relative_layer,
+            })
+        } else {
+            None
+        }
+    }
+}
+
 impl BottomLayer {
-    pub const MAX_ENTITIES: u8 = 10;
+    const TOP_MOST_LAYER: u8 = 10;
     const COUNT_RELATIVE_LAYERS: f32 = RelativeLayer::COUNT as f32;
     const RELATIVE_WIDTH: f32 = LAYER_WIDTH / COUNT_LAYERS;
 

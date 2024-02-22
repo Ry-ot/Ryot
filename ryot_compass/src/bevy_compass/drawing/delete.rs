@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use ryot::bevy_ryot::map::MapTiles;
 use ryot::bevy_ryot::*;
 use ryot::prelude::drawing::*;
+use ryot::Layer;
 
 /// System responsible for toggling the deletion mode. This system is called when the user presses the
 /// [`ToggleDeletion`](crate::DrawingAction::ToggleDeletion) action. When the deletion mode is active
@@ -24,7 +25,7 @@ pub fn delete_top_most_elements_in_positions(
     commands: &mut Commands,
     command_history: &mut ResMut<CommandHistory>,
     tiles: &ResMut<MapTiles>,
-    q_current_appearance: &Query<(&Visibility, &AppearanceDescriptor), With<TileComponent>>,
+    q_current_appearance: &Query<(&Visibility, &Layer, &AppearanceDescriptor), With<TileComponent>>,
 ) {
     let top_most_content = to_delete
         .iter()
