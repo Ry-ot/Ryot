@@ -5,7 +5,7 @@
 //! configuring the game, and handling asynchronous events.
 use crate::appearances::{ContentType, SpriteSheetDataSet};
 use crate::position::{update_sprite_position, TilePosition};
-use crate::CONTENT_CONFIG;
+use crate::{Layer, CONTENT_CONFIG};
 use bevy::app::{App, Plugin, Update};
 use bevy::asset::{Asset, Assets, Handle};
 use bevy::ecs::schedule::SystemConfigs;
@@ -42,7 +42,7 @@ pub mod sprites;
 pub use sprite_animations::{toggle_sprite_animation, AnimationDuration};
 
 pub static RYOT_ANCHOR: Anchor = Anchor::BottomRight;
-pub static GRID_Z: f32 = 998.;
+pub static GRID_LAYER: Layer = Layer::Hud(0);
 
 /// The states that the content loading process can be in.
 /// This is used to track the progress of the content loading process.
@@ -312,7 +312,7 @@ pub fn spawn_grid(
 
         commands.spawn(MaterialMesh2dBundle {
             mesh: mesh_handle.into(),
-            transform: Transform::from_translation(Vec2::ZERO.extend(GRID_Z)),
+            transform: Transform::from_translation(Vec2::ZERO.extend(GRID_LAYER.z())),
             material: materials.add(ColorMaterial::default()),
             ..default()
         });
