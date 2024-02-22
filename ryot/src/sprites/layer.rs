@@ -73,18 +73,20 @@ impl DoubleEndedIterator for Layer {
         match *self {
             Self::Ground => None,
             Self::Edge => Some(Self::Ground),
-            Self::Bottom(mut bottom_layer) => {
-                bottom_layer
-                    .relative_layer
-                    .next_back()
-                    .map(|relative_layer| {
-                        Self::Bottom(BottomLayer {
-                            order: BottomLayer::TOP_MOST_LAYER,
-                            relative_layer,
-                        })
+            Self::Bottom(mut bottom_layer) => bottom_layer
+                .relative_layer
+                .next_back()
+                .map(|relative_layer| {
+                    Self::Bottom(BottomLayer {
+                        order: BottomLayer::TOP_MOST_LAYER,
+                        relative_layer,
                     })
-            }
-            Self::Top => Some(Self::Bottom(Default::default())),
+                })
+                .or(Some(Self::Edge)),
+            Self::Top => Some(Self::Bottom(BottomLayer {
+                order: BottomLayer::TOP_MOST_LAYER,
+                relative_layer: RelativeLayer::iter().last().unwrap(),
+            })),
             Self::Hud(order) => {
                 if order == 0 {
                     Some(Self::Top)
