@@ -1,4 +1,5 @@
 use crate::bevy_compass::CompassAssets;
+use crate::HudLayers;
 use crate::{
     CompassContentAssets, DrawingAction, {PaletteState, UiState},
 };
@@ -114,7 +115,7 @@ impl<E: BrushItem> From<InputType> for BrushParams<E> {
 fn spawn_cursor(mut commands: Commands) {
     commands.spawn((
         Cursor::default(),
-        Layer::TOP_MOST_LAYER,
+        Layer::from(HudLayers::Cursor),
         TilePosition::default(),
         AppearanceDescriptor::default(),
     ));
@@ -368,7 +369,7 @@ fn update_cursor_brush_preview(
             new_pos,
             *cursor_appearance,
             *cursor_visibility,
-            Layer::TOP_MOST_LAYER,
+            Layer::from(HudLayers::BrushPreview),
         ));
     }
 }
