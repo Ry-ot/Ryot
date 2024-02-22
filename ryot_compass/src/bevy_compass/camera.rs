@@ -1,7 +1,6 @@
 use crate::bevy_compass::CompassAssets;
-use crate::HudLayers;
 use crate::{
-    CompassContentAssets, DrawingAction, {PaletteState, UiState},
+    CompassContentAssets, DrawingAction, HudLayers, {PaletteState, UiState},
 };
 use bevy::math::{Vec2, Vec3};
 use bevy::prelude::*;
@@ -11,7 +10,6 @@ use bevy_pancam::*;
 use leafwing_input_manager::prelude::*;
 use leafwing_input_manager::user_input::InputKind;
 use ryot::bevy_ryot::drawing::DrawingBundle;
-use ryot::layer::Layer;
 use ryot::position::{Sector, TilePosition};
 use ryot::prelude::drawing::{BrushItem, BrushParams, Brushes};
 use ryot::prelude::*;
