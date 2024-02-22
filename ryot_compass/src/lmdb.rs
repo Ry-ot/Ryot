@@ -52,7 +52,7 @@ pub fn load_area(sector: Sector, env: Env, commands: &mut Commands, tiles: &Res<
             for tile in area {
                 for (layer, item) in tile.items {
                     if let Some(tile) = tiles.get(&tile.position) {
-                        if tile.get(&layer).is_some() {
+                        if tile.peek_for_layer(layer).is_some() {
                             continue;
                         }
                     }

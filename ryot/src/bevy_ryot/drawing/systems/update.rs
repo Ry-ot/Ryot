@@ -46,8 +46,7 @@ pub fn update(world: &mut World, new: DrawingInfo, old: DrawingInfo, state: Comm
         .resource_mut::<MapTiles>()
         .entry(new.0)
         .or_default()
-        .entry(new.1)
-        .or_insert(id);
+        .push_for_layer(new.1, id);
 
     world
         .entity_mut(id)
@@ -63,8 +62,7 @@ pub fn get_or_create_entity_for_info(world: &mut World, info: &DrawingInfo) -> E
         .resource_mut::<MapTiles>()
         .entry(*pos)
         .or_default()
-        .get(layer)
-        .copied();
+        .peek_for_layer(*layer);
 
     match entity {
         Some(entity) => entity,

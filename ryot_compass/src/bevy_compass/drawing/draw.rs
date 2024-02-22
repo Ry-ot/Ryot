@@ -8,7 +8,6 @@ use bevy::prelude::*;
 use leafwing_input_manager::action_state::ActionState;
 use ryot::bevy_ryot::map::MapTiles;
 use ryot::bevy_ryot::*;
-use ryot::layer::BottomLayer;
 use ryot::prelude::{drawing::*, position::*};
 use ryot::Layer;
 
@@ -33,7 +32,7 @@ fn handle_drawing_input<C: ContentAssets, F: ReadOnlyWorldQuery>(
     mut command_history: ResMut<CommandHistory>,
     content_assets: Res<C>,
     brushes: Res<Brushes<DrawingBundle>>,
-    q_current_appearance: Query<(&Visibility, &AppearanceDescriptor), With<TileComponent>>,
+    q_current_appearance: Query<(&Visibility, &Layer, &AppearanceDescriptor), With<TileComponent>>,
     cursor_query: Query<(&AppearanceDescriptor, &TilePosition, &Cursor), F>,
 ) {
     get_cursor_inputs(
@@ -105,29 +104,21 @@ fn create_or_update_content_for_positions(
     commands: &mut Commands,
     command_history: &mut ResMut<CommandHistory>,
     tiles: &mut ResMut<MapTiles>,
-    q_current_appearance: &Query<(&Visibility, &AppearanceDescriptor), With<TileComponent>>,
+    q_current_appearance: &Query<(&Visibility, &Layer, &AppearanceDescriptor), With<TileComponent>>,
 ) {
     let mut old_info: Vec<DrawingInfo> = vec![];
     let mut to_draw = to_draw.to_vec();
 
     for new_bundle in to_draw.iter_mut() {
-        if let Some(layer) = get_next_bottom_layer_stack(*new_bundle, tiles, q_current_appearance) {
-            new_bundle.layer = layer;
-            old_info.push((new_bundle.tile_pos, layer, Visibility::default(), None));
-            continue;
+        let current_info = get_current_info(*new_bundle, tiles, q_current_appearance);
+
+        if let Layer::Bottom(mut bottom) = current_info.1 {
+            if let Some(_) = current_info.3 {
+                new_bundle.layer = Layer::Bottom(bottom.next().unwrap_or(bottom));
+            }
         }
 
-        let (old_bundle, _) =
-            get_current_bundle_and_entity(*new_bundle, commands, tiles, q_current_appearance);
-
-        let appearance = old_bundle.map(|old_bundle| old_bundle.appearance);
-
-        old_info.push((
-            new_bundle.tile_pos,
-            new_bundle.layer,
-            Visibility::default(),
-            appearance,
-        ));
+        old_info.push(current_info);
     }
 
     let new_info = to_draw
@@ -151,58 +142,88 @@ fn create_or_update_content_for_positions(
     command_history.performed_commands.push(command.into());
 }
 
-pub fn get_current_bundle_and_entity(
+pub fn get_current_info(
     new_bundle: DrawingBundle,
-    commands: &mut Commands,
     tiles: &mut ResMut<MapTiles>,
-    q_current_appearance: &Query<(&Visibility, &AppearanceDescriptor), With<TileComponent>>,
-) -> (Option<DrawingBundle>, Entity) {
-    let entity = tiles
-        .entry(new_bundle.tile_pos)
-        .or_default()
-        .get(&new_bundle.layer)
-        .map_or_else(|| commands.spawn_empty().id(), |&e| e);
+    q_current_appearance: &Query<(&Visibility, &Layer, &AppearanceDescriptor), With<TileComponent>>,
+) -> DrawingInfo {
+    let mut old_info = (
+        new_bundle.tile_pos,
+        new_bundle.layer,
+        new_bundle.visibility,
+        None,
+    );
 
-    let old_bundle = match q_current_appearance.get(entity) {
-        Ok((visibility, appearance)) if visibility != Visibility::Hidden => Some(
-            DrawingBundle::new(new_bundle.layer, new_bundle.tile_pos, *appearance),
-        ),
+    let Some(tile) = tiles.get(&new_bundle.tile_pos) else {
+        return old_info;
+    };
+
+    let entity = match new_bundle.layer {
+        Layer::Bottom(mut bottom) => {
+            let mut entity = None;
+
+            loop {
+                let layer = Layer::Bottom(bottom);
+                let next_entity = tile.peek_for_layer(layer);
+
+                if next_entity.is_none() {
+                    break;
+                }
+
+                let Ok((visibility, ..)) = q_current_appearance.get(next_entity.unwrap()) else {
+                    break;
+                };
+
+                if visibility == Visibility::Hidden {
+                    break;
+                }
+
+                old_info.1 = layer;
+                entity = next_entity;
+
+                if bottom.next().is_none() {
+                    break;
+                }
+
+                bottom = bottom.next().unwrap();
+            }
+
+            entity
+        }
+        layer => tile.peek_for_layer(layer),
+    };
+
+    let Some(entity) = entity else {
+        return old_info;
+    };
+
+    old_info.3 = match q_current_appearance.get(entity) {
+        Ok((visibility, _, appearance)) if visibility != Visibility::Hidden => Some(*appearance),
         _ => None,
     };
 
-    (old_bundle, entity)
+    old_info
 }
 
 pub fn get_next_bottom_layer_stack(
     new_bundle: DrawingBundle,
     tiles: &mut ResMut<MapTiles>,
-    q_current_appearance: &Query<(&Visibility, &AppearanceDescriptor), With<TileComponent>>,
 ) -> Option<Layer> {
-    if let Layer::Bottom(bottom) = new_bundle.layer {
-        let mut next_layer = bottom;
+    let Some(_) = tiles
+        .entry(new_bundle.tile_pos)
+        .or_default()
+        .peek_for_layer(new_bundle.layer)
+    else {
+        return Some(new_bundle.layer);
+    };
 
-        while next_layer.order < BottomLayer::MAX_ENTITIES {
-            let Some(entity) = tiles
-                .entry(new_bundle.tile_pos)
-                .or_default()
-                .get(&Layer::Bottom(next_layer))
-            else {
-                return Some(Layer::Bottom(next_layer));
-            };
-
-            let Ok((visibility, _)) = q_current_appearance.get(*entity) else {
-                return Some(Layer::Bottom(next_layer));
-            };
-
-            if visibility == Visibility::Hidden {
-                return Some(Layer::Bottom(next_layer));
-            }
-
-            next_layer.order += 1;
-        }
+    match new_bundle.layer {
+        Layer::Bottom(mut bottom) => match bottom.next() {
+            Some(bottom) => Some(Layer::Bottom(bottom)),
+            _ => None,
+        },
+        _ => None,
     }
-
-    None
 }
 
 pub fn update_drawing_input_type(mut cursor_query: Query<(&TilePosition, &mut Cursor)>) {

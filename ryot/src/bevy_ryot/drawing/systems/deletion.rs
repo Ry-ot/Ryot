@@ -8,7 +8,6 @@ use crate::position::TilePosition;
 
 #[cfg(feature = "lmdb")]
 use bevy::utils::HashMap;
-use itertools::Itertools;
 
 #[cfg(feature = "lmdb")]
 use crate::bevy_ryot::lmdb::LmdbEnv;
@@ -118,25 +117,17 @@ pub fn persist_deletion(
 pub fn get_top_most_visible(
     tile_pos: TilePosition,
     map_tiles: &ResMut<MapTiles>,
-    q_current_appearance: &Query<(&Visibility, &AppearanceDescriptor), With<TileComponent>>,
+    q_current_appearance: &Query<(&Visibility, &Layer, &AppearanceDescriptor), With<TileComponent>>,
 ) -> Option<(Entity, DrawingBundle)> {
     let tile_content = map_tiles.get(&tile_pos)?.clone();
 
-    let top_most_keys = tile_content
-        .keys()
-        .sorted_by_key(|layer| std::cmp::Reverse(*layer))
-        .copied()
-        .collect::<Vec<_>>();
-
-    for layer in top_most_keys {
-        let entity = tile_content.get(&layer)?;
-
-        if let Ok((visibility, appearance)) = q_current_appearance.get(*entity) {
+    for (layer, entity) in tile_content.clone().into_iter().rev() {
+        if let Ok((visibility, _, appearance)) = q_current_appearance.get(entity) {
             if visibility == Visibility::Hidden {
                 continue;
             }
 
-            return Some((*entity, DrawingBundle::new(layer, tile_pos, *appearance)));
+            return Some((entity, DrawingBundle::new(layer, tile_pos, *appearance)));
         }
     }
 
