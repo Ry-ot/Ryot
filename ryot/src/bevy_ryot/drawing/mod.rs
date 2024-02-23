@@ -5,15 +5,16 @@ use crate::bevy_ryot::{AppearanceDescriptor, InternalContentState};
 use crate::directional::*;
 use crate::layer::*;
 use crate::position::{Sector, SpriteMovement, TilePosition};
+use crate::prelude::map::MapTiles;
 use bevy::prelude::*;
 use bevy::render::view::{check_visibility, VisibilitySystems, VisibleEntities};
 
 mod brushes;
+
 pub use brushes::*;
-
 mod commands;
-pub use commands::*;
 
+pub use commands::*;
 mod systems;
 pub use systems::*;
 
@@ -22,6 +23,7 @@ pub struct DrawingPlugin;
 impl Plugin for DrawingPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Layer>()
+            .add_systems(Update, (find_canvas_border_entities, fade_in_or_out))
             .add_systems(
                 PostUpdate,
                 apply_detail_level_to_visibility
@@ -337,5 +339,63 @@ fn apply_detail_level_to_visibility(
             .collect::<Vec<_>>();
 
         visible_entities.entities = entities;
+    }
+}
+
+#[derive(Component, Debug, Clone, Default)]
+pub struct FadeAway(bool);
+
+fn find_canvas_border_entities(
+    tiles: Res<MapTiles>,
+    mut commands: Commands,
+    mut q_sector: Query<&Sector, With<Camera>>,
+) {
+    for sector in q_sector.iter_mut() {
+        let inner_min = (sector.min.x + 1, sector.min.y + 1);
+        let inner_max = (sector.max.x - 1, sector.max.y - 1);
+        let outer_min = (sector.min.x - 5, sector.min.y - 5);
+        let outer_max = (sector.max.x + 5, sector.max.y + 5);
+
+        for x in outer_min.0..=outer_max.0 {
+            for y in outer_min.1..=outer_max.1 {
+                let pos = TilePosition::new(x, y, 0);
+                let Some(tile) = tiles.get(&pos) else {
+                    continue;
+                };
+
+                for (_, entity) in tile.into_iter() {
+                    if x < inner_min.0 || x > inner_max.0 || y < inner_min.1 || y > inner_max.1 {
+                        commands.entity(entity).insert(FadeAway(true));
+                    } else {
+                        commands.entity(entity).insert(FadeAway(false));
+                    }
+                }
+            }
+        }
+    }
+}
+
+fn fade_in_or_out(
+    time: Res<Time>,
+    mut commands: Commands,
+    mut tiles_query: Query<
+        (Entity, &mut Sprite, &FadeAway),
+        (Without<Deletion>, With<TileComponent>),
+    >,
+) {
+    for (entity, mut sprite, fade_away) in tiles_query.iter_mut() {
+        let alpha = sprite.color.a();
+
+        if fade_away.0 {
+            if alpha > 0.0 {
+                sprite.color.set_a(alpha - 1.5 * time.delta_seconds());
+            }
+        } else {
+            if alpha < 1.0 {
+                sprite.color.set_a(alpha + time.delta_seconds());
+            } else {
+                commands.entity(entity).remove::<FadeAway>();
+            }
+        }
     }
 }
