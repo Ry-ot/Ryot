@@ -70,6 +70,7 @@ fn main() {
         DrawingPlugin::<CompassContentAssets>::default(),
         ErrorPlugin,
     ))
+    .add_systems(Update, apply_elevation::<CompassContentAssets>)
     .add_systems(Startup, set_window_icon)
     .add_systems(Startup, setup_window);
 

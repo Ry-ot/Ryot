@@ -2,12 +2,11 @@
 //! The systems are used to draw the map and the entities that are on it.
 //! The systems manipulate basic drawing entities that are added by the drawing commands.
 //! Those entities are the trigger for the drawing systems within the ECS.
-use crate::bevy_ryot::drawing::{DrawingBundle, TileComponent};
-use crate::bevy_ryot::map::MapTiles;
-use crate::bevy_ryot::AppearanceDescriptor;
-use crate::position::TilePosition;
-use crate::Layer;
-use bevy::prelude::{Entity, Query, ResMut, SystemSet, Visibility, With};
+use crate::prelude::drawing::TileComponent;
+use crate::prelude::{drawing::*, map::*, position::*, *};
+use bevy::prelude::*;
+use bevy::sprite::Anchor;
+use bevy::utils::HashMap;
 
 mod deletion;
 pub use deletion::*;
@@ -79,4 +78,54 @@ pub fn get_top_most_visible_for_tile(
     }
 
     None
+}
+
+pub fn apply_elevation<C: ContentAssets>(
+    content_assets: Res<C>,
+    mut q_tile: Query<
+        (
+            &mut Sprite,
+            &Layer,
+            &TilePosition,
+            &Visibility,
+            &AppearanceDescriptor,
+        ),
+        (
+            With<TileComponent>,
+            Or<(Changed<Visibility>, Added<Visibility>)>,
+        ),
+    >,
+    mut elevation_per_pos: Local<HashMap<TilePosition, u32>>,
+) {
+    let appearances = content_assets.prepared_appearances();
+
+    for (mut sprite, layer, tile_pos, visibility, appearance_desc) in q_tile.iter_mut() {
+        let Layer::Bottom(_) = layer else {
+            continue;
+        };
+
+        let elevation = (|| -> Option<u32> {
+            appearances
+                .get_for_group(appearance_desc.group, appearance_desc.id)?
+                .clone()
+                .flags?
+                .height?
+                .elevation
+        })()
+        .unwrap_or(0);
+
+        let tile_elevation = elevation_per_pos.entry(*tile_pos).or_default();
+        let delta = *tile_elevation as f32 / 32.;
+
+        sprite.anchor = Anchor::Custom(Vec2::new(
+            (0.5 + delta).clamp(0.5, 1.5),
+            (-0.5 - delta).clamp(-1.5, -0.5),
+        ));
+
+        if visibility == Visibility::Hidden {
+            *tile_elevation -= elevation;
+        } else {
+            *tile_elevation += elevation;
+        }
+    }
 }
