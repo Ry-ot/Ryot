@@ -10,6 +10,7 @@ use bevy::app::{App, Plugin, Update};
 use bevy::asset::{Asset, Assets, Handle};
 use bevy::ecs::schedule::SystemConfigs;
 use bevy::prelude::*;
+use bevy::render::render_asset::RenderAssetUsages;
 use bevy::sprite::{Anchor, MaterialMesh2dBundle};
 use bevy::utils::HashMap;
 use bevy_asset_loader::asset_collection::AssetCollection;
@@ -79,7 +80,11 @@ pub trait PreloadedAssets: Resource + AssetCollection + Send + Sync + 'static {
     fn prepared_appearances_mut(&mut self) -> &mut PreparedAppearances;
     fn sprite_sheets(&mut self) -> &mut HashMap<String, Handle<Image>>;
     fn set_sprite_sheets_data(&mut self, sprite_sheet_set: SpriteSheetDataSet);
-    fn insert_atlas_handle(&mut self, file: &str, handle: Handle<TextureAtlas>);
+    fn insert_atlas_handle(
+        &mut self,
+        file: &str,
+        handle: (Handle<TextureAtlasLayout>, Handle<Image>),
+    );
 }
 
 /// The main ContentAssets of a Ryot game, is prepared by preparer systems
@@ -87,7 +92,7 @@ pub trait PreloadedAssets: Resource + AssetCollection + Send + Sync + 'static {
 pub trait ContentAssets: Resource + Send + Sync + 'static {
     fn prepared_appearances(&self) -> &PreparedAppearances;
     fn sprite_sheet_data_set(&self) -> &Option<SpriteSheetDataSet>;
-    fn get_atlas_handle(&self, file: &str) -> Option<&Handle<TextureAtlas>>;
+    fn get_atlas_handle(&self, file: &str) -> Option<&(Handle<TextureAtlasLayout>, Handle<Image>)>;
 }
 
 /// A plugin that registers implementations of ContentAssets and loads them.
@@ -190,7 +195,6 @@ pub fn entitled_window(title: String) -> WindowPlugin {
             // Bind to canvas included in `index.html`
             canvas: Some("#bevy".to_owned()),
             // The canvas size is constrained in index.html and build/web/styles.css
-            fit_canvas_to_parent: true,
             // Tells wasm not to override default event handling, like F5 and Ctrl+R
             prevent_default_event_handling: false,
             ..default()
@@ -303,10 +307,10 @@ pub fn spawn_grid(
             idx += 2;
         }
 
-        let mut mesh = Mesh::new(PrimitiveTopology::LineList);
+        let mut mesh = Mesh::new(PrimitiveTopology::LineList, RenderAssetUsages::default());
         mesh.insert_attribute(Mesh::ATTRIBUTE_POSITION, positions);
         mesh.insert_attribute(Mesh::ATTRIBUTE_COLOR, colors);
-        mesh.set_indices(Some(Indices::U32(indices)));
+        mesh.insert_indices(Indices::U32(indices));
 
         let mesh_handle: Handle<Mesh> = meshes.add(mesh);
 

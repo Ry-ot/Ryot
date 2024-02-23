@@ -2,7 +2,7 @@ use crate::{
     delete_top_most_elements_in_positions, CommandHistory, Cursor, DrawingAction, InputType,
     ToolMode,
 };
-use bevy::ecs::query::ReadOnlyWorldQuery;
+use bevy::ecs::query::QueryFilter;
 use bevy::ecs::schedule::SystemConfigs;
 use bevy::prelude::*;
 use leafwing_input_manager::action_state::ActionState;
@@ -26,7 +26,7 @@ pub fn draw_on_click<C: ContentAssets>() -> SystemConfigs {
 /// such as drawing, erasing, selecting, etc. In our context, we are only handling drawing and erasing,
 /// keeping the possibility of adding more tools in the future (e.g. if we want special tools for marking
 /// some protection zone in the map, for drawing paths, creating areas/cities, etc).
-fn handle_drawing_input<C: ContentAssets, F: ReadOnlyWorldQuery>(
+fn handle_drawing_input<C: ContentAssets, F: QueryFilter>(
     mut commands: Commands,
     mut tiles: ResMut<MapTiles>,
     mut command_history: ResMut<CommandHistory>,
@@ -62,7 +62,7 @@ fn handle_drawing_input<C: ContentAssets, F: ReadOnlyWorldQuery>(
     );
 }
 
-fn get_cursor_inputs<C: ContentAssets, F: ReadOnlyWorldQuery>(
+fn get_cursor_inputs<C: ContentAssets, F: QueryFilter>(
     content_assets: &Res<C>,
     brushes: &Res<Brushes<DrawingBundle>>,
     cursor_query: &Query<(&AppearanceDescriptor, &TilePosition, &Cursor), F>,

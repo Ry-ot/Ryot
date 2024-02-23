@@ -39,24 +39,27 @@ impl DrawingAction {
     pub fn get_default_input_map() -> InputMap<DrawingAction> {
         InputMap::default()
             .insert(DrawingAction::Draw, MouseButton::Left)
-            .insert_modified(DrawingAction::ToggleDeletion, CONTROL_COMMAND, KeyCode::D)
-            .insert_modified(DrawingAction::Undo, CONTROL_COMMAND, KeyCode::Z)
+            .insert_modified(
+                DrawingAction::ToggleDeletion,
+                CONTROL_COMMAND,
+                KeyCode::KeyD,
+            )
+            .insert_modified(DrawingAction::Undo, CONTROL_COMMAND, KeyCode::KeyZ)
             .insert_chord(
                 DrawingAction::Redo,
                 [
                     InputKind::Modifier(CONTROL_COMMAND),
                     InputKind::Modifier(Modifier::Shift),
-                    InputKind::Keyboard(KeyCode::Z),
+                    InputKind::PhysicalKey(KeyCode::KeyZ),
                 ],
             )
-            .insert(DrawingAction::ChangeBrush, KeyCode::Key1)
+            .insert(DrawingAction::ChangeBrush, KeyCode::Digit1)
             .insert(DrawingAction::ClearSelection, KeyCode::Escape)
             .insert(DrawingAction::StartConnectingPoints, Modifier::Shift)
-            .insert_modified(DrawingAction::IncreaseBrush, CONTROL_COMMAND, KeyCode::Plus)
             .insert_modified(
                 DrawingAction::IncreaseBrush,
                 CONTROL_COMMAND,
-                KeyCode::Equals,
+                KeyCode::Equal,
             )
             .insert_modified(
                 DrawingAction::DecreaseBrush,

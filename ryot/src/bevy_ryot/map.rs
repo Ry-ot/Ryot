@@ -9,7 +9,7 @@ use crate::{layer::Layer, position::TilePosition};
 /// An entity location is represented by the combination of a Layer and a Position.
 /// The MapTiles are represented by a HashMap of TilePosition and a HashMap of Layer and Entity.
 /// The MapTiles is used to keep track of the entities that are drawn on the map and their position.
-#[derive(Debug, Default, Resource, Deref, Reflect, DerefMut)]
+#[derive(Debug, Default, Resource, Deref, DerefMut)]
 pub struct MapTiles(pub HashMap<TilePosition, MapTile>);
 
 #[derive(Debug, Default, Clone, Reflect)]

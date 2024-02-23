@@ -65,13 +65,19 @@ impl PaletteState {
 
 pub fn get_egui_parameters_for_texture(
     sprite: &LoadedSprite,
-    atlas: &TextureAtlas,
+    atlas_layout: &TextureAtlasLayout,
 ) -> Option<(egui::Vec2, egui::Rect)> {
-    let rect = atlas.textures.get(sprite.get_sprite_index())?;
+    let rect = atlas_layout.textures.get(sprite.get_sprite_index())?;
 
     let uv: egui::Rect = egui::Rect::from_min_max(
-        egui::pos2(rect.min.x / atlas.size.x, rect.min.y / atlas.size.y),
-        egui::pos2(rect.max.x / atlas.size.x, rect.max.y / atlas.size.y),
+        egui::pos2(
+            rect.min.x / atlas_layout.size.x,
+            rect.min.y / atlas_layout.size.y,
+        ),
+        egui::pos2(
+            rect.max.x / atlas_layout.size.x,
+            rect.max.y / atlas_layout.size.y,
+        ),
     );
 
     let rect_vec2: egui::Vec2 = egui::Vec2::new(rect.max.x - rect.min.x, rect.max.y - rect.min.y);

@@ -36,7 +36,7 @@ pub struct AppPlugin;
 
 impl Plugin for AppPlugin {
     fn build(&self, app: &mut App) {
-        app.add_state::<InternalContentState>()
+        app.init_state::<InternalContentState>()
             .add_event::<AppExit>()
             .insert_resource(AssetMetaCheck::Never)
             .add_plugins(InputManagerPlugin::<ToggleFeatures>::default())
@@ -45,11 +45,11 @@ impl Plugin for AppPlugin {
                 InputMap::<ToggleFeatures>::default()
                     .insert_chord(
                         ToggleFeatures::Inspector,
-                        inputs![CONTROL_COMMAND, Modifier::Alt, KeyCode::F],
+                        inputs![CONTROL_COMMAND, Modifier::Alt, KeyCode::KeyF],
                     )
                     .insert_chord(
                         ToggleFeatures::Animation,
-                        inputs![CONTROL_COMMAND, Modifier::Alt, KeyCode::X],
+                        inputs![CONTROL_COMMAND, Modifier::Alt, KeyCode::KeyX],
                     )
                     .build(),
             )

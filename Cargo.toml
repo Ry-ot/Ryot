@@ -9,3 +9,61 @@ opt-level = 1
 # Enable high optimizations for dependencies (incl. Bevy), but not for our code:
 [profile.dev.package."*"]
 opt-level = 3
+
+[workspace.dependencies]
+bevy_asset_loader = { version = "0.20", features = ["2d"] }
+bevy_common_assets = { version = "0.10", features = ["toml", "json"] }
+bevy_egui = { version = "0.25", features = ["immutable_ctx"] }
+bytes = "1.5"
+color-eyre = "0.6"
+config = "0.13"
+egui = { version = "0.26", default-features = false, features = ["bytemuck"] }
+egui_extras = { version = "0.26", features = ["all_loaders"] }
+glam = { version = "0.25", features = ["serde"] }
+heed = { version = "0.20.0-alpha.9", features = ["serde-rmp"] }
+image = "0.24"
+itertools = { version = "0.12", features = ["use_std"] }
+leafwing-input-manager = "0.13"
+log = "0.4"
+lzma-rs = "0.3"
+postcard = { version = "1.0", features = ["alloc"] }
+prost = "0.12"
+prost-types = "0.12"
+rand = "0.8"
+rayon = "1.8.0"
+rstest = "0.18"
+serde = { version = "1.0" }
+serde_json = "1.0"
+strum = { version = "0.26", features = ["derive"] }
+thiserror = "1.0"
+time-test = "0.2.3"
+zstd = "0.13"
+
+[workspace.dependencies.bevy]
+version = "0.13"
+default-features = false
+features = [
+    "animation",
+    "bevy_asset",
+    "bevy_audio",
+    "bevy_core_pipeline",
+    "bevy_gilrs",
+    "bevy_gizmos",
+    "bevy_gltf",
+    "bevy_pbr",
+    "bevy_render",
+    "bevy_scene",
+    "bevy_sprite",
+    "bevy_text",
+    "bevy_ui",
+    "bevy_winit",
+    "default_font",
+    "hdr",
+    "multi-threaded",
+    "png",
+    "tonemapping_luts",
+    "vorbis",
+    "webgl2",
+    "x11",
+    "zstd",
+]

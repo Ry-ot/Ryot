@@ -161,8 +161,8 @@ pub(crate) fn animate_sprite_system(
     mut synced_timers: ResMut<SynchronizedAnimationTimers>,
     mut q_sprites: Query<(
         &mut AnimationSprite,
-        &mut Handle<TextureAtlas>,
-        &mut TextureAtlasSprite,
+        &mut Handle<Image>,
+        &mut TextureAtlas,
         Option<&AnimationDuration>,
     )>,
 ) {
@@ -173,7 +173,7 @@ pub(crate) fn animate_sprite_system(
 
     q_sprites
         .par_iter_mut()
-        .for_each(|(mut anim, mut atlas, mut atlas_sprite, duration)| {
+        .for_each(|(mut anim, mut texture, mut atlas_sprite, duration)| {
             if let AnimationSprite::Independent { key, state, .. } = &mut *anim {
                 if let Some(duration) = duration {
                     let frame_duration = duration.0 / key.total_phases as u32;
@@ -203,7 +203,7 @@ pub(crate) fn animate_sprite_system(
                 else {
                     return;
                 };
-                *atlas = sprite.atlas_texture_handle.clone();
+                *texture = sprite.texture.clone();
                 atlas_sprite.index = sprite.get_sprite_index();
             }
         });
