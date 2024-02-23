@@ -16,8 +16,8 @@ use ryot::prelude::lmdb::LmdbEnv;
 use ryot::prelude::{compress, decompress, LoadObjects, Zstd};
 use ryot::{lmdb, Layer};
 use std::collections::HashMap;
-use std::fs;
 use std::sync::atomic::Ordering;
+use std::{cmp, fs};
 use time_test::time_test;
 
 pub struct LmdbPlugin;
@@ -158,6 +158,12 @@ fn load_tile_content(world: &mut World) {
     for LoadObjects(event_bundles) in events.get_reader().read(events) {
         bundles.extend(event_bundles);
     }
+
+    bundles.sort_by(|a, b| match a.layer {
+        layer if layer == b.layer => cmp::Ordering::Equal,
+        layer if layer < b.layer => cmp::Ordering::Less,
+        _ => cmp::Ordering::Greater,
+    });
 
     for bundle in bundles {
         update(
