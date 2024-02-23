@@ -285,8 +285,13 @@ impl DetailLevel {
         };
 
         for visible_layer in visible_layers {
-            if layer.z() >= visible_layer.z() {
-                return true;
+            match visible_layer {
+                Layer::Bottom(bottom) => match layer {
+                    Layer::Bottom(layer) if layer.order <= bottom.order => return true,
+                    _ => (),
+                },
+                _ if *layer == visible_layer => return true,
+                _ => (),
             }
         }
 
