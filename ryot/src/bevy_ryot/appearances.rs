@@ -8,7 +8,6 @@ use crate::prelude::*;
 use bevy::asset::io::Reader;
 use bevy::asset::{Asset, AssetLoader, AsyncReadExt, BoxedFuture, LoadContext};
 use bevy::prelude::*;
-use bevy::reflect::TypeUuid;
 use bevy::utils::HashMap;
 use prost::Message;
 use std::result;
@@ -25,8 +24,7 @@ impl Plugin for AppearanceAssetPlugin {
 }
 
 /// Wrapper around the Appearances struct to make it an asset.
-#[derive(Debug, TypeUuid, Asset, TypePath)]
-#[uuid = "b34dd6e4-23de-4bd2-8375-ce64cc8ca9fd"]
+#[derive(Debug, TypePath, Asset)]
 pub struct Appearance(pub Appearances);
 
 /// The loader for the Appearance asset.

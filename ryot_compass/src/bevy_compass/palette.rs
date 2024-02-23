@@ -129,7 +129,7 @@ pub fn update_palette_items<C: ContentAssets>(
     palettes: Res<Palette>,
     content_assets: Res<C>,
     mut palette_state: ResMut<PaletteState>,
-    texture_atlases: Res<Assets<TextureAtlas>>,
+    texture_atlases: Res<Assets<TextureAtlasLayout>>,
     mut load_sprite_batch: EventWriter<LoadSpriteBatch>,
 ) {
     if palettes.is_empty() {
@@ -169,7 +169,7 @@ pub fn update_palette_items<C: ContentAssets>(
         &content_assets,
         &mut load_sprite_batch,
     ) {
-        let Some(atlas) = texture_atlases.get(sprite.atlas_texture_handle.clone()) else {
+        let Some(atlas) = texture_atlases.get(sprite.atlas_layout.clone()) else {
             continue;
         };
 
@@ -177,9 +177,11 @@ pub fn update_palette_items<C: ContentAssets>(
             continue;
         };
 
+        let texture = sprite.texture.clone_weak();
+
         palette_state
             .loaded_images
-            .push((sprite, atlas.texture.clone_weak(), rect_vec2, uv));
+            .push((sprite, texture, rect_vec2, uv));
     }
 }
 

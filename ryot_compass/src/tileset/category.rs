@@ -2,7 +2,7 @@ use egui::WidgetText;
 use ryot::appearances::{Appearance, AppearanceFlags, ItemCategory};
 use ryot::prelude::*;
 use std::cmp::Ordering;
-use strum_macros::{EnumCount, EnumIter};
+use strum::{EnumCount, EnumIter};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, EnumIter, EnumCount)]
 pub enum TilesetCategory {

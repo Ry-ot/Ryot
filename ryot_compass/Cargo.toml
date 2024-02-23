@@ -6,81 +6,57 @@ exclude = ["dist", "build", "assets", "credits"]
 
 [dependencies]
 ryot = { version = "0.1.0", path = "../ryot", features = ["egui"] }
-bevy_egui = { version = "0.24.0", features = ["immutable_ctx"] }
-egui = { version = "0.24.1", default-features = false, features = ["bytemuck"] }
-rand = "0.8.5"
-serde = { version = "1.0.193", features = ["derive"] }
-serde_json = "1.0.108"
-async-std = "1.12.0"
-rayon = "1.8.0"
-log = "0.4.20"
-time-test = "0.2.3"
-heed = { version = "0.20.0-alpha.9", features = ["serde-rmp"], optional = true }
-zstd = "0.13.0"
-postcard = { version = "1.0.8", features = ["alloc"] }
-bytes = "1.5.0"
-prost = "0.12.3"
-lzma-rs = "0.3.0"
-image = "0.24.7"
-itertools = { version = "0.12.0", features = ["use_std"] }
-strum = "0.25.0"
-strum_macros = "0.25.0"
-rfd = "0.12.1"
-config = "0.13.4"
-egui_dock = "0.9.0"
-winit = "0.28.7"
-egui_extras = { version = "0.24.1", features = ["all_loaders"] }
-uuid = "1.6.1"
-futures = "0.3.30"
-wasm-bindgen-futures = "0.4.40"
-bevy_common_assets = { version = "0.9.0", features = ["toml", "json"] }
-bevy_asset_loader = { version = "0.19.1", features = ["2d"] }
-thiserror = "1.0.56"
-color-eyre = "0.6.2"
-rstest = "0.18.2"
-# switch back to the upstream once https://github.com/johanhelsing/bevy_pancam/pull/55 is merged
-bevy_pancam = { version = "0.10.0", features = [
+
+async-std = "1.12"
+egui_dock = "0.11"
+futures = "0.3"
+rfd = "0.12"
+uuid = "1.6"
+wasm-bindgen-futures = "0.4"
+winit = "0.29"
+
+bevy_pancam = { git = "https://github.com/luan/bevy_pancam", branch = "luan/modifier-keys", features = [
     "bevy_egui",
     "leafwing-input-manager",
-], git = "https://github.com/luan/bevy_pancam", branch = "luan/modifier-keys" }
-leafwing-input-manager = "0.12"
+] }
 
-[dependencies.bevy]
-version = "0.12.1"
-default-features = false
-features = [
-    "animation",
-    "bevy_asset",
-    "bevy_audio",
-    "bevy_core_pipeline",
-    "bevy_gilrs",
-    "bevy_gizmos",
-    "bevy_gltf",
-    "bevy_pbr",
-    "bevy_render",
-    "bevy_scene",
-    "bevy_sprite",
-    "bevy_text",
-    "bevy_ui",
-    "bevy_winit",
-    "default_font",
-    "hdr",
-    "multi-threaded",
-    "png",
-    "tonemapping_luts",
-    "vorbis",
-    "webgl2",
-    "x11",
-    "zstd",
-]
+bevy.workspace = true
+bevy_asset_loader.workspace = true
+bevy_common_assets.workspace = true
+bevy_egui.workspace = true
+bytes.workspace = true
+color-eyre.workspace = true
+config.workspace = true
+egui.workspace = true
+egui_extras.workspace = true
+glam.workspace = true
+heed = { workspace = true, optional = true }
+image.workspace = true
+itertools.workspace = true
+leafwing-input-manager.workspace = true
+log.workspace = true
+lzma-rs.workspace = true
+postcard.workspace = true
+prost-types.workspace = true
+prost.workspace = true
+rand.workspace = true
+rayon.workspace = true
+serde = { workspace = true, features = ["derive"] }
+serde_json.workspace = true
+strum.workspace = true
+thiserror.workspace = true
+time-test.workspace = true
+zstd.workspace = true
 
 [dependencies.bevy-inspector-egui]
-version = "0.22.0"
+version = "0.23"
 default-features = true
-#optional = true
+
+[dev-dependencies]
+rstest.workspace = true
 
 [build-dependencies]
-embed-resource = "2.4.1"
+embed-resource = "2.4"
 ryot = { version = "0.1.0", path = "../ryot" }
 
 [features]

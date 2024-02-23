@@ -6,7 +6,8 @@ use crate::position::TilePosition;
 use crate::{get_decompressed_file_name, SpriteSheetConfig, SPRITE_SHEET_FOLDER};
 use crate::{prelude::*, Directional};
 use bevy::prelude::*;
-use bevy::utils::{HashMap, StableHashSet};
+use bevy::utils::hashbrown::HashSet;
+use bevy::utils::{FixedState, HashMap};
 use std::path::PathBuf;
 
 use self::sprite_animations::{
@@ -17,7 +18,8 @@ use self::sprite_animations::{
 #[derive(Debug, Clone, Event)]
 pub(crate) struct SpriteSheetTextureWasLoaded {
     pub sprite_id: u32,
-    pub atlas: TextureAtlas,
+    pub atlas_layout: TextureAtlasLayout,
+    pub texture: Handle<Image>,
 }
 
 /// An even that is sent when a sprite sheet is requested to be loaded.
@@ -39,7 +41,8 @@ pub struct LoadedSprite {
     pub group: AppearanceGroup,
     pub config: SpriteSheetConfig,
     pub sprite_sheet: SpriteSheetData,
-    pub atlas_texture_handle: Handle<TextureAtlas>,
+    pub atlas_layout: Handle<TextureAtlasLayout>,
+    pub texture: Handle<Image>,
 }
 
 impl LoadedSprite {
@@ -47,16 +50,18 @@ impl LoadedSprite {
         group: AppearanceGroup,
         sprite_id: u32,
         sprite_sheets: &SpriteSheetDataSet,
-        atlas_handles: &HashMap<String, Handle<TextureAtlas>>,
+        atlas_handles: &HashMap<String, (Handle<TextureAtlasLayout>, Handle<Image>)>,
     ) -> Option<Self> {
         let sprite_sheet = sprite_sheets.get_by_sprite_id(sprite_id)?;
 
+        let (atlas_layout, texture) = atlas_handles.get(&sprite_sheet.file)?;
         Some(Self {
             group,
             sprite_id,
             config: sprite_sheets.config,
             sprite_sheet: sprite_sheet.clone(),
-            atlas_texture_handle: atlas_handles.get(&sprite_sheet.file)?.clone(),
+            atlas_layout: atlas_layout.clone(),
+            texture: texture.clone(),
         })
     }
 
@@ -95,13 +100,14 @@ pub fn load_sprites<C: ContentAssets>(
         };
 
         match content_assets.get_atlas_handle(sprite_sheet.file.as_str()) {
-            Some(handle) => {
+            Some((atlas_layout, texture)) => {
                 loaded.push(LoadedSprite {
                     group,
                     sprite_id: *sprite_id,
                     config: sprite_sheets.config,
                     sprite_sheet: sprite_sheet.clone(),
-                    atlas_texture_handle: handle.clone(),
+                    atlas_layout: atlas_layout.clone(),
+                    texture: texture.clone(),
                 });
             }
             None => {
@@ -128,7 +134,7 @@ pub(crate) fn load_sprite_sheets_from_command<C: ContentAssets>(
     let Some(sprite_sheets) = content_assets.sprite_sheet_data_set() else {
         return;
     };
-    let to_load: StableHashSet<u32> = load_sprite_batch_events
+    let to_load: HashSet<u32, FixedState> = load_sprite_batch_events
         .read()
         .flat_map(|batch| batch.sprite_ids.iter().copied())
         .collect();
@@ -147,10 +153,15 @@ pub(crate) fn load_sprite_sheets_from_command<C: ContentAssets>(
 /// atlas handles resource and stores the handle to the atlas.
 pub(crate) fn store_atlases_assets_after_loading<C: PreloadedContentAssets>(
     mut content_assets: ResMut<C>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     mut sprite_sheet_texture_was_loaded: EventReader<SpriteSheetTextureWasLoaded>,
 ) {
-    for SpriteSheetTextureWasLoaded { sprite_id, atlas } in sprite_sheet_texture_was_loaded.read() {
+    for SpriteSheetTextureWasLoaded {
+        sprite_id,
+        atlas_layout,
+        texture,
+    } in sprite_sheet_texture_was_loaded.read()
+    {
         let sprite_sheet = content_assets
             .sprite_sheet_data_set()
             .as_ref()
@@ -166,8 +177,8 @@ pub(crate) fn store_atlases_assets_after_loading<C: PreloadedContentAssets>(
             continue;
         }
 
-        let atlas_handle = texture_atlases.add(atlas.clone());
-        content_assets.insert_atlas_handle(&sprite_sheet.file, atlas_handle);
+        let atlas_handle = atlas_layouts.add(atlas_layout.clone());
+        content_assets.insert_atlas_handle(&sprite_sheet.file, (atlas_handle, texture.clone()));
     }
 }
 
@@ -177,7 +188,7 @@ pub(crate) fn load_sprite_textures<C: ContentAssets>(
     asset_server: &Res<AssetServer>,
     sprite_sheets: &SpriteSheetDataSet,
     sprite_sheet_texture_was_loaded: &mut EventWriter<SpriteSheetTextureWasLoaded>,
-) -> Vec<(u32, TextureAtlas)> {
+) -> Vec<(u32, TextureAtlasLayout, Handle<Image>)> {
     let events = sprite_ids
         .iter()
         .filter_map(|sprite_id| {
@@ -189,8 +200,14 @@ pub(crate) fn load_sprite_textures<C: ContentAssets>(
 
     events
         .iter()
-        .map(|SpriteSheetTextureWasLoaded { sprite_id, atlas }| (*sprite_id, atlas.clone()))
-        .collect::<Vec<(u32, TextureAtlas)>>()
+        .map(
+            |SpriteSheetTextureWasLoaded {
+                 sprite_id,
+                 atlas_layout,
+                 texture,
+             }| (*sprite_id, atlas_layout.clone(), texture.clone()),
+        )
+        .collect::<Vec<(u32, TextureAtlasLayout, Handle<Image>)>>()
 }
 
 pub(crate) fn load_sprite_texture<C: ContentAssets>(
@@ -211,7 +228,7 @@ pub(crate) fn load_sprite_texture<C: ContentAssets>(
         return None;
     }
 
-    let image_handle: Handle<Image> = asset_server.load(
+    let texture: Handle<Image> = asset_server.load(
         PathBuf::from(SPRITE_SHEET_FOLDER).join(get_decompressed_file_name(&sprite_sheet.file)),
     );
 
@@ -219,8 +236,8 @@ pub(crate) fn load_sprite_texture<C: ContentAssets>(
 
     Some(SpriteSheetTextureWasLoaded {
         sprite_id,
-        atlas: TextureAtlas::from_grid(
-            image_handle,
+        texture,
+        atlas_layout: TextureAtlasLayout::from_grid(
             sprite_sheet.get_tile_size(config).as_vec2(),
             sprite_sheet.get_columns_count(config),
             sprite_sheet.get_rows_count(config),
@@ -236,7 +253,7 @@ pub(crate) fn load_sprite_texture<C: ContentAssets>(
 pub(crate) fn prepare_sprites<C: PreloadedContentAssets>(
     mut content_assets: ResMut<C>,
     mut state: ResMut<NextState<InternalContentState>>,
-    mut texture_atlases: ResMut<Assets<TextureAtlas>>,
+    mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>,
 ) {
     debug!("Preparing sprites");
 
@@ -245,7 +262,7 @@ pub(crate) fn prepare_sprites<C: PreloadedContentAssets>(
             panic!("Sprite sheets configs were not setup.");
         };
 
-        for (file, handle) in content_assets.sprite_sheets().clone() {
+        for (file, texture) in content_assets.sprite_sheets().clone() {
             let file = match file.strip_prefix("sprite-sheets/") {
                 Some(file) => file,
                 None => &file,
@@ -261,8 +278,7 @@ pub(crate) fn prepare_sprites<C: PreloadedContentAssets>(
                 continue;
             };
 
-            let atlas = TextureAtlas::from_grid(
-                handle.clone(),
+            let atlas = TextureAtlasLayout::from_grid(
                 sprite_sheet.get_tile_size(&sheets.config).as_vec2(),
                 sprite_sheet.get_columns_count(&sheets.config),
                 sprite_sheet.get_rows_count(&sheets.config),
@@ -271,7 +287,7 @@ pub(crate) fn prepare_sprites<C: PreloadedContentAssets>(
             );
 
             let atlas_handle = texture_atlases.add(atlas.clone());
-            content_assets.insert_atlas_handle(&sprite_sheet.file, atlas_handle);
+            content_assets.insert_atlas_handle(&sprite_sheet.file, (atlas_handle, texture.clone()));
         }
 
         content_assets.sprite_sheets().clear();
@@ -380,11 +396,11 @@ fn load_desired_appereance_sprite<C: ContentAssets>(
     Some((sprite.clone(), animation_sprite, sprites))
 }
 
-type UninitializedSpriteFilter = (With<AppearanceDescriptor>, Without<TextureAtlasSprite>);
+type UninitializedSpriteFilter = (With<AppearanceDescriptor>, Without<TextureAtlas>);
 
 type InitializedSpriteFilter = (
     With<AppearanceDescriptor>,
-    With<TextureAtlasSprite>,
+    With<TextureAtlas>,
     Or<(
         With<LoadingAppearance>,
         Changed<AppearanceDescriptor>,
@@ -405,8 +421,8 @@ pub(crate) fn update_sprite_system<C: ContentAssets>(
             &AppearanceDescriptor,
             Option<&Directional>,
             &mut LoadedSprites,
-            &mut Handle<TextureAtlas>,
-            &mut TextureAtlasSprite,
+            &mut Handle<Image>,
+            &mut TextureAtlas,
             Option<&mut AnimationSprite>,
             Has<LoadingAppearance>,
         ),
@@ -421,7 +437,7 @@ pub(crate) fn update_sprite_system<C: ContentAssets>(
         descriptor,
         direction,
         mut loaded_sprites,
-        mut atlas,
+        mut texture,
         mut atlas_sprite,
         animation_sprite,
         is_loading,
@@ -443,7 +459,7 @@ pub(crate) fn update_sprite_system<C: ContentAssets>(
             }
         };
         *loaded_sprites = LoadedSprites(sprites.clone());
-        *atlas = sprite.atlas_texture_handle.clone();
+        *texture = sprite.texture.clone();
         atlas_sprite.index = sprite.get_sprite_index();
         if let Some(anim) = anim {
             if let Some(mut animation_sprite) = animation_sprite {
@@ -503,12 +519,21 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
             .insert(LoadedSprites(sprites.clone()))
             .insert(SpriteSheetBundle {
                 transform: Transform::from_translation(position.to_vec3(layer)),
-                sprite: TextureAtlasSprite {
-                    index: sprite.get_sprite_index(),
+                sprite: Sprite {
                     anchor: RYOT_ANCHOR,
-                    ..Default::default()
+                    ..default()
                 },
-                texture_atlas: sprite.atlas_texture_handle.clone(),
+                atlas: TextureAtlas {
+                    layout: sprite.atlas_layout.clone(),
+                    index: sprite.get_sprite_index(),
+                },
+                texture: sprite.texture,
+                // sprite: TextureAtlas {
+                //     index: sprite.get_sprite_index(),
+                //     anchor: RYOT_ANCHOR,
+                //     ..Default::default()
+                // },
+                // texture_atlas: sprite.atlas_texture_handle.clone(),
                 ..default()
             })
             .remove::<LoadingAppearance>();

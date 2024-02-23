@@ -151,7 +151,7 @@ pub fn tile_size() -> UVec2 {
     UVec2::new(32, 32)
 }
 
-#[derive(Eq, PartialEq, Component, Reflect, Default, Clone, Copy, Debug)]
+#[derive(Eq, PartialEq, Component, Default, Clone, Copy, Debug)]
 pub struct Sector {
     pub min: TilePosition,
     pub max: TilePosition,
@@ -331,7 +331,7 @@ pub fn update_sprite_position(
             movement.timer.tick(time.delta());
             transform.translation = movement.origin.to_vec3(layer).lerp(
                 movement.destination.to_vec3(layer),
-                movement.timer.percent(),
+                movement.timer.fraction(),
             );
             if movement.timer.just_finished() {
                 if movement.despawn_on_end {

@@ -50,7 +50,7 @@ impl<C: CompassAssets> Plugin for CameraPlugin<C> {
                         update_camera_visible_sector,
                     )
                         .chain(),
-                    update_pan_cam_actions.run_if(resource_changed::<UiState>()),
+                    update_pan_cam_actions.run_if(resource_changed::<UiState>),
                 )
                     .run_if(in_state(InternalContentState::Ready)),
             );
@@ -210,12 +210,7 @@ fn update_cursor_visibility(
     palette_state: Res<PaletteState>,
     mut egui_ctx: Query<&mut EguiContext>,
     mut windows: Query<&mut Window>,
-    mut cursor_query: Query<(
-        &TilePosition,
-        &mut Visibility,
-        &mut TextureAtlasSprite,
-        &Cursor,
-    )>,
+    mut cursor_query: Query<(&TilePosition, &mut Visibility, &mut Sprite, &Cursor)>,
     gui_state: Res<UiState>,
 ) -> color_eyre::Result<()> {
     let mut egui_ctx = egui_ctx.single_mut();
@@ -288,7 +283,7 @@ fn update_cursor_brush_preview(
             &mut TilePosition,
             &mut AppearanceDescriptor,
             &mut Visibility,
-            Option<&mut TextureAtlasSprite>,
+            Option<&mut Sprite>,
         ),
         CursorBrushPreviewFilter,
     >,
@@ -317,7 +312,7 @@ fn update_cursor_brush_preview(
             continue;
         }
 
-        // If the sprite is already loaded, TextureAtlasSprite exists, so we change its color to
+        // If the sprite is already loaded, Sprite exists, so we change its color to
         // differentiate the preview tiles from the rest, making them grayish and transparent.
         if let Some(mut sprite) = sprite {
             sprite.color = get_cursor_color(cursor)

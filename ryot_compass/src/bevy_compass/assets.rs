@@ -1,5 +1,6 @@
 use bevy::asset::Handle;
-use bevy::prelude::{Image, Resource, TextureAtlas};
+use bevy::prelude::{Image, Resource};
+use bevy::sprite::TextureAtlasLayout;
 use bevy::utils::HashMap;
 use bevy_asset_loader::asset_collection::AssetCollection;
 use ryot::appearances::SpriteSheetDataSet;
@@ -9,7 +10,7 @@ use ryot::prelude::*;
 #[derive(Default)]
 pub struct AtlasCollection {
     pub sheet_data_set: Option<SpriteSheetDataSet>,
-    pub handles: HashMap<String, Handle<TextureAtlas>>,
+    pub handles: HashMap<String, (Handle<TextureAtlasLayout>, Handle<Image>)>,
 }
 
 #[derive(AssetCollection, Resource, Default)]
@@ -53,7 +54,11 @@ impl PreloadedAssets for CompassContentAssets {
         self.atlas.sheet_data_set.replace(sprite_sheet_set);
     }
 
-    fn insert_atlas_handle(&mut self, file: &str, handle: Handle<TextureAtlas>) {
+    fn insert_atlas_handle(
+        &mut self,
+        file: &str,
+        handle: (Handle<TextureAtlasLayout>, Handle<Image>),
+    ) {
         self.atlas.handles.insert(file.to_string(), handle);
     }
 }
@@ -66,7 +71,7 @@ impl ContentAssets for CompassContentAssets {
         &self.atlas.sheet_data_set
     }
 
-    fn get_atlas_handle(&self, file: &str) -> Option<&Handle<TextureAtlas>> {
+    fn get_atlas_handle(&self, file: &str) -> Option<&(Handle<TextureAtlasLayout>, Handle<Image>)> {
         self.atlas.handles.get(file)
     }
 }
