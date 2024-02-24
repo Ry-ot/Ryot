@@ -78,7 +78,7 @@ pub trait PreloadedAssets: Resource + AssetCollection + Send + Sync + 'static {
     fn appearances(&self) -> Handle<Appearance>;
     fn catalog_content(&self) -> Handle<Catalog>;
     fn prepared_appearances_mut(&mut self) -> &mut PreparedAppearances;
-    fn sprite_sheets(&mut self) -> &mut HashMap<String, Handle<Image>>;
+    fn sprite_sheets(&self) -> &HashMap<String, Handle<Image>>;
     fn set_sprite_sheets_data(&mut self, sprite_sheet_set: SpriteSheetDataSet);
     fn insert_texture(&mut self, file: &str, texture: Handle<Image>);
 }
@@ -168,9 +168,9 @@ fn prepare_content<C: PreloadedContentAssets>(
 ) {
     debug!("Preparing content");
 
-    let Some(catalog) = contents.get(content_assets.catalog_content()) else {
-        panic!("No catalog loaded");
-    };
+    let catalog = contents
+        .get(content_assets.catalog_content())
+        .expect("No catalog loaded");
 
     content_assets.set_sprite_sheets_data(SpriteSheetDataSet::from_content(
         &catalog.content,

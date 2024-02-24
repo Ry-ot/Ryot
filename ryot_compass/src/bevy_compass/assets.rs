@@ -5,18 +5,12 @@ use ryot::appearances::SpriteSheetDataSet;
 use ryot::bevy_ryot::{Appearance, Catalog, ContentAssets, PreparedAppearances};
 use ryot::prelude::*;
 
-#[derive(Default)]
-pub struct AtlasCollection {
-    pub sheet_data_set: Option<SpriteSheetDataSet>,
-    pub handles: HashMap<String, Handle<Image>>,
-}
-
 #[derive(AssetCollection, Resource, Default)]
 pub struct CompassContentAssets {
     #[asset(texture_atlas_layout(tile_size_x = 32., tile_size_y = 32., columns = 12, rows = 12))]
     atlas_layout_32_32: Handle<TextureAtlasLayout>,
 
-    atlas: AtlasCollection,
+    sheet_data_set: Option<SpriteSheetDataSet>,
 
     // Config related handles
     #[asset(path = "appearances.dat")]
@@ -45,18 +39,21 @@ impl PreloadedAssets for CompassContentAssets {
     fn catalog_content(&self) -> Handle<Catalog> {
         self.catalog_content.clone_weak()
     }
+
     fn prepared_appearances_mut(&mut self) -> &mut PreparedAppearances {
         &mut self.prepared_appearances
     }
-    fn sprite_sheets(&mut self) -> &mut HashMap<String, Handle<Image>> {
-        &mut self.sprite_sheets
+
+    fn sprite_sheets(&self) -> &HashMap<String, Handle<Image>> {
+        &self.sprite_sheets
     }
+
     fn set_sprite_sheets_data(&mut self, sprite_sheet_set: SpriteSheetDataSet) {
-        self.atlas.sheet_data_set.replace(sprite_sheet_set);
+        self.sheet_data_set.replace(sprite_sheet_set);
     }
 
     fn insert_texture(&mut self, file: &str, texture: Handle<Image>) {
-        self.atlas.handles.insert(file.to_string(), texture);
+        self.sprite_sheets.insert(file.to_string(), texture);
     }
 }
 
@@ -65,11 +62,11 @@ impl ContentAssets for CompassContentAssets {
         &self.prepared_appearances
     }
     fn sprite_sheet_data_set(&self) -> &Option<SpriteSheetDataSet> {
-        &self.atlas.sheet_data_set
+        &self.sheet_data_set
     }
 
     fn get_texture(&self, file: &str) -> Option<Handle<Image>> {
-        Some(self.atlas.handles.get(file)?.clone_weak())
+        Some(self.sprite_sheets.get(file)?.clone_weak())
     }
 
     fn get_atlas_layout(&self) -> Handle<TextureAtlasLayout> {
