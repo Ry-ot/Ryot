@@ -92,8 +92,7 @@ impl<C: ContentAssets> Default for DrawingPlugin<C> {
 
 impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
     fn build(&self, app: &mut App) {
-        app.init_resource::<UndoRedoConfig>()
-            .init_resource::<CommandHistory>()
+        app.init_resource::<CommandHistory>()
             .init_resource::<MapTiles>()
             .init_resource::<Brushes<DrawingBundle>>()
             .add_plugins(drawing::DrawingPlugin)
@@ -111,11 +110,10 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
                     (draw_on_click::<C>(), draw_on_hold::<C>()),
                     toggle_deletion.run_if(action_just_pressed(DrawingAction::ToggleDeletion)),
                     (
-                        tick_undo_redo_timer,
                         on_press(undo.map(drop), DrawingAction::Undo),
-                        on_hold(undo.map(drop), DrawingAction::Undo).run_if(time_is_finished()),
+                        on_hold(undo.map(drop), DrawingAction::Undo).run_if(run_every_millis(300)),
                         on_press(redo.map(drop), DrawingAction::Redo),
-                        on_hold(redo.map(drop), DrawingAction::Redo).run_if(time_is_finished()),
+                        on_hold(redo.map(drop), DrawingAction::Redo).run_if(run_every_millis(300)),
                     )
                         .chain(),
                     (
