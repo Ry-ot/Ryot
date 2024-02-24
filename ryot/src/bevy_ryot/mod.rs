@@ -262,15 +262,6 @@ impl OptionalPlugin for App {
 }
 
 /// A system to spawn a grid of lines to represent the tiles in the game using a custom color.
-///
-/// # Example
-/// ```rust
-/// use bevy::prelude::*;
-/// use ryot::prelude::spawn_grid;
-///
-/// App::new().add_systems(Startup, spawn_grid(Color::WHITE));
-/// ```
-
 pub fn spawn_grid<C: ContentAssets>(
     color: Color,
 ) -> impl FnMut(
