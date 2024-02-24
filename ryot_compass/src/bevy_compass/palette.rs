@@ -128,8 +128,8 @@ pub fn update_palette_category<C: ContentAssets>(
 pub fn update_palette_items<C: ContentAssets>(
     palettes: Res<Palette>,
     content_assets: Res<C>,
-    mut palette_state: ResMut<PaletteState>,
     texture_atlases: Res<Assets<TextureAtlasLayout>>,
+    mut palette_state: ResMut<PaletteState>,
     mut load_sprite_batch: EventWriter<LoadSpriteBatch>,
 ) {
     if palettes.is_empty() {
@@ -169,11 +169,9 @@ pub fn update_palette_items<C: ContentAssets>(
         &content_assets,
         &mut load_sprite_batch,
     ) {
-        let Some(atlas) = texture_atlases.get(sprite.atlas_layout.clone()) else {
-            continue;
-        };
-
-        let Some((rect_vec2, uv)) = get_egui_parameters_for_texture(&sprite, atlas) else {
+        let Some((rect_vec2, uv)) =
+            get_egui_parameters_for_texture::<C>(&sprite, &content_assets, &texture_atlases)
+        else {
             continue;
         };
 

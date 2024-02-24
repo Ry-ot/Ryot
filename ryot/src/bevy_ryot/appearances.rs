@@ -210,10 +210,9 @@ pub(crate) fn prepare_appearances<C: PreloadedContentAssets>(
     mut appearances_assets: ResMut<Assets<Appearance>>,
 ) {
     debug!("Preparing appearances");
-    let Some(Appearance(appearances)) = appearances_assets.get(content_assets.appearances().id())
-    else {
-        panic!("No config found for content");
-    };
+    let Appearance(appearances) = appearances_assets
+        .get(content_assets.appearances())
+        .expect("Appearance not found");
 
     let prepared_appearances = content_assets.prepared_appearances_mut();
 
@@ -235,7 +234,7 @@ pub(crate) fn prepare_appearances<C: PreloadedContentAssets>(
         );
     }
 
-    appearances_assets.remove(content_assets.appearances().id());
+    appearances_assets.remove(content_assets.appearances());
 
     debug!("Appearances prepared");
 }

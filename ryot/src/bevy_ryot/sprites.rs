@@ -18,7 +18,6 @@ use self::sprite_animations::{
 #[derive(Debug, Clone, Event)]
 pub(crate) struct SpriteSheetTextureWasLoaded {
     pub sprite_id: u32,
-    pub atlas_layout: TextureAtlasLayout,
     pub texture: Handle<Image>,
 }
 
@@ -41,7 +40,6 @@ pub struct LoadedSprite {
     pub group: AppearanceGroup,
     pub config: SpriteSheetConfig,
     pub sprite_sheet: SpriteSheetData,
-    pub atlas_layout: Handle<TextureAtlasLayout>,
     pub texture: Handle<Image>,
 }
 
@@ -50,17 +48,16 @@ impl LoadedSprite {
         group: AppearanceGroup,
         sprite_id: u32,
         sprite_sheets: &SpriteSheetDataSet,
-        atlas_handles: &HashMap<String, (Handle<TextureAtlasLayout>, Handle<Image>)>,
+        textures: &HashMap<String, Handle<Image>>,
     ) -> Option<Self> {
         let sprite_sheet = sprite_sheets.get_by_sprite_id(sprite_id)?;
 
-        let (atlas_layout, texture) = atlas_handles.get(&sprite_sheet.file)?;
+        let texture = textures.get(&sprite_sheet.file)?;
         Some(Self {
             group,
             sprite_id,
             config: sprite_sheets.config,
             sprite_sheet: sprite_sheet.clone(),
-            atlas_layout: atlas_layout.clone(),
             texture: texture.clone(),
         })
     }
@@ -99,14 +96,13 @@ pub fn load_sprites<C: ContentAssets>(
             continue;
         };
 
-        match content_assets.get_atlas_handle(sprite_sheet.file.as_str()) {
-            Some((atlas_layout, texture)) => {
+        match content_assets.get_texture(sprite_sheet.file.as_str()) {
+            Some(texture) => {
                 loaded.push(LoadedSprite {
                     group,
                     sprite_id: *sprite_id,
                     config: sprite_sheets.config,
                     sprite_sheet: sprite_sheet.clone(),
-                    atlas_layout: atlas_layout.clone(),
                     texture: texture.clone(),
                 });
             }
@@ -153,14 +149,9 @@ pub(crate) fn load_sprite_sheets_from_command<C: ContentAssets>(
 /// atlas handles resource and stores the handle to the atlas.
 pub(crate) fn store_atlases_assets_after_loading<C: PreloadedContentAssets>(
     mut content_assets: ResMut<C>,
-    mut atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
     mut sprite_sheet_texture_was_loaded: EventReader<SpriteSheetTextureWasLoaded>,
 ) {
-    for SpriteSheetTextureWasLoaded {
-        sprite_id,
-        atlas_layout,
-        texture,
-    } in sprite_sheet_texture_was_loaded.read()
+    for SpriteSheetTextureWasLoaded { sprite_id, texture } in sprite_sheet_texture_was_loaded.read()
     {
         let sprite_sheet = content_assets
             .sprite_sheet_data_set()
@@ -170,15 +161,11 @@ pub(crate) fn store_atlases_assets_after_loading<C: PreloadedContentAssets>(
             .expect("Sprite must exist in sheet")
             .clone();
 
-        if content_assets
-            .get_atlas_handle(&sprite_sheet.file)
-            .is_some()
-        {
+        if content_assets.get_texture(&sprite_sheet.file).is_some() {
             continue;
         }
 
-        let atlas_handle = atlas_layouts.add(atlas_layout.clone());
-        content_assets.insert_atlas_handle(&sprite_sheet.file, (atlas_handle, texture.clone()));
+        content_assets.insert_texture(&sprite_sheet.file, texture.clone());
     }
 }
 
@@ -188,7 +175,7 @@ pub(crate) fn load_sprite_textures<C: ContentAssets>(
     asset_server: &Res<AssetServer>,
     sprite_sheets: &SpriteSheetDataSet,
     sprite_sheet_texture_was_loaded: &mut EventWriter<SpriteSheetTextureWasLoaded>,
-) -> Vec<(u32, TextureAtlasLayout, Handle<Image>)> {
+) -> Vec<(u32, Handle<Image>)> {
     let events = sprite_ids
         .iter()
         .filter_map(|sprite_id| {
@@ -200,14 +187,8 @@ pub(crate) fn load_sprite_textures<C: ContentAssets>(
 
     events
         .iter()
-        .map(
-            |SpriteSheetTextureWasLoaded {
-                 sprite_id,
-                 atlas_layout,
-                 texture,
-             }| (*sprite_id, atlas_layout.clone(), texture.clone()),
-        )
-        .collect::<Vec<(u32, TextureAtlasLayout, Handle<Image>)>>()
+        .map(|SpriteSheetTextureWasLoaded { sprite_id, texture }| (*sprite_id, texture.clone()))
+        .collect::<Vec<(u32, Handle<Image>)>>()
 }
 
 pub(crate) fn load_sprite_texture<C: ContentAssets>(
@@ -222,7 +203,7 @@ pub(crate) fn load_sprite_texture<C: ContentAssets>(
     };
 
     if content_assets
-        .get_atlas_handle(sprite_sheet.file.as_str())
+        .get_texture(sprite_sheet.file.as_str())
         .is_some()
     {
         return None;
@@ -232,19 +213,7 @@ pub(crate) fn load_sprite_texture<C: ContentAssets>(
         PathBuf::from(SPRITE_SHEET_FOLDER).join(get_decompressed_file_name(&sprite_sheet.file)),
     );
 
-    let config = &sprite_sheets.config;
-
-    Some(SpriteSheetTextureWasLoaded {
-        sprite_id,
-        texture,
-        atlas_layout: TextureAtlasLayout::from_grid(
-            sprite_sheet.get_tile_size(config).as_vec2(),
-            sprite_sheet.get_columns_count(config),
-            sprite_sheet.get_rows_count(config),
-            None,
-            None,
-        ),
-    })
+    Some(SpriteSheetTextureWasLoaded { sprite_id, texture })
 }
 
 /// A system that prepares the sprite assets for use in the game.
@@ -253,7 +222,6 @@ pub(crate) fn load_sprite_texture<C: ContentAssets>(
 pub(crate) fn prepare_sprites<C: PreloadedContentAssets>(
     mut content_assets: ResMut<C>,
     mut state: ResMut<NextState<InternalContentState>>,
-    mut texture_atlases: ResMut<Assets<TextureAtlasLayout>>,
 ) {
     debug!("Preparing sprites");
 
@@ -268,7 +236,7 @@ pub(crate) fn prepare_sprites<C: PreloadedContentAssets>(
                 None => &file,
             };
 
-            if content_assets.get_atlas_handle(file).is_some() {
+            if content_assets.get_texture(file).is_some() {
                 warn!("Skipping file {}: it's already loaded", file);
                 continue;
             }
@@ -278,16 +246,7 @@ pub(crate) fn prepare_sprites<C: PreloadedContentAssets>(
                 continue;
             };
 
-            let atlas = TextureAtlasLayout::from_grid(
-                sprite_sheet.get_tile_size(&sheets.config).as_vec2(),
-                sprite_sheet.get_columns_count(&sheets.config),
-                sprite_sheet.get_rows_count(&sheets.config),
-                None,
-                None,
-            );
-
-            let atlas_handle = texture_atlases.add(atlas.clone());
-            content_assets.insert_atlas_handle(&sprite_sheet.file, (atlas_handle, texture.clone()));
+            content_assets.insert_texture(&sprite_sheet.file, texture.clone());
         }
 
         content_assets.sprite_sheets().clear();
@@ -524,16 +483,10 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
                     ..default()
                 },
                 atlas: TextureAtlas {
-                    layout: sprite.atlas_layout.clone(),
+                    layout: content_assets.get_atlas_layout(),
                     index: sprite.get_sprite_index(),
                 },
                 texture: sprite.texture,
-                // sprite: TextureAtlas {
-                //     index: sprite.get_sprite_index(),
-                //     anchor: RYOT_ANCHOR,
-                //     ..Default::default()
-                // },
-                // texture_atlas: sprite.atlas_texture_handle.clone(),
                 ..default()
             })
             .remove::<LoadingAppearance>();
