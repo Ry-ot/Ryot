@@ -65,16 +65,15 @@ pub fn ro<K: 'static, V: 'static>(
     }
 }
 
-pub fn compact() -> error::Result<()> {
-    let env = create_env(get_storage_path())?;
+pub fn compact(env: Env) -> color_eyre::Result<()> {
     let backup_path = get_storage_path().join(MDB_FILE_NAME.to_string() + ".bkp");
     let old_path = get_storage_path().join(MDB_FILE_NAME);
 
+    fs::remove_file(backup_path.clone()).ok();
     env.copy_to_file(backup_path.clone(), CompactionOption::Enabled)?;
 
-    env.prepare_for_closing().wait();
-    fs::remove_file(old_path.clone()).expect("Failed to remove the database");
-    fs::rename(backup_path, old_path).expect("Failed to rename the database");
+    fs::remove_file(old_path.clone())?;
+    fs::rename(backup_path, old_path)?;
 
     Ok(())
 }
