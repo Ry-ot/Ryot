@@ -3,7 +3,7 @@ use crate::TilesetCategory;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use egui::{Align, Ui};
-use ryot::bevy_ryot::AppearanceDescriptor;
+use ryot::bevy_ryot::{AppearanceDescriptor, ContentAssets};
 use std::ops::Range;
 
 #[derive(Resource, Debug)]
@@ -63,10 +63,12 @@ impl PaletteState {
     }
 }
 
-pub fn get_egui_parameters_for_texture(
+pub fn get_egui_parameters_for_texture<C: ContentAssets>(
     sprite: &LoadedSprite,
-    atlas_layout: &TextureAtlasLayout,
+    content_assets: &Res<C>,
+    atlas_layouts: &Res<Assets<TextureAtlasLayout>>,
 ) -> Option<(egui::Vec2, egui::Rect)> {
+    let atlas_layout = atlas_layouts.get(content_assets.get_atlas_layout())?;
     let rect = atlas_layout.textures.get(sprite.get_sprite_index())?;
 
     let uv: egui::Rect = egui::Rect::from_min_max(

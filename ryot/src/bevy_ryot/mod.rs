@@ -75,16 +75,12 @@ pub trait PreloadedContentAssets: PreloadedAssets + ContentAssets {}
 /// A trait that represents assets that are preloaded within ryot.
 /// It contains preloaded assets and mutable preparation methods for the ContentAssets.
 pub trait PreloadedAssets: Resource + AssetCollection + Send + Sync + 'static {
-    fn appearances(&self) -> &Handle<Appearance>;
-    fn catalog_content(&self) -> &Handle<Catalog>;
+    fn appearances(&self) -> Handle<Appearance>;
+    fn catalog_content(&self) -> Handle<Catalog>;
     fn prepared_appearances_mut(&mut self) -> &mut PreparedAppearances;
     fn sprite_sheets(&mut self) -> &mut HashMap<String, Handle<Image>>;
     fn set_sprite_sheets_data(&mut self, sprite_sheet_set: SpriteSheetDataSet);
-    fn insert_atlas_handle(
-        &mut self,
-        file: &str,
-        handle: (Handle<TextureAtlasLayout>, Handle<Image>),
-    );
+    fn insert_texture(&mut self, file: &str, texture: Handle<Image>);
 }
 
 /// The main ContentAssets of a Ryot game, is prepared by preparer systems
@@ -92,7 +88,8 @@ pub trait PreloadedAssets: Resource + AssetCollection + Send + Sync + 'static {
 pub trait ContentAssets: Resource + Send + Sync + 'static {
     fn prepared_appearances(&self) -> &PreparedAppearances;
     fn sprite_sheet_data_set(&self) -> &Option<SpriteSheetDataSet>;
-    fn get_atlas_handle(&self, file: &str) -> Option<&(Handle<TextureAtlasLayout>, Handle<Image>)>;
+    fn get_texture(&self, file: &str) -> Option<Handle<Image>>;
+    fn get_atlas_layout(&self) -> Handle<TextureAtlasLayout>;
 }
 
 /// A plugin that registers implementations of ContentAssets and loads them.
@@ -171,7 +168,7 @@ fn prepare_content<C: PreloadedContentAssets>(
 ) {
     debug!("Preparing content");
 
-    let Some(catalog) = contents.get(content_assets.catalog_content().id()) else {
+    let Some(catalog) = contents.get(content_assets.catalog_content()) else {
         panic!("No catalog loaded");
     };
 
@@ -182,7 +179,7 @@ fn prepare_content<C: PreloadedContentAssets>(
 
     state.set(InternalContentState::PreparingSprites);
 
-    contents.remove(content_assets.catalog_content().id());
+    contents.remove(content_assets.catalog_content());
 
     debug!("Finished preparing content");
 }
