@@ -33,26 +33,7 @@ fn test_get_tile_size(#[case] layout: SpriteLayout, #[case] expected: UVec2) {
         area: 64,
     };
 
-    assert_eq!(
-        expected,
-        sprite_sheet.get_tile_size(&SpriteSheetConfig::cip_sheet())
-    );
-}
-
-#[rstest]
-fn test_get_columns_count(#[from(sprite_sheet_fixture)] sprite_sheet: SpriteSheetData) {
-    assert_eq!(
-        12,
-        sprite_sheet.get_columns_count(&SpriteSheetConfig::cip_sheet())
-    );
-}
-
-#[rstest]
-fn test_get_rows_count(#[from(sprite_sheet_fixture)] sprite_sheet: SpriteSheetData) {
-    assert_eq!(
-        12,
-        sprite_sheet.get_rows_count(&SpriteSheetConfig::cip_sheet())
-    );
+    assert_eq!(expected, sprite_sheet.get_tile_size(&UVec2::new(32, 32)));
 }
 
 #[fixture]
@@ -159,7 +140,7 @@ fn sprite_sheet_set_fixture() -> SpriteSheetDataSet {
         }),
     ];
 
-    SpriteSheetDataSet::from_content(&vec, &SpriteSheetConfig::cip_sheet())
+    SpriteSheetDataSet::from_content(&vec)
 }
 
 #[rstest]

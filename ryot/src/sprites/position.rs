@@ -9,6 +9,7 @@ use std::{
 };
 
 use crate::layer::{compute_z_transform, Layer};
+use crate::TILE_SIZE;
 use derive_more::{Add, Sub};
 use glam::{IVec3, UVec2, Vec2, Vec3};
 use serde::{Deserialize, Serialize};
@@ -138,17 +139,8 @@ impl SpriteMovement {
     }
 }
 
-#[cfg(not(test))]
-use crate::CONTENT_CONFIG;
-
-#[cfg(not(test))]
 pub fn tile_size() -> UVec2 {
-    CONTENT_CONFIG.sprite_sheet.tile_size
-}
-
-#[cfg(test)]
-pub fn tile_size() -> UVec2 {
-    UVec2::new(32, 32)
+    *TILE_SIZE.get().expect("TILE_SIZE not initialized")
 }
 
 #[derive(Eq, PartialEq, Component, Default, Clone, Copy, Debug)]

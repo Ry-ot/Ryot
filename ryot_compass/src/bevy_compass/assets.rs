@@ -7,8 +7,8 @@ use ryot::prelude::*;
 
 #[derive(AssetCollection, Resource, Default)]
 pub struct CompassContentAssets {
-    #[asset(texture_atlas_layout(tile_size_x = 32., tile_size_y = 32., columns = 12, rows = 12))]
-    atlas_layout_32_32: Handle<TextureAtlasLayout>,
+    #[asset(key = "layout.main")]
+    atlas_layout: Handle<TextureAtlasLayout>,
 
     sheet_data_set: Option<SpriteSheetDataSet>,
 
@@ -61,8 +61,8 @@ impl ContentAssets for CompassContentAssets {
     fn prepared_appearances(&self) -> &PreparedAppearances {
         &self.prepared_appearances
     }
-    fn sprite_sheet_data_set(&self) -> &Option<SpriteSheetDataSet> {
-        &self.sheet_data_set
+    fn sprite_sheet_data_set(&self) -> Option<&SpriteSheetDataSet> {
+        self.sheet_data_set.as_ref()
     }
 
     fn get_texture(&self, file: &str) -> Option<Handle<Image>> {
@@ -70,7 +70,7 @@ impl ContentAssets for CompassContentAssets {
     }
 
     fn get_atlas_layout(&self) -> Handle<TextureAtlasLayout> {
-        self.atlas_layout_32_32.clone_weak()
+        self.atlas_layout.clone_weak()
     }
 }
 

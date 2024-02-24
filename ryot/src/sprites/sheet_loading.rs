@@ -1,4 +1,5 @@
 use crate::{error::*, get_full_file_buffer, CompressionConfig, ContentConfigs, SpriteSheetConfig};
+use glam::UVec2;
 use image::error::{LimitError, LimitErrorKind};
 use image::{imageops, ImageFormat, Rgba, RgbaImage};
 use log::{info, warn};
@@ -11,15 +12,16 @@ use std::path::{Path, PathBuf};
 pub fn load_sprite_sheet_image(
     path: &PathBuf,
     sheet_config: SpriteSheetConfig,
+    sheet_size: &UVec2,
 ) -> Result<RgbaImage> {
     let input_data = get_full_file_buffer(path)?;
 
     let Some(compression_headers) = &sheet_config.compression_config else {
-        return create_image_from_data(input_data, &sheet_config);
+        return create_image_from_data(input_data, &sheet_config, sheet_size);
     };
 
     let decompressed = decompress_lzma_sprite_sheet(input_data, compression_headers)?;
-    create_image_from_data(decompressed, &sheet_config)
+    create_image_from_data(decompressed, &sheet_config, sheet_size)
 }
 
 /// Creates a sprite sheet image from a given CIP decompressed bmp and saves it to the given output path.
@@ -30,12 +32,13 @@ pub fn load_sprite_sheet_image(
 pub fn create_image_from_data(
     data: Vec<u8>,
     sheet_config: &SpriteSheetConfig,
+    sheet_size: &UVec2,
 ) -> Result<RgbaImage> {
     let mut background_img = match &sheet_config.compression_config {
         None => image::load_from_memory_with_format(&data, ImageFormat::Png)?.to_rgba8(),
         Some(compression_config) => RgbaImage::from_raw(
-            sheet_config.sheet_size.x,
-            sheet_config.sheet_size.y,
+            sheet_size.x,
+            sheet_size.y,
             data[compression_config.content_header_size..].to_vec(),
         )
         .ok_or(image::ImageError::Limits(LimitError::from_kind(
@@ -91,7 +94,11 @@ pub fn decompress_lzma_sprite_sheet(
 /// Decompress and save the plain sprite sheets to the given destination path.
 /// This is used to generate a decompressed cache of the sprite sheets, to optimize reading.
 /// Trade off here is that we use way more disk space in pro of faster sprite loading.
-pub fn decompress_sprite_sheets(content_configs: ContentConfigs, files: &Vec<String>) {
+pub fn decompress_sprite_sheets(
+    content_configs: ContentConfigs,
+    sheet_size: &UVec2,
+    files: &Vec<String>,
+) {
     let sprite_sheet_path = content_configs
         .directories
         .destination_path
@@ -105,6 +112,7 @@ pub fn decompress_sprite_sheets(content_configs: ContentConfigs, files: &Vec<Str
             &content_configs.directories.source_path,
             &sprite_sheet_path,
             content_configs.sprite_sheet,
+            sheet_size,
         );
     });
 }
@@ -114,6 +122,7 @@ pub fn decompress_sprite_sheet(
     path: &Path,
     destination_path: &Path,
     sheet_config: SpriteSheetConfig,
+    sheet_size: &UVec2,
 ) {
     let destination_file = &format!(
         "{}/{}",
@@ -126,7 +135,11 @@ pub fn decompress_sprite_sheet(
     }
 
     info!("Decompressing sprite sheet {} {}", path.display(), file);
-    match load_sprite_sheet_image(&format!("{}/{}", path.display(), file).into(), sheet_config) {
+    match load_sprite_sheet_image(
+        &format!("{}/{}", path.display(), file).into(),
+        sheet_config,
+        sheet_size,
+    ) {
         Ok(sheet) => sheet
             .save_with_format(destination_file, ImageFormat::Png)
             .map_err(|e| {

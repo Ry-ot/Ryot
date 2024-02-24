@@ -3,7 +3,6 @@ use serde::Deserialize;
 
 #[derive(Debug, Copy, Clone, Deserialize)]
 pub struct SpriteSheetConfig {
-    pub tile_size: UVec2,
     pub sheet_size: UVec2,
     #[serde(default)]
     pub compression_config: Option<CompressionConfig>,
@@ -14,7 +13,6 @@ pub struct SpriteSheetConfig {
 impl Default for SpriteSheetConfig {
     fn default() -> Self {
         SpriteSheetConfig {
-            tile_size: UVec2::new(32, 32),
             sheet_size: UVec2::new(384, 384),
             compression_config: None,
             encoding_config: None,
@@ -25,7 +23,6 @@ impl Default for SpriteSheetConfig {
 impl SpriteSheetConfig {
     pub fn cip_sheet() -> SpriteSheetConfig {
         SpriteSheetConfig {
-            tile_size: UVec2::new(32, 32),
             sheet_size: UVec2::new(384, 384),
             compression_config: Some(CompressionConfig {
                 compressed_header_size: 32,

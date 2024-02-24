@@ -37,40 +37,27 @@ fn test_deserialize_invalid() {
 #[case(UVec2::new(256, 256))]
 #[case(UVec2::new(512, 512))]
 fn test_layout_dimensions(#[case] tile_size: UVec2) {
-    let sheet_config = SpriteSheetConfig {
-        tile_size,
-        sheet_size: UVec2::new(1024, 1024),
-        compression_config: None,
-        encoding_config: None,
-    };
+    assert_eq!(SpriteLayout::OneByOne.get_width(&tile_size), tile_size.x);
+    assert_eq!(SpriteLayout::OneByOne.get_height(&tile_size), tile_size.y);
 
-    assert_eq!(SpriteLayout::OneByOne.get_width(&sheet_config), tile_size.x);
+    assert_eq!(SpriteLayout::OneByTwo.get_width(&tile_size), tile_size.x);
     assert_eq!(
-        SpriteLayout::OneByOne.get_height(&sheet_config),
-        tile_size.y
-    );
-
-    assert_eq!(SpriteLayout::OneByTwo.get_width(&sheet_config), tile_size.x);
-    assert_eq!(
-        SpriteLayout::OneByTwo.get_height(&sheet_config),
+        SpriteLayout::OneByTwo.get_height(&tile_size),
         2 * tile_size.y
     );
 
     assert_eq!(
-        SpriteLayout::TwoByOne.get_width(&sheet_config),
+        SpriteLayout::TwoByOne.get_width(&tile_size),
         2 * tile_size.x
     );
-    assert_eq!(
-        SpriteLayout::TwoByOne.get_height(&sheet_config),
-        tile_size.y
-    );
+    assert_eq!(SpriteLayout::TwoByOne.get_height(&tile_size), tile_size.y);
 
     assert_eq!(
-        SpriteLayout::TwoByTwo.get_width(&sheet_config),
+        SpriteLayout::TwoByTwo.get_width(&tile_size),
         2 * tile_size.x
     );
     assert_eq!(
-        SpriteLayout::TwoByTwo.get_height(&sheet_config),
+        SpriteLayout::TwoByTwo.get_height(&tile_size),
         2 * tile_size.y
     );
 }

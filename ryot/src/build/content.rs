@@ -1,3 +1,5 @@
+use glam::UVec2;
+
 use crate::prelude::*;
 use std::path::{Path, PathBuf};
 use std::{fs, result};
@@ -37,21 +39,24 @@ impl ContentBuild {
         }
     }
 
-    pub fn run(self) -> result::Result<(), std::io::Error> {
+    pub fn run(self) -> color_eyre::Result<()> {
         println!("cargo:warning=Running content build {:?}", self);
 
-        let path = self
+        let content_config_path = self
             .path
             .clone()
             .unwrap_or_else(|| assets_root_path().join(CONTENT_CONFIG_PATH));
 
-        let content_config = read_content_configs(path.clone());
+        let content_config = read_content_configs(content_config_path.clone());
 
         let ContentConfigs { directories, .. } = content_config.clone();
 
         if self.rebuild_on_change {
             // Tell Cargo to rerun this build script if the config file changes
-            println!("cargo:rerun-if-changed={}", path.to_str().unwrap());
+            println!(
+                "cargo:rerun-if-changed={}",
+                content_config_path.to_str().unwrap()
+            );
 
             // Tell Cargo to rerun this build script if our content folder changes
             println!(
@@ -82,7 +87,8 @@ impl ContentBuild {
         }
 
         copy_appearances(&directories.source_path, &directories.destination_path)?;
-        decompress_sprites(content_config)?;
+        let sheet_size = content_config.sprite_sheet.sheet_size;
+        decompress_sprites(content_config, &sheet_size)?;
 
         Ok(())
     }
@@ -128,7 +134,10 @@ fn copy_appearances(
     Ok(())
 }
 
-fn decompress_sprites(content_configs: ContentConfigs) -> result::Result<(), std::io::Error> {
+fn decompress_sprites(
+    content_configs: ContentConfigs,
+    sheet_size: &UVec2,
+) -> result::Result<(), std::io::Error> {
     let ContentConfigs { directories, .. } = content_configs.clone();
 
     let files = fs::read_dir(directories.source_path)?
@@ -151,7 +160,7 @@ fn decompress_sprites(content_configs: ContentConfigs) -> result::Result<(), std
         })
         .collect::<Vec<String>>();
 
-    decompress_sprite_sheets(content_configs, &files);
+    decompress_sprite_sheets(content_configs, sheet_size, &files);
 
     Ok(())
 }

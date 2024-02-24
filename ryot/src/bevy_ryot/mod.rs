@@ -5,7 +5,7 @@
 //! configuring the game, and handling asynchronous events.
 use crate::appearances::{ContentType, SpriteSheetDataSet};
 use crate::position::{update_sprite_position, TilePosition};
-use crate::{Layer, CONTENT_CONFIG};
+use crate::{Layer, TILE_SIZE};
 use bevy::app::{App, Plugin, Update};
 use bevy::asset::{Asset, Assets, Handle};
 use bevy::ecs::schedule::SystemConfigs;
@@ -87,7 +87,7 @@ pub trait PreloadedAssets: Resource + AssetCollection + Send + Sync + 'static {
 /// during the loading process and is used by the game to access the content.
 pub trait ContentAssets: Resource + Send + Sync + 'static {
     fn prepared_appearances(&self) -> &PreparedAppearances;
-    fn sprite_sheet_data_set(&self) -> &Option<SpriteSheetDataSet>;
+    fn sprite_sheet_data_set(&self) -> Option<&SpriteSheetDataSet>;
     fn get_texture(&self, file: &str) -> Option<Handle<Image>>;
     fn get_atlas_layout(&self) -> Handle<TextureAtlasLayout>;
 }
@@ -121,6 +121,9 @@ impl<C: PreloadedContentAssets + Default> Plugin for ContentPlugin<C> {
             .add_plugins(AppearanceAssetPlugin)
             .add_loading_state(
                 LoadingState::new(InternalContentState::LoadingContent)
+                    .with_dynamic_assets_file::<StandardDynamicAssetCollection>(
+                        "dynamic.assets.ron",
+                    )
                     .continue_to_state(InternalContentState::PreparingContent)
                     .load_collection::<C>(),
             )
@@ -165,20 +168,22 @@ fn prepare_content<C: PreloadedContentAssets>(
     mut contents: ResMut<Assets<Catalog>>,
     mut content_assets: ResMut<C>,
     mut state: ResMut<NextState<InternalContentState>>,
+    atlas_layouts: Res<Assets<TextureAtlasLayout>>,
 ) {
     debug!("Preparing content");
+    let atlas_layout = atlas_layouts
+        .get(content_assets.get_atlas_layout())
+        .expect("No atlas layout");
+    TILE_SIZE
+        .set(atlas_layout.textures[0].size().as_uvec2())
+        .expect("Failed to initialize tile size");
 
     let catalog = contents
         .get(content_assets.catalog_content())
         .expect("No catalog loaded");
 
-    content_assets.set_sprite_sheets_data(SpriteSheetDataSet::from_content(
-        &catalog.content,
-        &CONTENT_CONFIG.sprite_sheet,
-    ));
-
+    content_assets.set_sprite_sheets_data(SpriteSheetDataSet::from_content(&catalog.content));
     state.set(InternalContentState::PreparingSprites);
-
     contents.remove(content_assets.catalog_content());
 
     debug!("Finished preparing content");
@@ -265,10 +270,19 @@ impl OptionalPlugin for App {
 ///
 /// App::new().add_systems(Startup, spawn_grid(Color::WHITE));
 /// ```
-pub fn spawn_grid(
+
+pub fn spawn_grid<C: ContentAssets>(
     color: Color,
-) -> impl FnMut(Commands, ResMut<Assets<Mesh>>, ResMut<Assets<ColorMaterial>>) {
+) -> impl FnMut(
+    Commands,
+    Res<Assets<TextureAtlasLayout>>,
+    Res<C>,
+    ResMut<Assets<Mesh>>,
+    ResMut<Assets<ColorMaterial>>,
+) {
     move |mut commands: Commands,
+          atlas_layouts: Res<Assets<TextureAtlasLayout>>,
+          content_assets: Res<C>,
           mut meshes: ResMut<Assets<Mesh>>,
           mut materials: ResMut<Assets<ColorMaterial>>| {
         let mut positions = Vec::new();
@@ -278,7 +292,10 @@ pub fn spawn_grid(
 
         let (bottom_left_tile, top_right_tile) = (TilePosition::MIN, TilePosition::MAX);
         let (bottom_left, top_right) = (Vec2::from(bottom_left_tile), Vec2::from(top_right_tile));
-        let tile_size = CONTENT_CONFIG.sprite_sheet.tile_size.as_vec2();
+        let atlas_layout = atlas_layouts
+            .get(content_assets.get_atlas_layout())
+            .expect("No atlas layout found");
+        let tile_size = atlas_layout.textures[0].size();
 
         for col in bottom_left_tile.x - 1..=top_right_tile.x {
             let x_offset = (col * tile_size.x as i32) as f32;
