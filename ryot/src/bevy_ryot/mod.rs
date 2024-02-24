@@ -5,12 +5,15 @@
 //! configuring the game, and handling asynchronous events.
 use crate::appearances::{ContentType, SpriteSheetDataSet};
 use crate::position::{update_sprite_position, TilePosition};
+use crate::prelude::sprites::LoadSpriteBatch;
 use crate::{Layer, TILE_SIZE};
 use bevy::app::{App, Plugin, Update};
 use bevy::asset::{Asset, Assets, Handle};
 use bevy::ecs::schedule::SystemConfigs;
 use bevy::prelude::*;
+use bevy::render::mesh::Indices;
 use bevy::render::render_asset::RenderAssetUsages;
+use bevy::render::render_resource::PrimitiveTopology;
 use bevy::sprite::{Anchor, MaterialMesh2dBundle};
 use bevy::utils::HashMap;
 use bevy_asset_loader::asset_collection::AssetCollection;
@@ -19,17 +22,17 @@ use bevy_asset_loader::prelude::*;
 use bevy_common_assets::json::JsonAssetPlugin;
 use leafwing_input_manager::common_conditions::*;
 use leafwing_input_manager::prelude::*;
+use std::marker::PhantomData;
 
 mod appearances;
 
 pub use appearances::*;
-use bevy::render::mesh::Indices;
-use bevy::render::render_resource::PrimitiveTopology;
-use std::marker::PhantomData;
 
 mod async_events;
-use crate::prelude::sprites::LoadSpriteBatch;
 pub use async_events::*;
+
+mod conditions;
+pub use conditions::*;
 
 #[cfg(feature = "lmdb")]
 pub mod lmdb;
@@ -38,8 +41,9 @@ pub mod map;
 
 pub mod drawing;
 
-pub(crate) mod sprite_animations;
 pub mod sprites;
+
+pub(crate) mod sprite_animations;
 pub use sprite_animations::{toggle_sprite_animation, AnimationDuration};
 
 pub static RYOT_ANCHOR: Anchor = Anchor::BottomRight;
