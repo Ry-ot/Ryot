@@ -223,13 +223,7 @@ pub(crate) fn prepare_sprites<C: PreloadedContentAssets>(
     mut content_assets: ResMut<C>,
     mut state: ResMut<NextState<InternalContentState>>,
 ) {
-    debug!("Preparing sprites");
-
     if !content_assets.sprite_sheets().is_empty() {
-        let Some(sheets) = content_assets.sprite_sheet_data_set().clone() else {
-            panic!("Sprite sheets configs were not setup.");
-        };
-
         for (file, texture) in content_assets.sprite_sheets().clone() {
             let file = match file.strip_prefix("sprite-sheets/") {
                 Some(file) => file,
@@ -241,20 +235,10 @@ pub(crate) fn prepare_sprites<C: PreloadedContentAssets>(
                 continue;
             }
 
-            let Some(sprite_sheet) = sheets.get_for_file(file) else {
-                warn!("Skipping file {}: it's not in sprite sheets", file);
-                continue;
-            };
-
-            content_assets.insert_texture(&sprite_sheet.file, texture.clone());
+            content_assets.insert_texture(file, texture.clone());
         }
-
-        content_assets.sprite_sheets().clear();
     }
-
     state.set(InternalContentState::Ready);
-
-    debug!("Finished preparing sprites");
 }
 
 fn load_desired_appereance_sprite<C: ContentAssets>(

@@ -7,7 +7,7 @@
 //! See appearances.proto and the auto generated appearances.rs file for more information.
 include!(concat!(env!("OUT_DIR"), "/appearances.rs"));
 
-use crate::{get_decompressed_file_name, SpriteLayout, SpriteSheetConfig};
+use crate::{SpriteLayout, SpriteSheetConfig};
 use glam::UVec2;
 use serde::{Deserialize, Serialize};
 
@@ -131,14 +131,6 @@ pub struct SpriteSheetDataSet {
 }
 
 impl SpriteSheetDataSet {
-    pub fn iter(&self) -> impl Iterator<Item = &SpriteSheetData> {
-        self.data.iter()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.data.is_empty()
-    }
-
     /// Creates a new SpriteSheetSet from a list of ContentType and a SpriteSheetConfig.
     /// The ContentType list is filtered to only contain the Sprite ContentType.
     /// The SpriteSheetConfig is a reference to a game specific config that contains the
@@ -178,17 +170,6 @@ impl SpriteSheetDataSet {
     pub fn get_sprite_index_by_id(&self, sprite_id: u32) -> Option<usize> {
         self.get_by_sprite_id(sprite_id)?
             .get_sprite_index(sprite_id)
-    }
-
-    /// Returns a sprite sheet by its file name.
-    /// Returns None if the sprite sheet is not in the sprite sheet set.
-    /// The file parameter is always a decompressed file name (*.png).
-    /// We use get_decompressed_file_name against it to make sure we cover cases
-    /// where the file name stored is compressed (*.png.lzma).
-    pub fn get_for_file(&self, file: &str) -> Option<&SpriteSheetData> {
-        self.data
-            .iter()
-            .find(|sprite_sheet| get_decompressed_file_name(&sprite_sheet.file) == *file)
     }
 }
 
