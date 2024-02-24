@@ -2,10 +2,10 @@ use std::marker::PhantomData;
 
 use crate::{
     draw_palette_bottom_panel, draw_palette_items, draw_palette_picker, helpers::read_file, Cursor,
-    OptionalPlugin, Palette, PaletteState,
+    MapExport, OptionalPlugin, Palette, PaletteState,
 };
 
-use bevy::{app::AppExit, prelude::*, render::camera::Viewport, winit::WinitWindows};
+use bevy::{app::AppExit, prelude::*, render::camera::Viewport};
 use bevy_egui::{EguiContext, EguiContexts, EguiPlugin, EguiUserTextures};
 use egui::{load::SizedTexture, TextureId};
 use egui_dock::{DockArea, DockState, NodeIndex, Style};
@@ -54,7 +54,7 @@ fn ui_menu_system<C: ContentAssets>(
     mut contexts: Query<&mut EguiContext>,
     mut about_me: ResMut<AboutMeOpened>,
     mut exit: EventWriter<AppExit>,
-    mut _windows: NonSend<WinitWindows>,
+    mut map_export_sender: EventWriter<MapExport>,
 ) {
     let Ok(mut cursor) = cursor_query.get_single_mut() else {
         return;
@@ -74,20 +74,6 @@ fn ui_menu_system<C: ContentAssets>(
                 ui.set_style(style);
 
                 let is_content_loaded = content_assets.sprite_sheet_data_set().is_some();
-
-                // Load the image using `image-rs`
-                // let image_data = include_bytes!("path/to/your/image.png").to_vec();
-                // let image = image::RgbaImage::from_raw(1024, 1024, image_data);
-                //
-                // // Create an `egui::TextureHandle`
-                // let texture_handle = egui::TextureHandle::from_rgba_unmultiplied(
-                //     ctx,
-                //     egui::ColorImage::from_rgba_unmultiplied(size, &image_data)
-                // );
-
-                // let img = egui::include_image!("../assets/icons/compass_2.png");
-                //
-                // ui.image(img);
 
                 egui::menu::menu_button(ui, "File", |ui| {
                     // #[cfg(not(target_arch = "wasm32"))]
@@ -117,11 +103,13 @@ fn ui_menu_system<C: ContentAssets>(
                         .add_enabled(is_content_loaded, egui::Button::new("💾 Save"))
                         .clicked()
                     {
-                        let path = rfd::FileDialog::new()
-                            .add_filter(".mdb, .otbm", &["mdb", "otbm"])
-                            .save_file();
-
-                        debug!("Saving map to file: {:?}", path);
+                        if let Some(path) = rfd::FileDialog::new()
+                            .add_filter(".mdb", &["mdb"])
+                            .save_file()
+                        {
+                            debug!("Saving map to file: {:?}", path);
+                            map_export_sender.send(MapExport(path));
+                        }
                     }
 
                     ui.separator();

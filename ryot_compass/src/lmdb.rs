@@ -1,15 +1,23 @@
-use bevy::prelude::{Camera, Changed, Commands, Local, Query, Res, ResMut, With};
+use crate::MapExport;
+use bevy::prelude::{Camera, Changed, Commands, EventReader, Local, Query, Res, ResMut, With};
 use heed::types::Bytes;
 use heed::Env;
-use log::error;
+use log::{debug, error, warn};
+use ryot::bevy_ryot::lmdb::LmdbCompactor;
 use ryot::bevy_ryot::map::MapTiles;
-use ryot::lmdb::{build_map, DatabaseName, Item, ItemRepository, ItemsFromHeedLmdb, SerdePostcard};
+use ryot::helpers::execute_async;
+use ryot::lmdb::{
+    build_map, get_storage_path, DatabaseName, Item, ItemRepository, ItemsFromHeedLmdb,
+    SerdePostcard, MDB_FILE_NAME,
+};
 use ryot::position::{Sector, TilePosition};
 use ryot::prelude::drawing::{DrawingBundle, LoadTileContent};
 use ryot::prelude::lmdb::LmdbEnv;
 use ryot::prelude::{compress, decompress, AppearanceDescriptor, Zstd};
 use ryot::{lmdb, Layer};
 use std::collections::HashMap;
+use std::fs;
+use std::sync::atomic::Ordering;
 use time_test::time_test;
 
 pub fn init_tiles_db(lmdb_env: Res<LmdbEnv>) -> color_eyre::Result<()> {
@@ -40,6 +48,34 @@ pub fn read_area(
     }
 
     *last_area = sector;
+}
+
+pub fn export_map(
+    env: Res<LmdbEnv>,
+    lmdb_compactor: ResMut<LmdbCompactor>,
+    mut map_export_events: EventReader<MapExport>,
+) -> color_eyre::Result<()> {
+    for MapExport(destination) in map_export_events.read() {
+        if !lmdb_compactor.is_running.load(Ordering::SeqCst) {
+            lmdb::compact(env.clone())?;
+        }
+
+        let mut destination = destination.clone();
+
+        // if destination is not ended in .mdb, append it
+        match destination.extension() {
+            Some(ext) if ext != "mdb" => destination.set_extension("mdb"),
+            None => destination.set_extension("mdb"),
+            _ => true,
+        };
+
+        match fs::copy(get_storage_path().join(MDB_FILE_NAME), destination) {
+            Ok(bytes_copied) => debug!("Map exported: {} bytes", bytes_copied),
+            Err(e) => warn!("Failed to export map: {}", e),
+        }
+    }
+
+    Ok(())
 }
 
 pub fn load_area(sector: Sector, env: Env, commands: &mut Commands, tiles: &Res<MapTiles>) {
@@ -97,26 +133,30 @@ pub fn lmdb_example() -> Result<(), Box<dyn std::error::Error>> {
         println!("Count: {}", area.len());
     }
 
-    // env.prepare_for_closing().wait();
-    // lmdb::compact()?;
+    execute_async(async {
+        // env.prepare_for_closing().wait();
+        // lmdb::compact().unwrap();
 
-    {
-        time_test!("Compressing");
-        compress::<Zstd>(
-            lmdb::get_storage_path().join("data.mdb").to_str().unwrap(),
-            Some(3),
-        )?;
-    }
+        {
+            time_test!("Compressing");
+            compress::<Zstd>(
+                lmdb::get_storage_path().join("data.mdb").to_str().unwrap(),
+                Some(3),
+            )
+            .unwrap();
+        }
 
-    {
-        time_test!("Decompressing");
-        decompress::<Zstd>(
-            lmdb::get_storage_path()
-                .join("data.mdb.snp")
-                .to_str()
-                .unwrap(),
-        )?;
-    }
+        {
+            time_test!("Decompressing");
+            decompress::<Zstd>(
+                lmdb::get_storage_path()
+                    .join("data.mdb.snp")
+                    .to_str()
+                    .unwrap(),
+            )
+            .unwrap();
+        }
+    });
 
     Ok(())
 }
