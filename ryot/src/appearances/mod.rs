@@ -7,6 +7,8 @@
 //! See appearances.proto and the auto generated appearances.rs file for more information.
 include!(concat!(env!("OUT_DIR"), "/appearances.rs"));
 
+use std::ops::Deref;
+
 use crate::SpriteLayout;
 use glam::UVec2;
 use serde::{Deserialize, Serialize};
@@ -111,8 +113,14 @@ impl SpriteSheetData {
 /// The sprite sheet config is used to calculate the position and size of a sprite in the sprite
 /// sheet.
 #[derive(Debug, Default, Clone)]
-pub struct SpriteSheetDataSet {
-    pub data: Vec<SpriteSheetData>,
+pub struct SpriteSheetDataSet(Vec<SpriteSheetData>);
+
+impl Deref for SpriteSheetDataSet {
+    type Target = Vec<SpriteSheetData>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 impl SpriteSheetDataSet {
@@ -128,30 +136,13 @@ impl SpriteSheetDataSet {
             .cloned()
             .collect::<Vec<_>>();
 
-        Self {
-            data: sprite_sheets,
-        }
-    }
-
-    /// Checks if any of the sprite sheets contains the given sprite id.
-    /// Returns true if the sprite id is in any of the sprite sheets.
-    /// Returns false if the sprite id is not in any of the sprite sheets.
-    pub fn has_sprite(&self, sprite_id: u32) -> bool {
-        self.data.iter().any(|sheet| sheet.has_sprite(sprite_id))
+        Self(sprite_sheets)
     }
 
     /// Returns the sprite sheet that contains the given sprite id.
     /// Returns None if the sprite id is not in any of the sprite sheets.
     pub fn get_by_sprite_id(&self, sprite_id: u32) -> Option<&SpriteSheetData> {
-        self.data.iter().find(|sheet| sheet.has_sprite(sprite_id))
-    }
-
-    /// Returns the index of a given sprite id in one of the sprite sheets.
-    /// The index is the position of the sprite in the sprite sheet, starting from 0.
-    /// Returns None if the sprite id is not in any of the sprite sheets.
-    pub fn get_sprite_index_by_id(&self, sprite_id: u32) -> Option<usize> {
-        self.get_by_sprite_id(sprite_id)?
-            .get_sprite_index(sprite_id)
+        self.iter().find(|sheet| sheet.has_sprite(sprite_id))
     }
 }
 

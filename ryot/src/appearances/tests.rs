@@ -49,23 +49,11 @@ fn sprite_sheet_fixture() -> SpriteSheetData {
 
 #[rstest]
 fn test_from_content(#[from(sprite_sheet_set_fixture)] sprite_sheet_set: SpriteSheetDataSet) {
-    assert_eq!(2, sprite_sheet_set.data.len());
-    assert_eq!(100, sprite_sheet_set.data[0].first_sprite_id);
-    assert_eq!(200, sprite_sheet_set.data[0].last_sprite_id);
-    assert_eq!(300, sprite_sheet_set.data[1].first_sprite_id);
-    assert_eq!(400, sprite_sheet_set.data[1].last_sprite_id);
-}
-
-#[rstest]
-fn test_set_has_sprite(#[from(sprite_sheet_set_fixture)] sprite_sheet_set: SpriteSheetDataSet) {
-    assert!(sprite_sheet_set.has_sprite(100));
-    assert!(sprite_sheet_set.has_sprite(200));
-    assert!(sprite_sheet_set.has_sprite(300));
-    assert!(sprite_sheet_set.has_sprite(400));
-    assert!(!sprite_sheet_set.has_sprite(99));
-    assert!(!sprite_sheet_set.has_sprite(201));
-    assert!(!sprite_sheet_set.has_sprite(299));
-    assert!(!sprite_sheet_set.has_sprite(401));
+    assert_eq!(2, sprite_sheet_set.len());
+    assert_eq!(100, sprite_sheet_set[0].first_sprite_id);
+    assert_eq!(200, sprite_sheet_set[0].last_sprite_id);
+    assert_eq!(300, sprite_sheet_set[1].first_sprite_id);
+    assert_eq!(400, sprite_sheet_set[1].last_sprite_id);
 }
 
 #[rstest]
@@ -104,21 +92,6 @@ fn test_set_get_by_sprite_id(
     assert_eq!(None, sprite_sheet_set.get_by_sprite_id(201));
     assert_eq!(None, sprite_sheet_set.get_by_sprite_id(299));
     assert_eq!(None, sprite_sheet_set.get_by_sprite_id(401));
-}
-
-#[rstest]
-fn test_set_get_sprite_index_by_id(
-    #[from(sprite_sheet_set_fixture)] sprite_sheet_set: SpriteSheetDataSet,
-) {
-    assert_eq!(0, sprite_sheet_set.get_sprite_index_by_id(100).unwrap());
-    assert_eq!(100, sprite_sheet_set.get_sprite_index_by_id(200).unwrap());
-    assert_eq!(0, sprite_sheet_set.get_sprite_index_by_id(300).unwrap());
-    assert_eq!(100, sprite_sheet_set.get_sprite_index_by_id(400).unwrap());
-    assert_eq!(None, sprite_sheet_set.get_sprite_index_by_id(0));
-    assert_eq!(None, sprite_sheet_set.get_sprite_index_by_id(99));
-    assert_eq!(None, sprite_sheet_set.get_sprite_index_by_id(201));
-    assert_eq!(None, sprite_sheet_set.get_sprite_index_by_id(299));
-    assert_eq!(None, sprite_sheet_set.get_sprite_index_by_id(401));
 }
 
 #[fixture]
