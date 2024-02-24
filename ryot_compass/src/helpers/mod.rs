@@ -1,15 +1,6 @@
+use leafwing_input_manager::user_input::Modifier;
 use rfd::AsyncFileDialog;
-use std::future::Future;
-
-#[cfg(not(target_arch = "wasm32"))]
-pub fn execute<F: Future<Output = ()> + Send + 'static>(f: F) {
-    async_std::task::spawn(f);
-}
-
-#[cfg(target_arch = "wasm32")]
-pub fn execute<F: Future<Output = ()> + 'static>(f: F) {
-    wasm_bindgen_futures::spawn_local(f);
-}
+use ryot::helpers::execute_async;
 
 pub fn read_file(
     async_rfd: AsyncFileDialog,
@@ -17,7 +8,7 @@ pub fn read_file(
 ) {
     let task = async_rfd.pick_file();
 
-    execute(async {
+    execute_async(async {
         let file = task.await;
 
         if let Some(file) = file {
@@ -25,8 +16,6 @@ pub fn read_file(
         }
     });
 }
-
-use leafwing_input_manager::user_input::Modifier;
 
 #[cfg(target_os = "macos")]
 pub static CONTROL_COMMAND: Modifier = Modifier::Super;

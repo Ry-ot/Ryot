@@ -56,6 +56,8 @@ pub use sprites::*;
 pub mod directional;
 pub use directional::*;
 
+pub mod helpers;
+
 pub mod prelude {
     #[cfg(feature = "bevy")]
     pub use crate::bevy_ryot::*;
