@@ -1,5 +1,7 @@
-mod assets;
+use bevy::prelude::{Deref, DerefMut, Event};
+use std::path::PathBuf;
 
+mod assets;
 pub use assets::*;
 
 mod camera;
@@ -16,3 +18,6 @@ pub use drawing::*;
 
 mod hud;
 pub use hud::*;
+
+#[derive(Event, Debug, Clone, Default, Deref, DerefMut)]
+pub struct MapExport(pub PathBuf);

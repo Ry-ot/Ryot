@@ -1,29 +1,26 @@
-use std::io::Cursor;
-
 use bevy::prelude::*;
 use bevy::winit::WinitWindows;
-
 use bevy_egui::EguiContexts;
-
-mod error_handling;
 use ryot::prelude::*;
-
-#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
-use ryot::prelude::lmdb::LmdbEnv;
-#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
-use ryot_compass::{init_tiles_db, read_area};
-
 use ryot_compass::{
-    AppPlugin, CameraPlugin, CompassContentAssets, DrawingPlugin, PalettePlugin, UiPlugin,
+    AppPlugin, CameraPlugin, CompassContentAssets, DrawingPlugin, ErrorPlugin, MapExport,
+    PalettePlugin, UiPlugin,
 };
+use std::io::Cursor;
 use winit::window::Icon;
 
-use crate::error_handling::ErrorPlugin;
 use bevy::diagnostic::{
     EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin,
     SystemInformationDiagnosticsPlugin,
 };
 use bevy::window::PrimaryWindow;
+
+#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
+use ryot::prelude::lmdb::LmdbEnv;
+#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
+use ryot::prelude::lmdb::{compact_map, LmdbCompactor};
+#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
+use ryot_compass::{export_map, init_tiles_db, read_area};
 
 fn set_window_icon(
     windows: NonSend<WinitWindows>,
@@ -91,12 +88,20 @@ fn main() {
     .add_systems(Startup, set_window_icon)
     .add_systems(Startup, setup_window);
 
+    app.add_event::<MapExport>();
+
     #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
     app.init_resource::<LmdbEnv>()
+        .init_resource::<LmdbCompactor>()
         .add_systems(Startup, init_tiles_db.map(drop))
         .add_systems(
             Update,
-            read_area.run_if(in_state(InternalContentState::Ready)),
+            (
+                export_map.map(drop).run_if(on_event::<MapExport>()),
+                compact_map,
+                read_area,
+            )
+                .run_if(in_state(InternalContentState::Ready)),
         );
 
     app.run();
