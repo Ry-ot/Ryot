@@ -2,7 +2,6 @@
 source_path = "assets/cip-catalog"
 
 [sprite_sheet]
-tile_size = [32, 32]
 sheet_size = [384, 384]
 compression_config = { compressed_header_size = 32, content_header_size = 122 }
 encoding_config = { vertically_flipped = true, reversed_r_b_channels = true }

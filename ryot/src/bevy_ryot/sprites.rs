@@ -3,7 +3,7 @@ use crate::appearances::{SpriteSheetData, SpriteSheetDataSet};
 use crate::bevy_ryot::InternalContentState;
 use crate::layer::Layer;
 use crate::position::TilePosition;
-use crate::{get_decompressed_file_name, SpriteSheetConfig, SPRITE_SHEET_FOLDER};
+use crate::{get_decompressed_file_name, SPRITE_SHEET_FOLDER};
 use crate::{prelude::*, Directional};
 use bevy::prelude::*;
 use bevy::utils::hashbrown::HashSet;
@@ -38,7 +38,6 @@ pub struct LoadedSprites(pub Vec<LoadedSprite>);
 pub struct LoadedSprite {
     pub sprite_id: u32,
     pub group: AppearanceGroup,
-    pub config: SpriteSheetConfig,
     pub sprite_sheet: SpriteSheetData,
     pub texture: Handle<Image>,
 }
@@ -51,12 +50,10 @@ impl LoadedSprite {
         textures: &HashMap<String, Handle<Image>>,
     ) -> Option<Self> {
         let sprite_sheet = sprite_sheets.get_by_sprite_id(sprite_id)?;
-
         let texture = textures.get(&sprite_sheet.file)?;
         Some(Self {
             group,
             sprite_id,
-            config: sprite_sheets.config,
             sprite_sheet: sprite_sheet.clone(),
             texture: texture.clone(),
         })
@@ -66,10 +63,6 @@ impl LoadedSprite {
         self.sprite_sheet
             .get_sprite_index(self.sprite_id)
             .expect("Sprite must exist in sheet")
-    }
-
-    pub fn get_sprite_size(&self) -> Vec2 {
-        self.sprite_sheet.layout.get_size(&self.config).as_vec2()
     }
 }
 
@@ -101,7 +94,6 @@ pub fn load_sprites<C: ContentAssets>(
                 loaded.push(LoadedSprite {
                     group,
                     sprite_id: *sprite_id,
-                    config: sprite_sheets.config,
                     sprite_sheet: sprite_sheet.clone(),
                     texture: texture.clone(),
                 });

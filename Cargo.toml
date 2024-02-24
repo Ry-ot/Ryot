@@ -11,7 +11,10 @@ opt-level = 1
 opt-level = 3
 
 [workspace.dependencies]
-bevy_asset_loader = { version = "0.20", features = ["2d"] }
+bevy_asset_loader = { version = "0.20", features = [
+    "2d",
+    "standard_dynamic_assets",
+] }
 bevy_common_assets = { version = "0.10", features = ["toml", "json"] }
 bevy_egui = { version = "0.25", features = ["immutable_ctx"] }
 bytes = "1.5"

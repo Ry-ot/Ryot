@@ -7,7 +7,7 @@
 //! See appearances.proto and the auto generated appearances.rs file for more information.
 include!(concat!(env!("OUT_DIR"), "/appearances.rs"));
 
-use crate::{SpriteLayout, SpriteSheetConfig};
+use crate::SpriteLayout;
 use glam::UVec2;
 use serde::{Deserialize, Serialize};
 
@@ -99,24 +99,10 @@ impl SpriteSheetData {
 
     /// Returns the size of a sprite in the sprite sheet.
     /// The size is calculated based on the sprite layout and the sprite sheet config.
-    pub fn get_tile_size(&self, sheet_config: &SpriteSheetConfig) -> UVec2 {
-        let width = self.layout.get_width(sheet_config);
-        let height = self.layout.get_height(sheet_config);
+    pub fn get_tile_size(&self, tile_size: &UVec2) -> UVec2 {
+        let width = self.layout.get_width(tile_size);
+        let height = self.layout.get_height(tile_size);
         UVec2::new(width, height)
-    }
-
-    /// Returns the position of a sprite in the sprite sheet.
-    /// The position is calculated based on the tile size and the sprite sheet config.
-    pub fn get_columns_count(&self, sheet_config: &SpriteSheetConfig) -> usize {
-        let tile_size = self.get_tile_size(sheet_config);
-        (sheet_config.sheet_size.x / tile_size.x) as usize
-    }
-
-    /// Returns the position of a sprite in the sprite sheet.
-    /// The position is calculated based on the tile size and the sprite sheet config.
-    pub fn get_rows_count(&self, sheet_config: &SpriteSheetConfig) -> usize {
-        let tile_size = self.get_tile_size(sheet_config);
-        (sheet_config.sheet_size.y / tile_size.y) as usize
     }
 }
 
@@ -127,15 +113,12 @@ impl SpriteSheetData {
 #[derive(Debug, Default, Clone)]
 pub struct SpriteSheetDataSet {
     pub data: Vec<SpriteSheetData>,
-    pub config: SpriteSheetConfig,
 }
 
 impl SpriteSheetDataSet {
-    /// Creates a new SpriteSheetSet from a list of ContentType and a SpriteSheetConfig.
+    /// Creates a new SpriteSheetSet from a list of ContentType.
     /// The ContentType list is filtered to only contain the Sprite ContentType.
-    /// The SpriteSheetConfig is a reference to a game specific config that contains the
-    /// information needed to calculate the position and size of a sprite in the sprite sheet.
-    pub fn from_content(content: &[ContentType], sheet_config: &SpriteSheetConfig) -> Self {
+    pub fn from_content(content: &[ContentType]) -> Self {
         let sprite_sheets = content
             .iter()
             .filter_map(|content_type| match content_type {
@@ -147,7 +130,6 @@ impl SpriteSheetDataSet {
 
         Self {
             data: sprite_sheets,
-            config: *sheet_config,
         }
     }
 

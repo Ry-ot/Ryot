@@ -25,22 +25,22 @@ pub enum SpriteLayout {
 }
 
 impl SpriteLayout {
-    pub fn get_width(&self, sheet_config: &SpriteSheetConfig) -> u32 {
+    pub fn get_width(&self, tile_size: &UVec2) -> u32 {
         match self {
-            SpriteLayout::OneByOne | SpriteLayout::OneByTwo => sheet_config.tile_size.x,
-            SpriteLayout::TwoByOne | SpriteLayout::TwoByTwo => sheet_config.tile_size.x * 2,
+            SpriteLayout::OneByOne | SpriteLayout::OneByTwo => tile_size.x,
+            SpriteLayout::TwoByOne | SpriteLayout::TwoByTwo => tile_size.x * 2,
         }
     }
 
-    pub fn get_height(&self, sheet_config: &SpriteSheetConfig) -> u32 {
+    pub fn get_height(&self, tile_size: &UVec2) -> u32 {
         match self {
-            SpriteLayout::OneByOne | SpriteLayout::TwoByOne => sheet_config.tile_size.y,
-            SpriteLayout::OneByTwo | SpriteLayout::TwoByTwo => sheet_config.tile_size.y * 2,
+            SpriteLayout::OneByOne | SpriteLayout::TwoByOne => tile_size.y,
+            SpriteLayout::OneByTwo | SpriteLayout::TwoByTwo => tile_size.y * 2,
         }
     }
 
-    pub fn get_size(&self, sheet_config: &SpriteSheetConfig) -> UVec2 {
-        UVec2::new(self.get_width(sheet_config), self.get_height(sheet_config))
+    pub fn get_size(&self, tile_size: &UVec2) -> UVec2 {
+        UVec2::new(self.get_width(tile_size), self.get_height(tile_size))
     }
 }
 

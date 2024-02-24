@@ -1,24 +1,18 @@
-use std::sync::LazyLock;
+use std::sync::OnceLock;
 
 use crate::{error, SpriteSheetConfig};
 use config::Config;
+use glam::UVec2;
 use serde::Deserialize;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 use std::{fs, result};
 
 pub static CONTENT_CONFIG_PATH: &str = "config/.content.toml";
+pub static DYNAMIC_ASSETS_PATH: &str = "dyanmic.assets.ron";
 pub static SPRITE_SHEET_FOLDER: &str = "sprite-sheets";
 
-#[cfg(not(target_arch = "wasm32"))]
-pub static CONTENT_CONFIG: LazyLock<ContentConfigs> = LazyLock::new(|| {
-    let path = assets_root_path().join(CONTENT_CONFIG_PATH);
-
-    read_content_configs(path)
-});
-
-#[cfg(target_arch = "wasm32")]
-pub static CONTENT_CONFIG: LazyLock<ContentConfigs> = LazyLock::new(|| ContentConfigs::default());
+pub static TILE_SIZE: OnceLock<UVec2> = OnceLock::new();
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct ContentConfigs {

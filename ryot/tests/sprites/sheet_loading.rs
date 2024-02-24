@@ -1,3 +1,4 @@
+use glam::UVec2;
 use image::RgbaImage;
 use rstest::{fixture, rstest};
 use ryot::prelude::{
@@ -12,8 +13,12 @@ use std::path::PathBuf;
 fn test_load_sprite_sheet_image_for_compressed_image(#[from(image_fixture)] expected: RgbaImage) {
     let sheet_config = SpriteSheetConfig::cip_sheet();
 
-    let img =
-        load_sprite_sheet_image(&PathBuf::from("tests/fixtures/1.bmp.lzma"), sheet_config).unwrap();
+    let img = load_sprite_sheet_image(
+        &PathBuf::from("tests/fixtures/1.bmp.lzma"),
+        sheet_config,
+        &UVec2::new(384, 384),
+    )
+    .unwrap();
 
     assert_eq!(img.dimensions(), (384, 384));
     assert_eq!(img, expected);
@@ -22,14 +27,17 @@ fn test_load_sprite_sheet_image_for_compressed_image(#[from(image_fixture)] expe
 #[rstest]
 fn test_load_sprite_sheet_image_for_uncompressed_image(#[from(image_fixture)] expected: RgbaImage) {
     let sheet_config = SpriteSheetConfig {
-        tile_size: glam::UVec2::new(32, 32),
-        sheet_size: glam::UVec2::new(384, 384),
+        sheet_size: UVec2::new(384, 384),
         compression_config: None,
         encoding_config: None,
     };
 
-    let img = load_sprite_sheet_image(&PathBuf::from("tests/fixtures/expected.png"), sheet_config)
-        .unwrap();
+    let img = load_sprite_sheet_image(
+        &PathBuf::from("tests/fixtures/expected.png"),
+        sheet_config,
+        &UVec2::new(384, 384),
+    )
+    .unwrap();
 
     assert_eq!(img.dimensions(), (384, 384));
     assert_eq!(img, expected);
@@ -44,6 +52,7 @@ fn test_decompress_sprite_sheet(#[from(image_fixture)] expected: RgbaImage) {
         &PathBuf::from("tests/fixtures"),
         &PathBuf::from("tests/fixtures/sprite-sheets"),
         sheet_config,
+        &UVec2::new(384, 384),
     );
 
     let expected_path = PathBuf::from("tests/fixtures/sprite-sheets/2.png");
@@ -64,6 +73,7 @@ fn test_decompress_sprite_sheets(#[from(image_fixture)] expected: RgbaImage) {
 
     decompress_sprite_sheets(
         content_config,
+        &UVec2::new(384, 384),
         &vec!["1.bmp.lzma".to_string(), "2.bmp.lzma".to_string()],
     );
 

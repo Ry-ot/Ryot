@@ -133,7 +133,7 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
             )
             .add_systems(
                 OnExit(InternalContentState::PreparingSprites),
-                spawn_grid(Color::WHITE),
+                spawn_grid::<C>(Color::WHITE),
             );
     }
 }
