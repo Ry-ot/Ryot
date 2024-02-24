@@ -9,7 +9,6 @@ use crate::prelude::sprites::LoadSpriteBatch;
 use crate::{Layer, TILE_SIZE};
 use bevy::app::{App, Plugin, Update};
 use bevy::asset::{Asset, Assets, Handle};
-use bevy::ecs::schedule::SystemConfigs;
 use bevy::prelude::*;
 use bevy::render::mesh::Indices;
 use bevy::render::render_asset::RenderAssetUsages;
@@ -20,8 +19,6 @@ use bevy_asset_loader::asset_collection::AssetCollection;
 use bevy_asset_loader::loading_state::{LoadingState, LoadingStateAppExt};
 use bevy_asset_loader::prelude::*;
 use bevy_common_assets::json::JsonAssetPlugin;
-use leafwing_input_manager::common_conditions::*;
-use leafwing_input_manager::prelude::*;
 use std::marker::PhantomData;
 
 mod appearances;
@@ -330,14 +327,4 @@ pub fn spawn_grid<C: ContentAssets>(
             ..default()
         });
     }
-}
-
-/// A helper for leafwing-input-manager that sets up a system to only run if a given action is being held.
-pub fn on_hold<M, A: Actionlike>(systems: impl IntoSystemConfigs<M>, action: A) -> SystemConfigs {
-    systems.run_if(action_pressed(action.clone()).and_then(not(action_just_pressed(action))))
-}
-
-/// A helper for leafwing-input-manager that sets up a system to only run if a given action was pressed.
-pub fn on_press<M, A: Actionlike>(systems: impl IntoSystemConfigs<M>, action: A) -> SystemConfigs {
-    systems.run_if(action_just_pressed(action))
 }

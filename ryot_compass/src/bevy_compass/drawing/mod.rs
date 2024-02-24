@@ -3,6 +3,7 @@ use bevy::prelude::*;
 use leafwing_input_manager::user_input::InputKind;
 use leafwing_input_manager::{common_conditions::*, prelude::*};
 use ryot::bevy_ryot::map::MapTiles;
+use ryot::input_action;
 use ryot::prelude::{drawing::*, *};
 use std::marker::PhantomData;
 
@@ -107,15 +108,10 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
                                 action_just_pressed(DrawingAction::StartConnectingPoints),
                             )),
                     ),
-                    (draw_on_click::<C>(), draw_on_hold::<C>()),
-                    toggle_deletion.run_if(action_just_pressed(DrawingAction::ToggleDeletion)),
-                    (
-                        on_press(undo.map(drop), DrawingAction::Undo),
-                        on_hold(undo.map(drop), DrawingAction::Undo).run_if(run_every_millis(300)),
-                        on_press(redo.map(drop), DrawingAction::Redo),
-                        on_hold(redo.map(drop), DrawingAction::Redo).run_if(run_every_millis(300)),
-                    )
-                        .chain(),
+                    input_action!(handle_drawing_input::<C>, DrawingAction::Draw, 100),
+                    input_action!(toggle_deletion, DrawingAction::ToggleDeletion, 500),
+                    input_action!(undo.map(drop), DrawingAction::Undo, 100),
+                    input_action!(redo.map(drop), DrawingAction::Redo, 100),
                     (
                         change_brush_shape.run_if(action_just_pressed(DrawingAction::ChangeBrush)),
                         change_brush_size(1)

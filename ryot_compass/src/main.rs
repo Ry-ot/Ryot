@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use bevy::winit::WinitWindows;
 use bevy_egui::EguiContexts;
-use ryot::prelude::*;
 use ryot_compass::{
     AppPlugin, CameraPlugin, CompassContentAssets, DrawingPlugin, ErrorPlugin, MapExport,
     PalettePlugin, UiPlugin,
@@ -19,6 +18,8 @@ use bevy::window::PrimaryWindow;
 use ryot::prelude::lmdb::LmdbEnv;
 #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
 use ryot::prelude::lmdb::{compact_map, LmdbCompactor};
+#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
+use ryot::prelude::InternalContentState;
 #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
 use ryot_compass::{export_map, init_tiles_db, read_area};
 
