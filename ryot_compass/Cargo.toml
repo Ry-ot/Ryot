@@ -16,7 +16,6 @@ wasm-bindgen-futures = "0.4"
 winit = "0.29"
 
 bevy_pancam = { git = "https://github.com/luan/bevy_pancam", branch = "luan/modifier-keys", features = [
-    "bevy_egui",
     "leafwing-input-manager",
 ] }
 
@@ -33,7 +32,7 @@ glam.workspace = true
 heed = { workspace = true, optional = true }
 image.workspace = true
 itertools.workspace = true
-leafwing-input-manager.workspace = true
+leafwing-input-manager = { workspace = true, features = ["egui"] }
 log.workspace = true
 lzma-rs.workspace = true
 postcard.workspace = true
