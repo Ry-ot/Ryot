@@ -2,8 +2,8 @@ use bevy::prelude::*;
 use bevy::winit::WinitWindows;
 use bevy_egui::EguiContexts;
 use ryot_compass::{
-    init_new_map, load_map, AppPlugin, CameraPlugin, CompassContentAssets, DrawingPlugin,
-    ErrorPlugin, ExportMap, LoadMap, PalettePlugin, UiPlugin,
+    init_new_map, load_map, reload_visible_area, AppPlugin, CameraPlugin, CompassContentAssets,
+    DrawingPlugin, ErrorPlugin, ExportMap, LoadMap, PalettePlugin, UiPlugin,
 };
 use std::io::Cursor;
 
@@ -102,7 +102,11 @@ fn main() {
             (
                 compact_map,
                 export_map.map(drop).run_if(on_event::<ExportMap>()),
-                (load_map.map(drop), init_new_map.map(drop))
+                (
+                    load_map.map(drop),
+                    init_new_map.map(drop),
+                    reload_visible_area,
+                )
                     .chain()
                     .run_if(on_event::<LoadMap>()),
                 read_area,
