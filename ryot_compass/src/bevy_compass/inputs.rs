@@ -11,13 +11,13 @@ pub struct InputPlugin;
 
 impl Plugin for InputPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(InputManagerPlugin::<DrawingAction>::default())
-            .init_resource::<ActionState<DrawingAction>>();
+        app.add_plugins(InputManagerPlugin::<CompassAction>::default())
+            .init_resource::<ActionState<CompassAction>>();
     }
 }
 
 #[derive(Actionlike, Reflect, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum DrawingAction {
+pub enum CompassAction {
     Stop,
     Draw,
     ToggleDeletion,
@@ -30,39 +30,39 @@ pub enum DrawingAction {
     ClearSelection,
 }
 
-impl DrawingAction {
-    pub fn get_default_input_map() -> InputMap<DrawingAction> {
+impl CompassAction {
+    pub fn get_default_input_map() -> InputMap<CompassAction> {
         InputMap::default()
-            .insert(DrawingAction::Draw, MouseButton::Left)
+            .insert(CompassAction::Draw, MouseButton::Left)
             .insert_modified(
-                DrawingAction::ToggleDeletion,
+                CompassAction::ToggleDeletion,
                 CONTROL_COMMAND,
                 KeyCode::KeyD,
             )
-            .insert_modified(DrawingAction::Undo, CONTROL_COMMAND, KeyCode::KeyZ)
+            .insert_modified(CompassAction::Undo, CONTROL_COMMAND, KeyCode::KeyZ)
             .insert_chord(
-                DrawingAction::Redo,
+                CompassAction::Redo,
                 [
                     InputKind::Modifier(CONTROL_COMMAND),
                     InputKind::Modifier(Modifier::Shift),
                     InputKind::PhysicalKey(KeyCode::KeyZ),
                 ],
             )
-            .insert(DrawingAction::ChangeBrush, KeyCode::Digit1)
-            .insert(DrawingAction::ClearSelection, KeyCode::Escape)
-            .insert(DrawingAction::StartConnectingPoints, Modifier::Shift)
+            .insert(CompassAction::ChangeBrush, KeyCode::Digit1)
+            .insert(CompassAction::ClearSelection, KeyCode::Escape)
+            .insert(CompassAction::StartConnectingPoints, Modifier::Shift)
             .insert_modified(
-                DrawingAction::IncreaseBrush,
+                CompassAction::IncreaseBrush,
                 CONTROL_COMMAND,
                 KeyCode::Equal,
             )
             .insert_modified(
-                DrawingAction::DecreaseBrush,
+                CompassAction::DecreaseBrush,
                 CONTROL_COMMAND,
                 KeyCode::Minus,
             )
             // Small hack to remove clash with the pancam plugin
-            .insert_chord(DrawingAction::Stop, MAP_GRAB_INPUTS)
+            .insert_chord(CompassAction::Stop, MAP_GRAB_INPUTS)
             .build()
     }
 }

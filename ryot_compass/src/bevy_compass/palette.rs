@@ -1,4 +1,4 @@
-use crate::{get_egui_parameters_for_texture, DrawingAction, PaletteState, TilesetCategory};
+use crate::{get_egui_parameters_for_texture, CompassAction, PaletteState, TilesetCategory};
 use bevy::asset::Assets;
 use bevy::log::warn;
 use bevy::prelude::*;
@@ -33,7 +33,7 @@ impl<C: ContentAssets> Plugin for PalettePlugin<C> {
             .add_systems(
                 Update,
                 (
-                    clear_selection.run_if(action_just_pressed(DrawingAction::ClearSelection)),
+                    clear_selection.run_if(action_just_pressed(CompassAction::ClearSelection)),
                     (update_palette_category::<C>, update_palette_items::<C>).chain(),
                 )
                     .run_if(in_state(InternalContentState::Ready)),

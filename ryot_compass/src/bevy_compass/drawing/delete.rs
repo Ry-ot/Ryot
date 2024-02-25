@@ -6,7 +6,7 @@ use ryot::prelude::drawing::*;
 use ryot::Layer;
 
 /// System responsible for toggling the deletion mode. This system is called when the user presses the
-/// [`ToggleDeletion`](crate::DrawingAction::ToggleDeletion) action. When the deletion mode is active
+/// [`ToggleDeletion`](crate::CompassAction::ToggleDeletion) action. When the deletion mode is active
 /// the inputs are used to delete the top most elements in the positions where the cursor is.
 pub fn toggle_deletion(mut q_cursor: Query<&mut Cursor>) {
     for mut cursor in q_cursor.iter_mut() {
