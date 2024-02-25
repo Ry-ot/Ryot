@@ -20,7 +20,7 @@ mod hud;
 pub use hud::*;
 
 #[derive(Event, Debug, Clone, Default, Deref, DerefMut)]
-pub struct MapExport(pub PathBuf);
+pub struct ExportMap(pub PathBuf);
 
 #[derive(Event, Debug, Clone, Default, Deref, DerefMut)]
 pub struct LoadMap(pub PathBuf);

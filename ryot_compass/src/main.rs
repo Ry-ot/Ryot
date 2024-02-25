@@ -3,7 +3,7 @@ use bevy::winit::WinitWindows;
 use bevy_egui::EguiContexts;
 use ryot_compass::{
     init_new_map, load_map, AppPlugin, CameraPlugin, CompassContentAssets, DrawingPlugin,
-    ErrorPlugin, LoadMap, MapExport, PalettePlugin, UiPlugin,
+    ErrorPlugin, ExportMap, LoadMap, PalettePlugin, UiPlugin,
 };
 use std::io::Cursor;
 
@@ -91,7 +91,7 @@ fn main() {
     .add_systems(Startup, set_window_icon)
     .add_systems(Startup, setup_window);
 
-    app.add_event::<MapExport>().add_async_event::<LoadMap>();
+    app.add_event::<ExportMap>().add_async_event::<LoadMap>();
 
     #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
     app.init_resource::<LmdbEnv>()
@@ -101,7 +101,7 @@ fn main() {
             Update,
             (
                 compact_map,
-                export_map.map(drop).run_if(on_event::<MapExport>()),
+                export_map.map(drop).run_if(on_event::<ExportMap>()),
                 (load_map.map(drop), init_new_map.map(drop))
                     .chain()
                     .run_if(on_event::<LoadMap>()),

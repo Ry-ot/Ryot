@@ -1,4 +1,4 @@
-use crate::{LoadMap, MapExport};
+use crate::{ExportMap, LoadMap};
 use bevy::prelude::{
     info, Camera, Changed, Commands, Entity, EventReader, Local, Query, Res, ResMut, Transform,
     With,
@@ -130,13 +130,13 @@ pub fn init_new_map(
 pub fn export_map(
     env: Res<LmdbEnv>,
     lmdb_compactor: ResMut<LmdbCompactor>,
-    mut map_export_events: EventReader<MapExport>,
+    mut map_export_events: EventReader<ExportMap>,
 ) -> color_eyre::Result<()> {
     let Some(env) = &env.0 else {
         return Ok(());
     };
 
-    for MapExport(destination) in map_export_events.read() {
+    for ExportMap(destination) in map_export_events.read() {
         if !lmdb_compactor.is_running.load(Ordering::SeqCst) {
             lmdb::compact(env.clone())?;
         }

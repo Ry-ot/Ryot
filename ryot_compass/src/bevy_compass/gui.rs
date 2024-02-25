@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use crate::{
     draw_palette_bottom_panel, draw_palette_items, draw_palette_picker, helpers::read_file, Cursor,
-    LoadMap, MapExport, OptionalPlugin, Palette, PaletteState,
+    ExportMap, LoadMap, OptionalPlugin, Palette, PaletteState,
 };
 
 use bevy::{app::AppExit, prelude::*, render::camera::Viewport};
@@ -48,7 +48,7 @@ fn ui_menu_system<C: ContentAssets>(
     mut cursor_query: Query<&mut Cursor>,
     mut contexts: Query<&mut EguiContext>,
     mut exit: EventWriter<AppExit>,
-    mut map_export_sender: EventWriter<MapExport>,
+    mut map_export_sender: EventWriter<ExportMap>,
     load_map_sender: Res<EventSender<LoadMap>>,
 ) {
     let Ok(mut cursor) = cursor_query.get_single_mut() else {
@@ -108,7 +108,7 @@ fn ui_menu_system<C: ContentAssets>(
                             .save_file()
                         {
                             debug!("Saving map to file: {:?}", path);
-                            map_export_sender.send(MapExport(path));
+                            map_export_sender.send(ExportMap(path));
                         }
                     }
 
