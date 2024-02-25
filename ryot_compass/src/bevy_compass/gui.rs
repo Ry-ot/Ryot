@@ -1,15 +1,14 @@
 use std::marker::PhantomData;
 
 use crate::{
-    draw_palette_bottom_panel, draw_palette_items, draw_palette_picker, helpers::read_file, Cursor,
-    ExportMap, LoadMap, OptionalPlugin, Palette, PaletteState,
+    draw_palette_bottom_panel, draw_palette_items, draw_palette_picker, Cursor, ExportMap, LoadMap,
+    OptionalPlugin, Palette, PaletteState,
 };
 
 use bevy::{app::AppExit, prelude::*, render::camera::Viewport};
 use bevy_egui::{EguiContext, EguiContexts, EguiPlugin, EguiUserTextures};
 use egui::{load::SizedTexture, TextureId};
 use egui_dock::{DockArea, DockState, NodeIndex, Style};
-use rfd::AsyncFileDialog;
 use ryot::bevy_ryot::{
     drawing::{Brushes, DrawingBundle},
     ContentAssets, EventSender, InternalContentState,
@@ -114,54 +113,12 @@ fn ui_menu_system<C: ContentAssets>(
 
                     ui.separator();
 
-                    // #[cfg(not(target_arch = "wasm32"))]
-                    if ui.button("Load Content").clicked() {
-                        // let sender = content_sender.0.clone();
-
-                        read_file(
-                            AsyncFileDialog::new().add_filter(".json", &["json"]),
-                            move |(file_name, _loaded)| {
-                                debug!("Loading content from file: {:?}", file_name);
-                                // let Some(content_was_loaded) =
-                                //     ContentWasLoaded::from_bytes(file_name.clone(), loaded.clone())
-                                // else {
-                                //     warn!("Failed to load content from file: {:?}", file_name);
-                                //     return;
-                                // };
-
-                                // sender
-                                //     .send(content_was_loaded)
-                                //     .expect("Failed to send content loaded event");
-                            },
-                        );
-                    }
-
-                    ui.add_enabled(is_content_loaded, egui::Button::new("🔃 Refresh Content"))
-                        .clicked();
-
-                    ui.separator();
-
-                    ui.button("⚙ Settings").clicked();
-
-                    ui.separator();
-
                     if ui.button("Exit").clicked() {
                         exit.send(AppExit);
                     }
                 });
 
-                egui::menu::menu_button(ui, "View", |ui| {
-                    if ui.button("Windows").clicked() {
-                        // Open action
-                    }
-                });
-
-                egui::menu::menu_button(ui, "Help", |ui| if ui.button("About").clicked() {});
-
-                // ui.with_layout(egui::Layout::right_to_left(Align::Center), |ui| {
-                //     if ui.button("⚙").clicked() {
-                //     }
-                // })
+                egui::menu::menu_button(ui, "About", |ui| ui.button("Compass v0.1.0"));
             });
         });
 
