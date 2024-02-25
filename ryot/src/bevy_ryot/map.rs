@@ -151,7 +151,7 @@ impl MapTile {
 
     fn pop_bottom(&mut self, relative_layer: RelativeLayer) -> Option<Entity> {
         self.bottom.get_mut(&relative_layer).and_then(|entities| {
-            let last = entities.iter().last()?.0.clone();
+            let last = *entities.iter().last()?.0;
             entities.remove(&last)
         })
     }
@@ -173,7 +173,7 @@ impl MapTile {
         self.bottom
             .get(&relative_layer)
             .and_then(|entities| entities.get(order))
-            .map(|entity| *entity)
+            .copied()
     }
 
     fn push_bottom(&mut self, bottom_layer: BottomLayer, entity: Entity) {
@@ -302,14 +302,14 @@ mod test {
         assert_eq!(
             iter.next_back(),
             Some((
-                Layer::Bottom(BottomLayer::new(2, RelativeLayer::Creature)),
+                Layer::Bottom(BottomLayer::new(10, RelativeLayer::Creature)),
                 Entity::from_raw(0)
             ))
         );
         assert_eq!(
             iter.next_back(),
             Some((
-                Layer::Bottom(BottomLayer::new(1, RelativeLayer::Creature)),
+                Layer::Bottom(BottomLayer::new(4, RelativeLayer::Creature)),
                 Entity::from_raw(0)
             ))
         );
