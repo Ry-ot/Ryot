@@ -1,5 +1,8 @@
-use crate::MapExport;
-use bevy::prelude::{Camera, Changed, Commands, EventReader, Local, Query, Res, ResMut, With};
+use crate::{LoadMap, MapExport};
+use bevy::prelude::{
+    info, Camera, Changed, Commands, Entity, EventReader, Local, Query, Res, ResMut, Transform,
+    With,
+};
 use heed::types::Bytes;
 use heed::Env;
 use log::{debug, error, warn};
@@ -11,7 +14,7 @@ use ryot::lmdb::{
     SerdePostcard, MDB_FILE_NAME,
 };
 use ryot::position::{Sector, TilePosition};
-use ryot::prelude::drawing::{DrawingBundle, LoadTileContent};
+use ryot::prelude::drawing::{DrawingBundle, LoadTileContent, TileComponent};
 use ryot::prelude::lmdb::LmdbEnv;
 use ryot::prelude::{compress, decompress, AppearanceDescriptor, Zstd};
 use ryot::{lmdb, Layer};
@@ -21,9 +24,12 @@ use std::sync::atomic::Ordering;
 use time_test::time_test;
 
 pub fn init_tiles_db(lmdb_env: Res<LmdbEnv>) -> color_eyre::Result<()> {
-    let env = lmdb_env.clone();
+    let Some(env) = &lmdb_env.0 else {
+        return Ok(());
+    };
+
     let (wtxn, _) =
-        lmdb::rw::<Bytes, SerdePostcard<HashMap<Layer, Item>>>(&env, DatabaseName::Tiles)?;
+        lmdb::rw::<Bytes, SerdePostcard<HashMap<Layer, Item>>>(env, DatabaseName::Tiles)?;
 
     wtxn.commit()?;
 
@@ -35,11 +41,20 @@ pub fn read_area(
     env: ResMut<LmdbEnv>,
     mut commands: Commands,
     mut last_area: Local<Sector>,
+    mut load_map_events: EventReader<LoadMap>,
     sector_query: Query<&Sector, (With<Camera>, Changed<Sector>)>,
 ) {
+    let Some(env) = &env.0 else {
+        return;
+    };
+
     let Ok(sector) = sector_query.get_single() else {
         return;
     };
+
+    if load_map_events.read().len() > 0 {
+        *last_area = Sector::default();
+    }
 
     let sector = *sector * 1.5;
 
@@ -50,11 +65,77 @@ pub fn read_area(
     *last_area = sector;
 }
 
+pub fn load_map(
+    mut env: ResMut<LmdbEnv>,
+    mut commands: Commands,
+    mut tiles: ResMut<MapTiles>,
+    mut load_map_events: EventReader<LoadMap>,
+    mut q_all_tiles: Query<Entity, With<TileComponent>>,
+) -> color_eyre::Result<()> {
+    if let Some(env) = &env.0 {
+        env.clone().prepare_for_closing();
+    }
+
+    env.0 = None;
+
+    for id in q_all_tiles.iter_mut() {
+        commands.entity(id).despawn();
+    }
+
+    tiles.clear();
+
+    fs::remove_file(get_storage_path().join(MDB_FILE_NAME)).ok();
+
+    for LoadMap(path) in load_map_events.read() {
+        match fs::copy(path.clone(), get_storage_path().join(MDB_FILE_NAME)) {
+            Ok(bytes_copied) => info!("Map loaded: {} bytes", bytes_copied),
+            Err(e) => {
+                warn!("Failed to load map: {}", e);
+                continue;
+            }
+        }
+    }
+
+    Ok(())
+}
+
+pub fn init_new_map(
+    tiles: Res<MapTiles>,
+    mut commands: Commands,
+    mut env: ResMut<LmdbEnv>,
+    mut q_camera_transform: Query<&mut Transform, With<Camera>>,
+) -> color_eyre::Result<()> {
+    let new_env = lmdb::create_env(lmdb::get_storage_path()).expect("Failed to create LMDB env");
+    let (wtxn, _) =
+        lmdb::rw::<Bytes, SerdePostcard<HashMap<Layer, Item>>>(&new_env, DatabaseName::Tiles)?;
+    wtxn.commit()?;
+
+    *q_camera_transform.single_mut() = Transform::IDENTITY;
+
+    load_area(
+        Sector::new(
+            TilePosition::new(-100, -100, 0),
+            TilePosition::new(100, 100, 0),
+        ),
+        new_env.clone(),
+        &mut commands,
+        &tiles,
+    );
+
+    env.0 = Some(new_env);
+
+    Ok(())
+}
+
 pub fn export_map(
     env: Res<LmdbEnv>,
     lmdb_compactor: ResMut<LmdbCompactor>,
     mut map_export_events: EventReader<MapExport>,
 ) -> color_eyre::Result<()> {
+    let Some(env) = &env.0 else {
+        return Ok(());
+    };
+
     for MapExport(destination) in map_export_events.read() {
         if !lmdb_compactor.is_running.load(Ordering::SeqCst) {
             lmdb::compact(env.clone())?;
@@ -83,6 +164,7 @@ pub fn load_area(sector: Sector, env: Env, commands: &mut Commands, tiles: &Res<
 
     match item_repository.get_for_area(&sector) {
         Ok(area) => {
+            info!("Reading area: {:?}", area.len());
             let mut bundles = vec![];
 
             for tile in area {
