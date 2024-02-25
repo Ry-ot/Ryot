@@ -1,8 +1,0 @@
-({
-    "layout.main": TextureAtlasLayout (
-        tile_size_x: 32.,
-        tile_size_y: 32.,
-        columns: 12,
-        rows: 12,
-    ),
-})

@@ -6,7 +6,7 @@
 use crate::appearances::{ContentType, SpriteSheetDataSet};
 use crate::position::{update_sprite_position, TilePosition};
 use crate::prelude::sprites::LoadSpriteBatch;
-use crate::{Layer, TILE_SIZE};
+use crate::{Layer, SpriteLayout, TILE_SIZE};
 use bevy::app::{App, Plugin, Update};
 use bevy::asset::{Asset, Assets, Handle};
 use bevy::prelude::*;
@@ -18,11 +18,12 @@ use bevy::utils::HashMap;
 use bevy_asset_loader::asset_collection::AssetCollection;
 use bevy_asset_loader::loading_state::{LoadingState, LoadingStateAppExt};
 use bevy_asset_loader::prelude::*;
+use bevy_asset_loader::standard_dynamic_asset::StandardDynamicAssetArrayCollection;
 use bevy_common_assets::json::JsonAssetPlugin;
+use bevy_common_assets::ron::RonAssetPlugin;
 use std::marker::PhantomData;
 
 mod appearances;
-
 pub use appearances::*;
 
 mod async_events;
@@ -90,7 +91,7 @@ pub trait ContentAssets: Resource + Send + Sync + 'static {
     fn prepared_appearances(&self) -> &PreparedAppearances;
     fn sprite_sheet_data_set(&self) -> Option<&SpriteSheetDataSet>;
     fn get_texture(&self, file: &str) -> Option<Handle<Image>>;
-    fn get_atlas_layout(&self) -> Handle<TextureAtlasLayout>;
+    fn get_atlas_layout(&self, layout: SpriteLayout) -> Option<Handle<TextureAtlasLayout>>;
 }
 
 /// A plugin that registers implementations of ContentAssets and loads them.
@@ -120,10 +121,14 @@ impl<C: PreloadedContentAssets + Default> Plugin for ContentPlugin<C> {
             .add_event::<LoadSpriteBatch>()
             .add_plugins(JsonAssetPlugin::<Catalog>::new(&["json"]))
             .add_plugins(AppearanceAssetPlugin)
+            .add_plugins(RonAssetPlugin::<StandardDynamicAssetArrayCollection>::new(
+                &["atlases.ron"],
+            ))
             .add_loading_state(
                 LoadingState::new(InternalContentState::LoadingContent)
-                    .with_dynamic_assets_file::<StandardDynamicAssetCollection>(
-                        "dynamic.assets.ron",
+                    .register_dynamic_asset_collection::<StandardDynamicAssetArrayCollection>()
+                    .with_dynamic_assets_file::<StandardDynamicAssetArrayCollection>(
+                        "dynamic.atlases.ron",
                     )
                     .continue_to_state(InternalContentState::PreparingContent)
                     .load_collection::<C>(),
@@ -172,9 +177,12 @@ fn prepare_content<C: PreloadedContentAssets>(
     atlas_layouts: Res<Assets<TextureAtlasLayout>>,
 ) {
     debug!("Preparing content");
-    let atlas_layout = atlas_layouts
-        .get(content_assets.get_atlas_layout())
-        .expect("No atlas layout");
+    let layout = content_assets
+        .get_atlas_layout(SpriteLayout::OneByOne)
+        .expect("OneByOne layout not found");
+
+    let atlas_layout = atlas_layouts.get(layout).expect("No atlas layout");
+
     TILE_SIZE
         .set(atlas_layout.textures[0].size().as_uvec2())
         .expect("Failed to initialize tile size");
@@ -284,10 +292,16 @@ pub fn spawn_grid<C: ContentAssets>(
 
         let (bottom_left_tile, top_right_tile) = (TilePosition::MIN, TilePosition::MAX);
         let (bottom_left, top_right) = (Vec2::from(bottom_left_tile), Vec2::from(top_right_tile));
-        let atlas_layout = atlas_layouts
-            .get(content_assets.get_atlas_layout())
-            .expect("No atlas layout found");
-        let tile_size = atlas_layout.textures[0].size();
+
+        let layout = content_assets
+            .get_atlas_layout(SpriteLayout::OneByOne)
+            .expect("OneByOne layout not found");
+
+        let tile_size = atlas_layouts
+            .get(layout)
+            .expect("No atlas layout found")
+            .textures[0]
+            .size();
 
         for col in bottom_left_tile.x - 1..=top_right_tile.x {
             let x_offset = (col * tile_size.x as i32) as f32;

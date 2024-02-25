@@ -68,7 +68,8 @@ pub fn get_egui_parameters_for_texture<C: ContentAssets>(
     content_assets: &Res<C>,
     atlas_layouts: &Res<Assets<TextureAtlasLayout>>,
 ) -> Option<(egui::Vec2, egui::Rect)> {
-    let atlas_layout = atlas_layouts.get(content_assets.get_atlas_layout())?;
+    let handle = content_assets.get_atlas_layout(sprite.sprite_sheet.layout)?;
+    let atlas_layout = atlas_layouts.get(handle)?;
     let rect = atlas_layout.textures.get(sprite.get_sprite_index())?;
 
     let uv: egui::Rect = egui::Rect::from_min_max(

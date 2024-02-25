@@ -14,7 +14,7 @@ pub mod position;
 
 pub mod error;
 
-#[derive(Serialize_repr, Deserialize_repr, Default, PartialEq, Debug, Clone)]
+#[derive(Serialize_repr, Deserialize_repr, Default, PartialEq, Debug, Copy, Clone)]
 #[repr(u32)]
 pub enum SpriteLayout {
     #[default]
