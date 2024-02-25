@@ -2,8 +2,8 @@ use bevy::prelude::*;
 use bevy::winit::WinitWindows;
 use bevy_egui::EguiContexts;
 use ryot_compass::{
-    AppPlugin, CameraPlugin, CompassContentAssets, DrawingPlugin, ErrorPlugin, ExportMap, LoadMap,
-    PalettePlugin, UiPlugin,
+    AppPlugin, CameraPlugin, CompassContentAssets, DrawingPlugin, ErrorPlugin, ExportMap,
+    InputPlugin, LoadMap, PalettePlugin, UiPlugin,
 };
 use std::io::Cursor;
 
@@ -79,6 +79,7 @@ fn main() {
     let mut app = App::new();
 
     app.add_plugins((
+        InputPlugin,
         AppPlugin,
         UiPlugin::<CompassContentAssets>::default(),
         CameraPlugin::<CompassContentAssets>::default(),

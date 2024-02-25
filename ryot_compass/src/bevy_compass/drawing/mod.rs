@@ -1,7 +1,6 @@
-use crate::{gui_is_not_in_use, helpers::CONTROL_COMMAND, MAP_GRAB_INPUTS};
+use crate::{gui_is_not_in_use, DrawingAction};
 use bevy::prelude::*;
-use leafwing_input_manager::user_input::InputKind;
-use leafwing_input_manager::{common_conditions::*, prelude::*};
+use leafwing_input_manager::common_conditions::*;
 use ryot::bevy_ryot::map::MapTiles;
 use ryot::input_action;
 use ryot::prelude::{drawing::*, *};
@@ -21,57 +20,6 @@ pub use undo_redo::*;
 
 mod brush;
 pub use brush::*;
-
-#[derive(Actionlike, Reflect, Clone, Copy, PartialEq, Eq, Hash)]
-pub enum DrawingAction {
-    Stop,
-    Draw,
-    ToggleDeletion,
-    Undo,
-    Redo,
-    StartConnectingPoints,
-    ChangeBrush,
-    IncreaseBrush,
-    DecreaseBrush,
-    ClearSelection,
-}
-
-impl DrawingAction {
-    pub fn get_default_input_map() -> InputMap<DrawingAction> {
-        InputMap::default()
-            .insert(DrawingAction::Draw, MouseButton::Left)
-            .insert_modified(
-                DrawingAction::ToggleDeletion,
-                CONTROL_COMMAND,
-                KeyCode::KeyD,
-            )
-            .insert_modified(DrawingAction::Undo, CONTROL_COMMAND, KeyCode::KeyZ)
-            .insert_chord(
-                DrawingAction::Redo,
-                [
-                    InputKind::Modifier(CONTROL_COMMAND),
-                    InputKind::Modifier(Modifier::Shift),
-                    InputKind::PhysicalKey(KeyCode::KeyZ),
-                ],
-            )
-            .insert(DrawingAction::ChangeBrush, KeyCode::Digit1)
-            .insert(DrawingAction::ClearSelection, KeyCode::Escape)
-            .insert(DrawingAction::StartConnectingPoints, Modifier::Shift)
-            .insert_modified(
-                DrawingAction::IncreaseBrush,
-                CONTROL_COMMAND,
-                KeyCode::Equal,
-            )
-            .insert_modified(
-                DrawingAction::DecreaseBrush,
-                CONTROL_COMMAND,
-                KeyCode::Minus,
-            )
-            // Small hack to remove clash with the pancam plugin
-            .insert_chord(DrawingAction::Stop, MAP_GRAB_INPUTS)
-            .build()
-    }
-}
 
 /// The drawing plugin is responsible for handling the core drawing logic and related commands.
 /// It is also responsible for keeping track of a command history, used to perform undo/redo actions.
@@ -97,8 +45,6 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
             .init_resource::<MapTiles>()
             .init_resource::<Brushes<DrawingBundle>>()
             .add_plugins(drawing::DrawingPlugin)
-            .add_plugins(InputManagerPlugin::<DrawingAction>::default())
-            .init_resource::<ActionState<DrawingAction>>()
             .add_systems(
                 Update,
                 (
