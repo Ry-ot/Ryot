@@ -170,6 +170,15 @@ impl fmt::Display for Sector {
 }
 
 impl Sector {
+    pub const BASE_CANVAS_SECTOR: Sector = Sector {
+        min: TilePosition(IVec3 {
+            x: -30,
+            y: -30,
+            z: 0,
+        }),
+        max: TilePosition(IVec3 { x: 30, y: 30, z: 0 }),
+    };
+
     pub fn new(min: TilePosition, max: TilePosition) -> Self {
         Self { min, max }
     }

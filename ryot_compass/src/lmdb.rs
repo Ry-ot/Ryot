@@ -65,6 +65,21 @@ pub fn read_area(
     *last_area = sector;
 }
 
+pub fn reload_visible_area(
+    tiles: Res<MapTiles>,
+    env: ResMut<LmdbEnv>,
+    mut commands: Commands,
+    sector_query: Query<&Sector, With<Camera>>,
+) {
+    let Some(env) = &env.0 else {
+        return;
+    };
+
+    for sector in sector_query.iter() {
+        load_area(*sector, env.clone(), &mut commands, &tiles);
+    }
+}
+
 pub fn load_map(
     mut env: ResMut<LmdbEnv>,
     mut commands: Commands,
@@ -100,8 +115,6 @@ pub fn load_map(
 }
 
 pub fn init_new_map(
-    tiles: Res<MapTiles>,
-    mut commands: Commands,
     mut env: ResMut<LmdbEnv>,
     mut q_camera_transform: Query<&mut Transform, With<Camera>>,
 ) -> color_eyre::Result<()> {
@@ -111,16 +124,6 @@ pub fn init_new_map(
     wtxn.commit()?;
 
     *q_camera_transform.single_mut() = Transform::IDENTITY;
-
-    load_area(
-        Sector::new(
-            TilePosition::new(-100, -100, 0),
-            TilePosition::new(100, 100, 0),
-        ),
-        new_env.clone(),
-        &mut commands,
-        &tiles,
-    );
 
     env.0 = Some(new_env);
 
