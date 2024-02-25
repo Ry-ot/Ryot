@@ -9,7 +9,10 @@ use bevy::ecs::system::Command;
 /// content. The new content is the content that will be applied to the tile, while the old content
 /// is the content that will be reverted to, when/if the command is undone.
 #[derive(Debug, Clone)]
-pub struct UpdateTileContent(pub Vec<DrawingInfo>, Vec<DrawingInfo>);
+pub struct UpdateTileContent {
+    pub new: Vec<DrawingInfo>,
+    pub old: Vec<DrawingInfo>,
+}
 
 impl UpdateTileContent {
     /// Constructor that guarantees that the new and old content have the same length.
@@ -18,7 +21,7 @@ impl UpdateTileContent {
             panic!("The new and old content must have the same length");
         }
 
-        Self(new, old)
+        Self { new, old }
     }
 
     /// Constructor that inits the command from a clean state, when only the new content is known.
@@ -38,24 +41,30 @@ impl UpdateTileContent {
 
     /// Reverts the command, by swapping the new and old content. Useful for undoing the command.
     pub fn revert(&self) -> Self {
-        Self::new(self.1.clone(), self.0.clone())
+        Self::new(self.old.clone(), self.new.clone())
+    }
+}
+
+impl From<UpdateTileContent> for CommandState {
+    fn from(_: UpdateTileContent) -> Self {
+        CommandState::default()
     }
 }
 
 impl Command for UpdateTileContent {
     fn apply(self, world: &mut World) {
-        let (new, old) = (self.0, self.1);
+        for (index, info) in self.new.iter().enumerate() {
+            let old = self.old[index];
 
-        for (index, info) in new.iter().enumerate() {
-            if *info == old[index] {
+            if *info == old {
                 continue;
             }
 
-            if info.3.is_none() && old[index].3.is_none() {
+            if info.3.is_none() && old.3.is_none() {
                 continue;
             }
 
-            update(world, *info, old[index], CommandState::default());
+            update(world, *info, old, self.clone().into());
         }
     }
 }

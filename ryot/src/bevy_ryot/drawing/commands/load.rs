@@ -19,6 +19,12 @@ impl LoadTileContent {
     }
 }
 
+impl From<LoadTileContent> for CommandState {
+    fn from(_: LoadTileContent) -> Self {
+        CommandState::default().persist()
+    }
+}
+
 impl Command for LoadTileContent {
     fn apply(self, world: &mut World) {
         for info in self.0.iter() {
@@ -26,7 +32,7 @@ impl Command for LoadTileContent {
                 world,
                 *info,
                 (info.0, info.1, info.2, None),
-                CommandState::from_load(),
+                self.clone().into(),
             );
         }
     }

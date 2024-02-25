@@ -98,15 +98,25 @@ fn create_or_update_content_for_positions(
     let mut to_draw = to_draw.to_vec();
 
     for new_bundle in to_draw.iter_mut() {
-        let current_info = get_current_info(*new_bundle, tiles, q_current_appearance);
+        let mut appearance = get_current_appearance(*new_bundle, tiles, q_current_appearance);
 
-        if let Layer::Bottom(mut bottom) = current_info.1 {
-            if current_info.3.is_some() {
+        // If an old appearance was found, it is only pertinent if the layer doesn't change.
+        // If the layer changes, the old state is not relevant for a new layer.
+        // The old state of a new layer is empty, like a new entity being added, so appearance
+        // is set to None. This guarantees that reversion works properly in-between layers.
+        if appearance.is_some() {
+            if let Layer::Bottom(mut bottom) = new_bundle.layer {
                 new_bundle.layer = Layer::Bottom(bottom.next().unwrap_or(bottom));
+                appearance = None;
             }
         }
 
-        old_info.push(current_info);
+        old_info.push((
+            new_bundle.tile_pos,
+            new_bundle.layer,
+            new_bundle.visibility,
+            appearance,
+        ));
     }
 
     let new_info = to_draw
@@ -130,67 +140,19 @@ fn create_or_update_content_for_positions(
     command_history.performed_commands.push(command.into());
 }
 
-pub fn get_current_info(
+pub fn get_current_appearance(
     new_bundle: DrawingBundle,
     tiles: &mut ResMut<MapTiles>,
     q_current_appearance: &Query<(&Visibility, &Layer, &AppearanceDescriptor), With<TileComponent>>,
-) -> DrawingInfo {
-    let mut old_info = (
-        new_bundle.tile_pos,
-        new_bundle.layer,
-        new_bundle.visibility,
-        None,
-    );
-
-    let Some(tile) = tiles.get(&new_bundle.tile_pos) else {
-        return old_info;
-    };
-
-    let entity = match new_bundle.layer {
-        Layer::Bottom(mut bottom) => {
-            let mut entity = None;
-
-            loop {
-                let layer = Layer::Bottom(bottom);
-                let next_entity = tile.peek_for_layer(layer);
-
-                if next_entity.is_none() {
-                    break;
-                }
-
-                let Ok((visibility, ..)) = q_current_appearance.get(next_entity.unwrap()) else {
-                    break;
-                };
-
-                if visibility == Visibility::Hidden {
-                    break;
-                }
-
-                old_info.1 = layer;
-                entity = next_entity;
-
-                if bottom.next().is_none() {
-                    break;
-                }
-
-                bottom = bottom.next().unwrap();
-            }
-
-            entity
-        }
-        layer => tile.peek_for_layer(layer),
-    };
-
-    let Some(entity) = entity else {
-        return old_info;
-    };
-
-    old_info.3 = match q_current_appearance.get(entity) {
+) -> Option<AppearanceDescriptor> {
+    match q_current_appearance.get(
+        tiles
+            .get(&new_bundle.tile_pos)?
+            .peek_for_layer(new_bundle.layer)?,
+    ) {
         Ok((visibility, _, appearance)) if visibility != Visibility::Hidden => Some(*appearance),
         _ => None,
-    };
-
-    old_info
+    }
 }
 
 pub fn update_drawing_input_type(mut cursor_query: Query<(&TilePosition, &mut Cursor)>) {

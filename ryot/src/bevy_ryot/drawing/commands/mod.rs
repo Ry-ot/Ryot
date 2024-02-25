@@ -39,13 +39,14 @@ pub struct CommandState {
 }
 
 impl CommandState {
-    /// When loading from the persistence layer, we don't want to save the changes again,
-    /// so we set the persisted flag to true, so that persistence is ignored during loading.
-    pub fn from_load() -> Self {
-        Self {
-            applied: false,
-            persisted: true,
-        }
+    pub fn apply(mut self) -> Self {
+        self.applied = true;
+        self
+    }
+
+    pub fn persist(mut self) -> Self {
+        self.persisted = true;
+        self
     }
 }
 
