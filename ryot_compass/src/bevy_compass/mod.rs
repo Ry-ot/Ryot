@@ -19,6 +19,9 @@ pub use drawing::*;
 mod hud;
 pub use hud::*;
 
+mod inputs;
+pub use inputs::*;
+
 #[derive(Event, Debug, Clone, Default, Deref, DerefMut)]
 pub struct ExportMap(pub PathBuf);
 
