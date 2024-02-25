@@ -1,7 +1,6 @@
 use crate::{ExportMap, LoadMap};
 use bevy::prelude::{
-    info, Camera, Changed, Commands, Entity, EventReader, Local, Query, Res, ResMut, Transform,
-    With,
+    Camera, Changed, Commands, Entity, EventReader, Local, Query, Res, ResMut, Transform, With,
 };
 use heed::types::Bytes;
 use heed::Env;
@@ -103,7 +102,7 @@ pub fn load_map(
 
     for LoadMap(path) in load_map_events.read() {
         match fs::copy(path.clone(), get_storage_path().join(MDB_FILE_NAME)) {
-            Ok(bytes_copied) => info!("Map loaded: {} bytes", bytes_copied),
+            Ok(bytes_copied) => debug!("Map loaded: {} bytes", bytes_copied),
             Err(e) => {
                 warn!("Failed to load map: {}", e);
                 continue;
@@ -167,7 +166,6 @@ pub fn load_area(sector: Sector, env: Env, commands: &mut Commands, tiles: &Res<
 
     match item_repository.get_for_area(&sector) {
         Ok(area) => {
-            info!("Reading area: {:?}", area.len());
             let mut bundles = vec![];
 
             for tile in area {

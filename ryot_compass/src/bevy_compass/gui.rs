@@ -78,8 +78,8 @@ fn ui_menu_system<C: ContentAssets>(
                         read_file(
                             AsyncFileDialog::new().add_filter(".mdb", &["mdb"]),
                             |(file_name, content)| {
-                                info!("Loading map from file: {:?}", file_name);
-                                info!("Current dir: {:?}", std::env::current_dir());
+                                debug!("Loading map from file: {:?}", file_name);
+                                debug!("Current dir: {:?}", std::env::current_dir());
                             },
                         );
 

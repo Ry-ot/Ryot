@@ -51,11 +51,7 @@ pub fn on_hold_every_millis<M, A: Actionlike>(
     action: A,
     millis: u64,
 ) -> SystemConfigs {
-    systems.run_if(
-        action_pressed(action.clone())
-            .and_then(not(action_just_pressed(action)))
-            .and_then(run_every_millis(millis)),
-    )
+    on_hold_every(systems, action, Duration::from_millis(millis))
 }
 
 #[macro_export]
