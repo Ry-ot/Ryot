@@ -1,4 +1,4 @@
-use crate::{gui_is_not_in_use, DrawingAction};
+use crate::{gui_is_not_in_use, CompassAction};
 use bevy::prelude::*;
 use leafwing_input_manager::common_conditions::*;
 use ryot::bevy_ryot::map::MapTiles;
@@ -49,23 +49,23 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
                 Update,
                 (
                     set_drawing_input_type.run_if(
-                        action_just_released(DrawingAction::StartConnectingPoints)
-                            .or_else(action_just_pressed(DrawingAction::ClearSelection).or_else(
-                                action_just_pressed(DrawingAction::StartConnectingPoints),
+                        action_just_released(CompassAction::StartConnectingPoints)
+                            .or_else(action_just_pressed(CompassAction::ClearSelection).or_else(
+                                action_just_pressed(CompassAction::StartConnectingPoints),
                             )),
                     ),
-                    input_action!(handle_drawing_input::<C>, DrawingAction::Draw, 50),
-                    input_action!(toggle_deletion, DrawingAction::ToggleDeletion, 500),
-                    input_action!(undo.map(drop), DrawingAction::Undo, 50),
-                    input_action!(redo.map(drop), DrawingAction::Redo, 50),
+                    input_action!(handle_drawing_input::<C>, CompassAction::Draw, 50),
+                    input_action!(toggle_deletion, CompassAction::ToggleDeletion, 500),
+                    input_action!(undo.map(drop), CompassAction::Undo, 50),
+                    input_action!(redo.map(drop), CompassAction::Redo, 50),
                     (
-                        change_brush_shape.run_if(action_just_pressed(DrawingAction::ChangeBrush)),
+                        change_brush_shape.run_if(action_just_pressed(CompassAction::ChangeBrush)),
                         change_brush_size(1)
-                            .run_if(action_just_pressed(DrawingAction::IncreaseBrush)),
+                            .run_if(action_just_pressed(CompassAction::IncreaseBrush)),
                         change_brush_size(-1)
-                            .run_if(action_just_pressed(DrawingAction::DecreaseBrush)),
+                            .run_if(action_just_pressed(CompassAction::DecreaseBrush)),
                     ),
-                    update_drawing_input_type.run_if(action_just_pressed(DrawingAction::Draw)),
+                    update_drawing_input_type.run_if(action_just_pressed(CompassAction::Draw)),
                 )
                     .chain()
                     .run_if(in_state(InternalContentState::Ready))

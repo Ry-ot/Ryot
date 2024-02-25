@@ -1,5 +1,5 @@
 use crate::{
-    delete_top_most_elements_in_positions, CommandHistory, Cursor, DrawingAction, InputType,
+    delete_top_most_elements_in_positions, CommandHistory, CompassAction, Cursor, InputType,
     ToolMode,
 };
 use bevy::ecs::query::QueryFilter;
@@ -167,14 +167,14 @@ pub fn update_drawing_input_type(mut cursor_query: Query<(&TilePosition, &mut Cu
 pub fn set_drawing_input_type(
     mut previous_size: Local<i32>,
     mut cursor_query: Query<&mut Cursor>,
-    action_state: Res<ActionState<DrawingAction>>,
+    action_state: Res<ActionState<CompassAction>>,
 ) {
     for mut cursor in &mut cursor_query {
         if let InputType::SingleClick(size) = cursor.drawing_state.input_type {
             *previous_size = size;
         }
 
-        if action_state.just_pressed(&DrawingAction::StartConnectingPoints) {
+        if action_state.just_pressed(&CompassAction::StartConnectingPoints) {
             cursor.drawing_state.input_type = InputType::DoubleClick(None);
         } else {
             cursor.drawing_state.input_type = InputType::SingleClick(*previous_size);

@@ -1,6 +1,6 @@
 use crate::bevy_compass::CompassAssets;
 use crate::{
-    CompassContentAssets, DrawingAction, HudLayers, {PaletteState, UiState},
+    CompassAction, CompassContentAssets, HudLayers, {PaletteState, UiState},
 };
 use bevy::math::{Vec2, Vec3};
 use bevy::prelude::*;
@@ -38,7 +38,7 @@ impl<C: CompassAssets> Plugin for CameraPlugin<C> {
                 OnExit(InternalContentState::LoadingContent),
                 (spawn_camera, spawn_cursor).chain(),
             )
-            .insert_resource(DrawingAction::get_default_input_map())
+            .insert_resource(CompassAction::get_default_input_map())
             .add_systems(
                 Update,
                 (
