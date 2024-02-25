@@ -21,3 +21,6 @@ pub use hud::*;
 
 #[derive(Event, Debug, Clone, Default, Deref, DerefMut)]
 pub struct MapExport(pub PathBuf);
+
+#[derive(Event, Debug, Clone, Default, Deref, DerefMut)]
+pub struct LoadMap(pub PathBuf);

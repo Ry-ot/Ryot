@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use crate::{
     draw_palette_bottom_panel, draw_palette_items, draw_palette_picker, helpers::read_file, Cursor,
-    MapExport, OptionalPlugin, Palette, PaletteState,
+    LoadMap, MapExport, OptionalPlugin, Palette, PaletteState,
 };
 
 use bevy::{app::AppExit, prelude::*, render::camera::Viewport};
@@ -12,7 +12,7 @@ use egui_dock::{DockArea, DockState, NodeIndex, Style};
 use rfd::AsyncFileDialog;
 use ryot::bevy_ryot::{
     drawing::{Brushes, DrawingBundle},
-    ContentAssets, InternalContentState,
+    ContentAssets, EventSender, InternalContentState,
 };
 
 pub struct UiPlugin<C: ContentAssets>(PhantomData<C>);
@@ -27,14 +27,12 @@ impl<C: ContentAssets> Plugin for UiPlugin<C> {
     fn build(&self, app: &mut App) {
         app.add_optional_plugin(EguiPlugin)
             .init_resource::<UiState>()
-            .init_resource::<AboutMeOpened>()
             .add_systems(First, check_egui_usage)
             .add_systems(OnEnter(InternalContentState::Ready), add_editor)
             .add_systems(
                 Update,
                 (
                     ui_menu_system::<C>,
-                    ui_about_system,
                     ui_dock_system,
                     resize_camera_viewport_system.map(drop),
                 )
@@ -44,17 +42,14 @@ impl<C: ContentAssets> Plugin for UiPlugin<C> {
     }
 }
 
-#[derive(Resource, Default)]
-struct AboutMeOpened(bool);
-
 fn ui_menu_system<C: ContentAssets>(
     content_assets: Res<C>,
     brushes: Res<Brushes<DrawingBundle>>,
     mut cursor_query: Query<&mut Cursor>,
     mut contexts: Query<&mut EguiContext>,
-    mut about_me: ResMut<AboutMeOpened>,
     mut exit: EventWriter<AppExit>,
     mut map_export_sender: EventWriter<MapExport>,
+    load_map_sender: Res<EventSender<LoadMap>>,
 ) {
     let Ok(mut cursor) = cursor_query.get_single_mut() else {
         return;
@@ -76,26 +71,31 @@ fn ui_menu_system<C: ContentAssets>(
                 let is_content_loaded = content_assets.sprite_sheet_data_set().is_some();
 
                 egui::menu::menu_button(ui, "File", |ui| {
-                    // #[cfg(not(target_arch = "wasm32"))]
                     if ui
                         .add_enabled(is_content_loaded, egui::Button::new("🗁 Open"))
                         .clicked()
                     {
+                        #[cfg(target_arch = "wasm32")]
                         read_file(
-                            AsyncFileDialog::new().add_filter(".mdb, .otbm", &["mdb", "otbm"]),
+                            AsyncFileDialog::new().add_filter(".mdb", &["mdb"]),
                             |(file_name, content)| {
-                                debug!("Loading map from file: {:?}", file_name);
-                                debug!("Content: {:?}", content);
-                                debug!("Current dir: {:?}", std::env::current_dir());
+                                info!("Loading map from file: {:?}", file_name);
+                                info!("Current dir: {:?}", std::env::current_dir());
                             },
                         );
 
-                        // let path = rfd::FileDialog::new()
-                        //     .add_filter(".mdb, .otbm", &["mdb", "otbm"])
-                        //     .pick_file();
-                        //
-                        // debug!("Loading map from file: {:?}", path);
-                        // debug!("Current dir: {:?}", std::env::current_dir());
+                        #[cfg(not(target_arch = "wasm32"))]
+                        {
+                            let path = rfd::FileDialog::new()
+                                .add_filter(".mdb", &["mdb"])
+                                .pick_file();
+
+                            if let Some(path) = path {
+                                if let Err(e) = load_map_sender.send(LoadMap(path)) {
+                                    warn!("Failed to send load map event: {}", e);
+                                }
+                            }
+                        }
                     }
 
                     #[cfg(not(target_arch = "wasm32"))]
@@ -156,11 +156,7 @@ fn ui_menu_system<C: ContentAssets>(
                     }
                 });
 
-                egui::menu::menu_button(ui, "Help", |ui| {
-                    if ui.button("About").clicked() {
-                        about_me.0 = true;
-                    }
-                });
+                egui::menu::menu_button(ui, "Help", |ui| if ui.button("About").clicked() {});
 
                 // ui.with_layout(egui::Layout::right_to_left(Align::Center), |ui| {
                 //     if ui.button("⚙").clicked() {
@@ -185,19 +181,6 @@ fn ui_menu_system<C: ContentAssets>(
 
         ui.add_space(4.);
     });
-}
-
-fn ui_about_system(mut contexts: Query<&mut EguiContext>, mut about_me: ResMut<AboutMeOpened>) {
-    let mut egui_ctx = contexts.single_mut();
-    egui::Window::new("About Ryot Compass")
-        .auto_sized()
-        .collapsible(false)
-        .movable(false)
-        .default_pos(egui::pos2(100.0, 100.0)) // Adjust position as needed
-        .open(&mut about_me.0)
-        .show(egui_ctx.get_mut(), |ui| {
-            ui.label("About Me information...");
-        });
 }
 
 fn ui_dock_system(
