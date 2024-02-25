@@ -108,10 +108,10 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
                                 action_just_pressed(DrawingAction::StartConnectingPoints),
                             )),
                     ),
-                    input_action!(handle_drawing_input::<C>, DrawingAction::Draw, 100),
+                    input_action!(handle_drawing_input::<C>, DrawingAction::Draw, 50),
                     input_action!(toggle_deletion, DrawingAction::ToggleDeletion, 500),
-                    input_action!(undo.map(drop), DrawingAction::Undo, 100),
-                    input_action!(redo.map(drop), DrawingAction::Redo, 100),
+                    input_action!(undo.map(drop), DrawingAction::Undo, 50),
+                    input_action!(redo.map(drop), DrawingAction::Redo, 50),
                     (
                         change_brush_shape.run_if(action_just_pressed(DrawingAction::ChangeBrush)),
                         change_brush_size(1)
