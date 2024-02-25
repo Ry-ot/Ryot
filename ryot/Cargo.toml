@@ -42,6 +42,7 @@ thiserror.workspace = true
 time-test.workspace = true
 zstd = { workspace = true, optional = true }
 async-std = "1.12.0"
+anyhow = { version = "1.0.77", features = [] }
 
 [dev-dependencies]
 rstest.workspace = true

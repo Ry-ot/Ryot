@@ -393,9 +393,17 @@ pub(crate) fn update_sprite_system<C: ContentAssets>(
                 continue;
             }
         };
+        let Some(layout) = content_assets.get_atlas_layout(sprite.sprite_sheet.layout) else {
+            warn!(
+                "Atlas layout for sprite layout {:?} not found",
+                sprite.sprite_sheet.layout
+            );
+            continue;
+        };
         *loaded_sprites = LoadedSprites(sprites.clone());
         *texture = sprite.texture.clone();
         atlas_sprite.index = sprite.get_sprite_index();
+        atlas_sprite.layout = layout.clone();
         if let Some(anim) = anim {
             if let Some(mut animation_sprite) = animation_sprite {
                 *animation_sprite = anim;
@@ -449,6 +457,14 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
             }
         };
 
+        let Some(layout) = content_assets.get_atlas_layout(sprite.sprite_sheet.layout) else {
+            warn!(
+                "Atlas layout for sprite layout {:?} not found",
+                sprite.sprite_sheet.layout
+            );
+            continue;
+        };
+
         commands
             .entity(entity)
             .insert(LoadedSprites(sprites.clone()))
@@ -459,7 +475,7 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
                     ..default()
                 },
                 atlas: TextureAtlas {
-                    layout: content_assets.get_atlas_layout(),
+                    layout,
                     index: sprite.get_sprite_index(),
                 },
                 texture: sprite.texture,

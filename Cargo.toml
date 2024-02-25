@@ -11,7 +11,7 @@ opt-level = 1
 opt-level = 3
 
 [workspace.dependencies]
-bevy_asset_loader = { version = "0.20", features = [
+bevy_asset_loader = { git = "https://github.com/lgrossi/bevy_asset_loader", branch = "lucas/set-of-dynamic-standard-assets", features = [
     "2d",
     "standard_dynamic_assets",
 ] }
