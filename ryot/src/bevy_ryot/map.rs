@@ -16,7 +16,7 @@ pub struct MapTiles(pub HashMap<TilePosition, MapTile>);
 pub struct MapTile {
     ground: Option<Entity>,
     edge: Option<Entity>,
-    bottom: HashMap<RelativeLayer, Vec<Entity>>,
+    bottom: HashMap<RelativeLayer, HashMap<Order, Entity>>,
     top: Option<Entity>,
 }
 
@@ -116,7 +116,7 @@ impl MapTile {
             Layer::Bottom(BottomLayer {
                 order,
                 relative_layer,
-            }) => self.get_bottom(relative_layer, order),
+            }) => self.get_bottom(relative_layer, &order),
             Layer::Top => self.top,
             Layer::Hud(_) => None,
         }
@@ -143,49 +143,44 @@ impl MapTile {
             Layer::Bottom(BottomLayer {
                 order,
                 relative_layer,
-            }) => self.remove_bottom(relative_layer, order),
+            }) => self.remove_bottom(relative_layer, &order),
             Layer::Top => self.top.take(),
             Layer::Hud(_) => None,
         }
     }
 
     fn pop_bottom(&mut self, relative_layer: RelativeLayer) -> Option<Entity> {
-        self.bottom
-            .get_mut(&relative_layer)
-            .and_then(|entities| entities.pop())
+        self.bottom.get_mut(&relative_layer).and_then(|entities| {
+            let last = entities.iter().last()?.0.clone();
+            entities.remove(&last)
+        })
     }
 
-    fn remove_bottom(&mut self, relative_layer: RelativeLayer, order: Order) -> Option<Entity> {
-        self.bottom.get_mut(&relative_layer).and_then(|entities| {
-            if entities.len() <= order as usize {
-                None
-            } else {
-                Some(entities.remove(order as usize))
-            }
-        })
+    fn remove_bottom(&mut self, relative_layer: RelativeLayer, order: &Order) -> Option<Entity> {
+        self.bottom
+            .get_mut(&relative_layer)
+            .and_then(|entities| entities.remove(order))
     }
 
     fn peek_bottom(&self, relative_layer: RelativeLayer) -> Option<Entity> {
         self.bottom
             .get(&relative_layer)
-            .and_then(|entities| entities.last().copied())
+            .and_then(|entities| entities.iter().last())
+            .map(|(_, entity)| *entity)
     }
 
-    fn get_bottom(&self, relative_layer: RelativeLayer, order: Order) -> Option<Entity> {
+    fn get_bottom(&self, relative_layer: RelativeLayer, order: &Order) -> Option<Entity> {
         self.bottom
             .get(&relative_layer)
-            .and_then(|entities| entities.get(order as usize).copied())
+            .and_then(|entities| entities.get(order))
+            .map(|entity| *entity)
     }
 
     fn push_bottom(&mut self, bottom_layer: BottomLayer, entity: Entity) {
-        let entities = self.bottom.entry(bottom_layer.relative_layer).or_default();
-
-        match bottom_layer.order {
-            Order::MAX if entities.len() >= Order::MAX as usize => {
-                entities.insert(Order::MAX as usize, entity)
-            }
-            0..=Order::MAX => entities.push(entity),
-        }
+        self.bottom
+            .entry(bottom_layer.relative_layer)
+            .or_default()
+            .insert(bottom_layer.order, entity);
     }
 }
 
