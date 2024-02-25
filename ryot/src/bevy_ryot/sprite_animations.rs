@@ -155,7 +155,7 @@ pub fn toggle_sprite_animation(mut enabled: ResMut<SpriteAnimationEnabled>) {
 
 /// A system that animates the sprites based on the `AnimationSprite` component.
 /// It's meant to run every frame to update the animation of the entities.
-/// It will only run if the entity has a `TextureAtlasSprite` and an `AnimationSprite` component.
+/// It will only run if the entity has a `TextureAtlas` and an `AnimationSprite` component.
 pub(crate) fn animate_sprite_system(
     time: Res<Time>,
     mut synced_timers: ResMut<SynchronizedAnimationTimers>,
