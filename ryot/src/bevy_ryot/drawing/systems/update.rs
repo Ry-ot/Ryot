@@ -125,6 +125,10 @@ pub fn persist_update(
 ) {
     #[cfg(feature = "lmdb")]
     {
+        let Some(lmdb_env) = &lmdb_env.0 else {
+            return;
+        };
+
         let mut keys = vec![];
         let mut to_draw = vec![];
 

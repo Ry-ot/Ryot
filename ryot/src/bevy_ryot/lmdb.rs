@@ -5,11 +5,13 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 #[derive(Resource, Deref, DerefMut)]
-pub struct LmdbEnv(pub Env);
+pub struct LmdbEnv(pub Option<Env>);
 
 impl Default for LmdbEnv {
     fn default() -> Self {
-        Self(lmdb::create_env(lmdb::get_storage_path()).expect("Failed to create LMDB env"))
+        Self(Some(
+            lmdb::create_env(lmdb::get_storage_path()).expect("Failed to create LMDB env"),
+        ))
     }
 }
 
@@ -42,6 +44,10 @@ pub fn compact_map(time: Res<Time>, env: Res<LmdbEnv>, mut lmdb_compactor: ResMu
     if !lmdb_compactor.timer.tick(time.delta()).finished() {
         return;
     }
+
+    let Some(env) = &env.0 else {
+        return;
+    };
 
     let env_clone = env.clone();
     let is_running = lmdb_compactor.is_running.clone();

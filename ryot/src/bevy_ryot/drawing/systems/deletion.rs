@@ -53,6 +53,10 @@ pub fn persist_deletion(
 ) {
     #[cfg(feature = "lmdb")]
     {
+        let Some(lmdb_env) = &lmdb_env.0 else {
+            return;
+        };
+
         let mut layer_per_pos: HashMap<Vec<u8>, Layer> = HashMap::new();
 
         for (tile_pos, layer, deletion) in q_deleted.iter() {
