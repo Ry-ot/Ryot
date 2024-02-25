@@ -2,8 +2,8 @@ use bevy::prelude::*;
 use bevy::winit::WinitWindows;
 use bevy_egui::EguiContexts;
 use ryot_compass::{
-    init_new_map, load_map, reload_visible_area, AppPlugin, CameraPlugin, CompassContentAssets,
-    DrawingPlugin, ErrorPlugin, ExportMap, LoadMap, PalettePlugin, UiPlugin,
+    AppPlugin, CameraPlugin, CompassContentAssets, DrawingPlugin, ErrorPlugin, ExportMap, LoadMap,
+    PalettePlugin, UiPlugin,
 };
 use std::io::Cursor;
 
@@ -23,7 +23,9 @@ use ryot::prelude::lmdb::{compact_map, LmdbCompactor};
 #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
 use ryot::prelude::InternalContentState;
 #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
-use ryot_compass::{export_map, init_tiles_db, read_area};
+use ryot_compass::{
+    export_map, init_new_map, init_tiles_db, load_map, read_area, reload_visible_area,
+};
 
 fn set_window_icon(
     windows: NonSend<WinitWindows>,
