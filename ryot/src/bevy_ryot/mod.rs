@@ -202,6 +202,7 @@ fn prepare_content<C: PreloadedContentAssets>(
 pub fn entitled_window(title: String) -> WindowPlugin {
     WindowPlugin {
         primary_window: Some(Window {
+            name: Some(title.clone()),
             title,
             // Bind to canvas included in `index.html`
             canvas: Some("#bevy".to_owned()),
