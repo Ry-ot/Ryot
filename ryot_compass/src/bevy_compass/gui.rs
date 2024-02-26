@@ -5,7 +5,7 @@ use crate::{
     OptionalPlugin, Palette, PaletteState,
 };
 
-use bevy::{app::AppExit, prelude::*, render::camera::Viewport};
+use bevy::{app::AppExit, prelude::*, render::camera::Viewport, winit::WinitWindows};
 use bevy_egui::{EguiContext, EguiContexts, EguiPlugin, EguiUserTextures};
 use egui::{load::SizedTexture, TextureId};
 use egui_dock::{DockArea, DockState, NodeIndex, Style};
@@ -41,6 +41,7 @@ impl<C: ContentAssets> Plugin for UiPlugin<C> {
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 fn ui_menu_system<C: ContentAssets>(
     content_assets: Res<C>,
     brushes: Res<Brushes<DrawingBundle>>,
@@ -49,6 +50,7 @@ fn ui_menu_system<C: ContentAssets>(
     mut exit: EventWriter<AppExit>,
     mut map_export_sender: EventWriter<ExportMap>,
     load_map_sender: Res<EventSender<LoadMap>>,
+    _windows: NonSend<WinitWindows>,
 ) {
     let Ok(mut cursor) = cursor_query.get_single_mut() else {
         return;

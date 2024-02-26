@@ -217,7 +217,7 @@ pub(crate) fn prepare_sprites<C: PreloadedContentAssets>(
 ) {
     if !content_assets.sprite_sheets().is_empty() {
         for (file, texture) in content_assets.sprite_sheets().clone() {
-            let file = match file.strip_prefix("sprite-sheets/") {
+            let file = match file.strip_prefix(&(SPRITE_SHEET_FOLDER.to_string() + "/")) {
                 Some(file) => file,
                 None => &file,
             };
