@@ -52,7 +52,7 @@ use serde::{Deserialize, Serialize};
 #[serde(tag = "type")]
 pub enum ContentType {
     #[serde(rename = "appearances")]
-    Appearances { file: String, version: u32 },
+    Appearances { file: String },
     #[serde(rename = "staticdata")]
     StaticData { file: String },
     #[serde(rename = "staticmapdata")]
