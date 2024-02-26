@@ -112,7 +112,7 @@ impl<E: BrushItem> Brush<E> {
 
 impl<E: BrushItem> Default for Brush<E> {
     fn default() -> Self {
-        Diamond.into()
+        Rectangle.into()
     }
 }
 
@@ -122,9 +122,9 @@ pub struct Brushes<E: BrushItem + std::cmp::PartialEq>(pub Vec<Brush<E>>);
 impl<E: BrushItem + std::cmp::PartialEq> Default for Brushes<E> {
     fn default() -> Self {
         Self::new()
+            .insert(Rectangle)
             .insert(Diamond)
             .insert(Round)
-            .insert(Rectangle)
             .insert(Line)
             .insert(Random)
     }

@@ -271,6 +271,9 @@ impl OptionalPlugin for App {
     }
 }
 
+#[derive(Component, Debug, Clone)]
+pub struct GridView;
+
 /// A system to spawn a grid of lines to represent the tiles in the game using a custom color.
 pub fn spawn_grid<C: ContentAssets>(
     color: Color,
@@ -335,11 +338,14 @@ pub fn spawn_grid<C: ContentAssets>(
 
         let mesh_handle: Handle<Mesh> = meshes.add(mesh);
 
-        commands.spawn(MaterialMesh2dBundle {
-            mesh: mesh_handle.into(),
-            transform: Transform::from_translation(Vec2::ZERO.extend(GRID_LAYER.z())),
-            material: materials.add(ColorMaterial::default()),
-            ..default()
-        });
+        commands.spawn((
+            GridView,
+            MaterialMesh2dBundle {
+                mesh: mesh_handle.into(),
+                transform: Transform::from_translation(Vec2::ZERO.extend(GRID_LAYER.z())),
+                material: materials.add(ColorMaterial::default()),
+                ..default()
+            },
+        ));
     }
 }

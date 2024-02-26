@@ -1,18 +1,33 @@
 use std::marker::PhantomData;
 
 use crate::{
-    draw_palette_bottom_panel, draw_palette_items, draw_palette_picker, Cursor, ExportMap, LoadMap,
-    OptionalPlugin, Palette, PaletteState,
+    draw_palette_bottom_panel, draw_palette_items, draw_palette_picker, toggle_grid, Cursor,
+    ExportMap, InputType, LoadMap, OptionalPlugin, Palette, PaletteState, ToolMode,
 };
 
 use bevy::{app::AppExit, prelude::*, render::camera::Viewport, winit::WinitWindows};
 use bevy_egui::{EguiContext, EguiContexts, EguiPlugin, EguiUserTextures};
-use egui::{load::SizedTexture, TextureId};
-use egui_dock::{DockArea, DockState, NodeIndex, Style};
-use ryot::bevy_ryot::{
-    drawing::{Brushes, DrawingBundle},
-    ContentAssets, EventSender, InternalContentState,
+use egui::{load::SizedTexture, Slider, TextureId};
+use egui_dock::{DockArea, DockState, NodeIndex};
+use ryot::{
+    bevy_ryot::{
+        drawing::{Brushes, DrawingBundle},
+        ContentAssets, EventSender, GridView, InternalContentState,
+    },
+    include_svg,
 };
+
+const DELETE_ICON: egui::ImageSource = include_svg!(
+    r##"
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="#fff6c2" viewBox="0 0 256 256"><path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM112,168a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm0-120H96V40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8Z"></path></svg>
+    "##
+);
+
+const GRID_ICON: egui::ImageSource = include_svg!(
+    r##"
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="#fff6c2" viewBox="0 0 256 256"><path d="M200,40H56A16,16,0,0,0,40,56V200a16,16,0,0,0,16,16H200a16,16,0,0,0,16-16V56A16,16,0,0,0,200,40Zm0,80H136V56h64ZM120,56v64H56V56ZM56,136h64v64H56Zm144,64H136V136h64v64Z"></path></svg>
+    "##
+);
 
 pub struct UiPlugin<C: ContentAssets>(PhantomData<C>);
 
@@ -45,6 +60,7 @@ impl<C: ContentAssets> Plugin for UiPlugin<C> {
 fn ui_menu_system<C: ContentAssets>(
     content_assets: Res<C>,
     brushes: Res<Brushes<DrawingBundle>>,
+    q_grid: Query<&mut Visibility, With<GridView>>,
     mut cursor_query: Query<&mut Cursor>,
     mut contexts: Query<&mut EguiContext>,
     mut exit: EventWriter<AppExit>,
@@ -125,16 +141,56 @@ fn ui_menu_system<C: ContentAssets>(
         });
 
         ui.horizontal_centered(|ui| {
-            let mut style = (*ui.ctx().style()).clone();
-            style.visuals.interact_cursor = Some(egui::CursorIcon::PointingHand);
+            ui.set_max_height(24.);
+            ui.horizontal(|ui| {
+                let mut style = (*ui.ctx().style()).clone();
+                style.visuals.interact_cursor = Some(egui::CursorIcon::PointingHand);
 
-            for (index, brush) in brushes.iter().enumerate() {
-                let is_selected = cursor.drawing_state.brush_index == index;
-                let button = brush.button().selected(is_selected);
-                let button = ui.add_sized(egui::Vec2::new(24., 24.), button);
-                if button.on_hover_text(brush.name()).clicked() {
-                    cursor.drawing_state.brush_index = index;
+                let grid_button = egui::ImageButton::new(GRID_ICON).selected(
+                    q_grid
+                        .get_single()
+                        .map(|v| !matches!(v, Visibility::Hidden))
+                        .unwrap_or(false),
+                );
+                let grid_button = ui.add_sized(egui::Vec2::new(24., 24.), grid_button);
+                if grid_button.on_hover_text("Toggle Grid").clicked() {
+                    toggle_grid(q_grid);
                 }
+
+                ui.separator();
+
+                for (index, brush) in brushes.iter().enumerate() {
+                    let is_selected = cursor.drawing_state.brush_index == index;
+                    let button = brush.button().selected(is_selected);
+                    let button = ui.add_sized(egui::Vec2::new(24., 24.), button);
+                    if button.on_hover_text(brush.name()).clicked() {
+                        cursor.drawing_state.brush_index = index;
+                    }
+                }
+
+                ui.separator();
+
+                ui.scope(|ui| {
+                    ui.style_mut().visuals.selection.bg_fill =
+                        egui::Color32::RED.gamma_multiply(0.5);
+                    let delete_button = egui::ImageButton::new(DELETE_ICON)
+                        .selected(cursor.drawing_state.tool_mode == ToolMode::Erase);
+                    let delete_button = ui.add_sized(egui::Vec2::new(24., 24.), delete_button);
+                    if delete_button.on_hover_text("Delete").clicked() {
+                        cursor.drawing_state.tool_mode =
+                            if cursor.drawing_state.tool_mode == ToolMode::Erase {
+                                ToolMode::Draw
+                            } else {
+                                ToolMode::Erase
+                            };
+                    }
+                });
+            });
+
+            ui.separator();
+            ui.label(brushes[cursor.drawing_state.brush_index].name().to_string());
+            if let InputType::SingleClick(size) = &mut cursor.drawing_state.input_type {
+                ui.add(Slider::new(size, 0..=20));
             }
         });
 
@@ -241,7 +297,7 @@ impl UiState {
                     .fill(egui::Color32::from_black_alpha(0)),
             )
             .show(ctx, |ui| {
-                let style = Style::from_egui(ctx.style().as_ref());
+                let style = egui_dock::Style::from_egui(ctx.style().as_ref());
                 DockArea::new(&mut self.state)
                     .style(style)
                     .show_inside(ui, &mut tab_viewer)
