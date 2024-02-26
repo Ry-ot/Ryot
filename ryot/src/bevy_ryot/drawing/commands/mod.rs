@@ -17,9 +17,6 @@ use crate::position::TilePosition;
 use crate::Layer;
 use bevy::prelude::*;
 
-mod load;
-pub use load::*;
-
 mod update;
 pub use update::*;
 

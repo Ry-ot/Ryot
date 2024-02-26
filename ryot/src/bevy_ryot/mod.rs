@@ -32,6 +32,9 @@ pub use async_events::*;
 mod conditions;
 pub use conditions::*;
 
+mod game;
+pub use game::*;
+
 #[cfg(feature = "lmdb")]
 pub mod lmdb;
 

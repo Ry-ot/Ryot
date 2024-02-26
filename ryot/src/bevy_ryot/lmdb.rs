@@ -1,8 +1,8 @@
-use crate::bevy_ryot::drawing::{DrawingBundle, LoadTileContent};
 use crate::bevy_ryot::map::MapTiles;
-use crate::bevy_ryot::AppearanceDescriptor;
+use crate::bevy_ryot::{GameObjectBundle, ObjectsWereLoaded};
 use crate::lmdb::{DatabaseName, Item, ItemRepository, ItemsFromHeedLmdb, SerdePostcard};
 use crate::position::Sector;
+use crate::prelude::GameObjectId;
 use crate::{helpers::execute_async, lmdb, Layer};
 use bevy::prelude::*;
 use heed::types::Bytes;
@@ -88,9 +88,9 @@ pub fn compact_map(time: Res<Time>, env: Res<LmdbEnv>, mut lmdb_compactor: ResMu
 pub fn read_area(
     tiles: Res<MapTiles>,
     env: ResMut<LmdbEnv>,
-    mut commands: Commands,
     mut last_area: Local<Sector>,
     sector_query: Query<&Sector, (With<Camera>, Changed<Sector>)>,
+    mut object_loaded_event_sender: EventWriter<ObjectsWereLoaded>,
 ) {
     let Some(env) = &env.0 else {
         return;
@@ -103,7 +103,7 @@ pub fn read_area(
     let sector = *sector * 1.5;
 
     for area in *last_area - sector {
-        load_area(area, env.clone(), &mut commands, &tiles);
+        load_area(env.clone(), area, &tiles, &mut object_loaded_event_sender);
     }
 
     *last_area = sector;
@@ -113,24 +113,33 @@ pub fn read_area(
 pub fn reload_visible_area(
     tiles: Res<MapTiles>,
     env: ResMut<LmdbEnv>,
-    mut commands: Commands,
     sector_query: Query<&Sector, With<Camera>>,
+    mut object_loaded_event_sender: EventWriter<ObjectsWereLoaded>,
 ) {
     let Some(env) = &env.0 else {
         return;
     };
 
     for sector in sector_query.iter() {
-        load_area(*sector, env.clone(), &mut commands, &tiles);
+        load_area(
+            env.clone(),
+            *sector,
+            &tiles,
+            &mut object_loaded_event_sender,
+        );
     }
 }
 
 /// This helper function will load the area from the LMDB database and draw it on the screen.
-/// It will only run if the area is not already loaded and it will draw to the screen
-/// using LoadTileContent events to be handled by the drawing system.
-///
+/// It will only run if the area is not already loaded and it will emit `ObjectsWereLoaded`
+/// with the GameObjectBundle of all the elements that were loaded in each tile + layer combination.
 /// This can be used by different systems in Bevy to interact with Lmdb loading.
-pub fn load_area(sector: Sector, env: Env, commands: &mut Commands, tiles: &Res<MapTiles>) {
+pub fn load_area(
+    env: Env,
+    sector: Sector,
+    tiles: &Res<MapTiles>,
+    object_loaded_event_sender: &mut EventWriter<ObjectsWereLoaded>,
+) {
     let item_repository = ItemsFromHeedLmdb::new(env);
 
     match item_repository.get_for_area(&sector) {
@@ -145,15 +154,15 @@ pub fn load_area(sector: Sector, env: Env, commands: &mut Commands, tiles: &Res<
                         }
                     }
 
-                    bundles.push(DrawingBundle::new(
-                        layer,
+                    bundles.push(GameObjectBundle::new(
+                        GameObjectId::Object(item.id as u32),
                         tile.position,
-                        AppearanceDescriptor::object(item.id as u32),
+                        layer,
                     ));
                 }
             }
 
-            commands.add(LoadTileContent::from_bundles(bundles));
+            object_loaded_event_sender.send(ObjectsWereLoaded(bundles));
         }
         Err(e) => {
             error!("Failed to read area: {}", e);
