@@ -124,7 +124,18 @@ pub static MAP_GRAB_INPUTS: [InputKind; 2] = [
     InputKind::Mouse(MouseButton::Left),
 ];
 
-fn spawn_camera(content: Res<CompassContentAssets>, mut commands: Commands) {
+fn spawn_camera(
+    content: Res<CompassContentAssets>,
+    mut commands: Commands,
+    atlas_layouts: Res<Assets<TextureAtlasLayout>>,
+) {
+    let layout = content
+        .get_atlas_layout(SpriteLayout::OneByOne)
+        .expect("Must have atlas layout");
+
+    let atlas_layout = atlas_layouts.get(layout).expect("No atlas layout");
+    let zoom_factor = atlas_layout.size.x / 384.;
+
     commands.spawn((
         Camera2dBundle::default(),
         Sector::default(),
@@ -132,8 +143,8 @@ fn spawn_camera(content: Res<CompassContentAssets>, mut commands: Commands) {
             pan_cam: PanCam {
                 enabled: true,
                 zoom_to_cursor: true,
-                min_scale: 0.2,
-                max_scale: Some(8.75),
+                min_scale: 0.2 * zoom_factor,
+                max_scale: Some(8.75 * zoom_factor),
                 ..default()
             },
             inputs: InputManagerBundle::<PanCamAction> {
