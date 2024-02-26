@@ -1,6 +1,5 @@
 use bevy::prelude::{Deref, DerefMut, Entity, Reflect, Resource};
 use bevy::utils::HashMap;
-use strum::IntoEnumIterator;
 
 use crate::layer::{BottomLayer, Order, RelativeLayer};
 use crate::{layer::Layer, position::TilePosition};
@@ -85,24 +84,15 @@ impl<'a> IntoIterator for &'a MapTile {
 }
 
 impl MapTile {
-    pub fn peek(&self) -> Option<Entity> {
-        self.into_iter().last().map(|(_, entity)| entity)
+    pub fn peek(&self) -> Option<(Layer, Entity)> {
+        self.into_iter().last()
     }
 
     pub fn pop(&mut self) -> Option<Entity> {
-        for layer in Layer::iter().rev() {
-            if matches!(layer, Layer::Bottom(_)) {
-                for relative_layer in RelativeLayer::iter().rev() {
-                    if let Some(entity) = self.pop_bottom(relative_layer) {
-                        return Some(entity);
-                    }
-                }
-            }
-            if let Some(entity) = self.pop_from_layer(layer) {
-                return Some(entity);
-            }
-        }
-        None
+        let last = self.peek()?;
+        let (layer, _) = last;
+
+        self.pop_from_layer(layer)
     }
 
     pub fn peek_for_layer(&self, layer: Layer) -> Option<Entity> {
@@ -137,23 +127,12 @@ impl MapTile {
             Layer::Ground => self.ground.take(),
             Layer::Edge => self.edge.take(),
             Layer::Bottom(BottomLayer {
-                order: Order::MAX,
-                relative_layer,
-            }) => self.pop_bottom(relative_layer),
-            Layer::Bottom(BottomLayer {
                 order,
                 relative_layer,
             }) => self.remove_bottom(relative_layer, &order),
             Layer::Top => self.top.take(),
             Layer::Hud(_) => None,
         }
-    }
-
-    fn pop_bottom(&mut self, relative_layer: RelativeLayer) -> Option<Entity> {
-        self.bottom.get_mut(&relative_layer).and_then(|entities| {
-            let last = *entities.iter().last()?.0;
-            entities.remove(&last)
-        })
     }
 
     fn remove_bottom(&mut self, relative_layer: RelativeLayer, order: &Order) -> Option<Entity> {
@@ -330,19 +309,25 @@ mod test {
         let mut map_tile = MapTile::default();
         let entity = Entity::from_raw(0);
         map_tile.push_for_layer(Layer::Ground, entity);
-        assert_eq!(map_tile.peek(), Some(Entity::from_raw(0)));
+        assert_eq!(map_tile.peek(), Some((Layer::Ground, Entity::from_raw(0))));
         let entity = Entity::from_raw(1);
         map_tile.push_for_layer(Layer::Edge, entity);
-        assert_eq!(map_tile.peek(), Some(Entity::from_raw(1)));
+        assert_eq!(map_tile.peek(), Some((Layer::Edge, Entity::from_raw(1))));
         let entity = Entity::from_raw(2);
         map_tile.push_for_layer(Layer::Top, entity);
-        assert_eq!(map_tile.peek(), Some(Entity::from_raw(2)));
+        assert_eq!(map_tile.peek(), Some((Layer::Top, Entity::from_raw(2))));
         let entity = Entity::from_raw(3);
         map_tile.push_for_layer(
             Layer::Bottom(BottomLayer::new(0, RelativeLayer::Creature)),
             entity,
         );
-        assert_eq!(map_tile.peek(), Some(Entity::from_raw(2)));
+        assert_eq!(
+            map_tile.peek(),
+            Some((
+                Layer::Bottom(BottomLayer::new(0, RelativeLayer::Creature)),
+                Entity::from_raw(3)
+            ))
+        );
         let entity = Entity::from_raw(4);
         map_tile.push_for_layer(
             Layer::Bottom(BottomLayer::new(1, RelativeLayer::Creature)),
@@ -370,15 +355,27 @@ mod test {
             Some(Entity::from_raw(4))
         );
 
-        assert_eq!(map_tile.peek(), Some(Entity::from_raw(2)));
+        assert_eq!(map_tile.peek(), Some((Layer::Top, Entity::from_raw(2))));
         assert_eq!(map_tile.pop(), Some(Entity::from_raw(2)));
-        assert_eq!(map_tile.peek(), Some(Entity::from_raw(4)));
+        assert_eq!(
+            map_tile.peek(),
+            Some((
+                Layer::Bottom(BottomLayer::new(1, RelativeLayer::Creature)),
+                Entity::from_raw(4)
+            ))
+        );
         assert_eq!(map_tile.pop(), Some(Entity::from_raw(4)));
-        assert_eq!(map_tile.peek(), Some(Entity::from_raw(3)));
+        assert_eq!(
+            map_tile.peek(),
+            Some((
+                Layer::Bottom(BottomLayer::new(0, RelativeLayer::Creature)),
+                Entity::from_raw(3)
+            ))
+        );
         assert_eq!(map_tile.pop(), Some(Entity::from_raw(3)));
-        assert_eq!(map_tile.peek(), Some(Entity::from_raw(1)));
+        assert_eq!(map_tile.peek(), Some((Layer::Edge, Entity::from_raw(1))));
         assert_eq!(map_tile.pop(), Some(Entity::from_raw(1)));
-        assert_eq!(map_tile.peek(), Some(Entity::from_raw(0)));
+        assert_eq!(map_tile.peek(), Some((Layer::Ground, Entity::from_raw(0))));
         assert_eq!(map_tile.pop(), Some(Entity::from_raw(0)));
     }
 }
