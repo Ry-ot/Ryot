@@ -3,4 +3,5 @@ assets/cip-catalog/
 assets/sprite-sheets/
 assets/appearances.dat
 assets/catalog-content.json
+assets/dynamic.atlases.ron
 dist/

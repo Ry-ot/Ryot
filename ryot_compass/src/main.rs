@@ -1,31 +1,12 @@
+use bevy::diagnostic::*;
 use bevy::prelude::*;
+use bevy::window::PrimaryWindow;
 use bevy::winit::WinitWindows;
 use bevy_egui::EguiContexts;
-use ryot_compass::{
-    AppPlugin, CameraPlugin, CompassContentAssets, DrawingPlugin, ErrorPlugin, ExportMap,
-    InputPlugin, LoadMap, PalettePlugin, UiPlugin,
-};
-use std::io::Cursor;
-
-use winit::window::Icon;
-
-use bevy::diagnostic::{
-    EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin,
-    SystemInformationDiagnosticsPlugin,
-};
-use bevy::window::PrimaryWindow;
 use ryot::prelude::AsyncEventApp;
-
-#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
-use ryot::prelude::lmdb::LmdbEnv;
-#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
-use ryot::prelude::lmdb::{compact_map, LmdbCompactor};
-#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
-use ryot::prelude::InternalContentState;
-#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
-use ryot_compass::{
-    export_map, init_new_map, init_tiles_db, load_map, read_area, reload_visible_area,
-};
+use ryot_compass::*;
+use std::io::Cursor;
+use winit::window::Icon;
 
 fn set_window_icon(
     windows: NonSend<WinitWindows>,
@@ -97,26 +78,7 @@ fn main() {
     app.add_event::<ExportMap>().add_async_event::<LoadMap>();
 
     #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
-    app.init_resource::<LmdbEnv>()
-        .init_resource::<LmdbCompactor>()
-        .add_systems(Startup, init_tiles_db.map(drop))
-        .add_systems(
-            Update,
-            (
-                compact_map,
-                export_map.map(drop).run_if(on_event::<ExportMap>()),
-                (
-                    load_map.map(drop),
-                    init_new_map.map(drop),
-                    reload_visible_area,
-                )
-                    .chain()
-                    .run_if(on_event::<LoadMap>()),
-                read_area,
-            )
-                .chain()
-                .run_if(in_state(InternalContentState::Ready)),
-        );
+    app.add_plugins(LmdbPlugin);
 
     app.run();
 }

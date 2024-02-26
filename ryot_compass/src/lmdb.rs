@@ -1,82 +1,61 @@
 use crate::{ExportMap, LoadMap};
-use bevy::prelude::{
-    Camera, Changed, Commands, Entity, EventReader, Local, Query, Res, ResMut, Transform, With,
-};
+use bevy::prelude::*;
 use heed::types::Bytes;
-use heed::Env;
-use log::{debug, error, warn};
-use ryot::bevy_ryot::lmdb::LmdbCompactor;
-use ryot::bevy_ryot::map::MapTiles;
-use ryot::helpers::execute_async;
-use ryot::lmdb::{
-    build_map, get_storage_path, DatabaseName, Item, ItemRepository, ItemsFromHeedLmdb,
-    SerdePostcard, MDB_FILE_NAME,
+use log::{debug, warn};
+use ryot::bevy_ryot::lmdb::{
+    compact_map, read_area, reload_visible_area, LmdbCompactor, LmdbPlugin as RyotLmdbPlugin,
 };
+use ryot::bevy_ryot::map::MapTiles;
+use ryot::bevy_ryot::InternalContentState;
+use ryot::helpers::execute_async;
+use ryot::lmdb::*;
 use ryot::position::{Sector, TilePosition};
-use ryot::prelude::drawing::{DrawingBundle, LoadTileContent, TileComponent};
+use ryot::prelude::drawing::TileComponent;
 use ryot::prelude::lmdb::LmdbEnv;
-use ryot::prelude::{compress, decompress, AppearanceDescriptor, Zstd};
+use ryot::prelude::{compress, decompress, Zstd};
 use ryot::{lmdb, Layer};
 use std::collections::HashMap;
 use std::fs;
 use std::sync::atomic::Ordering;
 use time_test::time_test;
 
-pub fn init_tiles_db(lmdb_env: Res<LmdbEnv>) -> color_eyre::Result<()> {
-    let Some(env) = &lmdb_env.0 else {
-        return Ok(());
-    };
+pub struct LmdbPlugin;
 
-    let (wtxn, _) =
-        lmdb::rw::<Bytes, SerdePostcard<HashMap<Layer, Item>>>(env, DatabaseName::Tiles)?;
-
-    wtxn.commit()?;
-
-    Ok(())
+impl Plugin for LmdbPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_plugins(RyotLmdbPlugin).add_systems(
+            Update,
+            (
+                compact_map,
+                export_map.map(drop).run_if(on_event::<ExportMap>()),
+                (
+                    load_map.map(drop),
+                    init_new_map.map(drop),
+                    reload_visible_area,
+                )
+                    .chain()
+                    .run_if(on_event::<LoadMap>()),
+                read_area_reseting_when_map_is_loaded,
+            )
+                .chain()
+                .run_if(in_state(InternalContentState::Ready)),
+        );
+    }
 }
 
-pub fn read_area(
+pub fn read_area_reseting_when_map_is_loaded(
     tiles: Res<MapTiles>,
     env: ResMut<LmdbEnv>,
-    mut commands: Commands,
+    commands: Commands,
     mut last_area: Local<Sector>,
     mut load_map_events: EventReader<LoadMap>,
     sector_query: Query<&Sector, (With<Camera>, Changed<Sector>)>,
 ) {
-    let Some(env) = &env.0 else {
-        return;
-    };
-
-    let Ok(sector) = sector_query.get_single() else {
-        return;
-    };
-
     if load_map_events.read().len() > 0 {
         *last_area = Sector::default();
     }
 
-    let sector = *sector * 1.5;
-
-    for area in *last_area - sector {
-        load_area(area, env.clone(), &mut commands, &tiles);
-    }
-
-    *last_area = sector;
-}
-
-pub fn reload_visible_area(
-    tiles: Res<MapTiles>,
-    env: ResMut<LmdbEnv>,
-    mut commands: Commands,
-    sector_query: Query<&Sector, With<Camera>>,
-) {
-    let Some(env) = &env.0 else {
-        return;
-    };
-
-    for sector in sector_query.iter() {
-        load_area(*sector, env.clone(), &mut commands, &tiles);
-    }
+    read_area(tiles, env, commands, last_area, sector_query);
 }
 
 pub fn load_map(
@@ -159,37 +138,6 @@ pub fn export_map(
     }
 
     Ok(())
-}
-
-pub fn load_area(sector: Sector, env: Env, commands: &mut Commands, tiles: &Res<MapTiles>) {
-    let item_repository = ItemsFromHeedLmdb::new(env);
-
-    match item_repository.get_for_area(&sector) {
-        Ok(area) => {
-            let mut bundles = vec![];
-
-            for tile in area {
-                for (layer, item) in tile.items {
-                    if let Some(tile) = tiles.get(&tile.position) {
-                        if tile.peek_for_layer(layer).is_some() {
-                            continue;
-                        }
-                    }
-
-                    bundles.push(DrawingBundle::new(
-                        layer,
-                        tile.position,
-                        AppearanceDescriptor::object(item.id as u32),
-                    ));
-                }
-            }
-
-            commands.add(LoadTileContent::from_bundles(bundles));
-        }
-        Err(e) => {
-            error!("Failed to read area: {}", e);
-        }
-    }
 }
 
 pub fn lmdb_example() -> Result<(), Box<dyn std::error::Error>> {
