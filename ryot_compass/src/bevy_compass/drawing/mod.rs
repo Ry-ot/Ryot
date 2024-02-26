@@ -1,4 +1,4 @@
-use crate::{gui_is_not_in_use, CompassAction};
+use crate::{gui_is_not_in_use, toggle_grid, CompassAction};
 use bevy::prelude::*;
 use leafwing_input_manager::common_conditions::*;
 use ryot::bevy_ryot::map::MapTiles;
@@ -55,7 +55,8 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
                             )),
                     ),
                     input_action!(handle_drawing_input::<C>, CompassAction::Draw, 50),
-                    input_action!(toggle_deletion, CompassAction::ToggleDeletion, 500),
+                    input_action!(toggle_deletion, CompassAction::ToggleDeletion, 750),
+                    input_action!(toggle_grid, CompassAction::ToggleGrid, 750),
                     input_action!(undo.map(drop), CompassAction::Undo, 50),
                     input_action!(redo.map(drop), CompassAction::Redo, 50),
                     (

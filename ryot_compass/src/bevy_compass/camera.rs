@@ -96,7 +96,7 @@ pub enum InputType {
 
 impl Default for InputType {
     fn default() -> Self {
-        InputType::SingleClick(3)
+        InputType::SingleClick(0)
     }
 }
 
@@ -389,5 +389,17 @@ pub fn get_cursor_color(cursor: &Cursor) -> Color {
     match cursor.drawing_state.tool_mode {
         ToolMode::Draw => Color::rgba(0.7, 0.7, 0.7, 0.7),
         ToolMode::Erase => Color::rgba(1., 0.0, 0.0, 0.5),
+    }
+}
+
+/// System responsible for toggling the grid visibility. This system is called when the user presses the
+/// [`ToggleGrid`](crate::CompassAction::ToggleGrid) action.
+pub fn toggle_grid(mut q_grid: Query<&mut Visibility, With<GridView>>) {
+    for mut visibility in q_grid.iter_mut() {
+        *visibility = match *visibility {
+            Visibility::Inherited => Visibility::Hidden,
+            Visibility::Visible => Visibility::Hidden,
+            Visibility::Hidden => Visibility::Inherited,
+        };
     }
 }

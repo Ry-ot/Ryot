@@ -31,6 +31,7 @@ pub enum CompassAction {
     Stop,
     Draw,
     ToggleDeletion,
+    ToggleGrid,
     Undo,
     Redo,
     StartConnectingPoints,
@@ -50,6 +51,7 @@ impl CompassAction {
                 CONTROL_COMMAND,
                 KeyCode::KeyD,
             )
+            .insert_modified(CompassAction::ToggleGrid, CONTROL_COMMAND, KeyCode::KeyG)
             .insert_modified(CompassAction::Undo, CONTROL_COMMAND, KeyCode::KeyZ)
             .insert_chord(
                 CompassAction::Redo,
