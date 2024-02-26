@@ -2,17 +2,18 @@ use crate::{ExportMap, LoadMap};
 use bevy::prelude::*;
 use heed::types::Bytes;
 use log::{debug, warn};
+use ryot::bevy_ryot::drawing::{update, CommandState};
 use ryot::bevy_ryot::lmdb::{
     compact_map, read_area, reload_visible_area, LmdbCompactor, LmdbPlugin as RyotLmdbPlugin,
 };
 use ryot::bevy_ryot::map::MapTiles;
-use ryot::bevy_ryot::InternalContentState;
+use ryot::bevy_ryot::{GameObjectBundle, InternalContentState};
 use ryot::helpers::execute_async;
 use ryot::lmdb::*;
 use ryot::position::{Sector, TilePosition};
 use ryot::prelude::drawing::TileComponent;
 use ryot::prelude::lmdb::LmdbEnv;
-use ryot::prelude::{compress, decompress, Zstd};
+use ryot::prelude::{compress, decompress, ObjectsWereLoaded, Zstd};
 use ryot::{lmdb, Layer};
 use std::collections::HashMap;
 use std::fs;
@@ -36,6 +37,7 @@ impl Plugin for LmdbPlugin {
                     .chain()
                     .run_if(on_event::<LoadMap>()),
                 read_area_reseting_when_map_is_loaded,
+                load_tile_content.run_if(on_event::<ObjectsWereLoaded>()),
             )
                 .chain()
                 .run_if(in_state(InternalContentState::Ready)),
@@ -43,22 +45,28 @@ impl Plugin for LmdbPlugin {
     }
 }
 
-pub fn read_area_reseting_when_map_is_loaded(
-    tiles: Res<MapTiles>,
-    env: ResMut<LmdbEnv>,
-    commands: Commands,
+fn read_area_reseting_when_map_is_loaded(
     mut last_area: Local<Sector>,
     mut load_map_events: EventReader<LoadMap>,
+    env: ResMut<LmdbEnv>,
+    tiles: Res<MapTiles>,
     sector_query: Query<&Sector, (With<Camera>, Changed<Sector>)>,
+    object_loaded_event_sender: EventWriter<ObjectsWereLoaded>,
 ) {
     if load_map_events.read().len() > 0 {
         *last_area = Sector::default();
     }
 
-    read_area(tiles, env, commands, last_area, sector_query);
+    read_area(
+        tiles,
+        env,
+        last_area,
+        sector_query,
+        object_loaded_event_sender,
+    );
 }
 
-pub fn load_map(
+fn load_map(
     mut env: ResMut<LmdbEnv>,
     mut commands: Commands,
     mut tiles: ResMut<MapTiles>,
@@ -92,7 +100,7 @@ pub fn load_map(
     Ok(())
 }
 
-pub fn init_new_map(
+fn init_new_map(
     mut env: ResMut<LmdbEnv>,
     mut q_camera_transform: Query<&mut Transform, With<Camera>>,
 ) -> color_eyre::Result<()> {
@@ -108,7 +116,7 @@ pub fn init_new_map(
     Ok(())
 }
 
-pub fn export_map(
+fn export_map(
     env: Res<LmdbEnv>,
     lmdb_compactor: ResMut<LmdbCompactor>,
     mut map_export_events: EventReader<ExportMap>,
@@ -138,6 +146,24 @@ pub fn export_map(
     }
 
     Ok(())
+}
+
+fn load_tile_content(world: &mut World) {
+    let events = world.resource::<Events<ObjectsWereLoaded>>();
+    let mut bundles: Vec<GameObjectBundle> = vec![];
+
+    for ObjectsWereLoaded(event_bundles) in events.get_reader().read(events) {
+        bundles.extend(event_bundles);
+    }
+
+    for bundle in bundles {
+        update(
+            world,
+            bundle.into(),
+            (bundle.position, bundle.layer, Visibility::Visible, None),
+            CommandState::default().persist(),
+        );
+    }
 }
 
 pub fn lmdb_example() -> Result<(), Box<dyn std::error::Error>> {

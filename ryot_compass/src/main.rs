@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy::winit::WinitWindows;
 use bevy_egui::EguiContexts;
-use ryot::prelude::AsyncEventApp;
+use ryot::prelude::*;
 use ryot_compass::*;
 use std::io::Cursor;
 use winit::window::Icon;
@@ -60,6 +60,7 @@ fn main() {
     let mut app = App::new();
 
     app.add_plugins((
+        GamePlugin,
         InputPlugin,
         AppPlugin,
         UiPlugin::<CompassContentAssets>::default(),

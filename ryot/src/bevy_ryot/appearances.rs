@@ -188,17 +188,6 @@ pub enum AppearanceGroup {
     Missile,
 }
 
-impl AppearanceGroup {
-    fn label(&self) -> &'static str {
-        match self {
-            AppearanceGroup::Object => "object",
-            AppearanceGroup::Outfit => "outfit",
-            AppearanceGroup::Effect => "effect",
-            AppearanceGroup::Missile => "missile",
-        }
-    }
-}
-
 /// Prepares the appearances from the .dat file into a HashMap to allow fast access
 /// to the appearances by id. It keeps the appearances in their original separation:
 /// objects, outfits, effects, missiles and special.
@@ -225,13 +214,6 @@ pub(crate) fn prepare_appearances<C: PreloadedContentAssets>(
         process_appearances(from, |id, appearance| {
             prepared_appearances.insert(group, id, appearance.clone());
         });
-
-        debug!(
-            "{} out of {} '{}' prepared",
-            prepared_appearances.get_group(group).unwrap().len(),
-            from.len(),
-            group.label()
-        );
     }
 
     appearances_assets.remove(content_assets.appearances());
