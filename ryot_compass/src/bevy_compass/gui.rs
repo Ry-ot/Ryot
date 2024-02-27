@@ -166,7 +166,7 @@ fn ui_menu_system<C: ContentAssets>(
 
                 for (index, brush) in brushes.iter().enumerate() {
                     let is_selected = cursor.drawing_state.brush_index == index;
-                    let button = brush.button().selected(is_selected);
+                    let button = egui::ImageButton::new(brush.icon()).selected(is_selected);
                     let button = ui.add_sized(egui::Vec2::new(24., 24.), button);
                     if button.on_hover_text(brush.name()).clicked() {
                         cursor.drawing_state.brush_index = index;
@@ -193,7 +193,12 @@ fn ui_menu_system<C: ContentAssets>(
             });
 
             ui.separator();
-            ui.label(brushes[cursor.drawing_state.brush_index].name().to_string());
+
+            let current_brush_index = &mut cursor.drawing_state.brush_index;
+            ui.add_sized(
+                egui::Vec2::new(18., 18.),
+                egui::Image::new(brushes[*current_brush_index].icon()).tint(egui::Color32::GRAY),
+            );
             if let InputType::SingleClick(size) = &mut cursor.drawing_state.input_type {
                 ui.add(Slider::new(size, 0..=20));
             }
