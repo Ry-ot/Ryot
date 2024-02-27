@@ -1,4 +1,5 @@
 use crate::position::TilePosition;
+#[cfg(feature = "bevy")]
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::cmp::Ordering;

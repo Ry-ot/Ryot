@@ -5,14 +5,16 @@ use std::ops::{Add, AddAssign, DerefMut, Div, DivAssign, Mul, MulAssign, Sub, Su
 use std::{
     fmt::{self, Formatter},
     ops::Deref,
-    time::Duration,
 };
+
+#[cfg(feature = "bevy")]
+use std::time::Duration;
 
 use crate::layer::{compute_z_transform, Layer};
 #[cfg(not(test))]
 use crate::TILE_SIZE;
 use derive_more::{Add, Sub};
-use glam::{IVec3, UVec2, Vec2, Vec3};
+use glam::{IVec2, IVec3, UVec2, Vec2, Vec3};
 use serde::{Deserialize, Serialize};
 
 /// A 2d position in the tile grid. This is is not the position of the tile on
@@ -150,7 +152,8 @@ pub fn tile_size() -> UVec2 {
     *TILE_SIZE.get().expect("TILE_SIZE not initialized")
 }
 
-#[derive(Eq, PartialEq, Component, Default, Clone, Copy, Debug)]
+#[derive(Eq, PartialEq, Default, Clone, Copy, Debug)]
+#[cfg_attr(feature = "bevy", derive(Component))]
 pub struct Sector {
     pub min: TilePosition,
     pub max: TilePosition,
@@ -183,6 +186,7 @@ impl Sector {
         Self { min, max }
     }
 
+    #[cfg(feature = "bevy")]
     pub fn from_transform_and_projection(
         transform: &Transform,
         projection: &OrthographicProjection,
@@ -354,6 +358,7 @@ pub fn update_sprite_position(
     }
 }
 
+#[cfg(feature = "bevy")]
 type MovingSpriteFilter = Or<(
     Changed<TilePosition>,
     Added<TilePosition>,
