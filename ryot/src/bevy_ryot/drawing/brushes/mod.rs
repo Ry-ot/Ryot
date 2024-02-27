@@ -100,13 +100,13 @@ impl<E: BrushItem> Brush<E> {
         brush
     }
 
-    #[cfg(feature = "egui")]
-    pub fn button(&self) -> egui::ImageButton {
-        egui::ImageButton::new(self.icon.clone())
-    }
-
     pub fn name(&self) -> &str {
         &self.name
+    }
+
+    #[cfg(feature = "egui")]
+    pub fn icon(&self) -> egui::ImageSource<'static> {
+        self.icon.clone()
     }
 }
 
