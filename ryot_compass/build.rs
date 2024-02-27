@@ -1,6 +1,5 @@
 extern crate embed_resource;
 
-use ryot::prelude::ContentBuild;
 use std::env;
 
 fn main() {
@@ -12,16 +11,6 @@ fn main() {
     }
 
     build_target();
-
-    #[cfg(feature = "content_rebuild_on_change")]
-    ContentBuild::rebuilding_on_change()
-        .run()
-        .expect("Failed to build assets");
-
-    #[cfg(not(feature = "content_rebuild_on_change"))]
-    ContentBuild::default()
-        .run()
-        .expect("Failed to build assets");
 }
 
 fn build_target() {

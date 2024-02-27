@@ -25,7 +25,6 @@ bevy_common_assets.workspace = true
 bevy_egui.workspace = true
 bytes.workspace = true
 color-eyre.workspace = true
-config.workspace = true
 egui.workspace = true
 egui_extras.workspace = true
 glam.workspace = true

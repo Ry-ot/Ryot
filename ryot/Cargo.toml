@@ -21,7 +21,6 @@ bevy_asset_loader = { workspace = true, optional = true }
 bevy_common_assets = { workspace = true, optional = true }
 bytes.workspace = true
 color-eyre.workspace = true
-config.workspace = true
 egui = { workspace = true, optional = true }
 glam.workspace = true
 heed = { workspace = true, optional = true }

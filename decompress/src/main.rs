@@ -1,75 +1,36 @@
+use config::Config;
 use glam::UVec2;
+use ryot::{decompress_sprite_sheets, ContentConfigs};
 
-use crate::prelude::*;
+// use ryot::prelude::*;
+use log::*;
 use std::path::{Path, PathBuf};
 use std::{fs, result};
 
-/// Builder for content.
-/// Builds the necessary content for the game to run from the original content folder.
-/// It does the necessary transformations (like decompressing sprite sheets) and copies the
-/// necessary files to the correct asset folder.
-///
-/// It also tells Cargo to rerun (or not) the build script if the content folder changes
-/// based on the `rebuild_on_change` flag.
-#[derive(Debug, Default)]
-pub struct ContentBuild {
-    pub rebuild_on_change: bool,
-    pub path: Option<PathBuf>,
+static DEFAULT_CONTENT_CONFIG_PATH: &str = "config/decompress.toml";
+
+fn main() {
+    ContentBuild::from_path(PathBuf::from(DEFAULT_CONTENT_CONFIG_PATH))
+        .run()
+        .expect("Failed to build assets");
+}
+
+#[derive(Debug)]
+struct ContentBuild {
+    path: PathBuf,
 }
 
 impl ContentBuild {
-    pub fn from_path(path: PathBuf) -> Self {
-        Self {
-            rebuild_on_change: false,
-            path: Some(path),
-        }
+    fn from_path(path: PathBuf) -> Self {
+        Self { path }
     }
 
-    pub fn rebuilding_on_change() -> Self {
-        Self {
-            rebuild_on_change: true,
-            path: None,
-        }
-    }
+    fn run(self) -> color_eyre::Result<()> {
+        info!("Running content build {:?}", self);
 
-    pub fn rebuilding_on_change_from_path(path: PathBuf) -> Self {
-        Self {
-            rebuild_on_change: true,
-            path: Some(path),
-        }
-    }
-
-    pub fn run(self) -> color_eyre::Result<()> {
-        println!("cargo:warning=Running content build {:?}", self);
-
-        let content_config_path = self
-            .path
-            .clone()
-            .unwrap_or_else(|| assets_root_path().join(CONTENT_CONFIG_PATH));
-
+        let content_config_path = self.path.clone();
         let content_config = read_content_configs(content_config_path.clone());
-
         let ContentConfigs { directories, .. } = content_config.clone();
-
-        if self.rebuild_on_change {
-            // Tell Cargo to rerun this build script if the config file changes
-            println!(
-                "cargo:rerun-if-changed={}",
-                content_config_path.to_str().unwrap()
-            );
-
-            // Tell Cargo to rerun this build script if our content folder changes
-            println!(
-                "cargo:rerun-if-changed={}",
-                directories.source_path.display()
-            );
-
-            // Tell Cargo to rerun this build script if our destination folder changes
-            println!(
-                "cargo:rerun-if-changed={}",
-                directories.destination_path.display()
-            );
-        }
 
         directories.source_path.try_exists().unwrap_or_else(|_| {
             panic!(
@@ -79,8 +40,8 @@ impl ContentBuild {
         });
 
         if copy_catalog(&directories.source_path, &directories.destination_path).is_err() {
-            println!(
-                "cargo:warning=Catalog file not found in {}",
+            error!(
+                "Catalog file not found in {}",
                 directories.source_path.display()
             );
             return Ok(());
@@ -163,4 +124,33 @@ fn decompress_sprites(
     decompress_sprite_sheets(content_configs, sheet_size, &files);
 
     Ok(())
+}
+
+fn read_content_configs(config_path: PathBuf) -> ContentConfigs {
+    let settings = Config::builder()
+        .add_source(config::File::from(config_path))
+        .build()
+        .expect("Failed to build config")
+        .try_deserialize::<ContentConfigs>()
+        .expect("Failed to deserialize config");
+
+    let dir_settings = &settings.directories;
+
+    match is_path_within_root(&dir_settings.destination_path, Path::new("assets")) {
+        Ok(true) => settings,
+        Ok(false) | Err(_) => panic!(
+            "Target path {} is not within assets folder",
+            dir_settings
+                .destination_path
+                .to_str()
+                .expect("Failed to convert target path to str")
+        ),
+    }
+}
+
+fn is_path_within_root(
+    destination_path: &Path,
+    root_path: &Path,
+) -> result::Result<bool, std::io::Error> {
+    Ok(fs::canonicalize(destination_path)?.starts_with(fs::canonicalize(root_path)?))
 }
