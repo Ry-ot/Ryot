@@ -151,7 +151,10 @@ fn spawn_camera(
                 action_state: ActionState::default(),
                 input_map: InputMap::default()
                     .insert_chord(PanCamAction::Grab, MAP_GRAB_INPUTS)
-                    .insert(PanCamAction::Zoom, SingleAxis::mouse_wheel_y())
+                    .insert(
+                        PanCamAction::Zoom,
+                        SingleAxis::mouse_wheel_y().with_sensitivity(32.),
+                    )
                     .build(),
             },
         },
