@@ -96,44 +96,46 @@ fn create_or_update_content_for_positions(
     let mut to_draw = to_draw.to_vec();
 
     for new_bundle in to_draw.iter_mut() {
-        let top_most = get_top_most_visible(new_bundle.tile_pos, tiles, q_current_appearance);
+        match new_bundle.layer {
+            Layer::Bottom(_) => {
+                let top_most = get_top_most_visible_bottom_layer(
+                    new_bundle.tile_pos,
+                    tiles,
+                    q_current_appearance,
+                );
 
-        let Some((_, old_bundle)) = top_most else {
-            old_info.push((
+                let Some((_, old_bundle)) = top_most else {
+                    old_info.push((
+                        new_bundle.tile_pos,
+                        new_bundle.layer,
+                        new_bundle.visibility,
+                        None,
+                    ));
+                    continue;
+                };
+
+                if let Layer::Bottom(mut bottom) = old_bundle.layer {
+                    new_bundle.layer = Layer::Bottom(bottom.next().unwrap_or(bottom));
+
+                    old_info.push((
+                        new_bundle.tile_pos,
+                        new_bundle.layer,
+                        new_bundle.visibility,
+                        if new_bundle.layer != old_bundle.layer {
+                            None
+                        } else {
+                            Some(old_bundle.appearance)
+                        },
+                    ));
+                };
+            }
+            _ => old_info.push((
                 new_bundle.tile_pos,
                 new_bundle.layer,
                 new_bundle.visibility,
-                None,
-            ));
-            continue;
-        };
-
-        // If an old appearance was found, it is only pertinent if the layer doesn't change.
-        // If the layer changes, the old state is not relevant for a new layer.
-        // The old state of a new layer is empty, like a new entity being added, so appearance
-        // is set to None. This guarantees that reversion works properly in-between layers.
-        let Layer::Bottom(mut bottom) = old_bundle.layer else {
-            old_info.push((
-                new_bundle.tile_pos,
-                new_bundle.layer,
-                new_bundle.visibility,
-                Some(old_bundle.appearance),
-            ));
-            continue;
-        };
-
-        new_bundle.layer = Layer::Bottom(bottom.next().unwrap_or(bottom));
-
-        old_info.push((
-            new_bundle.tile_pos,
-            new_bundle.layer,
-            new_bundle.visibility,
-            if new_bundle.layer != old_bundle.layer {
-                None
-            } else {
-                Some(old_bundle.appearance)
-            },
-        ));
+                get_current_appearance(*new_bundle, tiles, q_current_appearance),
+            )),
+        }
     }
 
     let new_info = to_draw
