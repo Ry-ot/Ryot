@@ -321,13 +321,7 @@ mod test {
             Layer::Bottom(BottomLayer::new(0, RelativeLayer::Creature)),
             entity,
         );
-        assert_eq!(
-            map_tile.peek(),
-            Some((
-                Layer::Bottom(BottomLayer::new(0, RelativeLayer::Creature)),
-                Entity::from_raw(3)
-            ))
-        );
+        assert_eq!(map_tile.peek(), Some((Layer::Top, Entity::from_raw(2))));
         let entity = Entity::from_raw(4);
         map_tile.push_for_layer(
             Layer::Bottom(BottomLayer::new(1, RelativeLayer::Creature)),

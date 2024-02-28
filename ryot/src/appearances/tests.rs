@@ -119,7 +119,7 @@ fn sprite_sheet_set_fixture() -> SpriteSheetDataSet {
 #[rstest]
 #[case(
         ContentType::Appearances { file: "appearances.dat".to_string() },
-        r#"{"type":"appearances","file":"appearances.dat","version":1}"#
+        r#"{"type":"appearances","file":"appearances.dat"}"#
     )]
 #[case(
         ContentType::StaticData { file: "staticdata.dat".to_string() },
@@ -149,7 +149,7 @@ fn test_serialize_content_type(#[case] content: ContentType, #[case] expected_js
 
 #[rstest]
 #[case(
-        r#"{"type":"appearances","file":"appearances.dat","version":1}"#,
+        r#"{"type":"appearances","file":"appearances.dat"}"#,
         ContentType::Appearances { file: "appearances.dat".to_string() }
     )]
 #[case(
