@@ -44,7 +44,6 @@ serde_json.workspace = true
 strum.workspace = true
 thiserror.workspace = true
 time-test.workspace = true
-zstd.workspace = true
 
 [dependencies.bevy-inspector-egui]
 version = "0.23"
@@ -59,7 +58,7 @@ ryot = { version = "0.1.0", path = "../ryot" }
 
 [features]
 default = []
-lmdb = ["dep:heed", "ryot/lmdb"]
+lmdb = ["dep:heed", "ryot/lmdb", "ryot/compression"]
 pre_loaded_sprites = []
 content_rebuild_on_change = []
 

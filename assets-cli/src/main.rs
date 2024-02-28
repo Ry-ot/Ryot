@@ -159,30 +159,10 @@ fn decompress_sprites(
 }
 
 fn read_content_configs(config_path: PathBuf) -> ContentConfigs {
-    let settings = Config::builder()
+    Config::builder()
         .add_source(config::File::from(config_path))
         .build()
         .expect("Failed to build config")
         .try_deserialize::<ContentConfigs>()
-        .expect("Failed to deserialize config");
-
-    let dir_settings = &settings.directories;
-
-    match is_path_within_root(&dir_settings.destination_path, Path::new("assets")) {
-        Ok(true) => settings,
-        Ok(false) | Err(_) => panic!(
-            "Target path {} is not within assets folder",
-            dir_settings
-                .destination_path
-                .to_str()
-                .expect("Failed to convert target path to str")
-        ),
-    }
-}
-
-fn is_path_within_root(
-    destination_path: &Path,
-    root_path: &Path,
-) -> result::Result<bool, std::io::Error> {
-    Ok(fs::canonicalize(destination_path)?.starts_with(fs::canonicalize(root_path)?))
+        .expect("Failed to deserialize config")
 }

@@ -8,7 +8,7 @@ use ryot::bevy_ryot::lmdb::{
 };
 use ryot::bevy_ryot::map::MapTiles;
 use ryot::bevy_ryot::{GameObjectBundle, InternalContentState};
-use ryot::helpers::execute_async;
+use ryot::helpers::execute;
 use ryot::lmdb::*;
 use ryot::position::{Sector, TilePosition};
 use ryot::prelude::drawing::TileComponent;
@@ -190,7 +190,7 @@ pub fn lmdb_example() -> Result<(), Box<dyn std::error::Error>> {
         println!("Count: {}", area.len());
     }
 
-    execute_async(async {
+    execute(async {
         // env.prepare_for_closing().wait();
         // lmdb::compact().unwrap();
 

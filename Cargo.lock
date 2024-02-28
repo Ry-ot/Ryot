@@ -5053,6 +5053,7 @@ dependencies = [
  "strum",
  "thiserror",
  "time-test",
+ "wasm-bindgen-futures",
  "zstd",
 ]
 
@@ -5097,7 +5098,6 @@ dependencies = [
  "uuid",
  "wasm-bindgen-futures",
  "winit",
- "zstd",
 ]
 
 [[package]]

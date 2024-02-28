@@ -1,6 +1,6 @@
 use leafwing_input_manager::user_input::Modifier;
 use rfd::AsyncFileDialog;
-use ryot::helpers::execute_async;
+use ryot::helpers::execute;
 
 pub fn read_file(
     async_rfd: AsyncFileDialog,
@@ -8,7 +8,7 @@ pub fn read_file(
 ) {
     let task = async_rfd.pick_file();
 
-    execute_async(async {
+    execute(async {
         let file = task.await;
 
         if let Some(file) = file {
