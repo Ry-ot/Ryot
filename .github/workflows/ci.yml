@@ -14,6 +14,10 @@ jobs:
     runs-on: ${{ matrix.os }}
     env:
       SKIP_BUILD_SCRIPT: true
+      CARGO_INCREMENTAL: 0
+      CARGO_NET_RETRY: 10
+      RUST_BACKTRACE: short
+      RUSTFLAGS: "-D warnings"
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@master
@@ -27,8 +31,10 @@ jobs:
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
       - uses: Swatinem/rust-cache@v2
-      - name: Build & run tests
-        run: cargo test --all-features
+      - name: Compile
+        run: cargo test --all-features --no-run --locked
+      - name: Test
+        run: cargo test --all-features -- --nocapture --quiet
   all-doc-tests:
     runs-on: ubuntu-latest
     steps:
