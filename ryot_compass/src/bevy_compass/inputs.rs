@@ -39,6 +39,7 @@ pub enum CompassAction {
     IncreaseBrush,
     DecreaseBrush,
     ClearSelection,
+    Focus,
     Exit,
 }
 
@@ -77,6 +78,8 @@ impl CompassAction {
             .insert_modified(CompassAction::Exit, CONTROL_COMMAND, KeyCode::KeyQ)
             // Small hack to remove clash with the pancam plugin
             .insert(CompassAction::Stop, MAP_GRAB_INPUTS)
+            .insert(CompassAction::Focus, MouseButton::Middle)
+            .insert_modified(CompassAction::Focus, Modifier::Alt, MouseButton::Left)
             .build()
     }
 
@@ -92,6 +95,7 @@ impl CompassAction {
             "Draw (Left Click)".to_string(),
             format!("Draw Connecting Points (Hold {})", shift_key),
             "Move map (Right Click)".to_string(),
+            "Move to Cursor (Middle Click or Alt + Left Click)".to_string(),
             format!("Toggle Grid ({} G)", control_key),
             format!("Toggle Deletion ({} D)", control_key),
             format!("Undo ({} Z)", control_key),

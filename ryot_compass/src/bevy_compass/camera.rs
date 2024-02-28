@@ -7,6 +7,7 @@ use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy_egui::{EguiContext, EguiContexts};
 use bevy_pancam::*;
+use leafwing_input_manager::common_conditions::action_just_pressed;
 use leafwing_input_manager::prelude::*;
 use ryot::bevy_ryot::drawing::DrawingBundle;
 use ryot::position::{Sector, TilePosition};
@@ -42,6 +43,7 @@ impl<C: CompassAssets> Plugin for CameraPlugin<C> {
                 Update,
                 (
                     (
+                        move_to_cursor.run_if(action_just_pressed(CompassAction::Focus)),
                         update_cursor_pos.map(drop),
                         update_cursor_preview,
                         update_cursor_brush_preview,
@@ -216,6 +218,18 @@ fn update_cursor_pos(
     *cursor_pos = new_pos;
 
     Ok(())
+}
+
+fn move_to_cursor(
+    q_cursor: Query<&mut TilePosition, With<Cursor>>,
+    mut q_camera: Query<&mut Transform, With<Camera>>,
+) {
+    let tile_pos = q_cursor.single();
+
+    for mut transform in q_camera.iter_mut() {
+        let screen_pos: Vec2 = tile_pos.into();
+        transform.translation = screen_pos.extend(transform.translation.z);
+    }
 }
 
 fn update_cursor_visibility(
