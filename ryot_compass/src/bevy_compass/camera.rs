@@ -136,6 +136,11 @@ fn spawn_camera(
     let atlas_layout = atlas_layouts.get(layout).expect("No atlas layout");
     let zoom_factor = atlas_layout.size.x / 384.;
 
+    #[cfg(not(target_arch = "wasm32"))]
+    let zoom_input = SingleAxis::mouse_wheel_y().with_sensitivity(32.);
+    #[cfg(target_arch = "wasm32")]
+    let zoom_input = SingleAxis::mouse_wheel_y();
+
     commands.spawn((
         Camera2dBundle::default(),
         Sector::default(),
@@ -151,10 +156,7 @@ fn spawn_camera(
                 action_state: ActionState::default(),
                 input_map: InputMap::default()
                     .insert_chord(PanCamAction::Grab, MAP_GRAB_INPUTS)
-                    .insert(
-                        PanCamAction::Zoom,
-                        SingleAxis::mouse_wheel_y().with_sensitivity(32.),
-                    )
+                    .insert(PanCamAction::Zoom, zoom_input)
                     .build(),
             },
         },
