@@ -8,9 +8,11 @@ use crate::{
 #[cfg(not(target_arch = "wasm32"))]
 use crate::{ExportMap, LoadMap};
 #[cfg(not(target_arch = "wasm32"))]
+use bevy::app::AppExit;
+#[cfg(not(target_arch = "wasm32"))]
 use ryot::bevy_ryot::{AsyncEventApp, EventSender};
 
-use bevy::{app::AppExit, prelude::*, render::camera::Viewport, winit::WinitWindows};
+use bevy::{prelude::*, render::camera::Viewport, winit::WinitWindows};
 use bevy_egui::{EguiContext, EguiContexts, EguiPlugin, EguiUserTextures};
 use egui::{load::SizedTexture, Slider, TextureId};
 use egui_dock::{DockArea, DockState, NodeIndex};
@@ -66,12 +68,12 @@ impl<C: ContentAssets> Plugin for UiPlugin<C> {
 
 #[allow(clippy::too_many_arguments)]
 fn ui_menu_system<C: ContentAssets>(
-    content_assets: Res<C>,
+    mut contexts: Query<&mut EguiContext>,
     brushes: Res<Brushes<DrawingBundle>>,
     q_grid: Query<&mut Visibility, With<GridView>>,
     mut cursor_query: Query<&mut Cursor>,
-    mut contexts: Query<&mut EguiContext>,
-    mut exit: EventWriter<AppExit>,
+    #[cfg(not(target_arch = "wasm32"))] content_assets: Res<C>,
+    #[cfg(not(target_arch = "wasm32"))] mut exit: EventWriter<AppExit>,
     #[cfg(not(target_arch = "wasm32"))] mut map_export_sender: EventWriter<ExportMap>,
     #[cfg(not(target_arch = "wasm32"))] load_map_sender: Res<EventSender<LoadMap>>,
     _windows: NonSend<WinitWindows>,
@@ -81,6 +83,7 @@ fn ui_menu_system<C: ContentAssets>(
     };
     let mut egui_ctx = contexts.single_mut();
     egui::TopBottomPanel::top("top_panel").show(egui_ctx.get_mut(), |ui| {
+        #[cfg(not(target_arch = "wasm32"))]
         egui::menu::bar(ui, |ui| {
             ui.scope(|ui| {
                 let mut style = (*ui.ctx().style()).clone();
@@ -100,15 +103,6 @@ fn ui_menu_system<C: ContentAssets>(
                         .add_enabled(is_content_loaded, egui::Button::new("🗁 Open"))
                         .clicked()
                     {
-                        // #[cfg(target_arch = "wasm32")]
-                        // read_file(
-                        //     rfd::AsyncFileDialog::new().add_filter(".mdb", &["mdb"]),
-                        //     |(file_name, content)| {
-                        //         debug!("Loading map from file: {:?}", file_name);
-                        //         debug!("Current dir: {:?}", std::env::current_dir());
-                        //     },
-                        // );
-
                         #[cfg(not(target_arch = "wasm32"))]
                         {
                             let path = rfd::FileDialog::new()
