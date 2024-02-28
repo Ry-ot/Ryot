@@ -27,19 +27,11 @@ pub fn get_top_most_visible(
     map_tiles: &ResMut<MapTiles>,
     q_current_appearance: &Query<(&Visibility, &Layer, &AppearanceDescriptor), With<TileComponent>>,
 ) -> Option<(Entity, DrawingBundle)> {
-    let tile_content = map_tiles.get(&tile_pos)?.clone();
-
-    for (layer, entity) in tile_content.clone().into_iter().rev() {
-        if let Ok((visibility, _, appearance)) = q_current_appearance.get(entity) {
-            if visibility == Visibility::Hidden {
-                continue;
-            }
-
-            return Some((entity, DrawingBundle::new(layer, tile_pos, *appearance)));
-        }
-    }
-
-    None
+    get_top_most_visible_for_tile(
+        map_tiles.get(&tile_pos)?.clone().into_iter().rev(),
+        tile_pos,
+        q_current_appearance,
+    )
 }
 
 pub fn get_top_most_visible_for_bundles(
@@ -52,4 +44,39 @@ pub fn get_top_most_visible_for_bundles(
         .filter_map(|bundle| get_top_most_visible(bundle.tile_pos, tiles, q_current_appearance))
         .map(|(_, bundle)| bundle)
         .collect::<Vec<_>>()
+}
+
+pub fn get_top_most_visible_bottom_layer(
+    tile_pos: TilePosition,
+    map_tiles: &ResMut<MapTiles>,
+    q_current_appearance: &Query<(&Visibility, &Layer, &AppearanceDescriptor), With<TileComponent>>,
+) -> Option<(Entity, DrawingBundle)> {
+    get_top_most_visible_for_tile(
+        map_tiles
+            .get(&tile_pos)?
+            .clone()
+            .into_iter()
+            .filter(|(layer, _)| matches!(layer, Layer::Bottom(_)))
+            .rev(),
+        tile_pos,
+        q_current_appearance,
+    )
+}
+
+pub fn get_top_most_visible_for_tile(
+    iter: impl Iterator<Item = (Layer, Entity)>,
+    tile_pos: TilePosition,
+    q_current_appearance: &Query<(&Visibility, &Layer, &AppearanceDescriptor), With<TileComponent>>,
+) -> Option<(Entity, DrawingBundle)> {
+    for (layer, entity) in iter {
+        if let Ok((visibility, _, appearance)) = q_current_appearance.get(entity) {
+            if visibility == Visibility::Hidden {
+                continue;
+            }
+
+            return Some((entity, DrawingBundle::new(layer, tile_pos, *appearance)));
+        }
+    }
+
+    None
 }
