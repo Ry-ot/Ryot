@@ -6,23 +6,18 @@ on:
     branches:
       - main
 
+env:
+  SKIP_BUILD_SCRIPT: true
+
 jobs:
   test:
     strategy:
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
     runs-on: ${{ matrix.os }}
-    env:
-      SKIP_BUILD_SCRIPT: true
-      CARGO_INCREMENTAL: 0
-      CARGO_NET_RETRY: 10
-      RUST_BACKTRACE: short
-      RUSTFLAGS: "-D warnings"
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly-2024-01-01
+      - uses: dsherret/rust-toolchain-file@v1
       - name: Install Linux Dependencies
         run: sudo apt-get update; sudo apt-get install --no-install-recommends -y libasound2-dev libudev-dev libgtk-3-dev
         if: runner.os == 'linux'
@@ -39,9 +34,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly-2024-01-01
+      - uses: dsherret/rust-toolchain-file@v1
       - name: Install alsa and udev
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
       - name: Install dependencies
@@ -53,10 +46,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly-2024-01-01
-          components: rustfmt, clippy
+      - uses: dsherret/rust-toolchain-file@v1
       - name: Install alsa and udev
         run: sudo apt-get update; sudo apt-get install --no-install-recommends libasound2-dev libudev-dev
       - name: Install dependencies
