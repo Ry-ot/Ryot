@@ -27,12 +27,11 @@ pub trait AsyncEventApp {
 /// the system that sends events from the receiver to Bevy's event system.
 impl AsyncEventApp for App {
     fn add_async_event<T: Event>(&mut self) -> &mut Self {
-        let (sender, receiver) = channel::<T>();
+        if self.world.contains_resource::<EventReceiver<T>>() {
+            return self;
+        }
 
-        assert!(
-            !self.world.contains_resource::<EventReceiver<T>>(),
-            "this event channel is already initialized",
-        );
+        let (sender, receiver) = channel::<T>();
 
         self.add_event::<T>()
             .add_systems(Update, channel_to_event::<T>)
