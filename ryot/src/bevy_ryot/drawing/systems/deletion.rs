@@ -3,7 +3,6 @@
 //! they are deleted. Their interaction is controlled by the state of Deletion component.
 
 use crate::bevy_ryot::drawing::*;
-use crate::bevy_ryot::map::MapTiles;
 use crate::position::TilePosition;
 
 #[cfg(feature = "lmdb")]
@@ -112,28 +111,4 @@ pub fn persist_deletion(
             deletion.state.persisted = true;
         }
     }
-}
-
-/// Auxiliary function to get the top most visible entity and its DrawingBundle from a tile position.
-/// Deletion means to always remove the entity that is on the top most layer and is visible.
-/// This can be use by the application to determine which entity should be flagged for deletion when a
-/// deletion action is performed in a Tile.
-pub fn get_top_most_visible(
-    tile_pos: TilePosition,
-    map_tiles: &ResMut<MapTiles>,
-    q_current_appearance: &Query<(&Visibility, &Layer, &AppearanceDescriptor), With<TileComponent>>,
-) -> Option<(Entity, DrawingBundle)> {
-    let tile_content = map_tiles.get(&tile_pos)?.clone();
-
-    for (layer, entity) in tile_content.clone().into_iter().rev() {
-        if let Ok((visibility, _, appearance)) = q_current_appearance.get(entity) {
-            if visibility == Visibility::Hidden {
-                continue;
-            }
-
-            return Some((entity, DrawingBundle::new(layer, tile_pos, *appearance)));
-        }
-    }
-
-    None
 }
