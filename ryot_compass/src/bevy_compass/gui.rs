@@ -92,14 +92,14 @@ fn ui_menu_system<C: ContentAssets>(
                         .add_enabled(is_content_loaded, egui::Button::new("🗁 Open"))
                         .clicked()
                     {
-                        #[cfg(target_arch = "wasm32")]
-                        read_file(
-                            AsyncFileDialog::new().add_filter(".mdb", &["mdb"]),
-                            |(file_name, content)| {
-                                debug!("Loading map from file: {:?}", file_name);
-                                debug!("Current dir: {:?}", std::env::current_dir());
-                            },
-                        );
+                        // #[cfg(target_arch = "wasm32")]
+                        // read_file(
+                        //     rfd::AsyncFileDialog::new().add_filter(".mdb", &["mdb"]),
+                        //     |(file_name, content)| {
+                        //         debug!("Loading map from file: {:?}", file_name);
+                        //         debug!("Current dir: {:?}", std::env::current_dir());
+                        //     },
+                        // );
 
                         #[cfg(not(target_arch = "wasm32"))]
                         {

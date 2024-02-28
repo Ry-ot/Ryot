@@ -3,7 +3,7 @@ use crate::bevy_ryot::{GameObjectBundle, ObjectsWereLoaded};
 use crate::lmdb::{DatabaseName, Item, ItemRepository, ItemsFromHeedLmdb, SerdePostcard};
 use crate::position::Sector;
 use crate::prelude::GameObjectId;
-use crate::{helpers::execute_async, lmdb, Layer};
+use crate::{helpers::execute, lmdb, Layer};
 use bevy::prelude::*;
 use heed::types::Bytes;
 use heed::Env;
@@ -70,7 +70,7 @@ pub fn compact_map(time: Res<Time>, env: Res<LmdbEnv>, mut lmdb_compactor: ResMu
     let env_clone = env.clone();
     let is_running = lmdb_compactor.is_running.clone();
 
-    execute_async(async move {
+    execute(async move {
         let can_run = is_running
             .compare_exchange(false, true, Ordering::SeqCst, Ordering::Relaxed)
             .is_ok();
