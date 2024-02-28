@@ -12,6 +12,7 @@ use leafwing_input_manager::prelude::*;
 use ryot::bevy_ryot::drawing::DrawingBundle;
 use ryot::position::{Sector, TilePosition};
 use ryot::prelude::drawing::{BrushItem, BrushParams, Brushes};
+use ryot::prelude::sprites::LoadedSprites;
 use ryot::prelude::*;
 use std::marker::PhantomData;
 
@@ -47,6 +48,7 @@ impl<C: CompassAssets> Plugin for CameraPlugin<C> {
                         update_cursor_pos.map(drop),
                         update_cursor_preview,
                         update_cursor_brush_preview,
+                        update_cursor_sprite,
                         update_cursor_visibility.map(drop),
                         update_camera_visible_sector,
                     )
@@ -232,17 +234,49 @@ fn move_to_cursor(
     }
 }
 
+fn update_cursor_sprite(
+    mut commands: Commands,
+    content: Res<CompassContentAssets>,
+    mut cursor: Query<
+        (Entity, &Cursor, &mut Sprite, &mut Handle<Image>),
+        (Without<BrushPreviewTile>, With<Cursor>),
+    >,
+    mut preview_query: Query<(Entity, &mut Sprite, &mut Handle<Image>), With<BrushPreviewTile>>,
+) {
+    let Ok((entity, cursor, mut cursor_sprite, mut cursor_texture)) = cursor.get_single_mut()
+    else {
+        return;
+    };
+
+    let mut update_texture = |entity: Entity, sprite: &mut Sprite, texture: &mut Handle<Image>| {
+        sprite.color = match cursor.drawing_state.tool_mode {
+            ToolMode::Draw => Color::rgba(0.7, 0.7, 0.7, 0.7),
+            ToolMode::Erase => Color::rgba(1., 0.0, 0.0, 0.5),
+        };
+
+        if !matches!(cursor.drawing_state.tool_mode, ToolMode::Draw) {
+            *texture = content.square().clone_weak();
+            commands.entity(entity).remove::<TextureAtlas>();
+            commands.entity(entity).remove::<LoadedSprites>();
+        }
+    };
+
+    update_texture(entity, &mut cursor_sprite, &mut cursor_texture);
+
+    for (entity, mut sprite, mut handle) in preview_query.iter_mut() {
+        update_texture(entity, &mut sprite, &mut handle);
+    }
+}
+
 fn update_cursor_visibility(
     palette_state: Res<PaletteState>,
     mut egui_ctx: Query<&mut EguiContext>,
     mut windows: Query<&mut Window>,
-    mut cursor_query: Query<(&TilePosition, &mut Visibility, &mut Sprite, &Cursor)>,
+    mut cursor_query: Query<(&TilePosition, &mut Visibility)>,
     gui_state: Res<UiState>,
 ) -> color_eyre::Result<()> {
     let mut egui_ctx = egui_ctx.single_mut();
-    let (tile_pos, mut visibility, mut sprite, cursor) = cursor_query.get_single_mut()?;
-
-    sprite.color = get_cursor_color(cursor);
+    let (tile_pos, mut visibility) = cursor_query.get_single_mut()?;
 
     if gui_state.is_being_used || palette_state.selected_tile.is_none() {
         *visibility = Visibility::Hidden;
@@ -309,7 +343,6 @@ fn update_cursor_brush_preview(
             &mut TilePosition,
             &mut AppearanceDescriptor,
             &mut Visibility,
-            Option<&mut Sprite>,
         ),
         CursorBrushPreviewFilter,
     >,
@@ -331,17 +364,11 @@ fn update_cursor_brush_preview(
     // We first iterate over all the existing brush preview tiles and update them according to
     // the cursor state and the brush preview positions. We do that to avoid spawning new tiles
     // unnecessarily.
-    for (mut tile_pos, mut appearance, mut visibility, sprite) in brush_preview_tiles.iter_mut() {
+    for (mut tile_pos, mut appearance, mut visibility) in brush_preview_tiles.iter_mut() {
         // If the drawing_state is disable we are probably interacting with the UI, so we hide the preview.
         if !cursor.drawing_state.enabled {
             *visibility = Visibility::Hidden;
             continue;
-        }
-
-        // If the sprite is already loaded, Sprite exists, so we change its color to
-        // differentiate the preview tiles from the rest, making them grayish and transparent.
-        if let Some(mut sprite) = sprite {
-            sprite.color = get_cursor_color(cursor)
         }
 
         // If we finished iterating over the positions, we hide the remaining preview tiles.
@@ -409,13 +436,6 @@ fn update_camera_visible_sector(
 
 fn update_pan_cam_actions(mut toggle: ResMut<ToggleActions<PanCamAction>>, ui_state: Res<UiState>) {
     toggle.enabled = !ui_state.is_being_used;
-}
-
-pub fn get_cursor_color(cursor: &Cursor) -> Color {
-    match cursor.drawing_state.tool_mode {
-        ToolMode::Draw => Color::rgba(0.7, 0.7, 0.7, 0.7),
-        ToolMode::Erase => Color::rgba(1., 0.0, 0.0, 0.5),
-    }
 }
 
 /// System responsible for toggling the grid visibility. This system is called when the user presses the

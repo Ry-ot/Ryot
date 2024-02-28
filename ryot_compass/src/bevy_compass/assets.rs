@@ -22,6 +22,8 @@ pub struct CompassContentAssets {
     // Image related handles
     #[asset(path = "ryot_mascot.png")]
     mascot: Handle<Image>,
+    #[asset(path = "square32x32.png")]
+    square: Handle<Image>,
     #[cfg(feature = "pre_loaded_sprites")]
     #[asset(path = "sprite-sheets", collection(typed, mapped))]
     sprite_sheets: HashMap<String, Handle<Image>>,
@@ -76,10 +78,14 @@ impl ContentAssets for CompassContentAssets {
 
 pub trait CompassAssets: ContentAssets + AssetCollection {
     fn mascot(&self) -> Handle<Image>;
+    fn square(&self) -> Handle<Image>;
 }
 
 impl CompassAssets for CompassContentAssets {
     fn mascot(&self) -> Handle<Image> {
         self.mascot.clone()
+    }
+    fn square(&self) -> Handle<Image> {
+        self.square.clone()
     }
 }
