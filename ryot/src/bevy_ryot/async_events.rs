@@ -3,19 +3,21 @@
 //! content from disk or loading sprites from a sprite sheet before rendering.
 use bevy::app::App;
 use bevy::prelude::*;
-use std::sync::mpsc::{channel, Receiver, Sender};
-use std::sync::Mutex;
+use crossbeam_channel::{Receiver, Sender};
+
+// TODO: doc.
+#[derive(SystemSet, Clone, Copy, Eq, PartialEq, Hash, Debug)]
+pub struct AsyncEventSet<T>();
 
 /// A resource that emits asynchronous events of a given type.
-/// It's a bevy friendly wrapper around a `std::sync::mpsc::Sender`.
+/// It's a bevy friendly wrapper around a `crossbeam_channel::Sender`.
 #[derive(Resource, Deref, DerefMut)]
-pub struct EventSender<T>(pub Sender<T>);
+pub struct AsyncEventSender<T>(pub Sender<T>);
 
 /// A resource that receives asynchronous events of a given type.
-/// It's a bevy friendly wrapper around a `std::sync::mpsc::Receiver`.
-/// It's wrapped in a `Mutex` to allow multiple systems to safely access it.
+/// It's a bevy friendly wrapper around a `crossbeam_channel::Receiver`.
 #[derive(Resource, Deref, DerefMut)]
-struct EventReceiver<T>(Mutex<Receiver<T>>);
+struct AsyncEventReceiver<T>(Receiver<T>);
 
 /// A trait to add an asynchronous event to an App.
 pub trait AsyncEventApp {
@@ -27,27 +29,23 @@ pub trait AsyncEventApp {
 /// the system that sends events from the receiver to Bevy's event system.
 impl AsyncEventApp for App {
     fn add_async_event<T: Event>(&mut self) -> &mut Self {
-        if self.world.contains_resource::<EventReceiver<T>>() {
+        if self.world.contains_resource::<AsyncEventReceiver<T>>() {
             return self;
         }
 
-        let (sender, receiver) = channel::<T>();
+        let (sender, receiver) = crossbeam_channel::unbounded::<T>();
 
-        self.add_event::<T>()
-            .add_systems(Update, channel_to_event::<T>)
-            .insert_resource(EventSender(sender))
-            .insert_resource(EventReceiver(Mutex::new(receiver)));
+		self.add_event::<T>()
+            .add_systems(PreUpdate, unbounded_channel_to_event::<T>.in_set(AsyncEventSet<T>()))
+            .insert_resource(AsyncEventSender(sender))
+            .insert_resource(AsyncEventReceiver(receiver));
 
-        self
+		self
     }
 }
 
 /// A system that sends events from the receiver to Bevy's event system.
 /// Converts the asynchronous event into a bevy event and sends it to the event system.
-fn channel_to_event<T: Event>(receiver: Res<EventReceiver<T>>, mut writer: EventWriter<T>) {
-    // this should be the only system working with the receiver,
-    // thus we always expect to get this lock
-    let events = receiver.lock().expect("unable to acquire mutex lock");
-
-    writer.send_batch(events.try_iter());
+fn unbounded_channel_to_event<T: Event>(receiver: Res<AsyncEventReceiver<T>>, mut writer: EventWriter<T>) {
+    writer.send_batch(receiver.try_iter());
 }

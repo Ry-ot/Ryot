@@ -10,7 +10,7 @@ use crate::{ExportMap, LoadMap};
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::app::AppExit;
 #[cfg(not(target_arch = "wasm32"))]
-use ryot::bevy_ryot::{AsyncEventApp, EventSender};
+use ryot::bevy_ryot::{AsyncEventApp, AsyncEventSender};
 
 use bevy::{prelude::*, render::camera::Viewport, winit::WinitWindows};
 use bevy_egui::{EguiContext, EguiContexts, EguiPlugin, EguiUserTextures};
@@ -81,7 +81,7 @@ fn ui_menu_system<C: ContentAssets>(
     #[cfg(not(target_arch = "wasm32"))] content_assets: Res<C>,
     #[cfg(not(target_arch = "wasm32"))] mut exit: EventWriter<AppExit>,
     #[cfg(not(target_arch = "wasm32"))] mut map_export_sender: EventWriter<ExportMap>,
-    #[cfg(not(target_arch = "wasm32"))] load_map_sender: Res<EventSender<LoadMap>>,
+    #[cfg(not(target_arch = "wasm32"))] load_map_sender: Res<AsyncEventSender<LoadMap>>,
     _windows: NonSend<WinitWindows>,
 ) {
     let Ok(mut cursor) = cursor_query.get_single_mut() else {
