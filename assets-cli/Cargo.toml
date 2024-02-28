@@ -1,5 +1,5 @@
 [package]
-name = "decompress"
+name = "assets-cli"
 version = "0.1.0"
 edition = "2021"
 
@@ -11,6 +11,8 @@ ryot = { version = "0.1.0", path = "../ryot", default-features = false, features
 ] }
 config = "0.13"
 log = "0.4"
+simple_logger = "4.3"
+clap = { version = "4.5", features = ["derive"] }
 
 color-eyre.workspace = true
 glam.workspace = true

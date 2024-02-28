@@ -1,18 +1,50 @@
+use clap::{Parser, Subcommand};
 use config::Config;
 use glam::UVec2;
-use ryot::{decompress_sprite_sheets, ContentConfigs};
-
-// use ryot::prelude::*;
 use log::*;
+use ryot::{decompress_sprite_sheets, ContentConfigs};
+use simple_logger::SimpleLogger;
 use std::path::{Path, PathBuf};
 use std::{fs, result};
 
-static DEFAULT_CONTENT_CONFIG_PATH: &str = "config/decompress.toml";
+static DEFAULT_CONTENT_CONFIG_PATH: &str = "config/assets-cli.toml";
+
+/// CLI to manage assets from Cipbia
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Cli {
+    /// Sets a custom config file
+    #[arg(short, long, value_name = "FILE")]
+    config: Option<PathBuf>,
+
+    #[command(subcommand)]
+    command: Option<Commands>,
+}
+
+#[derive(Subcommand, Debug)]
+enum Commands {
+    /// Extracts assets into sprite sheets
+    Extract,
+}
 
 fn main() {
-    ContentBuild::from_path(PathBuf::from(DEFAULT_CONTENT_CONFIG_PATH))
-        .run()
-        .expect("Failed to build assets");
+    SimpleLogger::new().init().unwrap();
+    let cli = Cli::parse();
+    let config_path = cli
+        .config
+        .unwrap_or_else(|| PathBuf::from(DEFAULT_CONTENT_CONFIG_PATH));
+
+    match &cli.command {
+        Some(Commands::Extract) => {
+            info!("Running extract command");
+            ContentBuild::from_path(config_path)
+                .run()
+                .expect("Failed to build assets");
+        }
+        None => {
+            println!("No command provided. Use --help to see available commands");
+        }
+    }
 }
 
 #[derive(Debug)]
