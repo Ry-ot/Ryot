@@ -5,6 +5,9 @@ resolver = "2"
 # Enable a small amount of optimization in debug mode
 [profile.dev]
 opt-level = 1
+# Disabling debug info speeds up builds a bunch,
+# and we don't rely on it for debugging that much.
+debug = 0
 
 # Enable high optimizations for dependencies (incl. Bevy), but not for our code:
 [profile.dev.package."*"]
