@@ -60,7 +60,7 @@ ryot = { version = "0.1.0", path = "../ryot" }
 default = []
 lmdb = ["dep:heed", "ryot/lmdb", "ryot/compression"]
 pre_loaded_sprites = []
-content_rebuild_on_change = []
+diagnostics = []
 
 [lints.clippy]
 enum_glob_use = "deny"
