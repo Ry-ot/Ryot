@@ -8,7 +8,7 @@ use crate::{
 #[cfg(not(target_arch = "wasm32"))]
 use crate::{ExportMap, LoadMap};
 #[cfg(not(target_arch = "wasm32"))]
-use ryot::bevy_ryot::EventSender;
+use ryot::bevy_ryot::{AsyncEventApp, EventSender};
 
 use bevy::{app::AppExit, prelude::*, render::camera::Viewport, winit::WinitWindows};
 use bevy_egui::{EguiContext, EguiContexts, EguiPlugin, EguiUserTextures};
@@ -58,6 +58,9 @@ impl<C: ContentAssets> Plugin for UiPlugin<C> {
                     .chain()
                     .run_if(in_state(InternalContentState::Ready)),
             );
+
+        #[cfg(not(target_arch = "wasm32"))]
+        app.add_event::<ExportMap>().add_async_event::<LoadMap>();
     }
 }
 

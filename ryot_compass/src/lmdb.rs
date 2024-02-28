@@ -7,7 +7,7 @@ use ryot::bevy_ryot::lmdb::{
     compact_map, read_area, reload_visible_area, LmdbCompactor, LmdbPlugin as RyotLmdbPlugin,
 };
 use ryot::bevy_ryot::map::MapTiles;
-use ryot::bevy_ryot::{GameObjectBundle, InternalContentState};
+use ryot::bevy_ryot::{AsyncEventApp, GameObjectBundle, InternalContentState};
 use ryot::helpers::execute;
 use ryot::lmdb::*;
 use ryot::position::{Sector, TilePosition};
@@ -24,24 +24,27 @@ pub struct LmdbPlugin;
 
 impl Plugin for LmdbPlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(RyotLmdbPlugin).add_systems(
-            Update,
-            (
-                compact_map,
-                export_map.map(drop).run_if(on_event::<ExportMap>()),
+        app.add_event::<ExportMap>()
+            .add_async_event::<LoadMap>()
+            .add_plugins(RyotLmdbPlugin)
+            .add_systems(
+                Update,
                 (
-                    load_map.map(drop),
-                    init_new_map.map(drop),
-                    reload_visible_area,
+                    compact_map,
+                    export_map.map(drop).run_if(on_event::<ExportMap>()),
+                    (
+                        load_map.map(drop),
+                        init_new_map.map(drop),
+                        reload_visible_area,
+                    )
+                        .chain()
+                        .run_if(on_event::<LoadMap>()),
+                    read_area_reseting_when_map_is_loaded,
+                    load_tile_content.run_if(on_event::<ObjectsWereLoaded>()),
                 )
                     .chain()
-                    .run_if(on_event::<LoadMap>()),
-                read_area_reseting_when_map_is_loaded,
-                load_tile_content.run_if(on_event::<ObjectsWereLoaded>()),
-            )
-                .chain()
-                .run_if(in_state(InternalContentState::Ready)),
-        );
+                    .run_if(in_state(InternalContentState::Ready)),
+            );
     }
 }
 

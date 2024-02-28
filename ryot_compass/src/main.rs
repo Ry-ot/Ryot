@@ -76,8 +76,6 @@ fn main() {
     .add_systems(Startup, set_window_icon)
     .add_systems(Startup, setup_window);
 
-    app.add_event::<ExportMap>().add_async_event::<LoadMap>();
-
     #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
     app.add_plugins(LmdbPlugin);
 
