@@ -237,6 +237,10 @@ impl Ord for BottomLayer {
 }
 
 pub fn compute_z_transform(pos: &TilePosition, layer: &Layer) -> f32 {
+    if let Layer::Hud(_) = layer {
+        return pos.z as f32;
+    }
+
     let weight = u16::MAX as f32;
     let xy_weighed =
         (MAX_Z_TRANSFORM * pos.x as f32 / weight) - (MAX_Z_TRANSFORM * pos.y as f32 / weight);
