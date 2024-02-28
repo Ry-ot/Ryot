@@ -2,7 +2,7 @@ use crate::{error::*, get_full_file_buffer, CompressionConfig, ContentConfigs, S
 use glam::UVec2;
 use image::error::{LimitError, LimitErrorKind};
 use image::{imageops, ImageFormat, Rgba, RgbaImage};
-use log::{info, warn};
+use log::{debug, warn};
 use lzma_rs::lzma_decompress_with_options;
 use rayon::prelude::IntoParallelRefIterator;
 use rayon::prelude::*;
@@ -134,7 +134,7 @@ pub fn decompress_sprite_sheet(
         return;
     }
 
-    info!("Decompressing sprite sheet {} {}", path.display(), file);
+    debug!("Decompressing sprite sheet {} {}", path.display(), file);
     match load_sprite_sheet_image(
         &format!("{}/{}", path.display(), file).into(),
         sheet_config,

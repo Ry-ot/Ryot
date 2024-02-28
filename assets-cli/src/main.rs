@@ -99,10 +99,7 @@ fn copy_catalog(
     )
 }
 
-fn copy_appearances(
-    source_path: &Path,
-    destination_path: &Path,
-) -> result::Result<(), std::io::Error> {
+fn copy_appearances(source_path: &Path, destination_path: &Path) -> Result<(), std::io::Error> {
     let entries = fs::read_dir(source_path)?;
 
     for entry in entries {
@@ -111,7 +108,7 @@ fn copy_appearances(
 
         if path.is_file() {
             if let Some(file_name) = path.file_name().and_then(|n| n.to_str()) {
-                if file_name.starts_with("appearances-")
+                if file_name.starts_with("appearances")
                     && file_name.ends_with(&format!(".{}", "dat"))
                 {
                     let new_path = destination_path.join("appearances.dat");
