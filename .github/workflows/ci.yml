@@ -56,3 +56,18 @@ jobs:
         run: cargo clippy --workspace --all-targets --all-features -- -Dwarnings
       - name: Check format
         run: cargo fmt --all -- --check
+  wasm-build-compass:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dsherret/rust-toolchain-file@v1
+      - name: Install Linux Dependencies
+        run: sudo apt-get update; sudo apt-get install --no-install-recommends -y libasound2-dev libudev-dev libgtk-3-dev
+        if: runner.os == 'linux'
+      - name: Install Protoc
+        uses: arduino/setup-protoc@v2
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - uses: Swatinem/rust-cache@v2
+      - name: Compile
+        run: cargo build --target wasm32-unknown-unknown --locked -p ryot_compass
