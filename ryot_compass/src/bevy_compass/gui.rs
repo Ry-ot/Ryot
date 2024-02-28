@@ -2,8 +2,13 @@ use std::marker::PhantomData;
 
 use crate::{
     draw_palette_bottom_panel, draw_palette_items, draw_palette_picker, toggle_grid, Cursor,
-    ExportMap, InputType, LoadMap, OptionalPlugin, Palette, PaletteState, ToolMode,
+    InputType, OptionalPlugin, Palette, PaletteState, ToolMode,
 };
+
+#[cfg(not(target_arch = "wasm32"))]
+use crate::{ExportMap, LoadMap};
+#[cfg(not(target_arch = "wasm32"))]
+use ryot::bevy_ryot::EventSender;
 
 use bevy::{app::AppExit, prelude::*, render::camera::Viewport, winit::WinitWindows};
 use bevy_egui::{EguiContext, EguiContexts, EguiPlugin, EguiUserTextures};
@@ -12,7 +17,7 @@ use egui_dock::{DockArea, DockState, NodeIndex};
 use ryot::{
     bevy_ryot::{
         drawing::{Brushes, DrawingBundle},
-        ContentAssets, EventSender, GridView, InternalContentState,
+        ContentAssets, GridView, InternalContentState,
     },
     include_svg,
 };
@@ -64,8 +69,8 @@ fn ui_menu_system<C: ContentAssets>(
     mut cursor_query: Query<&mut Cursor>,
     mut contexts: Query<&mut EguiContext>,
     mut exit: EventWriter<AppExit>,
-    mut map_export_sender: EventWriter<ExportMap>,
-    load_map_sender: Res<EventSender<LoadMap>>,
+    #[cfg(not(target_arch = "wasm32"))] mut map_export_sender: EventWriter<ExportMap>,
+    #[cfg(not(target_arch = "wasm32"))] load_map_sender: Res<EventSender<LoadMap>>,
     _windows: NonSend<WinitWindows>,
 ) {
     let Ok(mut cursor) = cursor_query.get_single_mut() else {
