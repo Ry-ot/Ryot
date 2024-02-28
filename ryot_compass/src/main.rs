@@ -1,3 +1,4 @@
+#[cfg(feature = "diagnostics")]
 use bevy::diagnostic::*;
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
@@ -39,7 +40,7 @@ pub fn setup_window(
     let primary_window = windows.get_window(primary_window_entity).unwrap();
 
     let (icon_rgba, icon_width, icon_height) = {
-        let Ok(image) = image::open("assets/icons/compass_4.png") else {
+        let Ok(image) = image::open("assets/icons/compass_2144.png") else {
             error!("Failed to load icon image");
             return;
         };
@@ -55,7 +56,6 @@ pub fn setup_window(
 }
 
 fn main() {
-    // lmdb_example().unwrap();
     color_eyre::install().unwrap();
     let mut app = App::new();
 
@@ -68,16 +68,20 @@ fn main() {
         PalettePlugin::<CompassContentAssets>::default(),
         DrawingPlugin::<CompassContentAssets>::default(),
         ErrorPlugin,
-        FrameTimeDiagnosticsPlugin,
-        EntityCountDiagnosticsPlugin,
-        SystemInformationDiagnosticsPlugin,
-        LogDiagnosticsPlugin::default(),
     ))
     .add_systems(Startup, set_window_icon)
     .add_systems(Startup, setup_window);
 
     #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
     app.add_plugins(LmdbPlugin);
+
+    #[cfg(feature = "diagnostics")]
+    app.add_plugins((
+        FrameTimeDiagnosticsPlugin,
+        EntityCountDiagnosticsPlugin,
+        SystemInformationDiagnosticsPlugin,
+        LogDiagnosticsPlugin::default(),
+    ));
 
     app.run();
 }
