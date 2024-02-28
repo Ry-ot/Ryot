@@ -8,7 +8,6 @@ use bevy::window::PrimaryWindow;
 use bevy_egui::{EguiContext, EguiContexts};
 use bevy_pancam::*;
 use leafwing_input_manager::prelude::*;
-use leafwing_input_manager::user_input::InputKind;
 use ryot::bevy_ryot::drawing::DrawingBundle;
 use ryot::position::{Sector, TilePosition};
 use ryot::prelude::drawing::{BrushItem, BrushParams, Brushes};
@@ -119,10 +118,7 @@ fn spawn_cursor(mut commands: Commands) {
     ));
 }
 
-pub static MAP_GRAB_INPUTS: [InputKind; 2] = [
-    InputKind::Modifier(Modifier::Alt),
-    InputKind::Mouse(MouseButton::Left),
-];
+pub static MAP_GRAB_INPUTS: MouseButton = MouseButton::Right;
 
 fn spawn_camera(
     content: Res<CompassContentAssets>,
@@ -155,7 +151,7 @@ fn spawn_camera(
             inputs: InputManagerBundle::<PanCamAction> {
                 action_state: ActionState::default(),
                 input_map: InputMap::default()
-                    .insert_chord(PanCamAction::Grab, MAP_GRAB_INPUTS)
+                    .insert(PanCamAction::Grab, MAP_GRAB_INPUTS)
                     .insert(PanCamAction::Zoom, zoom_input)
                     .build(),
             },

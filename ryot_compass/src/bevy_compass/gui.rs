@@ -1,8 +1,8 @@
 use std::marker::PhantomData;
 
 use crate::{
-    draw_palette_bottom_panel, draw_palette_items, draw_palette_picker, toggle_grid, Cursor,
-    InputType, OptionalPlugin, Palette, PaletteState, ToolMode,
+    draw_palette_bottom_panel, draw_palette_items, draw_palette_picker, toggle_grid, CompassAction,
+    Cursor, InputType, OptionalPlugin, Palette, PaletteState, ToolMode,
 };
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -26,7 +26,13 @@ use ryot::{
 
 const DELETE_ICON: egui::ImageSource = include_svg!(
     r##"
-    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="#fff6c2" viewBox="0 0 256 256"><path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM112,168a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm48,0a8,8,0,0,1-16,0V104a8,8,0,0,1,16,0Zm0-120H96V40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8Z"></path></svg>
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="#fff6c2" viewBox="0 0 256 256"><path d="M225,80.4,183.6,39a24,24,0,0,0-33.94,0L31,157.66a24,24,0,0,0,0,33.94l30.06,30.06A8,8,0,0,0,66.74,224H216a8,8,0,0,0,0-16h-84.7L225,114.34A24,24,0,0,0,225,80.4ZM213.67,103,160,156.69,107.31,104,161,50.34a8,8,0,0,1,11.32,0l41.38,41.38a8,8,0,0,1,0,11.31Z"></path></svg>
+    "##
+);
+
+const HELP_ICON: egui::ImageSource = include_svg!(
+    r##"
+    <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" fill="#fff6c2" viewBox="0 0 256 256"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,168a12,12,0,1,1,12-12A12,12,0,0,1,128,192Zm8-48.72V144a8,8,0,0,1-16,0v-8a8,8,0,0,1,8-8c13.23,0,24-9,24-20s-10.77-20-24-20-24,9-24,20v4a8,8,0,0,1-16,0v-4c0-19.85,17.94-36,40-36s40,16.15,40,36C168,125.38,154.24,139.93,136,143.28Z"></path></svg>
     "##
 );
 
@@ -194,11 +200,22 @@ fn ui_menu_system<C: ContentAssets>(
             let current_brush_index = &mut cursor.drawing_state.brush_index;
             ui.add_sized(
                 egui::Vec2::new(18., 18.),
-                egui::Image::new(brushes[*current_brush_index].icon()).tint(egui::Color32::GRAY),
+                egui::Image::new(brushes[*current_brush_index].icon()),
             );
             if let InputType::SingleClick(size) = &mut cursor.drawing_state.input_type {
-                ui.add(Slider::new(size, 0..=20));
+                *size += 1;
+                ui.add(Slider::new(size, 1..=20));
+                *size -= 1;
             }
+
+            ui.separator();
+
+            ui.add_sized(egui::Vec2::new(18., 18.), egui::Image::new(HELP_ICON))
+                .on_hover_ui(|ui| {
+                    for item in CompassAction::get_hotkeys_list() {
+                        ui.label(item);
+                    }
+                });
         });
 
         ui.add_space(4.);

@@ -76,7 +76,31 @@ impl CompassAction {
             )
             .insert_modified(CompassAction::Exit, CONTROL_COMMAND, KeyCode::KeyQ)
             // Small hack to remove clash with the pancam plugin
-            .insert_chord(CompassAction::Stop, MAP_GRAB_INPUTS)
+            .insert(CompassAction::Stop, MAP_GRAB_INPUTS)
             .build()
+    }
+
+    pub fn get_hotkeys_list() -> Vec<String> {
+        #[cfg(target_os = "macos")]
+        let control_key = "Cmd";
+        #[cfg(not(target_os = "macos"))]
+        let control_key = "Ctrl";
+        let shift_key = "Shift";
+
+        vec![
+            "Zoom (Scroll)".to_string(),
+            "Draw (Left Click)".to_string(),
+            format!("Draw Connecting Points (Hold {})", shift_key),
+            "Move map (Right Click)".to_string(),
+            format!("Toggle Grid ({} G)", control_key),
+            format!("Toggle Deletion ({} D)", control_key),
+            format!("Undo ({} Z)", control_key),
+            format!("Redo ({} {} Z)", control_key, shift_key),
+            "Change Brush (1)".to_string(),
+            "Clear Selection (Esc)".to_string(),
+            format!("Increase Brush ({} +/=)", control_key),
+            format!("Decrease Brush ({} -)", control_key),
+            format!("Exit ({} Q)", control_key),
+        ]
     }
 }
