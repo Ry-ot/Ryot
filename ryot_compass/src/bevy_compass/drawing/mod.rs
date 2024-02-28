@@ -2,7 +2,7 @@ use crate::{gui_is_not_in_use, toggle_grid, CompassAction};
 use bevy::prelude::*;
 use leafwing_input_manager::common_conditions::*;
 use ryot::bevy_ryot::map::MapTiles;
-use ryot::input_action;
+use ryot::on_hold_every;
 use ryot::prelude::{drawing::*, *};
 use std::marker::PhantomData;
 
@@ -54,11 +54,11 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
                                 action_just_pressed(CompassAction::StartConnectingPoints),
                             )),
                     ),
-                    input_action!(handle_drawing_input::<C>, CompassAction::Draw, 50),
-                    input_action!(toggle_deletion, CompassAction::ToggleDeletion, 750),
-                    input_action!(toggle_grid, CompassAction::ToggleGrid, 750),
-                    input_action!(undo.map(drop), CompassAction::Undo, 50),
-                    input_action!(redo.map(drop), CompassAction::Redo, 50),
+                    on_hold_every!(undo.map(drop), CompassAction::Undo, 50),
+                    on_hold_every!(redo.map(drop), CompassAction::Redo, 50),
+                    on_hold_every!(handle_drawing_input::<C>, CompassAction::Draw, 50),
+                    on_hold_every!(toggle_grid, CompassAction::ToggleGrid, 750),
+                    on_hold_every!(toggle_deletion, CompassAction::ToggleDeletion, 750),
                     (
                         change_brush_shape.run_if(action_just_pressed(CompassAction::ChangeBrush)),
                         change_brush_size(1)

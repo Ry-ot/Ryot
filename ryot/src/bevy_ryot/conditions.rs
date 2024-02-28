@@ -1,6 +1,5 @@
-use bevy::ecs::schedule::SystemConfigs;
-use bevy::prelude::{not, Condition, IntoSystemConfigs, Res, Time, Timer, TimerMode};
-use leafwing_input_manager::common_conditions::{action_just_pressed, action_pressed};
+use bevy::prelude::{Res, Time, Timer, TimerMode};
+use leafwing_input_manager::action_state::ActionState;
 use leafwing_input_manager::Actionlike;
 use std::time::Duration;
 
@@ -24,42 +23,87 @@ pub fn run_every_secs(secs: u64) -> impl FnMut(Res<Time>) -> bool {
     run_every(Duration::from_secs(secs))
 }
 
-/// A helper for leafwing-input-manager that sets up a system to only run if a given action was pressed.
-pub fn on_press<M, A: Actionlike>(systems: impl IntoSystemConfigs<M>, action: A) -> SystemConfigs {
-    systems.run_if(action_just_pressed(action))
-}
-
-/// A helper for leafwing-input-manager that sets up a system to only run if a given action is being held.
-pub fn on_hold<M, A: Actionlike>(systems: impl IntoSystemConfigs<M>, action: A) -> SystemConfigs {
-    systems.run_if(action_pressed(action.clone()).and_then(not(action_just_pressed(action))))
-}
-
-pub fn on_hold_every<M, A: Actionlike>(
-    systems: impl IntoSystemConfigs<M>,
+/// A condition using leafwing-input-manager that runs the system if an action is pressed or if
+/// the action is held down every X duration.
+pub fn on_hold_every<A>(
     action: A,
-    duration: Duration,
-) -> SystemConfigs {
-    systems.run_if(
-        action_pressed(action.clone())
-            .and_then(not(action_just_pressed(action)))
-            .and_then(run_every(duration)),
-    )
+    time_arg: TimeArg,
+) -> impl FnMut(Res<ActionState<A>>, Res<Time>) -> bool
+where
+    A: Actionlike + Clone,
+{
+    let mut timer = Timer::new(time_arg.0, TimerMode::Repeating);
+
+    move |action_state: Res<ActionState<A>>, time: Res<Time>| {
+        timer.tick(time.delta());
+
+        if action_state.just_pressed(&action) {
+            timer.reset();
+            return true;
+        }
+
+        action_state.pressed(&action) && timer.finished()
+    }
 }
 
-pub fn on_hold_every_millis<M, A: Actionlike>(
-    systems: impl IntoSystemConfigs<M>,
-    action: A,
-    millis: u64,
-) -> SystemConfigs {
-    on_hold_every(systems, action, Duration::from_millis(millis))
+/// A wrapper for Duration that allows you to define duration from different units.
+/// It supports Duration, u64(ms), and &str (e.g. "1s", "100ms", "1us", "1ns").
+pub struct TimeArg(Duration);
+
+impl From<u64> for TimeArg {
+    fn from(value: u64) -> Self {
+        TimeArg(Duration::from_millis(value))
+    }
 }
 
+impl From<Duration> for TimeArg {
+    fn from(value: Duration) -> Self {
+        TimeArg(value)
+    }
+}
+
+impl From<&str> for TimeArg {
+    fn from(value: &str) -> Self {
+        let time_str = value;
+        if time_str.ends_with("ms") {
+            TimeArg(Duration::from_millis(
+                time_str
+                    .trim_end_matches("ms")
+                    .parse()
+                    .expect("Expected a number followed by 'ms'"),
+            ))
+        } else if time_str.ends_with("us") {
+            TimeArg(Duration::from_micros(
+                time_str
+                    .trim_end_matches("us")
+                    .parse()
+                    .expect("Expected a number followed by 'us'"),
+            ))
+        } else if time_str.ends_with("ns") {
+            TimeArg(Duration::from_nanos(
+                time_str
+                    .trim_end_matches("ns")
+                    .parse()
+                    .expect("Expected a number followed by 'ns'"),
+            ))
+        } else if time_str.ends_with('s') {
+            TimeArg(Duration::from_secs(
+                time_str
+                    .trim_end_matches('s')
+                    .parse()
+                    .expect("Expected a number followed by 's'"),
+            ))
+        } else {
+            panic!("Unsupported time unit. Supported units are 's', 'ms', 'us', 'ns'.");
+        }
+    }
+}
+
+/// A macro that simplifies the usege of `on_hold_every` condition by already calling
+/// `into` on the time argument.
 #[macro_export]
-macro_rules! input_action {
-    ($func:expr, $action:expr, $time:expr) => {
-        (
-            on_press($func, $action),
-            on_hold_every_millis($func, $action, $time),
-        )
+macro_rules! on_hold_every {
+    ($func:expr, $action:expr, $time_arg:expr) => {
+        $func.run_if(on_hold_every($action, $time_arg.into()))
     };
 }
