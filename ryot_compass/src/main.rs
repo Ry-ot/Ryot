@@ -65,6 +65,7 @@ fn main() {
         AppPlugin,
         UiPlugin::<CompassContentAssets>::default(),
         CameraPlugin::<CompassContentAssets>::default(),
+        CursorPlugin,
         PalettePlugin::<CompassContentAssets>::default(),
         DrawingPlugin::<CompassContentAssets>::default(),
         ErrorPlugin,
