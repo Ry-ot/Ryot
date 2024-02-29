@@ -1,7 +1,5 @@
 use crate::bevy_compass::CompassAssets;
-use crate::{
-    CompassAction, CompassContentAssets, HudLayers, {PaletteState, UiState},
-};
+use crate::{CompassAction, CompassContentAssets, HudLayers, UiState};
 use bevy::math::{Vec2, Vec3};
 use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
@@ -12,7 +10,6 @@ use leafwing_input_manager::prelude::*;
 use ryot::bevy_ryot::drawing::DrawingBundle;
 use ryot::position::{Sector, TilePosition};
 use ryot::prelude::drawing::{BrushItem, BrushParams, Brushes};
-use ryot::prelude::sprites::LoadedSprites;
 use ryot::prelude::*;
 use std::marker::PhantomData;
 
@@ -48,7 +45,6 @@ impl<C: CompassAssets> Plugin for CameraPlugin<C> {
                         update_cursor_pos.map(drop),
                         update_cursor_preview,
                         update_cursor_brush_preview,
-                        update_cursor_sprite,
                         update_cursor_visibility.map(drop),
                         update_camera_visible_sector,
                     )
@@ -56,6 +52,10 @@ impl<C: CompassAssets> Plugin for CameraPlugin<C> {
                     update_pan_cam_actions.run_if(resource_changed::<UiState>),
                 )
                     .run_if(in_state(InternalContentState::Ready)),
+            )
+            .add_systems(
+                PostUpdate,
+                (update_cursor_sprite).run_if(in_state(InternalContentState::Ready)),
             );
     }
 }
@@ -65,30 +65,18 @@ pub struct Cursor {
     pub drawing_state: DrawingState,
 }
 
-#[derive(Eq, PartialEq, Clone, Copy, Reflect)]
+#[derive(Eq, PartialEq, Clone, Copy, Default, Reflect)]
 pub struct DrawingState {
-    pub enabled: bool,
     pub brush_index: usize,
     pub tool_mode: ToolMode,
     pub input_type: InputType,
 }
 
-impl Default for DrawingState {
-    fn default() -> Self {
-        Self {
-            enabled: true,
-            brush_index: 0,
-            tool_mode: ToolMode::default(),
-            input_type: InputType::default(),
-        }
-    }
-}
-
 #[derive(Eq, PartialEq, Default, Clone, Copy, Debug, Reflect)]
 pub enum ToolMode {
-    None,
     #[default]
-    Draw,
+    None,
+    Draw(AppearanceDescriptor),
     Erase,
 }
 
@@ -120,20 +108,12 @@ impl<E: BrushItem> From<InputType> for BrushParams<E> {
     }
 }
 
-fn spawn_cursor(content: Res<CompassContentAssets>, mut commands: Commands) {
+fn spawn_cursor(mut commands: Commands) {
     commands.spawn((
         Cursor::default(),
         Layer::from(HudLayers::Cursor),
         TilePosition::default(),
         AppearanceDescriptor::default(),
-        SpriteBundle {
-            sprite: Sprite {
-                color: Color::NONE,
-                ..Default::default()
-            },
-            texture: content.square().clone_weak(),
-            ..Default::default()
-        },
     ));
 }
 
@@ -185,22 +165,16 @@ fn spawn_camera(
     });
 }
 
-fn update_cursor_preview(
-    palette_state: Res<PaletteState>,
-    mut cursor_query: Query<(&mut Cursor, &mut AppearanceDescriptor)>,
-) {
-    for (mut cursor, mut desired_appearance) in cursor_query.iter_mut() {
-        let Some(selected) = &palette_state.selected_tile else {
-            cursor.drawing_state.enabled = false;
-            return;
+fn update_cursor_preview(mut cursor_query: Query<(&Cursor, &mut AppearanceDescriptor)>) {
+    for (cursor, mut desired_appearance) in cursor_query.iter_mut() {
+        let appearance = match cursor.drawing_state.tool_mode {
+            ToolMode::Draw(appearance) => appearance,
+            _ => AppearanceDescriptor::object(799),
         };
 
-        cursor.drawing_state.enabled = true;
-
-        if *desired_appearance == *selected {
-            return;
+        if *desired_appearance != appearance {
+            *desired_appearance = appearance;
         }
-        *desired_appearance = *selected;
     }
 }
 
@@ -250,55 +224,38 @@ fn move_to_cursor(
 }
 
 fn update_cursor_sprite(
-    mut commands: Commands,
-    content: Res<CompassContentAssets>,
-    mut cursor: Query<
-        (Entity, &Cursor, &mut Sprite, &mut Handle<Image>),
-        (Without<BrushPreviewTile>, With<Cursor>),
-    >,
-    mut preview_query: Query<(Entity, &mut Sprite, &mut Handle<Image>), With<BrushPreviewTile>>,
+    mut cursor: Query<(&Cursor, &mut Sprite), (Without<BrushPreviewTile>, With<Cursor>)>,
+    mut preview_query: Query<&mut Sprite, With<BrushPreviewTile>>,
 ) {
-    let Ok((entity, cursor, mut cursor_sprite, mut cursor_texture)) = cursor.get_single_mut()
-    else {
+    let Ok((cursor, mut cursor_sprite)) = cursor.get_single_mut() else {
         return;
     };
 
-    let mut update_texture = |entity: Entity, sprite: &mut Sprite, texture: &mut Handle<Image>| {
-        sprite.color = match cursor.drawing_state.tool_mode {
-            ToolMode::Draw => Color::WHITE,
-            ToolMode::Erase => Color::CRIMSON,
-            _ => Color::NONE,
-        };
-
-        if sprite.color != Color::NONE {
-            sprite.color.set_a(0.5);
-        }
-
-        if !matches!(cursor.drawing_state.tool_mode, ToolMode::Draw) {
-            *texture = content.square().clone_weak();
-            commands.entity(entity).remove::<TextureAtlas>();
-            commands.entity(entity).remove::<LoadedSprites>();
-        }
+    cursor_sprite.color = match cursor.drawing_state.tool_mode {
+        ToolMode::Draw(_) => Color::WHITE,
+        ToolMode::Erase => Color::CRIMSON,
+        _ => Color::NONE,
     };
 
-    update_texture(entity, &mut cursor_sprite, &mut cursor_texture);
+    if cursor_sprite.color != Color::NONE {
+        cursor_sprite.color.set_a(0.5);
+    }
 
-    for (entity, mut sprite, mut handle) in preview_query.iter_mut() {
-        update_texture(entity, &mut sprite, &mut handle);
+    for mut sprite in preview_query.iter_mut() {
+        *sprite = cursor_sprite.clone();
     }
 }
 
 fn update_cursor_visibility(
-    palette_state: Res<PaletteState>,
     mut egui_ctx: Query<&mut EguiContext>,
     mut windows: Query<&mut Window>,
-    mut cursor_query: Query<(&TilePosition, &mut Visibility)>,
+    mut cursor_query: Query<(&Cursor, &TilePosition, &mut Visibility)>,
     gui_state: Res<UiState>,
 ) -> color_eyre::Result<()> {
     let mut egui_ctx = egui_ctx.single_mut();
-    let (tile_pos, mut visibility) = cursor_query.get_single_mut()?;
+    let (cursor, tile_pos, mut visibility) = cursor_query.get_single_mut()?;
 
-    if gui_state.is_being_used || palette_state.selected_tile.is_none() {
+    if gui_state.is_being_used || cursor.drawing_state.tool_mode.is_none() {
         *visibility = Visibility::Hidden;
 
         windows.single_mut().cursor.visible = true;
@@ -386,7 +343,7 @@ fn update_cursor_brush_preview(
     // unnecessarily.
     for (mut tile_pos, mut appearance, mut visibility) in brush_preview_tiles.iter_mut() {
         // If the drawing_state is disable we are probably interacting with the UI, so we hide the preview.
-        if !cursor.drawing_state.enabled {
+        if cursor.drawing_state.tool_mode.is_none() {
             *visibility = Visibility::Hidden;
             continue;
         }
@@ -414,7 +371,7 @@ fn update_cursor_brush_preview(
 
     // We never proceed if the drawing state is disabled, since we don't want to spawn new tiles
     // and we never preview when interacting with the UI.
-    if !cursor.drawing_state.enabled {
+    if cursor.drawing_state.tool_mode.is_none() {
         return;
     }
 

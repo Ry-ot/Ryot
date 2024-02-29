@@ -28,7 +28,7 @@ pub fn handle_drawing_input<C: ContentAssets>(
         &brushes,
         &cursor_query,
         |cursor: &Cursor, bundles: Vec<DrawingBundle>| match cursor.drawing_state.tool_mode {
-            ToolMode::Draw => {
+            ToolMode::Draw(_) => {
                 create_or_update_content_for_positions(
                     &bundles,
                     &mut commands,

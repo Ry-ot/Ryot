@@ -69,10 +69,11 @@ impl AssetLoader for AppearanceAssetLoader {
     }
 }
 
-#[derive(Component, Debug, Copy, Clone, Default, Eq, PartialEq)]
+#[derive(Component, Debug, Copy, Clone, Default, Eq, PartialEq, Reflect)]
 pub struct AppearanceDescriptor {
     pub group: AppearanceGroup,
     pub id: u32,
+    #[reflect(ignore)]
     pub fixed_frame_group: FixedFrameGroup,
 }
 
@@ -179,7 +180,7 @@ impl PreparedAppearances {
     }
 }
 
-#[derive(Hash, Eq, Default, PartialEq, Debug, Copy, Clone)]
+#[derive(Hash, Eq, Default, PartialEq, Debug, Copy, Clone, Reflect)]
 pub enum AppearanceGroup {
     #[default]
     Object,
