@@ -184,14 +184,14 @@ fn ui_menu_system<C: ContentAssets>(
                     ui.style_mut().visuals.selection.bg_fill =
                         egui::Color32::RED.gamma_multiply(0.5);
                     let delete_button = egui::ImageButton::new(DELETE_ICON)
-                        .selected(cursor.drawing_state.tool_mode == ToolMode::Erase);
+                        .selected(cursor.drawing_state.tool_mode == Some(ToolMode::Erase));
                     let delete_button = ui.add_sized(egui::Vec2::new(24., 24.), delete_button);
                     if delete_button.on_hover_text("Delete").clicked() {
                         cursor_events_writer.send(CursorEvents::ToolModeChanged(
-                            if cursor.drawing_state.tool_mode != ToolMode::Erase {
-                                ToolMode::Erase
+                            if cursor.drawing_state.tool_mode != Some(ToolMode::Erase) {
+                                Some(ToolMode::Erase)
                             } else {
-                                ToolMode::None
+                                None
                             },
                         ));
                     }

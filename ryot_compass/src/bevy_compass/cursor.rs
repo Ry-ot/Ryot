@@ -14,12 +14,13 @@ impl Plugin for CursorPlugin {
 #[derive(Event, Clone, Copy, Debug)]
 pub enum CursorEvents {
     BrushChanged(usize),
-    ToolModeChanged(ToolMode),
+    ToolModeChanged(Option<ToolMode>),
     InputTypeChanged(InputType),
     SizeChanged(i32),
 }
 
 fn listen_cursor_events(
+    mut previous_state: Local<DrawingState>,
     mut cursor_query: Query<&mut Cursor>,
     mut cursor_events: EventReader<CursorEvents>,
 ) {
@@ -31,7 +32,15 @@ fn listen_cursor_events(
                 cursor.drawing_state.brush_index = *id;
             }
             CursorEvents::ToolModeChanged(mode) => {
-                cursor.drawing_state.tool_mode = *mode;
+                let previous = previous_state.tool_mode;
+
+                if mode.is_some() {
+                    previous_state.tool_mode = cursor.drawing_state.tool_mode;
+                    cursor.drawing_state.tool_mode = *mode;
+                } else {
+                    cursor.drawing_state.tool_mode = previous;
+                    previous_state.tool_mode = None;
+                }
             }
             CursorEvents::InputTypeChanged(input) => {
                 cursor.drawing_state.input_type = *input;

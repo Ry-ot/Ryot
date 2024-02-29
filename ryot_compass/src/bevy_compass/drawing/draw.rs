@@ -28,7 +28,7 @@ pub fn handle_drawing_input<C: ContentAssets>(
         &brushes,
         &cursor_query,
         |cursor: &Cursor, bundles: Vec<DrawingBundle>| match cursor.drawing_state.tool_mode {
-            ToolMode::Draw(_) => {
+            Some(ToolMode::Draw(_)) => {
                 create_or_update_content_for_positions(
                     &bundles,
                     &mut commands,
@@ -37,7 +37,7 @@ pub fn handle_drawing_input<C: ContentAssets>(
                     &q_current_appearance,
                 );
             }
-            ToolMode::Erase => {
+            Some(ToolMode::Erase) => {
                 delete_top_most_elements_in_positions(
                     get_top_most_visible_for_bundles(&bundles, &mut tiles, &q_current_appearance),
                     &mut commands,
