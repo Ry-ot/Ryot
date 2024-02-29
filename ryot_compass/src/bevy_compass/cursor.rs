@@ -38,7 +38,7 @@ fn listen_cursor_events(
             }
             CursorEvents::SizeChanged(size) => {
                 if let InputType::SingleClick(old_size) = &mut cursor.drawing_state.input_type {
-                    *old_size = *size;
+                    *old_size = (*size).clamp(0, 50);
                 }
             }
         }

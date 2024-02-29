@@ -1,6 +1,6 @@
 use crate::{
-    delete_top_most_elements_in_positions, CommandHistory, CompassAction, Cursor, InputType,
-    ToolMode,
+    delete_top_most_elements_in_positions, CommandHistory, CompassAction, Cursor, CursorEvents,
+    InputType, ToolMode,
 };
 use bevy::ecs::query::QueryFilter;
 use bevy::prelude::*;
@@ -178,29 +178,41 @@ pub fn get_current_appearance(
     }
 }
 
-pub fn update_drawing_input_type(mut cursor_query: Query<(&TilePosition, &mut Cursor)>) {
-    for (cursor_pos, mut cursor) in &mut cursor_query {
-        cursor.drawing_state.input_type = match cursor.drawing_state.input_type {
+pub fn update_drawing_input_type(
+    cursor_query: Query<(&TilePosition, &Cursor)>,
+    mut cursor_events_writer: EventWriter<CursorEvents>,
+) {
+    for (cursor_pos, cursor) in &cursor_query {
+        let input_type = match cursor.drawing_state.input_type {
             InputType::DoubleClick(_) => InputType::DoubleClick(Some(*cursor_pos)),
             input_type => input_type,
         };
+
+        if cursor.drawing_state.input_type != input_type {
+            cursor_events_writer.send(CursorEvents::InputTypeChanged(input_type));
+        }
     }
 }
 
 pub fn set_drawing_input_type(
     mut previous_size: Local<i32>,
-    mut cursor_query: Query<&mut Cursor>,
+    cursor_query: Query<&Cursor>,
     action_state: Res<ActionState<CompassAction>>,
+    mut cursor_events_writer: EventWriter<CursorEvents>,
 ) {
-    for mut cursor in &mut cursor_query {
+    for cursor in &cursor_query {
         if let InputType::SingleClick(size) = cursor.drawing_state.input_type {
             *previous_size = size;
         }
 
-        if action_state.just_pressed(&CompassAction::StartConnectingPoints) {
-            cursor.drawing_state.input_type = InputType::DoubleClick(None);
+        let input_type = if action_state.just_pressed(&CompassAction::StartConnectingPoints) {
+            InputType::DoubleClick(None)
         } else {
-            cursor.drawing_state.input_type = InputType::SingleClick(*previous_size);
+            InputType::SingleClick(*previous_size)
+        };
+
+        if cursor.drawing_state.input_type != input_type {
+            cursor_events_writer.send(CursorEvents::InputTypeChanged(input_type));
         }
     }
 }

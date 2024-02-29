@@ -48,23 +48,19 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
             .add_systems(
                 Update,
                 (
+                    on_hold_every!(undo.map(drop), CompassAction::Undo, 100),
+                    on_hold_every!(redo.map(drop), CompassAction::Redo, 100),
+                    on_hold_every!(handle_drawing_input::<C>, CompassAction::Draw, 100),
+                    on_hold_every!(toggle_grid, CompassAction::ToggleGrid, 750),
+                    on_hold_every!(toggle_deletion, CompassAction::ToggleDeletion, 750),
+                    on_hold_every!(change_brush_shape, CompassAction::ChangeBrush, 250),
+                    on_hold_every!(change_brush_size(1), CompassAction::IncreaseBrush, 250),
+                    on_hold_every!(change_brush_size(-1), CompassAction::DecreaseBrush, 250),
                     set_drawing_input_type.run_if(
                         action_just_released(CompassAction::StartConnectingPoints)
                             .or_else(action_just_pressed(CompassAction::ClearSelection).or_else(
                                 action_just_pressed(CompassAction::StartConnectingPoints),
                             )),
-                    ),
-                    on_hold_every!(undo.map(drop), CompassAction::Undo, 100),
-                    on_hold_every!(redo.map(drop), CompassAction::Redo, 100),
-                    on_hold_every!(handle_drawing_input::<C>, CompassAction::Draw, 50),
-                    on_hold_every!(toggle_grid, CompassAction::ToggleGrid, 750),
-                    on_hold_every!(toggle_deletion, CompassAction::ToggleDeletion, 750),
-                    (
-                        change_brush_shape.run_if(action_just_pressed(CompassAction::ChangeBrush)),
-                        change_brush_size(1)
-                            .run_if(action_just_pressed(CompassAction::IncreaseBrush)),
-                        change_brush_size(-1)
-                            .run_if(action_just_pressed(CompassAction::DecreaseBrush)),
                     ),
                     update_drawing_input_type.run_if(action_just_pressed(CompassAction::Draw)),
                 )
