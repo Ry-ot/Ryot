@@ -16,7 +16,7 @@ use ryot::Layer;
 /// some protection zone in the map, for drawing paths, creating areas/cities, etc).
 pub fn handle_drawing_input<C: ContentAssets>(
     mut commands: Commands,
-    mut tiles: ResMut<MapTiles>,
+    mut tiles: ResMut<MapTiles<Entity>>,
     mut command_history: ResMut<CommandHistory>,
     content_assets: Res<C>,
     brushes: Res<Brushes<DrawingBundle>>,
@@ -93,7 +93,7 @@ fn create_or_update_content_for_positions(
     to_draw: &[DrawingBundle],
     commands: &mut Commands,
     command_history: &mut ResMut<CommandHistory>,
-    tiles: &mut ResMut<MapTiles>,
+    tiles: &mut ResMut<MapTiles<Entity>>,
     q_current_appearance: &Query<(&Visibility, &Layer, &AppearanceDescriptor), With<TileComponent>>,
 ) {
     let mut old_info: Vec<DrawingInfo> = vec![];
@@ -165,7 +165,7 @@ fn create_or_update_content_for_positions(
 
 pub fn get_current_appearance(
     new_bundle: DrawingBundle,
-    tiles: &mut ResMut<MapTiles>,
+    tiles: &mut ResMut<MapTiles<Entity>>,
     q_current_appearance: &Query<(&Visibility, &Layer, &AppearanceDescriptor), With<TileComponent>>,
 ) -> Option<AppearanceDescriptor> {
     match q_current_appearance.get(

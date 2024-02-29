@@ -1,4 +1,4 @@
-use bevy::prelude::{Deref, DerefMut, Entity, Reflect, Resource};
+use bevy::prelude::{Deref, DerefMut, Reflect, Resource};
 use bevy::utils::HashMap;
 
 use crate::layer::{BottomLayer, Order, RelativeLayer};
@@ -8,26 +8,43 @@ use crate::{layer::Layer, position::TilePosition};
 /// An entity location is represented by the combination of a Layer and a Position.
 /// The MapTiles are represented by a HashMap of TilePosition and a HashMap of Layer and Entity.
 /// The MapTiles is used to keep track of the entities that are drawn on the map and their position.
-#[derive(Debug, Default, Resource, Deref, DerefMut)]
-pub struct MapTiles(pub HashMap<TilePosition, MapTile>);
+#[derive(Debug, Resource, Deref, DerefMut)]
+pub struct MapTiles<T: Copy>(pub HashMap<TilePosition, MapTile<T>>);
 
-#[derive(Debug, Default, Clone, Reflect)]
-pub struct MapTile {
-    ground: Option<Entity>,
-    edge: Option<Entity>,
-    bottom: HashMap<RelativeLayer, HashMap<Order, Entity>>,
-    top: Option<Entity>,
+impl<T: Copy> Default for MapTiles<T> {
+    fn default() -> Self {
+        Self(Default::default())
+    }
+}
+
+#[derive(Debug, Clone, Reflect)]
+pub struct MapTile<T: Copy> {
+    ground: Option<T>,
+    edge: Option<T>,
+    bottom: HashMap<RelativeLayer, HashMap<Order, T>>,
+    top: Option<T>,
+}
+
+impl<T: Copy> Default for MapTile<T> {
+    fn default() -> Self {
+        Self {
+            ground: None,
+            edge: None,
+            bottom: Default::default(),
+            top: None,
+        }
+    }
 }
 
 #[derive(Debug)]
-pub struct MapTileIter<'a> {
-    map_tile: &'a MapTile,
+pub struct MapTileIter<'a, T: Copy> {
+    map_tile: &'a MapTile<T>,
     layer: Option<Layer>,
     back_layer: Option<Layer>,
 }
 
-impl<'a> Iterator for MapTileIter<'a> {
-    type Item = (Layer, Entity);
+impl<'a, T: Copy> Iterator for MapTileIter<'a, T> {
+    type Item = (Layer, T);
 
     fn next(&mut self) -> Option<Self::Item> {
         let mut layer = self.layer?;
@@ -49,7 +66,7 @@ impl<'a> Iterator for MapTileIter<'a> {
     }
 }
 
-impl DoubleEndedIterator for MapTileIter<'_> {
+impl<T: Copy> DoubleEndedIterator for MapTileIter<'_, T> {
     fn next_back(&mut self) -> Option<Self::Item> {
         let mut back_layer = self.back_layer?;
         let entity = self.map_tile.peek_for_layer(back_layer);
@@ -70,9 +87,9 @@ impl DoubleEndedIterator for MapTileIter<'_> {
     }
 }
 
-impl<'a> IntoIterator for &'a MapTile {
-    type Item = (Layer, Entity);
-    type IntoIter = MapTileIter<'a>;
+impl<'a, T: Copy> IntoIterator for &'a MapTile<T> {
+    type Item = (Layer, T);
+    type IntoIter = MapTileIter<'a, T>;
 
     fn into_iter(self) -> Self::IntoIter {
         MapTileIter {
@@ -83,19 +100,19 @@ impl<'a> IntoIterator for &'a MapTile {
     }
 }
 
-impl MapTile {
-    pub fn peek(&self) -> Option<(Layer, Entity)> {
+impl<T: Copy> MapTile<T> {
+    pub fn peek(&self) -> Option<(Layer, T)> {
         self.into_iter().last()
     }
 
-    pub fn pop(&mut self) -> Option<Entity> {
+    pub fn pop(&mut self) -> Option<T> {
         let last = self.peek()?;
         let (layer, _) = last;
 
         self.pop_from_layer(layer)
     }
 
-    pub fn peek_for_layer(&self, layer: Layer) -> Option<Entity> {
+    pub fn peek_for_layer(&self, layer: Layer) -> Option<T> {
         match layer {
             Layer::Ground => self.ground,
             Layer::Edge => self.edge,
@@ -112,7 +129,7 @@ impl MapTile {
         }
     }
 
-    pub fn push_for_layer(&mut self, layer: Layer, entity: Entity) {
+    pub fn push_for_layer(&mut self, layer: Layer, entity: T) {
         match layer {
             Layer::Ground => self.ground = Some(entity),
             Layer::Edge => self.edge = Some(entity),
@@ -122,7 +139,7 @@ impl MapTile {
         }
     }
 
-    pub fn pop_from_layer(&mut self, layer: Layer) -> Option<Entity> {
+    pub fn pop_from_layer(&mut self, layer: Layer) -> Option<T> {
         match layer {
             Layer::Ground => self.ground.take(),
             Layer::Edge => self.edge.take(),
@@ -135,27 +152,27 @@ impl MapTile {
         }
     }
 
-    fn remove_bottom(&mut self, relative_layer: RelativeLayer, order: &Order) -> Option<Entity> {
+    fn remove_bottom(&mut self, relative_layer: RelativeLayer, order: &Order) -> Option<T> {
         self.bottom
             .get_mut(&relative_layer)
             .and_then(|entities| entities.remove(order))
     }
 
-    fn peek_bottom(&self, relative_layer: RelativeLayer) -> Option<Entity> {
+    fn peek_bottom(&self, relative_layer: RelativeLayer) -> Option<T> {
         self.bottom
             .get(&relative_layer)
             .and_then(|entities| entities.iter().last())
             .map(|(_, entity)| *entity)
     }
 
-    fn get_bottom(&self, relative_layer: RelativeLayer, order: &Order) -> Option<Entity> {
+    fn get_bottom(&self, relative_layer: RelativeLayer, order: &Order) -> Option<T> {
         self.bottom
             .get(&relative_layer)
             .and_then(|entities| entities.get(order))
             .copied()
     }
 
-    fn push_bottom(&mut self, bottom_layer: BottomLayer, entity: Entity) {
+    fn push_bottom(&mut self, bottom_layer: BottomLayer, entity: T) {
         self.bottom
             .entry(bottom_layer.relative_layer)
             .or_default()
@@ -171,7 +188,7 @@ mod test {
 
     #[test]
     fn test_map_tile() {
-        let mut map_tile = MapTile::default();
+        let mut map_tile = MapTile::<Entity>::default();
         let entity = Entity::from_raw(0);
         map_tile.push_for_layer(Layer::Ground, entity);
         assert_eq!(map_tile.peek_for_layer(Layer::Ground), Some(entity));
@@ -193,7 +210,7 @@ mod test {
 
     #[test]
     fn test_map_tile_push_defaults() {
-        let mut map_tile = MapTile::default();
+        let mut map_tile = MapTile::<Entity>::default();
         let entity = Entity::from_raw(0);
         map_tile.push_for_layer(
             Layer::Bottom(BottomLayer::stack(RelativeLayer::Creature)),
@@ -207,7 +224,7 @@ mod test {
 
     #[test]
     fn test_map_tile_iterator() {
-        let mut map_tile = MapTile::default();
+        let mut map_tile = MapTile::<Entity>::default();
         let entity = Entity::from_raw(0);
         map_tile.push_for_layer(Layer::Ground, entity);
         let mut iter = map_tile.into_iter();
@@ -218,7 +235,7 @@ mod test {
 
     #[test]
     fn test_map_tile_iterator_complex() {
-        let mut map_tile = MapTile::default();
+        let mut map_tile = MapTile::<Entity>::default();
         let entity = Entity::from_raw(0);
         map_tile.push_for_layer(Layer::Ground, entity);
         let entity = Entity::from_raw(1);
@@ -259,7 +276,7 @@ mod test {
 
     #[test]
     fn test_map_tile_reverse_iterator() {
-        let mut map_tile = MapTile::default();
+        let mut map_tile = MapTile::<Entity>::default();
         map_tile.push_for_layer(Layer::Ground, Entity::from_raw(0));
         map_tile.push_for_layer(Layer::Edge, Entity::from_raw(0));
         map_tile.push_for_layer(
@@ -306,7 +323,7 @@ mod test {
 
     #[test]
     fn test_map_tile_peek() {
-        let mut map_tile = MapTile::default();
+        let mut map_tile = MapTile::<Entity>::default();
         let entity = Entity::from_raw(0);
         map_tile.push_for_layer(Layer::Ground, entity);
         assert_eq!(map_tile.peek(), Some((Layer::Ground, Entity::from_raw(0))));
