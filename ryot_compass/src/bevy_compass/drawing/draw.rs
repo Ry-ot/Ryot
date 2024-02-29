@@ -21,7 +21,7 @@ pub fn handle_drawing_input<C: ContentAssets>(
     content_assets: Res<C>,
     brushes: Res<Brushes<DrawingBundle>>,
     q_current_appearance: Query<(&Visibility, &Layer, &AppearanceDescriptor), With<TileComponent>>,
-    cursor_query: Query<(&AppearanceDescriptor, &TilePosition, &Cursor)>,
+    cursor_query: Query<(Option<&AppearanceDescriptor>, &TilePosition, &Cursor)>,
 ) {
     get_cursor_inputs(
         &content_assets,
@@ -44,6 +44,7 @@ pub fn handle_drawing_input<C: ContentAssets>(
                     &mut command_history,
                 );
             }
+            _ => (),
         },
     );
 }
@@ -51,7 +52,7 @@ pub fn handle_drawing_input<C: ContentAssets>(
 fn get_cursor_inputs<C: ContentAssets, F: QueryFilter>(
     content_assets: &Res<C>,
     brushes: &Res<Brushes<DrawingBundle>>,
-    cursor_query: &Query<(&AppearanceDescriptor, &TilePosition, &Cursor), F>,
+    cursor_query: &Query<(Option<&AppearanceDescriptor>, &TilePosition, &Cursor), F>,
     mut callback: impl FnMut(&Cursor, Vec<DrawingBundle>),
 ) {
     if content_assets.sprite_sheet_data_set().is_none() {
@@ -60,19 +61,22 @@ fn get_cursor_inputs<C: ContentAssets, F: QueryFilter>(
     };
 
     for (appearance, tile_pos, cursor) in cursor_query {
-        if !cursor.drawing_state.enabled {
-            continue;
-        }
+        let (appearance, layer) = match appearance {
+            None => (AppearanceDescriptor::default(), Layer::default()),
+            Some(appearance) => {
+                let Some(prepared_appearance) = content_assets
+                    .prepared_appearances()
+                    .get_for_group(appearance.group, appearance.id)
+                else {
+                    continue;
+                };
 
-        let Some(prepared_appearance) = content_assets
-            .prepared_appearances()
-            .get_for_group(appearance.group, appearance.id)
-        else {
-            continue;
+                (
+                    AppearanceDescriptor::new(appearance.group, appearance.id, default()),
+                    prepared_appearance.layer,
+                )
+            }
         };
-
-        let layer = prepared_appearance.layer;
-        let appearance = AppearanceDescriptor::new(appearance.group, appearance.id, default());
 
         callback(
             cursor,

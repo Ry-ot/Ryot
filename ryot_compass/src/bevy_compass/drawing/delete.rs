@@ -8,7 +8,7 @@ use ryot::prelude::drawing::*;
 pub fn toggle_deletion(mut q_cursor: Query<&mut Cursor>) {
     for mut cursor in q_cursor.iter_mut() {
         cursor.drawing_state.tool_mode = if cursor.drawing_state.tool_mode == ToolMode::Erase {
-            ToolMode::Draw
+            ToolMode::None
         } else {
             ToolMode::Erase
         }

@@ -84,14 +84,21 @@ impl Default for DrawingState {
     }
 }
 
-#[derive(Eq, PartialEq, Default, Clone, Copy, Reflect)]
+#[derive(Eq, PartialEq, Default, Clone, Copy, Debug, Reflect)]
 pub enum ToolMode {
+    None,
     #[default]
     Draw,
     Erase,
 }
 
-#[derive(Eq, PartialEq, Clone, Copy, Reflect)]
+impl ToolMode {
+    pub fn is_none(&self) -> bool {
+        matches!(self, ToolMode::None)
+    }
+}
+
+#[derive(Eq, PartialEq, Clone, Copy, Debug, Reflect)]
 pub enum InputType {
     SingleClick(i32),
     DoubleClick(Option<TilePosition>),
@@ -113,12 +120,20 @@ impl<E: BrushItem> From<InputType> for BrushParams<E> {
     }
 }
 
-fn spawn_cursor(mut commands: Commands) {
+fn spawn_cursor(content: Res<CompassContentAssets>, mut commands: Commands) {
     commands.spawn((
         Cursor::default(),
         Layer::from(HudLayers::Cursor),
         TilePosition::default(),
         AppearanceDescriptor::default(),
+        SpriteBundle {
+            sprite: Sprite {
+                color: Color::NONE,
+                ..Default::default()
+            },
+            texture: content.square().clone_weak(),
+            ..Default::default()
+        },
     ));
 }
 
@@ -250,9 +265,14 @@ fn update_cursor_sprite(
 
     let mut update_texture = |entity: Entity, sprite: &mut Sprite, texture: &mut Handle<Image>| {
         sprite.color = match cursor.drawing_state.tool_mode {
-            ToolMode::Draw => Color::rgba(0.7, 0.7, 0.7, 0.7),
-            ToolMode::Erase => Color::rgba(1., 0.0, 0.0, 0.5),
+            ToolMode::Draw => Color::WHITE,
+            ToolMode::Erase => Color::CRIMSON,
+            _ => Color::NONE,
         };
+
+        if sprite.color != Color::NONE {
+            sprite.color.set_a(0.5);
+        }
 
         if !matches!(cursor.drawing_state.tool_mode, ToolMode::Draw) {
             *texture = content.square().clone_weak();
