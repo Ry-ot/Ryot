@@ -212,9 +212,8 @@ pub fn draw_palette_items(
                                         {
                                             palette_state.selected_tile = None;
 
-                                            cursor_events_writer.send(
-                                                CursorEvents::ToolModeChanged(ToolMode::None),
-                                            );
+                                            cursor_events_writer
+                                                .send(CursorEvents::ToolModeChanged(None));
                                             debug!("Tile: {:?} deselected", content_id);
                                         }
                                         _ => {
@@ -226,8 +225,8 @@ pub fn draw_palette_items(
                                             palette_state.selected_tile = Some(apperance);
 
                                             cursor_events_writer.send(
-                                                CursorEvents::ToolModeChanged(ToolMode::Draw(
-                                                    apperance,
+                                                CursorEvents::ToolModeChanged(Some(
+                                                    ToolMode::Draw(apperance),
                                                 )),
                                             );
                                             debug!("Tile: {:?} selected", content_id);

@@ -1,4 +1,6 @@
-use crate::{get_egui_parameters_for_texture, CompassAction, PaletteState, TilesetCategory};
+use crate::{
+    get_egui_parameters_for_texture, CompassAction, CursorEvents, PaletteState, TilesetCategory,
+};
 use bevy::asset::Assets;
 use bevy::log::warn;
 use bevy::prelude::*;
@@ -183,6 +185,10 @@ pub fn update_palette_items<C: ContentAssets>(
     }
 }
 
-fn clear_selection(mut palette_state: ResMut<PaletteState>) {
+fn clear_selection(
+    mut palette_state: ResMut<PaletteState>,
+    mut cursor_events_writer: EventWriter<CursorEvents>,
+) {
     palette_state.selected_tile = None;
+    cursor_events_writer.send(CursorEvents::ToolModeChanged(None));
 }

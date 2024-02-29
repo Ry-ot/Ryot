@@ -68,22 +68,15 @@ pub struct Cursor {
 #[derive(Eq, PartialEq, Clone, Copy, Default, Reflect)]
 pub struct DrawingState {
     pub brush_index: usize,
-    pub tool_mode: ToolMode,
+    pub tool_mode: Option<ToolMode>,
     pub input_type: InputType,
 }
 
-#[derive(Eq, PartialEq, Default, Clone, Copy, Debug, Reflect)]
+#[derive(Eq, PartialEq, Clone, Default, Copy, Debug, Reflect)]
 pub enum ToolMode {
-    #[default]
-    None,
     Draw(AppearanceDescriptor),
+    #[default]
     Erase,
-}
-
-impl ToolMode {
-    pub fn is_none(&self) -> bool {
-        matches!(self, ToolMode::None)
-    }
 }
 
 #[derive(Eq, PartialEq, Clone, Copy, Debug, Reflect)]
@@ -168,7 +161,7 @@ fn spawn_camera(
 fn update_cursor_preview(mut cursor_query: Query<(&Cursor, &mut AppearanceDescriptor)>) {
     for (cursor, mut desired_appearance) in cursor_query.iter_mut() {
         let appearance = match cursor.drawing_state.tool_mode {
-            ToolMode::Draw(appearance) => appearance,
+            Some(ToolMode::Draw(appearance)) => appearance,
             _ => AppearanceDescriptor::object(799),
         };
 
@@ -232,8 +225,8 @@ fn update_cursor_sprite(
     };
 
     cursor_sprite.color = match cursor.drawing_state.tool_mode {
-        ToolMode::Draw(_) => Color::WHITE,
-        ToolMode::Erase => Color::CRIMSON,
+        Some(ToolMode::Draw(_)) => Color::WHITE,
+        Some(ToolMode::Erase) => Color::CRIMSON,
         _ => Color::NONE,
     };
 
