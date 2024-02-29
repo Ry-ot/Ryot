@@ -1,4 +1,4 @@
-use crate::{CommandHistory, Cursor, CursorEvents, ToolMode};
+use crate::{CommandHistory, Cursor, CursorCommand, ToolMode};
 use bevy::prelude::*;
 use ryot::prelude::drawing::*;
 
@@ -7,10 +7,10 @@ use ryot::prelude::drawing::*;
 /// the inputs are used to delete the top most elements in the positions where the cursor is.
 pub fn toggle_deletion(
     q_cursor: Query<&Cursor>,
-    mut cursor_events_writer: EventWriter<CursorEvents>,
+    mut cursor_events_writer: EventWriter<CursorCommand>,
 ) {
     for cursor in q_cursor.iter() {
-        cursor_events_writer.send(CursorEvents::ToolModeChanged(
+        cursor_events_writer.send(CursorCommand::ChangeToolMode(
             if cursor.drawing_state.tool_mode != Some(ToolMode::Erase) {
                 Some(ToolMode::Erase)
             } else {
