@@ -7,7 +7,7 @@ pub struct GamePlugin;
 
 impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
-        app.add_event::<ObjectsWereLoaded>();
+        app.add_event::<LoadObjects>();
     }
 }
 
@@ -55,4 +55,4 @@ impl From<GameObjectBundle> for DrawingInfo {
 }
 
 #[derive(Event, Clone, Debug, Deref, DerefMut)]
-pub struct ObjectsWereLoaded(pub Vec<GameObjectBundle>);
+pub struct LoadObjects(pub Vec<GameObjectBundle>);

@@ -1,5 +1,5 @@
 use crate::bevy_ryot::map::MapTiles;
-use crate::bevy_ryot::{GameObjectBundle, ObjectsWereLoaded};
+use crate::bevy_ryot::{GameObjectBundle, LoadObjects};
 use crate::lmdb::{DatabaseName, Item, ItemRepository, ItemsFromHeedLmdb, SerdePostcard};
 use crate::position::Sector;
 use crate::prelude::GameObjectId;
@@ -90,7 +90,7 @@ pub fn read_area(
     env: ResMut<LmdbEnv>,
     mut last_area: Local<Sector>,
     sector_query: Query<&Sector, (With<Camera>, Changed<Sector>)>,
-    mut object_loaded_event_sender: EventWriter<ObjectsWereLoaded>,
+    mut object_loaded_event_sender: EventWriter<LoadObjects>,
 ) {
     let Some(env) = &env.0 else {
         return;
@@ -114,7 +114,7 @@ pub fn reload_visible_area(
     tiles: Res<MapTiles>,
     env: ResMut<LmdbEnv>,
     sector_query: Query<&Sector, With<Camera>>,
-    mut object_loaded_event_sender: EventWriter<ObjectsWereLoaded>,
+    mut object_loaded_event_sender: EventWriter<LoadObjects>,
 ) {
     let Some(env) = &env.0 else {
         return;
@@ -138,7 +138,7 @@ pub fn load_area(
     env: Env,
     sector: Sector,
     tiles: &Res<MapTiles>,
-    object_loaded_event_sender: &mut EventWriter<ObjectsWereLoaded>,
+    object_loaded_event_sender: &mut EventWriter<LoadObjects>,
 ) {
     let item_repository = ItemsFromHeedLmdb::new(env);
 
@@ -162,7 +162,7 @@ pub fn load_area(
                 }
             }
 
-            object_loaded_event_sender.send(ObjectsWereLoaded(bundles));
+            object_loaded_event_sender.send(LoadObjects(bundles));
         }
         Err(e) => {
             error!("Failed to read area: {}", e);

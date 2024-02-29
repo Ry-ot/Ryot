@@ -13,7 +13,7 @@ use ryot::lmdb::*;
 use ryot::position::{Sector, TilePosition};
 use ryot::prelude::drawing::TileComponent;
 use ryot::prelude::lmdb::LmdbEnv;
-use ryot::prelude::{compress, decompress, ObjectsWereLoaded, Zstd};
+use ryot::prelude::{compress, decompress, LoadObjects, Zstd};
 use ryot::{lmdb, Layer};
 use std::collections::HashMap;
 use std::fs;
@@ -40,7 +40,7 @@ impl Plugin for LmdbPlugin {
                         .chain()
                         .run_if(on_event::<LoadMap>()),
                     read_area_reseting_when_map_is_loaded,
-                    load_tile_content.run_if(on_event::<ObjectsWereLoaded>()),
+                    load_tile_content.run_if(on_event::<LoadObjects>()),
                 )
                     .chain()
                     .run_if(in_state(InternalContentState::Ready)),
@@ -54,7 +54,7 @@ fn read_area_reseting_when_map_is_loaded(
     env: ResMut<LmdbEnv>,
     tiles: Res<MapTiles>,
     sector_query: Query<&Sector, (With<Camera>, Changed<Sector>)>,
-    object_loaded_event_sender: EventWriter<ObjectsWereLoaded>,
+    object_loaded_event_sender: EventWriter<LoadObjects>,
 ) {
     if load_map_events.read().len() > 0 {
         *last_area = Sector::default();
@@ -152,10 +152,10 @@ fn export_map(
 }
 
 fn load_tile_content(world: &mut World) {
-    let events = world.resource::<Events<ObjectsWereLoaded>>();
+    let events = world.resource::<Events<LoadObjects>>();
     let mut bundles: Vec<GameObjectBundle> = vec![];
 
-    for ObjectsWereLoaded(event_bundles) in events.get_reader().read(events) {
+    for LoadObjects(event_bundles) in events.get_reader().read(events) {
         bundles.extend(event_bundles);
     }
 
