@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use crate::{
     draw_palette_bottom_panel, draw_palette_items, draw_palette_picker, toggle_grid, CompassAction,
-    Cursor, InputType, OptionalPlugin, Palette, PaletteState, ToolMode,
+    Cursor, CursorEvents, InputType, OptionalPlugin, Palette, PaletteState, ToolMode,
 };
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -77,14 +77,16 @@ fn ui_menu_system<C: ContentAssets>(
     mut contexts: Query<&mut EguiContext>,
     brushes: Res<Brushes<DrawingBundle>>,
     q_grid: Query<&mut Visibility, With<GridView>>,
-    mut cursor_query: Query<&mut Cursor>,
+    cursor_query: Query<&Cursor>,
+    mut cursor_events_writer: EventWriter<CursorEvents>,
     #[cfg(not(target_arch = "wasm32"))] content_assets: Res<C>,
     #[cfg(not(target_arch = "wasm32"))] mut exit: EventWriter<AppExit>,
     #[cfg(not(target_arch = "wasm32"))] mut map_export_sender: EventWriter<ExportMap>,
     #[cfg(not(target_arch = "wasm32"))] load_map_sender: Res<EventSender<LoadMap>>,
+    // this is needed for MacOS compatibility
     _windows: NonSend<WinitWindows>,
 ) {
-    let Ok(mut cursor) = cursor_query.get_single_mut() else {
+    let Ok(cursor) = cursor_query.get_single() else {
         return;
     };
     let mut egui_ctx = contexts.single_mut();
@@ -172,7 +174,7 @@ fn ui_menu_system<C: ContentAssets>(
                     let button = egui::ImageButton::new(brush.icon()).selected(is_selected);
                     let button = ui.add_sized(egui::Vec2::new(24., 24.), button);
                     if button.on_hover_text(brush.name()).clicked() {
-                        cursor.drawing_state.brush_index = index;
+                        cursor_events_writer.send(CursorEvents::BrushChanged(index));
                     }
                 }
 
@@ -185,27 +187,31 @@ fn ui_menu_system<C: ContentAssets>(
                         .selected(cursor.drawing_state.tool_mode == ToolMode::Erase);
                     let delete_button = ui.add_sized(egui::Vec2::new(24., 24.), delete_button);
                     if delete_button.on_hover_text("Delete").clicked() {
-                        cursor.drawing_state.tool_mode =
-                            if cursor.drawing_state.tool_mode == ToolMode::Erase {
-                                ToolMode::Draw
-                            } else {
+                        cursor_events_writer.send(CursorEvents::ToolModeChanged(
+                            if cursor.drawing_state.tool_mode != ToolMode::Erase {
                                 ToolMode::Erase
-                            };
+                            } else {
+                                ToolMode::None
+                            },
+                        ));
                     }
                 });
             });
 
             ui.separator();
 
-            let current_brush_index = &mut cursor.drawing_state.brush_index;
+            let current_brush_index = &cursor.drawing_state.brush_index;
             ui.add_sized(
                 egui::Vec2::new(18., 18.),
                 egui::Image::new(brushes[*current_brush_index].icon()),
             );
-            if let InputType::SingleClick(size) = &mut cursor.drawing_state.input_type {
-                *size += 1;
-                ui.add(Slider::new(size, 1..=20));
-                *size -= 1;
+            if let InputType::SingleClick(size) = &cursor.drawing_state.input_type {
+                let mut mut_size = *size + 1;
+                ui.add(Slider::new(&mut mut_size, 1..=20));
+
+                if mut_size - 1 != *size {
+                    cursor_events_writer.send(CursorEvents::SizeChanged(mut_size - 1));
+                }
             }
 
             ui.separator();
@@ -228,9 +234,16 @@ fn ui_dock_system(
     egui_user_textures: ResMut<EguiUserTextures>,
     palettes: Res<Palette>,
     palette_state: ResMut<PaletteState>,
+    cursor_events_writer: EventWriter<CursorEvents>,
 ) {
     let mut ctx = contexts.single_mut();
-    ui_state.ui(ctx.get_mut(), egui_user_textures, palettes, palette_state);
+    ui_state.ui(
+        ctx.get_mut(),
+        egui_user_textures,
+        palettes,
+        palette_state,
+        cursor_events_writer,
+    );
 }
 
 fn resize_camera_viewport_system(
@@ -307,11 +320,13 @@ impl UiState {
         egui_user_textures: ResMut<EguiUserTextures>,
         palettes: Res<Palette>,
         palette_state: ResMut<PaletteState>,
+        cursor_events_writer: EventWriter<CursorEvents>,
     ) {
         let mut tab_viewer = TabViewer {
             egui_user_textures,
             palettes,
             palette_state,
+            cursor_events_writer,
         };
 
         egui::CentralPanel::default()
@@ -333,10 +348,19 @@ struct TabViewer<'a> {
     egui_user_textures: ResMut<'a, EguiUserTextures>,
     palettes: Res<'a, Palette>,
     palette_state: ResMut<'a, PaletteState>,
+    cursor_events_writer: EventWriter<'a, CursorEvents>,
 }
 
 impl egui_dock::TabViewer for TabViewer<'_> {
     type Tab = EguiWindow;
+
+    fn title(&mut self, tab: &mut Self::Tab) -> egui_dock::egui::WidgetText {
+        if let EguiWindow::Editor(title) = tab {
+            title.to_string().into()
+        } else {
+            format!("{tab:?}").into()
+        }
+    }
 
     fn ui(&mut self, ui: &mut egui_dock::egui::Ui, tab: &mut Self::Tab) {
         match tab {
@@ -361,16 +385,13 @@ impl egui_dock::TabViewer for TabViewer<'_> {
 
                 draw_palette_bottom_panel(ui, &mut self.palette_state);
                 draw_palette_picker(ui, categories, &mut self.palette_state);
-                draw_palette_items(ui, egui_images, &mut self.palette_state);
+                draw_palette_items(
+                    ui,
+                    egui_images,
+                    &mut self.palette_state,
+                    &mut self.cursor_events_writer,
+                );
             }
-        }
-    }
-
-    fn title(&mut self, tab: &mut Self::Tab) -> egui_dock::egui::WidgetText {
-        if let EguiWindow::Editor(title) = tab {
-            title.to_string().into()
-        } else {
-            format!("{tab:?}").into()
         }
     }
 

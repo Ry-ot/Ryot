@@ -1,5 +1,5 @@
 use crate::sprites::LoadedSprite;
-use crate::TilesetCategory;
+use crate::{CursorEvents, TilesetCategory, ToolMode};
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use egui::{Align, Ui};
@@ -158,6 +158,7 @@ pub fn draw_palette_items(
     ui: &mut Ui,
     egui_images: Vec<(&LoadedSprite, egui::Image)>,
     palette_state: &mut ResMut<PaletteState>,
+    cursor_events_writer: &mut EventWriter<CursorEvents>,
 ) {
     let row_padding = 3.;
     let row_height = palette_state.grid_size as f32 + row_padding;
@@ -210,15 +211,25 @@ pub fn draw_palette_items(
                                             if id == content_id =>
                                         {
                                             palette_state.selected_tile = None;
+
+                                            cursor_events_writer.send(
+                                                CursorEvents::ToolModeChanged(ToolMode::None),
+                                            );
                                             debug!("Tile: {:?} deselected", content_id);
                                         }
                                         _ => {
-                                            palette_state.selected_tile =
-                                                Some(AppearanceDescriptor::new(
-                                                    sprite.group,
-                                                    content_id,
-                                                    default(),
-                                                ));
+                                            let apperance = AppearanceDescriptor::new(
+                                                sprite.group,
+                                                content_id,
+                                                default(),
+                                            );
+                                            palette_state.selected_tile = Some(apperance);
+
+                                            cursor_events_writer.send(
+                                                CursorEvents::ToolModeChanged(ToolMode::Draw(
+                                                    apperance,
+                                                )),
+                                            );
                                             debug!("Tile: {:?} selected", content_id);
                                         }
                                     }

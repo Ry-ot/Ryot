@@ -40,7 +40,7 @@ pub fn setup_window(
     let primary_window = windows.get_window(primary_window_entity).unwrap();
 
     let (icon_rgba, icon_width, icon_height) = {
-        let Ok(image) = image::open("assets/icons/compass_2144.png") else {
+        let Ok(image) = image::open("assets/icons/compass.png") else {
             error!("Failed to load icon image");
             return;
         };
