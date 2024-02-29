@@ -2,7 +2,7 @@ use std::marker::PhantomData;
 
 use crate::{
     draw_palette_bottom_panel, draw_palette_items, draw_palette_picker, toggle_grid, CompassAction,
-    Cursor, CursorEvents, InputType, OptionalPlugin, Palette, PaletteState, ToolMode,
+    Cursor, CursorCommand, InputType, OptionalPlugin, Palette, PaletteState, ToolMode,
 };
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -78,7 +78,7 @@ fn ui_menu_system<C: ContentAssets>(
     brushes: Res<Brushes<DrawingBundle>>,
     q_grid: Query<&mut Visibility, With<GridView>>,
     cursor_query: Query<&Cursor>,
-    mut cursor_events_writer: EventWriter<CursorEvents>,
+    mut cursor_events_writer: EventWriter<CursorCommand>,
     #[cfg(not(target_arch = "wasm32"))] content_assets: Res<C>,
     #[cfg(not(target_arch = "wasm32"))] mut exit: EventWriter<AppExit>,
     #[cfg(not(target_arch = "wasm32"))] mut map_export_sender: EventWriter<ExportMap>,
@@ -174,7 +174,7 @@ fn ui_menu_system<C: ContentAssets>(
                     let button = egui::ImageButton::new(brush.icon()).selected(is_selected);
                     let button = ui.add_sized(egui::Vec2::new(24., 24.), button);
                     if button.on_hover_text(brush.name()).clicked() {
-                        cursor_events_writer.send(CursorEvents::BrushChanged(index));
+                        cursor_events_writer.send(CursorCommand::ChangeBrush(index));
                     }
                 }
 
@@ -187,7 +187,7 @@ fn ui_menu_system<C: ContentAssets>(
                         .selected(cursor.drawing_state.tool_mode == Some(ToolMode::Erase));
                     let delete_button = ui.add_sized(egui::Vec2::new(24., 24.), delete_button);
                     if delete_button.on_hover_text("Delete").clicked() {
-                        cursor_events_writer.send(CursorEvents::ToolModeChanged(
+                        cursor_events_writer.send(CursorCommand::ChangeToolMode(
                             if cursor.drawing_state.tool_mode != Some(ToolMode::Erase) {
                                 Some(ToolMode::Erase)
                             } else {
@@ -210,7 +210,7 @@ fn ui_menu_system<C: ContentAssets>(
                 ui.add(Slider::new(&mut mut_size, 1..=20));
 
                 if mut_size - 1 != *size {
-                    cursor_events_writer.send(CursorEvents::SizeChanged(mut_size - 1));
+                    cursor_events_writer.send(CursorCommand::ChangeSize(mut_size - 1));
                 }
             }
 
@@ -234,7 +234,7 @@ fn ui_dock_system(
     egui_user_textures: ResMut<EguiUserTextures>,
     palettes: Res<Palette>,
     palette_state: ResMut<PaletteState>,
-    cursor_events_writer: EventWriter<CursorEvents>,
+    cursor_events_writer: EventWriter<CursorCommand>,
 ) {
     let mut ctx = contexts.single_mut();
     ui_state.ui(
@@ -320,7 +320,7 @@ impl UiState {
         egui_user_textures: ResMut<EguiUserTextures>,
         palettes: Res<Palette>,
         palette_state: ResMut<PaletteState>,
-        cursor_events_writer: EventWriter<CursorEvents>,
+        cursor_events_writer: EventWriter<CursorCommand>,
     ) {
         let mut tab_viewer = TabViewer {
             egui_user_textures,
@@ -348,7 +348,7 @@ struct TabViewer<'a> {
     egui_user_textures: ResMut<'a, EguiUserTextures>,
     palettes: Res<'a, Palette>,
     palette_state: ResMut<'a, PaletteState>,
-    cursor_events_writer: EventWriter<'a, CursorEvents>,
+    cursor_events_writer: EventWriter<'a, CursorCommand>,
 }
 
 impl egui_dock::TabViewer for TabViewer<'_> {

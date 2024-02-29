@@ -1,5 +1,5 @@
 use crate::{
-    delete_top_most_elements_in_positions, CommandHistory, CompassAction, Cursor, CursorEvents,
+    delete_top_most_elements_in_positions, CommandHistory, CompassAction, Cursor, CursorCommand,
     InputType, ToolMode,
 };
 use bevy::ecs::query::QueryFilter;
@@ -180,7 +180,7 @@ pub fn get_current_appearance(
 
 pub fn update_drawing_input_type(
     cursor_query: Query<(&TilePosition, &Cursor)>,
-    mut cursor_events_writer: EventWriter<CursorEvents>,
+    mut cursor_events_writer: EventWriter<CursorCommand>,
 ) {
     for (cursor_pos, cursor) in &cursor_query {
         let input_type = match cursor.drawing_state.input_type {
@@ -189,7 +189,7 @@ pub fn update_drawing_input_type(
         };
 
         if cursor.drawing_state.input_type != input_type {
-            cursor_events_writer.send(CursorEvents::InputTypeChanged(input_type));
+            cursor_events_writer.send(CursorCommand::ChangeInputType(input_type));
         }
     }
 }
@@ -198,7 +198,7 @@ pub fn set_drawing_input_type(
     mut previous_size: Local<i32>,
     cursor_query: Query<&Cursor>,
     action_state: Res<ActionState<CompassAction>>,
-    mut cursor_events_writer: EventWriter<CursorEvents>,
+    mut cursor_events_writer: EventWriter<CursorCommand>,
 ) {
     for cursor in &cursor_query {
         if let InputType::SingleClick(size) = cursor.drawing_state.input_type {
@@ -212,7 +212,7 @@ pub fn set_drawing_input_type(
         };
 
         if cursor.drawing_state.input_type != input_type {
-            cursor_events_writer.send(CursorEvents::InputTypeChanged(input_type));
+            cursor_events_writer.send(CursorCommand::ChangeInputType(input_type));
         }
     }
 }

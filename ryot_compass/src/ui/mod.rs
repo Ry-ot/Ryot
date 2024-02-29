@@ -1,5 +1,5 @@
 use crate::sprites::LoadedSprite;
-use crate::{CursorEvents, TilesetCategory, ToolMode};
+use crate::{CursorCommand, TilesetCategory, ToolMode};
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use egui::{Align, Ui};
@@ -158,7 +158,7 @@ pub fn draw_palette_items(
     ui: &mut Ui,
     egui_images: Vec<(&LoadedSprite, egui::Image)>,
     palette_state: &mut ResMut<PaletteState>,
-    cursor_events_writer: &mut EventWriter<CursorEvents>,
+    cursor_events_writer: &mut EventWriter<CursorCommand>,
 ) {
     let row_padding = 3.;
     let row_height = palette_state.grid_size as f32 + row_padding;
@@ -213,7 +213,7 @@ pub fn draw_palette_items(
                                             palette_state.selected_tile = None;
 
                                             cursor_events_writer
-                                                .send(CursorEvents::ToolModeChanged(None));
+                                                .send(CursorCommand::ChangeToolMode(None));
                                             debug!("Tile: {:?} deselected", content_id);
                                         }
                                         _ => {
@@ -225,7 +225,7 @@ pub fn draw_palette_items(
                                             palette_state.selected_tile = Some(apperance);
 
                                             cursor_events_writer.send(
-                                                CursorEvents::ToolModeChanged(Some(
+                                                CursorCommand::ChangeToolMode(Some(
                                                     ToolMode::Draw(apperance),
                                                 )),
                                             );
