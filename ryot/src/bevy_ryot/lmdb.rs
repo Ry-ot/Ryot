@@ -86,7 +86,7 @@ pub fn compact_map(time: Res<Time>, env: Res<LmdbEnv>, mut lmdb_compactor: ResMu
 /// It keeps track of the last loaded area and only loads new areas when the camera has moved
 /// and contains new tiles.
 pub fn read_area(
-    tiles: Res<MapTiles>,
+    tiles: Res<MapTiles<Entity>>,
     env: ResMut<LmdbEnv>,
     mut last_area: Local<Sector>,
     sector_query: Query<&Sector, (With<Camera>, Changed<Sector>)>,
@@ -111,7 +111,7 @@ pub fn read_area(
 
 /// This system reloads the visible area of the camera from LMDB.
 pub fn reload_visible_area(
-    tiles: Res<MapTiles>,
+    tiles: Res<MapTiles<Entity>>,
     env: ResMut<LmdbEnv>,
     sector_query: Query<&Sector, With<Camera>>,
     mut object_loaded_event_sender: EventWriter<LoadObjects>,
@@ -137,7 +137,7 @@ pub fn reload_visible_area(
 pub fn load_area(
     env: Env,
     sector: Sector,
-    tiles: &Res<MapTiles>,
+    tiles: &Res<MapTiles<Entity>>,
     object_loaded_event_sender: &mut EventWriter<LoadObjects>,
 ) {
     let item_repository = ItemsFromHeedLmdb::new(env);

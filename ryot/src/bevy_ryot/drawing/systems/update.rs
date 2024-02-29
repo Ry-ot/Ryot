@@ -43,7 +43,7 @@ pub fn update(world: &mut World, new: DrawingInfo, old: DrawingInfo, state: Comm
     // We need to update MapTiles here already, otherwise it can lead to a race condition
     // where another entity is created before the apply_update system runs.
     world
-        .resource_mut::<MapTiles>()
+        .resource_mut::<MapTiles<Entity>>()
         .entry(new.0)
         .or_default()
         .push_for_layer(new.1, id);
@@ -59,7 +59,7 @@ pub fn get_or_create_entity_for_info(world: &mut World, info: &DrawingInfo) -> E
     let (pos, layer, ..) = info;
 
     let entity = world
-        .resource_mut::<MapTiles>()
+        .resource_mut::<MapTiles<Entity>>()
         .entry(*pos)
         .or_default()
         .peek_for_layer(*layer);

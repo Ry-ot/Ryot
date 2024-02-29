@@ -52,7 +52,7 @@ fn read_area_reseting_when_map_is_loaded(
     mut last_area: Local<Sector>,
     mut load_map_events: EventReader<LoadMap>,
     env: ResMut<LmdbEnv>,
-    tiles: Res<MapTiles>,
+    tiles: Res<MapTiles<Entity>>,
     sector_query: Query<&Sector, (With<Camera>, Changed<Sector>)>,
     object_loaded_event_sender: EventWriter<LoadObjects>,
 ) {
@@ -72,7 +72,7 @@ fn read_area_reseting_when_map_is_loaded(
 fn load_map(
     mut env: ResMut<LmdbEnv>,
     mut commands: Commands,
-    mut tiles: ResMut<MapTiles>,
+    mut tiles: ResMut<MapTiles<Entity>>,
     mut load_map_events: EventReader<LoadMap>,
     mut q_all_tiles: Query<Entity, With<TileComponent>>,
 ) -> color_eyre::Result<()> {

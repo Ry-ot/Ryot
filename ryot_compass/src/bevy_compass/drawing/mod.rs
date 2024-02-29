@@ -42,7 +42,7 @@ impl<C: ContentAssets> Default for DrawingPlugin<C> {
 impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
     fn build(&self, app: &mut App) {
         app.init_resource::<CommandHistory>()
-            .init_resource::<MapTiles>()
+            .init_resource::<MapTiles<Entity>>()
             .init_resource::<Brushes<DrawingBundle>>()
             .add_plugins(drawing::DrawingPlugin)
             .add_systems(
