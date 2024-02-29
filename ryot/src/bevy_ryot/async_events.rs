@@ -8,14 +8,12 @@ use bevy::prelude::*;
 use crossbeam_channel::{Receiver, Sender};
 
 // TODO: doc.
-#[derive(SystemSet, Default)]
+#[derive(SystemSet)]
 pub struct AsyncEventSet<T: Event>(PhantomData<T>);
 
 impl<T: Event> std::fmt::Debug for AsyncEventSet<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("AsyncEventSet")
-            .field(&format_args!("fn {}()", &std::any::type_name::<T>()))
-            .finish()
+        write!(f, "AsyncEventSet<{}>", &std::any::type_name::<T>())
     }
 }
 
