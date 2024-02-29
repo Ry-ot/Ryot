@@ -7,6 +7,9 @@ pub use assets::*;
 mod camera;
 pub use camera::*;
 
+mod cursor;
+pub use cursor::*;
+
 mod gui;
 pub use gui::*;
 
