@@ -242,7 +242,8 @@ pub fn compute_z_transform(pos: &TilePosition, layer: &Layer) -> f32 {
     }
 
     let weight = u16::MAX as f32;
-    let xy_weighed =
-        (MAX_Z_TRANSFORM * pos.x as f32 / weight) - (MAX_Z_TRANSFORM * pos.y as f32 / weight);
-    pos.z as f32 + xy_weighed + layer.z()
+    let x_weighted = MAX_Z_TRANSFORM * pos.x as f32 / (weight);
+    let y_weighted = MAX_Z_TRANSFORM * pos.y as f32 / (weight - 1.);
+
+    pos.z as f32 + x_weighted - y_weighted + layer.z()
 }
