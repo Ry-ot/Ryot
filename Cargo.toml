@@ -20,6 +20,7 @@ bevy_asset_loader = { git = "https://github.com/lgrossi/bevy_asset_loader", bran
 ] }
 bevy_common_assets = { version = "0.10", features = ["toml", "json"] }
 bevy_egui = { version = "0.25", features = ["immutable_ctx"] }
+bevy_stroked_text = "0.2"
 bytes = "1.5"
 color-eyre = "0.6"
 config = "0.13"

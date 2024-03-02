@@ -6,8 +6,12 @@ use crate::position::TilePosition;
 use crate::{get_decompressed_file_name, SPRITE_SHEET_FOLDER};
 use crate::{prelude::*, Directional};
 use bevy::prelude::*;
+#[cfg(feature = "debug")]
+use bevy::sprite::Anchor;
 use bevy::utils::hashbrown::HashSet;
 use bevy::utils::{FixedState, HashMap};
+#[cfg(feature = "debug")]
+use bevy_stroked_text::{StrokedText, StrokedTextBundle};
 use std::path::PathBuf;
 
 use self::sprite_animations::{
@@ -465,11 +469,13 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
             continue;
         };
 
+        let translation = position.to_vec3(layer);
+
         commands
             .entity(entity)
             .insert(LoadedSprites(sprites.clone()))
             .insert(SpriteSheetBundle {
-                transform: Transform::from_translation(position.to_vec3(layer)),
+                transform: Transform::from_translation(translation),
                 sprite: Sprite {
                     anchor: RYOT_ANCHOR,
                     ..default()
@@ -482,6 +488,50 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
                 ..default()
             })
             .remove::<LoadingAppearance>();
+
+        #[cfg(feature = "debug")]
+        commands.entity(entity).with_children(|builder| {
+            builder.spawn((
+                StrokedTextBundle::new(StrokedText {
+                    text: format!("{:.02}", 1000. * translation.z),
+                    font_size: 8.,
+                    text_anchor: Anchor::TopRight,
+                    ..default()
+                })
+                .with_transform(
+                    Transform::from_translation(
+                        tile_offset().extend(1.)
+                            + Vec3::new(
+                                tile_size().x as f32 / 2. - 0.5,
+                                -debug_y_offset(layer),
+                                0.,
+                            ),
+                    )
+                    .with_scale(Vec3::splat(0.5)),
+                ),
+                PositionDebugText,
+            ));
+            builder.spawn(
+                StrokedTextBundle::new(StrokedText {
+                    text: format!("{}", layer),
+                    font_size: 8.,
+                    text_anchor: Anchor::TopLeft,
+                    color: Color::from(layer),
+                    ..default()
+                })
+                .with_transform(
+                    Transform::from_translation(
+                        tile_offset().extend(1.)
+                            + Vec3::new(
+                                tile_size().x as f32 / 2. + 0.5,
+                                -debug_y_offset(layer),
+                                0.,
+                            ),
+                    )
+                    .with_scale(Vec3::splat(0.5)),
+                ),
+            );
+        });
 
         if let Some(anim) = anim {
             commands.entity(entity).insert(anim);
