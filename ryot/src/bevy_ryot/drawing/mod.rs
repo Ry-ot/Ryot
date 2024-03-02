@@ -304,6 +304,7 @@ impl From<Option<appearances::AppearanceFlags>> for Layer {
         match flags {
             Some(flags) if flags.top.is_some() => Layer::Top,
             Some(flags) if flags.bank.is_some() => Layer::Ground,
+            Some(flags) if flags.fullbank.is_some() => Layer::Ground,
             Some(flags) if flags.clip.is_some() => Layer::Edge,
             _ => Layer::Bottom(BottomLayer::new(0, RelativeLayer::Object)),
         }

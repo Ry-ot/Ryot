@@ -341,10 +341,20 @@ pub fn update_sprite_position(
     for (entity, tile_pos, layer, mut transform, movement) in query.iter_mut() {
         if let Some(mut movement) = movement {
             movement.timer.tick(time.delta());
-            transform.translation = movement.origin.to_vec3(layer).lerp(
-                movement.destination.to_vec3(layer),
-                movement.timer.fraction(),
-            );
+            // We need the moving entity to be on top of other entities
+            // This is to ensure that the layering logic is consistent no matter what direction
+            // the entity is moving in
+            let z = compute_z_transform(&movement.origin, layer)
+                .max(compute_z_transform(&movement.destination, layer));
+            transform.translation = movement
+                .origin
+                .to_vec3(layer)
+                .lerp(
+                    movement.destination.to_vec3(layer),
+                    movement.timer.fraction(),
+                )
+                .truncate()
+                .extend(z);
             if movement.timer.just_finished() {
                 if movement.despawn_on_end {
                     commands.entity(entity).despawn_recursive();
