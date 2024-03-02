@@ -2,7 +2,10 @@ use crate::position::TilePosition;
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::cmp::Ordering;
+use std::{
+    cmp::Ordering,
+    fmt::{Display, Formatter},
+};
 use strum::*;
 
 /// A type that represents the order of an item in an ordered layer. There is a virtual limit of
@@ -38,6 +41,49 @@ pub enum Layer {
     Bottom(BottomLayer),
     Top,
     Hud(Order),
+}
+
+impl Display for Layer {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Ground => write!(f, "Ground"),
+            Self::Edge => write!(f, "Edge"),
+            Self::Bottom(bottom_layer) => write!(f, "Bottom({})", bottom_layer),
+            Self::Top => write!(f, "Top"),
+            Self::Hud(order) => write!(f, "Hud({})", order),
+        }
+    }
+}
+
+impl Display for BottomLayer {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}({})", self.relative_layer, self.order)
+    }
+}
+
+#[cfg(feature = "debug")]
+impl From<&Layer> for Color {
+    fn from(value: &Layer) -> Self {
+        match value {
+            Layer::Ground => Color::ORANGE_RED,
+            Layer::Edge => Color::YELLOW,
+            Layer::Bottom(layer) => Color::from(layer.relative_layer),
+            Layer::Top => Color::PINK,
+            Layer::Hud(_) => Color::TURQUOISE,
+        }
+    }
+}
+
+#[cfg(feature = "debug")]
+impl From<RelativeLayer> for Color {
+    fn from(value: RelativeLayer) -> Self {
+        match value {
+            RelativeLayer::Object => Color::RED,
+            RelativeLayer::Creature => Color::GREEN,
+            RelativeLayer::Effect => Color::BLUE,
+            RelativeLayer::Missile => Color::ALICE_BLUE,
+        }
+    }
 }
 
 impl Iterator for Layer {

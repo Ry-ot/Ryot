@@ -7,6 +7,8 @@ use std::{
     ops::Deref,
 };
 
+#[cfg(feature = "debug")]
+use bevy_stroked_text::StrokedText;
 #[cfg(feature = "bevy")]
 use std::time::Duration;
 
@@ -23,6 +25,10 @@ use serde::{Deserialize, Serialize};
 #[derive(Eq, PartialEq, Deserialize, Serialize, Default, Clone, Copy, Debug, Hash, Add, Sub)]
 #[cfg_attr(feature = "bevy", derive(Component, Reflect))]
 pub struct TilePosition(pub IVec3);
+
+#[cfg(feature = "debug")]
+#[derive(Component)]
+pub struct PositionDebugText;
 
 #[cfg(feature = "bevy")]
 #[derive(Component, Debug, Clone)]
@@ -152,7 +158,28 @@ pub fn tile_size() -> UVec2 {
     *TILE_SIZE.get().expect("TILE_SIZE not initialized")
 }
 
-#[derive(Eq, PartialEq, Default, Clone, Copy, Debug)]
+pub fn tile_offset() -> Vec2 {
+    Vec2::new(-1., 1.) * tile_size().as_vec2()
+}
+
+#[cfg(feature = "debug")]
+pub fn debug_y_offset(layer: &Layer) -> f32 {
+    (tile_size().as_vec2().y / 8.)
+        * match layer {
+            Layer::Ground => 0.,
+            Layer::Edge => 1.,
+            Layer::Bottom(layer) => match layer.relative_layer {
+                crate::layer::RelativeLayer::Object => 2.,
+                crate::layer::RelativeLayer::Creature => 3.,
+                crate::layer::RelativeLayer::Effect => 4.,
+                crate::layer::RelativeLayer::Missile => 5.,
+            },
+            Layer::Top => 6.,
+            Layer::Hud(_) => 7.,
+        }
+}
+
+#[derive(Hash, Eq, PartialEq, Default, Clone, Copy, Debug)]
 #[cfg_attr(feature = "bevy", derive(Component))]
 pub struct Sector {
     pub min: TilePosition,
@@ -333,12 +360,14 @@ pub fn update_sprite_position(
             &Layer,
             &mut Transform,
             Option<&mut SpriteMovement>,
+            Option<&Children>,
         ),
         MovingSpriteFilter,
     >,
+    #[cfg(feature = "debug")] mut children_query: Query<&mut StrokedText, With<PositionDebugText>>,
     time: Res<Time>,
 ) {
-    for (entity, tile_pos, layer, mut transform, movement) in query.iter_mut() {
+    for (entity, tile_pos, layer, mut transform, movement, _children) in query.iter_mut() {
         if let Some(mut movement) = movement {
             movement.timer.tick(time.delta());
             // We need the moving entity to be on top of other entities
@@ -364,6 +393,17 @@ pub fn update_sprite_position(
             }
         } else {
             transform.translation = tile_pos.to_vec3(layer)
+        }
+    }
+
+    #[cfg(feature = "debug")]
+    for (_entity, _tile_poss, _layer, transform, _movement, children) in query.iter_mut() {
+        if let Some(children) = children {
+            for child in children.iter() {
+                if let Ok(mut text) = children_query.get_mut(*child) {
+                    text.text = format!("{:.02}", 1000. * transform.translation.z);
+                }
+            }
         }
     }
 }

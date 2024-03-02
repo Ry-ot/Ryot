@@ -20,6 +20,7 @@ serde_repr = "0.1"
 bevy = { workspace = true, optional = true }
 bevy_asset_loader = { workspace = true, optional = true }
 bevy_common_assets = { workspace = true, optional = true }
+bevy_stroked_text = { workspace = true, optional = true }
 bytes.workspace = true
 color-eyre.workspace = true
 egui = { workspace = true, optional = true }
@@ -51,12 +52,14 @@ prost-build = "0.12"
 
 [features]
 default = ["bevy"]
+debug = ["dep:bevy_stroked_text"]
 lmdb = ["dep:heed", "dep:postcard"]
 compression = ["dep:zstd"]
 bevy = [
     "dep:bevy",
     "dep:bevy_common_assets",
     "dep:bevy_asset_loader",
+    "dep:bevy_stroked_text",
     "dep:leafwing-input-manager",
 ]
 egui = ["dep:egui"]

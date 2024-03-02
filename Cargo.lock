@@ -1245,6 +1245,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_stroked_text"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "52a1abc1ef75e64c0e38b2750288b0474516aedab8145f8d63028d519fb227ed"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
 name = "bevy_tasks"
 version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5029,6 +5038,7 @@ dependencies = [
  "bevy",
  "bevy_asset_loader",
  "bevy_common_assets",
+ "bevy_stroked_text",
  "bytes",
  "color-eyre",
  "derive_more",

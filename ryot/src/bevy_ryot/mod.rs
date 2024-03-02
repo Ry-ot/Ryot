@@ -21,6 +21,7 @@ use bevy_asset_loader::prelude::*;
 use bevy_asset_loader::standard_dynamic_asset::StandardDynamicAssetArrayCollection;
 use bevy_common_assets::json::JsonAssetPlugin;
 use bevy_common_assets::ron::RonAssetPlugin;
+use bevy_stroked_text::StrokedTextPlugin;
 use std::marker::PhantomData;
 
 mod appearances;
@@ -124,6 +125,7 @@ impl<C: PreloadedContentAssets + Default> Plugin for ContentPlugin<C> {
             .add_event::<LoadSpriteBatch>()
             .add_plugins(JsonAssetPlugin::<Catalog>::new(&["json"]))
             .add_plugins(AppearanceAssetPlugin)
+            .add_optional_plugin(StrokedTextPlugin)
             .add_plugins(RonAssetPlugin::<StandardDynamicAssetArrayCollection>::new(
                 &["atlases.ron"],
             ))
