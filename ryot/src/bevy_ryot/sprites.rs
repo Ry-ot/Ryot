@@ -6,7 +6,6 @@ use crate::position::TilePosition;
 use crate::{get_decompressed_file_name, SPRITE_SHEET_FOLDER};
 use crate::{prelude::*, Directional};
 use bevy::prelude::*;
-#[cfg(feature = "debug")]
 use bevy::sprite::Anchor;
 use bevy::utils::hashbrown::HashSet;
 use bevy::utils::{FixedState, HashMap};
@@ -14,6 +13,9 @@ use bevy::utils::{FixedState, HashMap};
 use bevy_stroked_text::{StrokedText, StrokedTextBundle};
 use std::path::PathBuf;
 
+pub const SPRITE_BASE_SIZE: UVec2 = UVec2::new(32, 32);
+
+use self::drawing::Elevation;
 use self::sprite_animations::{
     AnimationDescriptor, AnimationSprite, SpriteAnimationExt, SynchronizedAnimationTimers,
 };
@@ -362,6 +364,7 @@ pub(crate) fn update_sprite_system<C: ContentAssets>(
             &mut LoadedSprites,
             &mut Handle<Image>,
             &mut TextureAtlas,
+            &mut Elevation,
             Option<&mut AnimationSprite>,
             Has<LoadingAppearance>,
         ),
@@ -378,6 +381,7 @@ pub(crate) fn update_sprite_system<C: ContentAssets>(
         mut loaded_sprites,
         mut texture,
         mut atlas_sprite,
+        mut elevation,
         animation_sprite,
         is_loading,
     ) in &mut query
@@ -408,6 +412,7 @@ pub(crate) fn update_sprite_system<C: ContentAssets>(
         *texture = sprite.texture.clone();
         atlas_sprite.index = sprite.get_sprite_index();
         atlas_sprite.layout = layout.clone();
+        elevation.base_height = sprite.sprite_sheet.layout.get_height(&SPRITE_BASE_SIZE);
         if let Some(anim) = anim {
             if let Some(mut animation_sprite) = animation_sprite {
                 *animation_sprite = anim;
@@ -470,14 +475,17 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
         };
 
         let translation = position.to_vec3(layer);
+        let elevation =
+            Elevation::new(0., sprite.sprite_sheet.layout.get_height(&SPRITE_BASE_SIZE));
 
         commands
             .entity(entity)
             .insert(LoadedSprites(sprites.clone()))
+            .insert(elevation)
             .insert(SpriteSheetBundle {
                 transform: Transform::from_translation(translation),
                 sprite: Sprite {
-                    anchor: RYOT_ANCHOR,
+                    anchor: Anchor::from(elevation),
                     ..default()
                 },
                 atlas: TextureAtlas {

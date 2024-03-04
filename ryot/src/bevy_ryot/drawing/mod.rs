@@ -1,3 +1,4 @@
+use std::fmt::Display;
 use std::time::Duration;
 
 use crate::appearances::{self, FixedFrameGroup};
@@ -9,6 +10,7 @@ use bevy::prelude::*;
 use bevy::render::view::{check_visibility, VisibilitySystems, VisibleEntities};
 
 mod brushes;
+use bevy::sprite::Anchor;
 pub use brushes::*;
 
 mod commands;
@@ -47,6 +49,47 @@ impl Plugin for DrawingPlugin {
 #[derive(Component, Debug, Copy, Clone, Default, Eq, PartialEq)]
 pub struct TileComponent;
 
+#[derive(Debug, Clone, Component, Copy, PartialEq)]
+pub struct Elevation {
+    pub elevation: f32,
+    pub base_height: u32,
+}
+
+impl Display for Elevation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Elevation: {}", self.delta())
+    }
+}
+
+impl Elevation {
+    pub fn new(elevation: f32, base_height: u32) -> Self {
+        Elevation {
+            elevation,
+            base_height,
+        }
+    }
+
+    pub fn delta(&self) -> f32 {
+        self.elevation / self.base_height as f32
+    }
+
+    pub fn lerp(&self, other: &Elevation, fraction: f32) -> Elevation {
+        Elevation {
+            elevation: self.elevation.lerp(other.elevation, fraction),
+            base_height: self.base_height,
+        }
+    }
+}
+
+impl From<Elevation> for Anchor {
+    fn from(value: Elevation) -> Self {
+        Anchor::Custom(Vec2::new(
+            (0.5 + value.delta()).clamp(0.5, 1.5),
+            (-0.5 - value.delta()).clamp(-1.5, -0.5),
+        ))
+    }
+}
+
 /// A bundle that represents an entity drawn to a location (Layer + TilePosition) in the map.
 /// The DrawingBundle is used to create and update the entities that are drawn on the map.
 /// It holds the layer, the tile position, the appearance descriptor and the visibility of the entity.
@@ -55,7 +98,7 @@ pub struct TileComponent;
 /// visibility to control the visibility of the tile content. This way, we can reduce the amount of
 /// effort made to drawn the map, by not drawing the tiles that are not visible, while still keeping
 /// them as entity.
-#[derive(Bundle, Debug, Copy, Clone, Default, Eq, PartialEq)]
+#[derive(Bundle, Debug, Copy, Clone, Default, PartialEq)]
 pub struct DrawingBundle {
     pub layer: Layer,
     pub tile_pos: TilePosition,
@@ -166,19 +209,19 @@ pub struct MovementBundle {
 impl MovementBundle {
     pub fn new(
         drawing: DrawingBundle,
-        start: TilePosition,
+        start: (TilePosition, Elevation),
         end: TilePosition,
         duration: Duration,
     ) -> Self {
         Self {
             drawing: drawing.with_position(end),
             movement: SpriteMovement::new(start, end, duration).despawn_on_end(true),
-            direction: Directional::Ordinal(OrdinalDirection::from(end - start)),
+            direction: Directional::Ordinal(OrdinalDirection::from(end - start.0)),
         }
     }
 
     pub fn object(
-        start: TilePosition,
+        start: (TilePosition, Elevation),
         end: TilePosition,
         layer: impl Into<Layer>,
         id: u32,
@@ -189,7 +232,7 @@ impl MovementBundle {
 
     pub fn missile(
         layer: impl Into<Layer>,
-        start: TilePosition,
+        start: (TilePosition, Elevation),
         end: TilePosition,
         id: u32,
         duration: Duration,
@@ -204,7 +247,7 @@ impl MovementBundle {
 
     pub fn effect(
         layer: impl Into<Layer>,
-        start: TilePosition,
+        start: (TilePosition, Elevation),
         end: TilePosition,
         id: u32,
         duration: Duration,
