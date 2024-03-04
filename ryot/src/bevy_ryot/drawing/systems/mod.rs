@@ -5,11 +5,10 @@
 use crate::prelude::drawing::TileComponent;
 use crate::prelude::{drawing::*, map::*, *};
 use bevy::prelude::*;
-use bevy::sprite::Anchor;
+// use bevy::sprite::Anchor;
 use bevy::utils::HashMap;
 
 mod deletion;
-use bevy_stroked_text::StrokedText;
 pub use deletion::*;
 
 mod update;
@@ -85,16 +84,19 @@ type ElevationQuery<'w, 's, 'a> = Query<
     'w,
     's,
     (
-        &'a mut Sprite,
+        &'a mut Elevation,
         &'a Layer,
         &'a TilePosition,
         &'a Visibility,
         &'a AppearanceDescriptor,
-        Option<&'a Children>,
     ),
     (
         With<TileComponent>,
-        Or<(Changed<Visibility>, Added<Visibility>)>,
+        Or<(
+            Changed<Visibility>,
+            Added<Visibility>,
+            Changed<TilePosition>,
+        )>,
     ),
 >;
 
@@ -102,16 +104,15 @@ pub fn apply_elevation<C: ContentAssets>(
     content_assets: Res<C>,
     mut q_tile: ElevationQuery,
     mut elevation_per_pos: Local<HashMap<TilePosition, u32>>,
-    mut q_children: Query<&mut Transform, With<StrokedText>>,
 ) {
     let appearances = content_assets.prepared_appearances();
 
-    for (mut sprite, layer, tile_pos, visibility, appearance_desc, children) in q_tile.iter_mut() {
+    for (mut elevation, layer, tile_pos, visibility, appearance_desc) in q_tile.iter_mut() {
         let Layer::Bottom(_) = layer else {
             continue;
         };
 
-        let elevation = (|| -> Option<u32> {
+        let elevation_delta = (|| -> Option<u32> {
             appearances
                 .get_for_group(appearance_desc.group, appearance_desc.id)?
                 .clone()
@@ -122,27 +123,12 @@ pub fn apply_elevation<C: ContentAssets>(
         .unwrap_or(0);
 
         let tile_elevation = elevation_per_pos.entry(*tile_pos).or_default();
-        let delta = *tile_elevation as f32 / tile_size().y as f32;
-
-        let anchor_adjustment = Vec2::new(
-            (0.5 + delta).clamp(0.5, 1.5),
-            (-0.5 - delta).clamp(-1.5, -0.5),
-        ) - sprite.anchor.as_vec();
-        sprite.anchor = Anchor::Custom(sprite.anchor.as_vec() + anchor_adjustment);
-
-        if let Some(children) = children {
-            for child in children.iter() {
-                if let Ok(mut text_transform) = q_children.get_mut(*child) {
-                    text_transform.translation.y += *tile_elevation as f32;
-                    text_transform.translation.z += delta;
-                }
-            }
-        }
+        elevation.elevation = *tile_elevation as f32;
 
         if visibility == Visibility::Hidden {
-            *tile_elevation -= elevation;
+            *tile_elevation -= elevation_delta;
         } else {
-            *tile_elevation += elevation;
+            *tile_elevation += elevation_delta;
         }
     }
 }
