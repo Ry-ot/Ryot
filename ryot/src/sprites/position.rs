@@ -132,6 +132,17 @@ impl From<&TilePosition> for Vec2 {
     }
 }
 
+#[cfg(test)]
+impl quickcheck::Arbitrary for TilePosition {
+    fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+        Self::new(
+            i16::arbitrary(g) as i32,
+            i16::arbitrary(g) as i32,
+            i8::arbitrary(g) as i32,
+        )
+    }
+}
+
 #[cfg(feature = "bevy")]
 impl SpriteMovement {
     pub fn new(
