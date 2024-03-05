@@ -5,6 +5,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     cmp::Ordering,
     fmt::{Display, Formatter},
+    ops::Div,
 };
 use strum::*;
 
@@ -16,7 +17,7 @@ const MAX_Z: f32 = 999.;
 const MAX_Z_TILE: f32 = i8::MAX as f32;
 const MAX_Z_TRANSFORM: f32 = 900. - MAX_Z_TILE;
 const COUNT_LAYERS: f32 = Layer::COUNT as f32;
-const LAYER_WIDTH: f32 = MAX_Z_TRANSFORM / (2. * u16::MAX as f32);
+const LAYER_WIDTH: f32 = MAX_Z_TRANSFORM / (2. * i16::MAX as f32);
 
 #[derive(
     Debug,
@@ -58,6 +59,43 @@ impl Display for Layer {
 impl Display for BottomLayer {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         write!(f, "{:?}({})", self.relative_layer, self.order)
+    }
+}
+
+#[cfg(test)]
+impl quickcheck::Arbitrary for Layer {
+    fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+        match usize::arbitrary(g) % Self::COUNT {
+            0 => Self::Ground,
+            1 => Self::Edge,
+            2 => Self::Bottom(BottomLayer::arbitrary(g)),
+            3 => Self::Top,
+            4 => Self::Hud(Order::arbitrary(g) % 100),
+            _ => unreachable!(),
+        }
+    }
+}
+
+#[cfg(test)]
+impl quickcheck::Arbitrary for BottomLayer {
+    fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+        Self {
+            relative_layer: RelativeLayer::arbitrary(g),
+            order: Order::arbitrary(g) % BottomLayer::TOP_MOST_LAYER,
+        }
+    }
+}
+
+#[cfg(test)]
+impl quickcheck::Arbitrary for RelativeLayer {
+    fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+        match usize::arbitrary(g) % Self::COUNT {
+            0 => Self::Object,
+            1 => Self::Creature,
+            2 => Self::Effect,
+            3 => Self::Missile,
+            _ => unreachable!(),
+        }
     }
 }
 
@@ -151,7 +189,7 @@ impl Layer {
             Self::Ground => 0. * LAYER_WIDTH,
             Self::Edge => 1. * LAYER_WIDTH,
             Self::Bottom(layer) => 2. * LAYER_WIDTH + layer.z(),
-            Self::Top => MAX_Z_TRANSFORM + 1.,
+            Self::Top => 3. * LAYER_WIDTH,
             Self::Hud(order) => (MAX_Z_TRANSFORM + 2. + order as f32).min(MAX_Z),
         }
     }
@@ -263,10 +301,11 @@ impl BottomLayer {
         let width = Self::RELATIVE_WIDTH / Self::COUNT_RELATIVE_LAYERS;
         // Where our range starts
         let min = val * width;
+        let order_width = width / BottomLayer::TOP_MOST_LAYER as f32;
         // Our order relative to other elements of the same layer in our stack weighed against our width window
-        let weight = self.order as f32 / Order::MAX as f32;
+        let order = self.order as f32 * order_width;
         // Final number between 0.0..TOTAL_WIDTH
-        min + weight / Self::COUNT_RELATIVE_LAYERS
+        min + order
     }
 }
 
@@ -288,8 +327,116 @@ pub fn compute_z_transform(pos: &TilePosition, layer: &Layer) -> f32 {
     }
 
     let weight = u16::MAX as f32;
-    let x_weighted = MAX_Z_TRANSFORM * pos.x as f32 / (weight);
-    let y_weighted = MAX_Z_TRANSFORM * pos.y as f32 / (weight - 1.);
+    let x_weighted = MAX_Z_TRANSFORM.div(2.) * pos.x as f32 / weight;
+    let y_weighted = MAX_Z_TRANSFORM * pos.y as f32 / weight;
 
     pos.z as f32 + x_weighted - y_weighted + layer.z()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bevy::reflect::Enum;
+    use quickcheck_macros::quickcheck;
+
+    #[quickcheck]
+    fn compute_z_transform_layer_order(pos: TilePosition, layer1: Layer, layer2: Layer) -> bool {
+        let z1 = compute_z_transform(&pos, &layer1);
+        let z2 = compute_z_transform(&pos, &layer2);
+
+        let (result, comparison) = match (layer1, layer2) {
+            (Layer::Hud(o1), Layer::Hud(o2)) if o1 > o2 => (z1 > z2, "z1 > z2"),
+            (Layer::Hud(o1), Layer::Hud(o2)) if o1 <= o2 => (z1 <= z2, "z1 <= z2"),
+            (Layer::Hud(_), _) => (z1 > z2, "z1 > z2"),
+            (_, Layer::Hud(_)) => (z1 < z2, "z1 < z2"),
+            (Layer::Top, Layer::Top) => (z1 == z2, "z1 == z2"),
+            (Layer::Top, _) => (z1 > z2, "z1 > z2"),
+            (_, Layer::Top) => (z1 < z2, "z1 < z2"),
+            (Layer::Bottom(b1), Layer::Bottom(b2)) => {
+                if b1.relative_layer == b2.relative_layer {
+                    if b1.order > b2.order {
+                        (z1 > z2, "z1 > z2")
+                    } else {
+                        (z1 <= z2, "z1 <= z2")
+                    }
+                } else if b1.relative_layer.variant_index() <= b2.relative_layer.variant_index() {
+                    (z1 < z2, "z1 < z2")
+                } else {
+                    (z1 > z2, "z1 > z2")
+                }
+            }
+            (Layer::Bottom(_), _) => (z1 > z2, "z1 > z2"),
+            (_, Layer::Bottom(_)) => (z1 < z2, "z1 < z2"),
+            (Layer::Edge, Layer::Edge) => (z1 == z2, "z1 == z2"),
+            (Layer::Edge, _) => (z1 > z2, "z1 > z2"),
+            (_, Layer::Edge) => (z1 < z2, "z1 < z2"),
+            (Layer::Ground, Layer::Ground) => (z1 == z2, "z1 == z2"),
+        };
+        if !result {
+            println!("Failed:");
+            println!("\t     pos: {:?}", pos);
+            println!("\t  layer1: {:?}", layer1);
+            println!("\t       z: {}", z1);
+            println!("\t  layer2: {:?}", layer2);
+            println!("\t       z: {}", z2);
+            println!("\texpected:{}", comparison);
+        }
+        result
+    }
+
+    #[quickcheck]
+    fn compute_z_transform_45deg_rules(pos: TilePosition, layer1: Layer, layer2: Layer) -> bool {
+        let east = pos + TilePosition::new(1, 0, 0);
+        let south = pos + TilePosition::new(0, -1, 0);
+        let south_east = pos + TilePosition::new(1, -1, 0);
+        let z = compute_z_transform(&pos, &layer1);
+        let east_z = compute_z_transform(&east, &layer2);
+        let south_z = compute_z_transform(&south, &layer2);
+        let south_east_z = compute_z_transform(&south_east, &layer2);
+        let mut message = "".to_owned();
+        let mut result = true;
+
+        if east_z <= z {
+            message.push_str("\t\teast_z <= z\n");
+            result = false;
+        }
+        if south_z <= z {
+            message.push_str("\t\tsouth_z <= z\n");
+            result = false;
+        }
+        if south_east_z <= z {
+            message.push_str("\t\tsouth_east_z <= z\n");
+            result = false;
+        }
+        if south_east_z <= east_z {
+            message.push_str("\t\tsouth_east_z <= east_z\n");
+            result = false;
+        }
+        if south_east_z <= south_z {
+            message.push_str("\t\tsouth_east_z <= south_z\n");
+            result = false;
+        }
+
+        let result = match (layer1, layer2) {
+            (Layer::Ground, Layer::Ground) => result,
+            (Layer::Edge, Layer::Edge) => result,
+            (Layer::Bottom(_), Layer::Bottom(_)) => result,
+            (Layer::Top, Layer::Top) => result,
+            _ => true, // We don't care about the other cases, this is handled by the other tests
+        };
+
+        if !result {
+            println!("Failed:");
+            println!("\t      pos: {:?}", pos);
+            println!("\t   layer1: {:?}", layer1);
+            println!("\t        z: {}", z);
+            println!("\t   layer2: {:?}", layer2);
+            println!("\t    east-z: {}", east_z);
+            println!("\t   south-z: {}", south_z);
+            println!("\tsouth-east-z: {}", south_east_z);
+            println!("{}", message);
+        }
+
+        true
+    }
 }

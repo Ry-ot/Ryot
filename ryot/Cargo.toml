@@ -46,6 +46,8 @@ zstd = { workspace = true, optional = true }
 
 [dev-dependencies]
 rstest.workspace = true
+quickcheck = "1"
+quickcheck_macros = "1"
 
 [build-dependencies]
 prost-build = "0.12"
