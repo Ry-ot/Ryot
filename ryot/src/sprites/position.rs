@@ -9,7 +9,8 @@ use std::{
 };
 
 #[cfg(feature = "bevy")]
-use crate::bevy_ryot::drawing::Elevation;
+use crate::bevy_ryot::{drawing::Elevation, sprites::LoadedSprite};
+use crate::SpriteLayout;
 #[cfg(feature = "debug")]
 use bevy_stroked_text::StrokedText;
 #[cfg(feature = "bevy")]
@@ -72,6 +73,21 @@ impl TilePosition {
 
     pub fn to_vec3(self, layer: &Layer) -> Vec3 {
         Vec2::from(self).extend(compute_z_transform(&self, layer))
+    }
+
+    pub fn from_elevated_translation(
+        translation: Vec3,
+        layout: SpriteLayout,
+        anchor: Anchor,
+    ) -> Self {
+        let position =
+            translation.truncate() + (layout.get_size(&tile_size()).as_vec2() * anchor.as_vec());
+        TilePosition::from(position)
+    }
+
+    fn to_elevated_translation(self, layout: SpriteLayout, layer: Layer, anchor: Anchor) -> Vec3 {
+        self.to_vec3(&layer)
+            - (layout.get_size(&tile_size()).as_vec2() * anchor.as_vec()).extend(0.)
     }
 }
 
@@ -377,7 +393,7 @@ pub fn update_sprite_position(
             &TilePosition,
             &Elevation,
             &Layer,
-            &mut Sprite,
+            &LoadedSprite,
             &mut Transform,
             Option<&mut SpriteMovement>,
             Option<&Children>,
@@ -387,7 +403,7 @@ pub fn update_sprite_position(
     #[cfg(feature = "debug")] mut children_query: Query<&mut StrokedText, With<PositionDebugText>>,
     time: Res<Time>,
 ) {
-    for (entity, tile_pos, elevation, layer, mut sprite, mut transform, movement, _children) in
+    for (entity, tile_pos, elevation, layer, loaded_sprite, mut transform, movement, _children) in
         query.iter_mut()
     {
         if let Some(mut movement) = movement {
@@ -399,17 +415,18 @@ pub fn update_sprite_position(
                 .max(compute_z_transform(&movement.destination, layer));
             let origin_elevation = movement.origin.1;
             let destination_elevation = *elevation;
-            sprite.anchor = Anchor::from(
-                origin_elevation.lerp(&destination_elevation, movement.timer.fraction()),
+            let origin_translation = movement.origin.0.to_elevated_translation(
+                loaded_sprite.sprite_sheet.layout,
+                *layer,
+                Anchor::from(origin_elevation),
             );
-            transform.translation = movement
-                .origin
-                .0
-                .to_vec3(layer)
-                .lerp(
-                    movement.destination.to_vec3(layer),
-                    movement.timer.fraction(),
-                )
+            let destination_translation = movement.destination.to_elevated_translation(
+                loaded_sprite.sprite_sheet.layout,
+                *layer,
+                Anchor::from(destination_elevation),
+            );
+            transform.translation = origin_translation
+                .lerp(destination_translation, movement.timer.fraction())
                 .truncate()
                 .extend(z);
             if movement.timer.just_finished() {
@@ -420,13 +437,16 @@ pub fn update_sprite_position(
                 }
             }
         } else {
-            transform.translation = tile_pos.to_vec3(layer);
-            sprite.anchor = Anchor::from(*elevation);
+            transform.translation = tile_pos.to_elevated_translation(
+                loaded_sprite.sprite_sheet.layout,
+                *layer,
+                Anchor::from(*elevation),
+            );
         }
     }
 
     #[cfg(feature = "debug")]
-    for (_entity, _tile_pos, elevation, _layer, _sprite, transform, _movement, children) in
+    for (_entity, _tile_pos, elevation, _layer, _loaded_sprite, transform, _movement, children) in
         query.iter_mut()
     {
         if let Some(children) = children {
@@ -443,6 +463,7 @@ pub fn update_sprite_position(
 type MovingSpriteFilter = Or<(
     Changed<TilePosition>,
     Added<TilePosition>,
+    Added<Transform>,
     With<SpriteMovement>,
     Changed<Elevation>,
 )>;

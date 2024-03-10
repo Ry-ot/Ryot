@@ -90,7 +90,7 @@ impl SpriteAnimationExt for SpriteAnimation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct AnimationState {
     pub timer: Timer,
     pub current_phase: usize,
@@ -125,14 +125,14 @@ impl AnimationState {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct AnimationDescriptor {
     pub sprites: Vec<LoadedSprite>,
     pub initial_index: usize,
     pub skip: usize,
 }
 
-#[derive(Component, Debug)]
+#[derive(Component, Clone, Debug)]
 pub(crate) enum AnimationSprite {
     Independent {
         key: AnimationKey,
@@ -156,15 +156,11 @@ pub fn toggle_sprite_animation(mut enabled: ResMut<SpriteAnimationEnabled>) {
 /// A system that animates the sprites based on the `AnimationSprite` component.
 /// It's meant to run every frame to update the animation of the entities.
 /// It will only run if the entity has a `TextureAtlas` and an `AnimationSprite` component.
-pub(crate) fn animate_sprite_system(
+pub(crate) fn tick_animation_system(
+    mut commands: Commands,
     time: Res<Time>,
     mut synced_timers: ResMut<SynchronizedAnimationTimers>,
-    mut q_sprites: Query<(
-        &mut AnimationSprite,
-        &mut Handle<Image>,
-        &mut TextureAtlas,
-        Option<&AnimationDuration>,
-    )>,
+    mut q_sprites: Query<(Entity, &mut AnimationSprite, Option<&AnimationDuration>)>,
 ) {
     let delta = time.delta();
     synced_timers
@@ -172,8 +168,8 @@ pub(crate) fn animate_sprite_system(
         .for_each(|(key, state)| state.tick(key, delta));
 
     q_sprites
-        .par_iter_mut()
-        .for_each(|(mut anim, mut texture, mut atlas_sprite, duration)| {
+        .iter_mut()
+        .for_each(|(entity, mut anim, duration)| {
             if let AnimationSprite::Independent { key, state, .. } = &mut *anim {
                 if let Some(duration) = duration {
                     let frame_duration = duration.0 / key.total_phases as u32;
@@ -184,27 +180,18 @@ pub(crate) fn animate_sprite_system(
                 state.tick(key, delta);
             }
 
-            let (state, descriptor) = match anim.as_ref() {
-                AnimationSprite::Independent {
-                    state, descriptor, ..
-                } => (state, descriptor),
-                AnimationSprite::Synchronized { key, descriptor } => {
+            let state = match anim.as_ref() {
+                AnimationSprite::Independent { state, .. } => state,
+                AnimationSprite::Synchronized { key, .. } => {
                     let Some(state) = synced_timers.get(key) else {
                         return;
                     };
-                    (state, descriptor)
+                    state
                 }
             };
 
             if state.just_finished() {
-                let Some(sprite) = descriptor
-                    .sprites
-                    .get(descriptor.initial_index + state.current_phase * descriptor.skip)
-                else {
-                    return;
-                };
-                *texture = sprite.texture.clone();
-                atlas_sprite.index = sprite.get_sprite_index();
+                commands.entity(entity).remove::<LoadedSprite>();
             }
         });
 }
