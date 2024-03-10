@@ -4,16 +4,17 @@
 //! It provides common ways of dealing with OT content, such as loading sprites and appearances,
 //! configuring the game, and handling asynchronous events.
 use crate::appearances::{ContentType, SpriteSheetDataSet};
-use crate::position::{update_sprite_position, TilePosition};
+use crate::position::{tile_size, update_sprite_position, TilePosition};
 use crate::prelude::sprites::LoadSpriteBatch;
 use crate::{Layer, SpriteLayout, TILE_SIZE};
 use bevy::app::{App, Plugin, Update};
+use bevy::asset::embedded_asset;
 use bevy::asset::{Asset, Assets, Handle};
 use bevy::prelude::*;
 use bevy::render::mesh::Indices;
 use bevy::render::render_asset::RenderAssetUsages;
 use bevy::render::render_resource::PrimitiveTopology;
-use bevy::sprite::{Anchor, MaterialMesh2dBundle};
+use bevy::sprite::{Anchor, Material2dPlugin, MaterialMesh2dBundle};
 use bevy::utils::HashMap;
 use bevy_asset_loader::asset_collection::AssetCollection;
 use bevy_asset_loader::loading_state::{LoadingState, LoadingStateAppExt};
@@ -23,6 +24,7 @@ use bevy_common_assets::json::JsonAssetPlugin;
 use bevy_common_assets::ron::RonAssetPlugin;
 use bevy_stroked_text::StrokedTextPlugin;
 use std::marker::PhantomData;
+use strum::IntoEnumIterator;
 
 mod appearances;
 pub use appearances::*;
@@ -48,6 +50,8 @@ pub mod sprites;
 pub(crate) mod sprite_animations;
 pub use sprite_animations::{toggle_sprite_animation, AnimationDuration};
 
+use self::sprites::SpriteMaterial;
+
 pub static RYOT_ANCHOR: Anchor = Anchor::BottomRight;
 pub static GRID_LAYER: Layer = Layer::Hud(0);
 
@@ -71,6 +75,12 @@ pub enum InternalContentState {
 pub struct Catalog {
     pub content: Vec<ContentType>,
 }
+
+#[derive(Resource, Debug, Clone, Default, Deref, DerefMut)]
+pub struct SpriteMeshes(pub HashMap<SpriteLayout, Handle<Mesh>>);
+
+#[derive(Resource, Debug, Clone, Default, Deref, DerefMut)]
+pub struct SpriteMaterials(pub HashMap<u32, Handle<SpriteMaterial>>);
 
 /// A trait that represents Preloaded and Content assets.
 /// Most of the PreloadedAssets are not directly available to the game.
@@ -122,10 +132,12 @@ impl<C: PreloadedContentAssets + Default> Plugin for ContentPlugin<C> {
     fn build(&self, app: &mut App) {
         app.init_resource::<C>()
             .register_type::<TilePosition>()
+            .init_resource::<SpriteMeshes>()
             .add_event::<LoadSpriteBatch>()
             .add_plugins(JsonAssetPlugin::<Catalog>::new(&["json"]))
             .add_plugins(AppearanceAssetPlugin)
             .add_optional_plugin(StrokedTextPlugin)
+            .add_plugins(Material2dPlugin::<SpriteMaterial>::default())
             .add_plugins(RonAssetPlugin::<StandardDynamicAssetArrayCollection>::new(
                 &["atlases.ron"],
             ))
@@ -157,16 +169,18 @@ impl<C: PreloadedContentAssets + Default> Plugin for ContentPlugin<C> {
             .add_systems(
                 Update,
                 (
-                    sprite_animations::animate_sprite_system.run_if(resource_exists_and_equals(
+                    sprites::load_sprite_system::<C>,
+                    sprites::sprite_material_system::<C>,
+                    sprite_animations::tick_animation_system.run_if(resource_exists_and_equals(
                         sprite_animations::SpriteAnimationEnabled(true),
                     )),
-                    sprites::load_sprite_system::<C>,
-                    sprites::update_sprite_system::<C>,
                 )
                     .chain()
                     .run_if(in_state(InternalContentState::Ready)),
             )
             .add_systems(PostUpdate, update_sprite_position);
+
+        embedded_asset!(app, "shaders/sprite.wgsl");
     }
 }
 
@@ -179,6 +193,8 @@ fn prepare_content<C: PreloadedContentAssets>(
     mut contents: ResMut<Assets<Catalog>>,
     mut content_assets: ResMut<C>,
     mut state: ResMut<NextState<InternalContentState>>,
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut sprite_meshes: ResMut<SpriteMeshes>,
     atlas_layouts: Res<Assets<TextureAtlasLayout>>,
 ) {
     debug!("Preparing content");
@@ -199,6 +215,14 @@ fn prepare_content<C: PreloadedContentAssets>(
     content_assets.set_sprite_sheets_data(SpriteSheetDataSet::from_content(&catalog.content));
     state.set(InternalContentState::PreparingSprites);
     contents.remove(content_assets.catalog_content());
+    for sprite_layout in SpriteLayout::iter() {
+        sprite_meshes.insert(
+            sprite_layout,
+            meshes.add(Rectangle::from_size(
+                sprite_layout.get_size(&tile_size()).as_vec2(),
+            )),
+        );
+    }
 
     debug!("Finished preparing content");
 }

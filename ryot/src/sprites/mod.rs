@@ -1,4 +1,4 @@
-use glam::UVec2;
+use glam::{UVec2, Vec2};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
 mod config;
@@ -9,12 +9,15 @@ pub use sheet_loading::*;
 
 pub mod layer;
 pub use layer::Layer;
+use strum::EnumIter;
 
 pub mod position;
 
 pub mod error;
 
-#[derive(Serialize_repr, Deserialize_repr, Default, PartialEq, Debug, Copy, Clone)]
+#[derive(
+    Serialize_repr, Deserialize_repr, Default, Eq, PartialEq, Debug, Copy, Clone, EnumIter, Hash,
+)]
 #[repr(u32)]
 pub enum SpriteLayout {
     #[default]
@@ -41,6 +44,17 @@ impl SpriteLayout {
 
     pub fn get_size(&self, tile_size: &UVec2) -> UVec2 {
         UVec2::new(self.get_width(tile_size), self.get_height(tile_size))
+    }
+
+    pub fn get_counts(&self, sheet_size: Vec2, tile_size: Vec2) -> Vec2 {
+        let width = sheet_size.x / tile_size.x;
+        let height = sheet_size.y / tile_size.y;
+        match self {
+            SpriteLayout::OneByOne => Vec2::new(width, height),
+            SpriteLayout::OneByTwo => Vec2::new(width, height / 2.),
+            SpriteLayout::TwoByOne => Vec2::new(width / 2., height),
+            SpriteLayout::TwoByTwo => Vec2::new(width / 2., height / 2.),
+        }
     }
 }
 

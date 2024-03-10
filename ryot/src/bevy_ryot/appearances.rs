@@ -123,9 +123,6 @@ impl AppearanceDescriptor {
     }
 }
 
-#[derive(Component, Debug, Clone, Default)]
-pub(crate) struct LoadingAppearance;
-
 #[derive(Debug, Clone, Default)]
 pub struct PreparedAppearance {
     pub id: u32,

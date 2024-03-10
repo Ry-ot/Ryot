@@ -1,16 +1,13 @@
 //! Sprite loading and drawing.
 use crate::appearances::{SpriteSheetData, SpriteSheetDataSet};
 use crate::bevy_ryot::InternalContentState;
-use crate::layer::Layer;
-use crate::position::TilePosition;
 use crate::{get_decompressed_file_name, SPRITE_SHEET_FOLDER};
 use crate::{prelude::*, Directional};
 use bevy::prelude::*;
-use bevy::sprite::Anchor;
+use bevy::render::render_resource::{AsBindGroup, ShaderRef};
+use bevy::sprite::{Material2d, MaterialMesh2dBundle, Mesh2dHandle};
 use bevy::utils::hashbrown::HashSet;
 use bevy::utils::{FixedState, HashMap};
-#[cfg(feature = "debug")]
-use bevy_stroked_text::{StrokedText, StrokedTextBundle};
 use std::path::PathBuf;
 
 pub const SPRITE_BASE_SIZE: UVec2 = UVec2::new(32, 32);
@@ -32,10 +29,6 @@ pub(crate) struct SpriteSheetTextureWasLoaded {
 pub struct LoadSpriteBatch {
     pub sprite_ids: Vec<u32>,
 }
-
-/// A component that holds the loaded sprites in a vector.
-#[derive(Component, Debug, Clone, Default)]
-pub struct LoadedSprites(pub Vec<LoadedSprite>);
 
 /// A struct that holds the information needed to draw a sprite.
 /// It's a wrapper around a sprite sheet and a sprite id, that also holds the
@@ -239,15 +232,17 @@ pub(crate) fn prepare_sprites<C: PreloadedContentAssets>(
     state.set(InternalContentState::Ready);
 }
 
+#[allow(clippy::too_many_arguments)]
 fn load_desired_appereance_sprite<C: ContentAssets>(
     group: AppearanceGroup,
     id: u32,
     frame_group_index: i32,
+    animation_sprite: Option<&AnimationSprite>,
     direction: Option<&Directional>,
     content_assets: &Res<C>,
     load_sprite_batch_events: &mut EventWriter<LoadSpriteBatch>,
     synced_timers: &mut ResMut<SynchronizedAnimationTimers>,
-) -> Option<(LoadedSprite, Option<AnimationSprite>, Vec<LoadedSprite>)> {
+) -> Option<(LoadedSprite, Option<AnimationSprite>)> {
     // If the id is 0, it means that the appearance is not set yet, so we return None
     if id == 0 {
         return None;
@@ -311,96 +306,49 @@ fn load_desired_appereance_sprite<C: ContentAssets>(
         return None;
     };
 
-    let animation_sprite = sprite_info.animation.as_ref().map(|animation| {
-        let key = animation.get_animation_key();
-        let descriptor = AnimationDescriptor {
-            sprites: sprites.clone(),
-            initial_index: direction_index,
-            skip: (sprite_info.layers()
-                * sprite_info.pattern_width()
-                * sprite_info.pattern_height()
-                * sprite_info.pattern_depth()) as usize,
-        };
-        if animation.synchronized() {
-            synced_timers
-                .try_insert(key.clone(), key.default_state())
-                .ok();
-            AnimationSprite::Synchronized { key, descriptor }
-        } else {
-            AnimationSprite::Independent {
-                key: key.clone(),
-                descriptor,
-                state: key.default_state(),
+    let animation_sprite = animation_sprite.cloned().or_else(|| {
+        sprite_info.animation.as_ref().map(|animation| {
+            let key = animation.get_animation_key();
+            let descriptor = AnimationDescriptor {
+                sprites: sprites.clone(),
+                initial_index: direction_index,
+                skip: (sprite_info.layers()
+                    * sprite_info.pattern_width()
+                    * sprite_info.pattern_height()
+                    * sprite_info.pattern_depth()) as usize,
+            };
+            if animation.synchronized() {
+                synced_timers
+                    .try_insert(key.clone(), key.default_state())
+                    .ok();
+                AnimationSprite::Synchronized { key, descriptor }
+            } else {
+                AnimationSprite::Independent {
+                    key: key.clone(),
+                    descriptor,
+                    state: key.default_state(),
+                }
             }
-        }
+        })
     });
-    Some((sprite.clone(), animation_sprite, sprites))
+    Some((sprite.clone(), animation_sprite))
 }
-
-type UninitializedSpriteFilter = (With<AppearanceDescriptor>, Without<TextureAtlas>);
-
-type InitializedSpriteFilter = (
-    With<AppearanceDescriptor>,
-    With<TextureAtlas>,
-    Or<(
-        With<LoadingAppearance>,
-        Changed<AppearanceDescriptor>,
-        Changed<Directional>,
-    )>,
-);
 
 /// Update the sprite system, which updates the sprite appearance based on the
 /// `AppearanceDescriptor` component. It also updates the `LoadedSprites` component
 /// with the new sprites.
 /// It's meant to run every frame to update the appearance of the entities when the
 /// `AppearanceDescriptor` changes.
-pub(crate) fn update_sprite_system<C: ContentAssets>(
+pub(crate) fn sprite_material_system<C: ContentAssets>(
     mut commands: Commands,
-    mut query: Query<
-        (
-            Entity,
-            &AppearanceDescriptor,
-            Option<&Directional>,
-            &mut LoadedSprites,
-            &mut Handle<Image>,
-            &mut TextureAtlas,
-            &mut Elevation,
-            Option<&mut AnimationSprite>,
-            Has<LoadingAppearance>,
-        ),
-        InitializedSpriteFilter,
-    >,
     content_assets: Res<C>,
-    mut load_sprite_batch_events: EventWriter<LoadSpriteBatch>,
-    mut synced_timers: ResMut<SynchronizedAnimationTimers>,
+    layouts: ResMut<Assets<TextureAtlasLayout>>,
+    sprite_meshes: Res<SpriteMeshes>,
+    mut materials: ResMut<Assets<SpriteMaterial>>,
+    mut material_cache: Local<HashMap<u32, Handle<SpriteMaterial>>>,
+    mut query: Query<(Entity, &LoadedSprite, Has<Transform>), Changed<LoadedSprite>>,
 ) {
-    for (
-        entity,
-        descriptor,
-        direction,
-        mut loaded_sprites,
-        mut texture,
-        mut atlas_sprite,
-        mut elevation,
-        animation_sprite,
-        is_loading,
-    ) in &mut query
-    {
-        let (sprite, anim, sprites) = match load_desired_appereance_sprite(
-            descriptor.group,
-            descriptor.id,
-            descriptor.frame_group_index(),
-            direction,
-            &content_assets,
-            &mut load_sprite_batch_events,
-            &mut synced_timers,
-        ) {
-            Some(value) => value,
-            None => {
-                commands.entity(entity).insert(LoadingAppearance);
-                continue;
-            }
-        };
+    for (entity, sprite, has_transform) in &mut query {
         let Some(layout) = content_assets.get_atlas_layout(sprite.sprite_sheet.layout) else {
             warn!(
                 "Atlas layout for sprite layout {:?} not found",
@@ -408,23 +356,51 @@ pub(crate) fn update_sprite_system<C: ContentAssets>(
             );
             continue;
         };
-        *loaded_sprites = LoadedSprites(sprites.clone());
-        *texture = sprite.texture.clone();
-        atlas_sprite.index = sprite.get_sprite_index();
-        atlas_sprite.layout = layout.clone();
-        elevation.base_height = sprite.sprite_sheet.layout.get_height(&SPRITE_BASE_SIZE);
-        if let Some(anim) = anim {
-            if let Some(mut animation_sprite) = animation_sprite {
-                *animation_sprite = anim;
-            } else {
-                commands.entity(entity).insert(anim);
-            }
-        } else {
-            commands.entity(entity).remove::<AnimationSprite>();
-        }
+        let Some(layout) = layouts.get(layout) else {
+            warn!(
+                "Atlas layout for sprite layout {:?} not found",
+                sprite.sprite_sheet.layout
+            );
+            continue;
+        };
+        let Some(mesh_handle) = sprite_meshes.get(&sprite.sprite_sheet.layout) else {
+            warn!(
+                "Mesh for sprite layout {:?} not found",
+                sprite.sprite_sheet.layout
+            );
+            continue;
+        };
 
-        if is_loading {
-            commands.entity(entity).remove::<LoadingAppearance>();
+        let material = material_cache
+            .entry(sprite.sprite_id)
+            .or_insert(
+                materials.add(SpriteMaterial {
+                    texture: sprite.texture.clone(),
+                    index: sprite.get_sprite_index() as u32,
+                    counts: sprite
+                        .sprite_sheet
+                        .layout
+                        .get_counts(layout.size, tile_size().as_vec2()),
+                }),
+            )
+            .clone();
+
+        if has_transform {
+            commands
+                .entity(entity)
+                .insert((Mesh2dHandle(mesh_handle.clone()), material));
+        } else {
+            let elevation =
+                Elevation::new(0., sprite.sprite_sheet.layout.get_height(&SPRITE_BASE_SIZE));
+            commands.entity(entity).insert((
+                elevation,
+                MaterialMesh2dBundle {
+                    // Translation is computed in the position system
+                    mesh: Mesh2dHandle(mesh_handle.clone()),
+                    material,
+                    ..default()
+                },
+            ));
         }
     }
 }
@@ -433,118 +409,98 @@ pub(crate) fn update_sprite_system<C: ContentAssets>(
 /// `TilePosition` component. This system will wait until all sprites are loaded
 /// before initializing the entity.
 /// It's meant to run only once to complete the initialization of the entities.
+#[allow(clippy::type_complexity)]
 pub(crate) fn load_sprite_system<C: ContentAssets>(
     mut commands: Commands,
     mut query: Query<
         (
             Entity,
-            &TilePosition,
-            &AppearanceDescriptor,
-            &Layer,
-            Option<&Directional>,
+            Ref<AppearanceDescriptor>,
+            Option<&AnimationSprite>,
+            Option<Ref<Directional>>,
         ),
-        UninitializedSpriteFilter,
+        Or<(
+            Changed<AppearanceDescriptor>,
+            Changed<Directional>,
+            Without<LoadedSprite>,
+        )>,
     >,
     content_assets: Res<C>,
     mut load_sprite_batch_events: EventWriter<LoadSpriteBatch>,
     mut synced_timers: ResMut<SynchronizedAnimationTimers>,
 ) {
-    for (entity, position, descriptor, layer, direction) in &mut query {
-        let (sprite, anim, sprites) = match load_desired_appereance_sprite(
+    for (entity, descriptor, mut animation_sprite, direction) in &mut query {
+        if descriptor.is_changed()
+            || direction
+                .as_ref()
+                .map(|direction| direction.is_changed())
+                .unwrap_or(false)
+        {
+            commands.entity(entity).remove::<AnimationSprite>();
+            animation_sprite = None;
+        }
+        let (sprite, anim) = match load_desired_appereance_sprite(
             descriptor.group,
             descriptor.id,
             descriptor.frame_group_index(),
-            direction,
+            animation_sprite,
+            direction.as_deref(),
             &content_assets,
             &mut load_sprite_batch_events,
             &mut synced_timers,
         ) {
             Some(value) => value,
             None => {
-                commands.entity(entity).insert(LoadingAppearance);
+                commands.entity(entity).remove::<LoadedSprite>();
                 continue;
             }
         };
 
-        let Some(layout) = content_assets.get_atlas_layout(sprite.sprite_sheet.layout) else {
-            warn!(
-                "Atlas layout for sprite layout {:?} not found",
-                sprite.sprite_sheet.layout
-            );
-            continue;
-        };
-
-        let translation = position.to_vec3(layer);
-        let elevation =
-            Elevation::new(0., sprite.sprite_sheet.layout.get_height(&SPRITE_BASE_SIZE));
-
-        commands
-            .entity(entity)
-            .insert(LoadedSprites(sprites.clone()))
-            .insert(elevation)
-            .insert(SpriteSheetBundle {
-                transform: Transform::from_translation(translation),
-                sprite: Sprite {
-                    anchor: Anchor::from(elevation),
-                    ..default()
-                },
-                atlas: TextureAtlas {
-                    layout,
-                    index: sprite.get_sprite_index(),
-                },
-                texture: sprite.texture,
-                ..default()
-            })
-            .remove::<LoadingAppearance>();
-
-        #[cfg(feature = "debug")]
-        commands.entity(entity).with_children(|builder| {
-            builder.spawn((
-                StrokedTextBundle::new(StrokedText {
-                    text: format!("{:.02}", 1000. * translation.z),
-                    font_size: 8.,
-                    text_anchor: Anchor::TopRight,
-                    ..default()
-                })
-                .with_transform(
-                    Transform::from_translation(
-                        tile_offset().extend(1.)
-                            + Vec3::new(
-                                tile_size().x as f32 / 2. - 0.5,
-                                -debug_y_offset(layer),
-                                0.,
-                            ),
-                    )
-                    .with_scale(Vec3::splat(0.5)),
-                ),
-                PositionDebugText,
-            ));
-            builder.spawn(
-                StrokedTextBundle::new(StrokedText {
-                    text: format!("{}", layer),
-                    font_size: 8.,
-                    text_anchor: Anchor::TopLeft,
-                    color: Color::from(layer),
-                    ..default()
-                })
-                .with_transform(
-                    Transform::from_translation(
-                        tile_offset().extend(1.)
-                            + Vec3::new(
-                                tile_size().x as f32 / 2. + 0.5,
-                                -debug_y_offset(layer),
-                                0.,
-                            ),
-                    )
-                    .with_scale(Vec3::splat(0.5)),
-                ),
-            );
-        });
-
-        if let Some(anim) = anim {
-            commands.entity(entity).insert(anim);
-        } else {
-            commands.entity(entity).remove::<AnimationSprite>();
+        match anim {
+            Some(anim) => {
+                let sprite = {
+                    let (state, descriptor) = match &anim {
+                        AnimationSprite::Independent {
+                            state, descriptor, ..
+                        } => (state, descriptor),
+                        AnimationSprite::Synchronized { key, descriptor } => {
+                            let state = synced_timers
+                                .get(key)
+                                .expect("Synchronized timer not found");
+                            (state, descriptor)
+                        }
+                    };
+                    descriptor
+                        .sprites
+                        .get(descriptor.initial_index + state.current_phase * descriptor.skip)
+                        .expect("Sprite not found")
+                        .clone()
+                };
+                commands.entity(entity).insert((sprite, anim));
+            }
+            None => {
+                commands
+                    .entity(entity)
+                    .insert(sprite)
+                    .remove::<AnimationSprite>();
+            }
         }
+    }
+}
+
+#[derive(AsBindGroup, TypePath, Asset, Debug, Clone)]
+pub struct SpriteMaterial {
+    #[uniform(0)]
+    pub index: u32,
+    #[uniform(0)]
+    pub counts: Vec2,
+    #[texture(1)]
+    #[sampler(2)]
+    pub texture: Handle<Image>,
+}
+
+impl Material2d for SpriteMaterial {
+    fn fragment_shader() -> ShaderRef {
+        "embedded://ryot/bevy_ryot/shaders/sprite.wgsl".into()
     }
 }
