@@ -166,7 +166,7 @@ pub(crate) fn load_sprite_textures<C: ContentAssets>(
     asset_server: &Res<AssetServer>,
     sprite_sheets: &SpriteSheetDataSet,
     sprite_sheet_texture_was_loaded: &mut EventWriter<SpriteSheetTextureWasLoaded>,
-) -> Vec<(u32, Handle<Image>)> {
+) {
     let events = sprite_ids
         .iter()
         .filter_map(|sprite_id| {
@@ -175,11 +175,6 @@ pub(crate) fn load_sprite_textures<C: ContentAssets>(
         .collect::<Vec<_>>();
 
     sprite_sheet_texture_was_loaded.send_batch(events.clone());
-
-    events
-        .iter()
-        .map(|SpriteSheetTextureWasLoaded { sprite_id, texture }| (*sprite_id, texture.clone()))
-        .collect::<Vec<(u32, Handle<Image>)>>()
 }
 
 pub(crate) fn load_sprite_texture<C: ContentAssets>(
