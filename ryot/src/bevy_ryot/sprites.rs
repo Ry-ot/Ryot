@@ -8,6 +8,9 @@ use bevy::render::render_resource::{AsBindGroup, ShaderRef};
 use bevy::sprite::{Material2d, MaterialMesh2dBundle, Mesh2dHandle};
 use bevy::utils::hashbrown::HashSet;
 use bevy::utils::{FixedState, HashMap};
+use itertools::Either;
+use rayon::prelude::*;
+
 use std::path::PathBuf;
 
 pub const SPRITE_BASE_SIZE: UVec2 = UVec2::new(32, 32);
@@ -79,29 +82,26 @@ pub fn load_sprites<C: ContentAssets>(
         return vec![];
     };
 
-    let mut to_be_loaded: Vec<u32> = vec![];
-    let mut loaded: Vec<LoadedSprite> = vec![];
-
-    for sprite_id in sprite_ids {
-        let Some(sprite_sheet) = sprite_sheets.get_by_sprite_id(*sprite_id) else {
-            warn!("Sprite {} not found in sprite sheets", sprite_id);
-            continue;
-        };
-
-        match content_assets.get_texture(sprite_sheet.file.as_str()) {
-            Some(texture) => {
-                loaded.push(LoadedSprite {
-                    group,
-                    sprite_id: *sprite_id,
-                    sprite_sheet: sprite_sheet.clone(),
-                    texture: texture.clone(),
-                });
+    let (to_be_loaded, loaded) =
+        sprite_ids.par_iter().partition_map(|sprite_id| {
+            match sprite_sheets.get_by_sprite_id(*sprite_id) {
+                Some(sprite_sheet) => {
+                    match content_assets.get_texture(sprite_sheet.file.as_str()) {
+                        Some(texture) => Either::Right(LoadedSprite {
+                            group,
+                            sprite_id: *sprite_id,
+                            sprite_sheet: sprite_sheet.clone(),
+                            texture: texture.clone(),
+                        }),
+                        None => Either::Left(*sprite_id),
+                    }
+                }
+                None => {
+                    warn!("Sprite {} not found in sprite sheets", sprite_id);
+                    Either::Left(*sprite_id)
+                }
             }
-            None => {
-                to_be_loaded.push(*sprite_id);
-            }
-        }
-    }
+        });
 
     load_sprite_batch_events.send(LoadSpriteBatch {
         sprite_ids: to_be_loaded,
