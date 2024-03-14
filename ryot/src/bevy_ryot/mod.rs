@@ -170,6 +170,7 @@ impl<C: PreloadedContentAssets + Default> Plugin for ContentPlugin<C> {
                 Update,
                 (
                     sprites::load_sprite_system::<C>,
+                    sprites::update_sprite_system::<C>,
                     sprites::sprite_material_system::<C>,
                     sprite_animations::tick_animation_system.run_if(resource_exists_and_equals(
                         sprite_animations::SpriteAnimationEnabled(true),

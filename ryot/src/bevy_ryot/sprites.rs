@@ -368,7 +368,7 @@ pub(crate) fn sprite_material_system<C: ContentAssets>(
 
         let material = material_cache
             .entry(sprite.sprite_id)
-            .or_insert(
+            .or_insert_with(|| {
                 materials.add(SpriteMaterial {
                     texture: sprite.texture.clone(),
                     index: sprite.get_sprite_index() as u32,
@@ -376,8 +376,8 @@ pub(crate) fn sprite_material_system<C: ContentAssets>(
                         .sprite_sheet
                         .layout
                         .get_counts(layout.size, tile_size().as_vec2()),
-                }),
-            )
+                })
+            })
             .clone();
 
         if has_transform {
@@ -399,6 +399,8 @@ pub(crate) fn sprite_material_system<C: ContentAssets>(
         }
     }
 }
+
+pub(crate) fn update_sprite_system<C: ContentAssets>() {}
 
 /// Load sprites for entities that have a `AppearanceDescriptor` and a
 /// `TilePosition` component. This system will wait until all sprites are loaded
@@ -424,63 +426,64 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
     mut load_sprite_batch_events: EventWriter<LoadSpriteBatch>,
     mut synced_timers: ResMut<SynchronizedAnimationTimers>,
 ) {
-    for (entity, descriptor, mut animation_sprite, direction) in &mut query {
-        if descriptor.is_changed()
-            || direction
-                .as_ref()
-                .map(|direction| direction.is_changed())
-                .unwrap_or(false)
-        {
-            commands.entity(entity).remove::<AnimationSprite>();
-            animation_sprite = None;
-        }
-        let (sprite, anim) = match load_desired_appereance_sprite(
-            descriptor.group,
-            descriptor.id,
-            descriptor.frame_group_index(),
-            animation_sprite,
-            direction.as_deref(),
-            &content_assets,
-            &mut load_sprite_batch_events,
-            &mut synced_timers,
-        ) {
-            Some(value) => value,
-            None => {
-                commands.entity(entity).remove::<LoadedSprite>();
-                continue;
+    query
+        .iter_mut()
+        .for_each(|(entity, descriptor, mut animation_sprite, direction)| {
+            if descriptor.is_changed()
+                || direction
+                    .as_ref()
+                    .map(|direction| direction.is_changed())
+                    .unwrap_or(false)
+            {
+                commands.entity(entity).remove::<AnimationSprite>();
+                animation_sprite = None;
             }
-        };
+            let (sprite, anim) = match load_desired_appereance_sprite(
+                descriptor.group,
+                descriptor.id,
+                descriptor.frame_group_index(),
+                animation_sprite,
+                direction.as_deref(),
+                &content_assets,
+                &mut load_sprite_batch_events,
+                &mut synced_timers,
+            ) {
+                Some(value) => value,
+                None => {
+                    return;
+                }
+            };
 
-        match anim {
-            Some(anim) => {
-                let sprite = {
-                    let (state, descriptor) = match &anim {
-                        AnimationSprite::Independent {
-                            state, descriptor, ..
-                        } => (state, descriptor),
-                        AnimationSprite::Synchronized { key, descriptor } => {
-                            let state = synced_timers
-                                .get(key)
-                                .expect("Synchronized timer not found");
-                            (state, descriptor)
-                        }
+            match anim {
+                Some(anim) => {
+                    let sprite = {
+                        let (state, descriptor) = match &anim {
+                            AnimationSprite::Independent {
+                                state, descriptor, ..
+                            } => (state, descriptor),
+                            AnimationSprite::Synchronized { key, descriptor } => {
+                                let state = synced_timers
+                                    .get(key)
+                                    .expect("Synchronized timer not found");
+                                (state, descriptor)
+                            }
+                        };
+                        descriptor
+                            .sprites
+                            .get(descriptor.initial_index + state.current_phase * descriptor.skip)
+                            .expect("Sprite not found")
+                            .clone()
                     };
-                    descriptor
-                        .sprites
-                        .get(descriptor.initial_index + state.current_phase * descriptor.skip)
-                        .expect("Sprite not found")
-                        .clone()
-                };
-                commands.entity(entity).insert((sprite, anim));
+                    commands.entity(entity).insert((sprite, anim));
+                }
+                None => {
+                    commands
+                        .entity(entity)
+                        .insert(sprite)
+                        .remove::<AnimationSprite>();
+                }
             }
-            None => {
-                commands
-                    .entity(entity)
-                    .insert(sprite)
-                    .remove::<AnimationSprite>();
-            }
-        }
-    }
+        });
 }
 
 #[derive(AsBindGroup, TypePath, Asset, Debug, Clone)]

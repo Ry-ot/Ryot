@@ -69,7 +69,7 @@ impl AssetLoader for AppearanceAssetLoader {
     }
 }
 
-#[derive(Component, Debug, Copy, Clone, Default, Eq, PartialEq, Reflect)]
+#[derive(Component, Debug, Copy, Clone, Default, Hash, Eq, PartialEq, Reflect)]
 pub struct AppearanceDescriptor {
     pub group: AppearanceGroup,
     pub id: u32,
