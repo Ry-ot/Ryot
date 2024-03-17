@@ -4,7 +4,10 @@
 //! It provides common ways of dealing with OT content, such as loading sprites and appearances,
 //! configuring the game, and handling asynchronous events.
 use crate::appearances::{ContentType, SpriteSheetDataSet};
-use crate::position::{animate_sprite_position, tile_size, update_sprite_position, TilePosition};
+use crate::position::{
+    animate_sprite_position, finish_position_animation, tile_size, update_sprite_position,
+    TilePosition,
+};
 use crate::{Layer, SpriteLayout, TILE_SIZE};
 use bevy::app::{App, Plugin, Update};
 use bevy::asset::embedded_asset;
@@ -170,7 +173,10 @@ impl<C: PreloadedContentAssets + Default> Plugin for ContentPlugin<C> {
             )
             .add_systems(
                 PostUpdate,
-                (update_sprite_position, animate_sprite_position),
+                (
+                    update_sprite_position,
+                    (animate_sprite_position, finish_position_animation).chain(),
+                ),
             );
 
         embedded_asset!(app, "shaders/sprite.wgsl");
