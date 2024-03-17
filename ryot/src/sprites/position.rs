@@ -391,18 +391,18 @@ pub fn update_sprite_position(
         (PositionChangedFilter, Without<SpriteMovement>),
     >,
 ) {
-    for (layout, tile_pos, elevation, layer, mut transform) in query.iter_mut() {
-        transform.translation =
-            tile_pos.to_elevated_translation(*layout, *layer, Anchor::from(*elevation));
-    }
+    query
+        .par_iter_mut()
+        .for_each(|(layout, tile_pos, elevation, layer, mut transform)| {
+            transform.translation =
+                tile_pos.to_elevated_translation(*layout, *layer, Anchor::from(*elevation));
+        });
 }
 
 #[cfg(feature = "bevy")]
 pub fn animate_sprite_position(
-    mut commands: Commands,
     mut query: Query<
         (
-            Entity,
             &SpriteLayout,
             &Elevation,
             &Layer,
@@ -413,37 +413,49 @@ pub fn animate_sprite_position(
     >,
     time: Res<Time>,
 ) {
-    for (entity, layout, elevation, layer, mut transform, mut movement) in query.iter_mut() {
-        movement.timer.tick(time.delta());
-        // We need the moving entity to be on top of other entities
-        // This is to ensure that the layering logic is consistent no matter what direction
-        // the entity is moving in
-        let z = compute_z_transform(&movement.origin.0, layer)
-            .max(compute_z_transform(&movement.destination, layer));
-        let origin_elevation = movement.origin.1;
-        let destination_elevation = *elevation;
-        let origin_translation = movement.origin.0.to_elevated_translation(
-            *layout,
-            *layer,
-            Anchor::from(origin_elevation),
-        );
-        let destination_translation = movement.destination.to_elevated_translation(
-            *layout,
-            *layer,
-            Anchor::from(destination_elevation),
-        );
-        transform.translation = origin_translation
-            .lerp(destination_translation, movement.timer.fraction())
-            .truncate()
-            .extend(z);
-        if movement.timer.just_finished() {
+    query
+        .par_iter_mut()
+        .for_each(|(layout, elevation, layer, mut transform, mut movement)| {
+            movement.timer.tick(time.delta());
+            // We need the moving entity to be on top of other entities
+            // This is to ensure that the layering logic is consistent no matter what direction
+            // the entity is moving in
+            let z = compute_z_transform(&movement.origin.0, layer)
+                .max(compute_z_transform(&movement.destination, layer));
+            let origin_elevation = movement.origin.1;
+            let destination_elevation = *elevation;
+            let origin_translation = movement.origin.0.to_elevated_translation(
+                *layout,
+                *layer,
+                Anchor::from(origin_elevation),
+            );
+            let destination_translation = movement.destination.to_elevated_translation(
+                *layout,
+                *layer,
+                Anchor::from(destination_elevation),
+            );
+            transform.translation = origin_translation
+                .lerp(destination_translation, movement.timer.fraction())
+                .truncate()
+                .extend(z);
+        });
+}
+
+#[cfg(feature = "bevy")]
+pub fn finish_position_animation(
+    mut commands: Commands,
+    query: Query<(Entity, &SpriteMovement), (PositionChangedFilter, With<SpriteMovement>)>,
+) {
+    query
+        .iter()
+        .filter(|(_, movement)| movement.timer.just_finished())
+        .for_each(|(entity, movement)| {
             if movement.despawn_on_end {
                 commands.entity(entity).despawn_recursive();
             } else {
                 commands.entity(entity).remove::<SpriteMovement>();
             }
-        }
-    }
+        });
 }
 
 impl Add<IVec2> for TilePosition {
