@@ -137,7 +137,7 @@ impl From<appearances::Appearance> for Option<PreparedAppearance> {
     fn from(item: appearances::Appearance) -> Self {
         let id = item.id?;
         let main_frame = item.frame_group.first()?.clone();
-        let main_sprite_id = *main_frame.sprite_info?.sprite_id.first()?;
+        let main_sprite_id = *main_frame.sprite_info?.sprite_ids.first()?;
 
         Some(PreparedAppearance {
             id: item.id?,
@@ -237,7 +237,7 @@ fn process_appearances(
                     continue;
                 };
 
-                if sprite_info.sprite_id.is_empty() {
+                if sprite_info.sprite_ids.is_empty() {
                     continue;
                 }
 

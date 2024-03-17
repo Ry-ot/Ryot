@@ -80,29 +80,23 @@ pub fn get_top_most_visible_for_tile(
     None
 }
 
-type ElevationQuery<'w, 's, 'a> = Query<
-    'w,
-    's,
-    (
-        &'a mut Elevation,
-        &'a Layer,
-        &'a TilePosition,
-        &'a Visibility,
-        &'a AppearanceDescriptor,
-    ),
-    (
-        With<TileComponent>,
-        Or<(
-            Changed<Visibility>,
-            Added<Visibility>,
-            Changed<TilePosition>,
-        )>,
-    ),
->;
+type ElevationFilter = (
+    With<TileComponent>,
+    Or<(Changed<Visibility>, Changed<TilePosition>)>,
+);
 
 pub fn apply_elevation<C: ContentAssets>(
     content_assets: Res<C>,
-    mut q_tile: ElevationQuery,
+    mut q_tile: Query<
+        (
+            &mut Elevation,
+            &Layer,
+            &TilePosition,
+            &Visibility,
+            &AppearanceDescriptor,
+        ),
+        ElevationFilter,
+    >,
     mut elevation_per_pos: Local<HashMap<TilePosition, u32>>,
 ) {
     let appearances = content_assets.prepared_appearances();

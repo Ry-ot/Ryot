@@ -9,10 +9,8 @@ use std::{
 };
 
 #[cfg(feature = "bevy")]
-use crate::bevy_ryot::{drawing::Elevation, sprites::LoadedSprite};
+use crate::bevy_ryot::drawing::Elevation;
 use crate::SpriteLayout;
-#[cfg(feature = "debug")]
-use bevy_stroked_text::StrokedText;
 #[cfg(feature = "bevy")]
 use std::time::Duration;
 
@@ -366,6 +364,12 @@ impl DivAssign<f32> for Sector {
     }
 }
 
+#[cfg(feature = "bevy")]
+type PositionChangedFilter = (
+    With<Transform>,
+    Or<(Added<Transform>, Changed<TilePosition>, Changed<Elevation>)>,
+);
+
 /// This system syncs the sprite position with the TilePosition.
 /// Every spawned sprite has a Transform component, which is used to position the sprite on
 /// the screen. However, in this library our world components are treated in terms of TilePosition.
@@ -374,99 +378,73 @@ impl DivAssign<f32> for Sector {
 /// This system listen to all new and changed TilePosition components and update the Transform
 /// component of the sprite accordingly, if it exist. Ideally this should run in the end of
 /// the Update stage, so it can be sure that all TilePosition components have been updated.
-///
-/// ```rust
-/// use bevy::prelude::*;
-/// use ryot::sprites::position::update_sprite_position;
-///
-/// App::new()
-///     .init_resource::<Time>()
-///     .add_systems(PostUpdate, update_sprite_position)
-///     .run();
-/// ```
 #[cfg(feature = "bevy")]
 pub fn update_sprite_position(
-    mut commands: Commands,
     mut query: Query<
         (
-            Entity,
+            &SpriteLayout,
             &TilePosition,
             &Elevation,
             &Layer,
-            &LoadedSprite,
             &mut Transform,
-            Option<&mut SpriteMovement>,
-            Option<&Children>,
         ),
-        MovingSpriteFilter,
+        (PositionChangedFilter, Without<SpriteMovement>),
     >,
-    #[cfg(feature = "debug")] mut children_query: Query<&mut StrokedText, With<PositionDebugText>>,
-    time: Res<Time>,
 ) {
-    for (entity, tile_pos, elevation, layer, loaded_sprite, mut transform, movement, _children) in
-        query.iter_mut()
-    {
-        if let Some(mut movement) = movement {
-            movement.timer.tick(time.delta());
-            // We need the moving entity to be on top of other entities
-            // This is to ensure that the layering logic is consistent no matter what direction
-            // the entity is moving in
-            let z = compute_z_transform(&movement.origin.0, layer)
-                .max(compute_z_transform(&movement.destination, layer));
-            let origin_elevation = movement.origin.1;
-            let destination_elevation = *elevation;
-            let origin_translation = movement.origin.0.to_elevated_translation(
-                loaded_sprite.sprite_sheet.layout,
-                *layer,
-                Anchor::from(origin_elevation),
-            );
-            let destination_translation = movement.destination.to_elevated_translation(
-                loaded_sprite.sprite_sheet.layout,
-                *layer,
-                Anchor::from(destination_elevation),
-            );
-            transform.translation = origin_translation
-                .lerp(destination_translation, movement.timer.fraction())
-                .truncate()
-                .extend(z);
-            if movement.timer.just_finished() {
-                if movement.despawn_on_end {
-                    commands.entity(entity).despawn_recursive();
-                } else {
-                    commands.entity(entity).remove::<SpriteMovement>();
-                }
-            }
-        } else {
-            transform.translation = tile_pos.to_elevated_translation(
-                loaded_sprite.sprite_sheet.layout,
-                *layer,
-                Anchor::from(*elevation),
-            );
-        }
-    }
-
-    #[cfg(feature = "debug")]
-    for (_entity, _tile_pos, elevation, _layer, _loaded_sprite, transform, _movement, children) in
-        query.iter_mut()
-    {
-        if let Some(children) = children {
-            for child in children.iter() {
-                if let Ok(mut text) = children_query.get_mut(*child) {
-                    text.text = format!("{:.02} [{}]", 1000. * transform.translation.z, elevation);
-                }
-            }
-        }
+    for (layout, tile_pos, elevation, layer, mut transform) in query.iter_mut() {
+        transform.translation =
+            tile_pos.to_elevated_translation(*layout, *layer, Anchor::from(*elevation));
     }
 }
 
 #[cfg(feature = "bevy")]
-type MovingSpriteFilter = Or<(
-    Changed<TilePosition>,
-    Added<TilePosition>,
-    Added<Transform>,
-    With<SpriteMovement>,
-    Changed<Elevation>,
-)>;
+pub fn animate_sprite_position(
+    mut commands: Commands,
+    mut query: Query<
+        (
+            Entity,
+            &SpriteLayout,
+            &Elevation,
+            &Layer,
+            &mut Transform,
+            &mut SpriteMovement,
+        ),
+        (PositionChangedFilter, With<SpriteMovement>),
+    >,
+    time: Res<Time>,
+) {
+    for (entity, layout, elevation, layer, mut transform, mut movement) in query.iter_mut() {
+        movement.timer.tick(time.delta());
+        // We need the moving entity to be on top of other entities
+        // This is to ensure that the layering logic is consistent no matter what direction
+        // the entity is moving in
+        let z = compute_z_transform(&movement.origin.0, layer)
+            .max(compute_z_transform(&movement.destination, layer));
+        let origin_elevation = movement.origin.1;
+        let destination_elevation = *elevation;
+        let origin_translation = movement.origin.0.to_elevated_translation(
+            *layout,
+            *layer,
+            Anchor::from(origin_elevation),
+        );
+        let destination_translation = movement.destination.to_elevated_translation(
+            *layout,
+            *layer,
+            Anchor::from(destination_elevation),
+        );
+        transform.translation = origin_translation
+            .lerp(destination_translation, movement.timer.fraction())
+            .truncate()
+            .extend(z);
+        if movement.timer.just_finished() {
+            if movement.despawn_on_end {
+                commands.entity(entity).despawn_recursive();
+            } else {
+                commands.entity(entity).remove::<SpriteMovement>();
+            }
+        }
+    }
+}
 
 impl Add<IVec2> for TilePosition {
     type Output = Self;
