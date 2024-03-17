@@ -77,9 +77,6 @@ pub struct Catalog {
 #[derive(Resource, Debug, Clone, Default, Deref, DerefMut)]
 pub struct SpriteMeshes(pub HashMap<SpriteLayout, Handle<Mesh>>);
 
-#[derive(Resource, Debug, Clone, Default, Deref, DerefMut)]
-pub struct SpriteMaterials(pub HashMap<u32, Handle<SpriteMaterial>>);
-
 /// A trait that represents Preloaded and Content assets.
 /// Most of the PreloadedAssets are not directly available to the game.
 /// They are only used to prepare the ContentAssets and then discarded.

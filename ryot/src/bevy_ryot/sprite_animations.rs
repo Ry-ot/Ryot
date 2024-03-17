@@ -219,7 +219,7 @@ pub(crate) fn tick_animation_system(
         .for_each(|(key, state)| state.tick(key, delta));
 
     q_sprites
-        .iter_mut()
+        .par_iter_mut()
         .for_each(|(mut material, mut anim, duration)| {
             if let AnimationSprite::Independent { key, state, .. } = &mut *anim {
                 if let Some(duration) = duration {
