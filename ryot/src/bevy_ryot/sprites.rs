@@ -1,6 +1,5 @@
 //! Sprite loading and drawing.
 use crate::appearances::{SpriteInfo, SpriteSheetData, SpriteSheetDataSet};
-use crate::bevy_ryot::InternalContentState;
 use crate::{get_decompressed_file_name, SPRITE_SHEET_FOLDER};
 use crate::{prelude::*, Directional};
 use bevy::prelude::*;
@@ -156,31 +155,6 @@ pub(crate) fn load_sprite_texture<C: ContentAssets>(
     );
 
     Some(texture)
-}
-
-/// A system that prepares the sprite assets for use in the game.
-/// It loads the sprite sheets as atlases and stores their handles.
-/// It also determines the loading as completed and sets the internal state to Ready.
-pub(crate) fn prepare_sprites<C: PreloadedContentAssets>(
-    mut content_assets: ResMut<C>,
-    mut state: ResMut<NextState<InternalContentState>>,
-) {
-    if !content_assets.sprite_sheets().is_empty() {
-        for (file, texture) in content_assets.sprite_sheets().clone() {
-            let file = match file.strip_prefix(&(SPRITE_SHEET_FOLDER.to_string() + "/")) {
-                Some(file) => file,
-                None => &file,
-            };
-
-            if content_assets.get_texture(file).is_some() {
-                warn!("Skipping file {}: it's already loaded", file);
-                continue;
-            }
-
-            content_assets.insert_texture(file, texture.clone());
-        }
-    }
-    state.set(InternalContentState::Ready);
 }
 
 /// A system that ensures that all entities with an AppearanceDescriptor have a SpriteMaterial mesh bundle.
