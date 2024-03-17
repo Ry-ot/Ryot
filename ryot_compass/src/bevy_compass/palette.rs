@@ -7,8 +7,7 @@ use bevy::prelude::*;
 use bevy::utils::HashMap;
 use bevy_egui::EguiPlugin;
 use leafwing_input_manager::common_conditions::action_just_pressed;
-use ryot::bevy_ryot::sprites::load_sprites;
-use ryot::prelude::sprites::LoadSpriteBatch;
+use ryot::bevy_ryot::sprites::{LoadAppearanceEvent, LoadedAppearances};
 use ryot::prelude::*;
 use std::marker::PhantomData;
 
@@ -95,7 +94,6 @@ fn setup_categories<C: ContentAssets>(content_assets: Res<C>, mut palettes: ResM
 
 pub fn update_palette_category<C: ContentAssets>(
     palettes: Res<Palette>,
-    content_assets: Res<C>,
     mut palette_state: ResMut<PaletteState>,
 ) {
     if palettes.is_empty() {
@@ -107,32 +105,26 @@ pub fn update_palette_category<C: ContentAssets>(
         return;
     }
 
-    let sprite_ids: Vec<(u32, u32)> = palettes
-        .get_for_category(&palette_state.selected_category)
-        .iter()
-        .filter_map(|value| {
-            let sprite_id = content_assets
-                .prepared_appearances()
-                .get_for_group(AppearanceGroup::Object, *value)?
-                .main_sprite_id;
-
-            Some((sprite_id, *value))
-        })
-        .collect();
-
-    sprite_ids.iter().for_each(|(sprite_id, content_id)| {
-        palette_state
-            .category_sprites
-            .insert(*sprite_id, *content_id);
-    });
+    let category = palette_state.selected_category;
+    palette_state
+        .category_sprites
+        .extend(
+            palettes
+                .get_for_category(&category)
+                .iter()
+                .map(|content_id| {
+                    AppearanceDescriptor::new(AppearanceGroup::Object, *content_id, default())
+                }),
+        );
 }
 
 pub fn update_palette_items<C: ContentAssets>(
     palettes: Res<Palette>,
     content_assets: Res<C>,
     texture_atlases: Res<Assets<TextureAtlasLayout>>,
+    loaded_appearances: Res<LoadedAppearances>,
     mut palette_state: ResMut<PaletteState>,
-    mut load_sprite_batch: EventWriter<LoadSpriteBatch>,
+    mut events: EventWriter<LoadAppearanceEvent>,
 ) {
     if palettes.is_empty() {
         return;
@@ -142,22 +134,17 @@ pub fn update_palette_items<C: ContentAssets>(
     let begin = palette_state.begin().min(if len < 5 { 0 } else { len - 5 });
     let end = palette_state.end().min(len);
 
-    let mut sprite_ids = palette_state
-        .category_sprites
-        .keys()
-        .copied()
-        .collect::<Vec<_>>();
-
-    sprite_ids.sort();
-
-    let sprite_ids = &sprite_ids[begin..end];
+    let mut appearance_descriptors = palette_state.category_sprites.to_vec();
+    appearance_descriptors.sort_by(|d1, d2| d1.id.cmp(&d2.id));
+    let appearance_descriptors = &appearance_descriptors[begin..end];
 
     if palette_state
         .loaded_images
         .iter()
-        .map(|(sprite, ..)| sprite.sprite_id)
+        .map(|(descriptor, ..)| descriptor)
+        .cloned()
         .collect::<Vec<_>>()
-        .eq(sprite_ids)
+        .eq(appearance_descriptors)
     {
         debug!("Palette content didn't change, no need to reload images");
         return;
@@ -165,24 +152,34 @@ pub fn update_palette_items<C: ContentAssets>(
 
     palette_state.loaded_images.clear();
 
-    for sprite in load_sprites(
-        AppearanceGroup::Object,
-        sprite_ids,
-        &content_assets,
-        &mut load_sprite_batch,
-    ) {
+    let (loaded, to_load): (Vec<AppearanceDescriptor>, Vec<AppearanceDescriptor>) =
+        appearance_descriptors
+            .iter()
+            .partition(|&descriptor| loaded_appearances.contains_key(descriptor));
+
+    to_load.iter().for_each(|descriptor| {
+        events.send(LoadAppearanceEvent(*descriptor));
+    });
+
+    loaded.into_iter().for_each(|descriptor| {
+        let Some(appearance) = loaded_appearances.get(&descriptor) else {
+            return;
+        };
+        let Some(sprite) = appearance.sprites.first() else {
+            return;
+        };
         let Some((rect_vec2, uv)) =
-            get_egui_parameters_for_texture::<C>(&sprite, &content_assets, &texture_atlases)
+            get_egui_parameters_for_texture::<C>(sprite, &content_assets, &texture_atlases)
         else {
-            continue;
+            return;
         };
 
         let texture = sprite.texture.clone_weak();
 
         palette_state
             .loaded_images
-            .push((sprite, texture, rect_vec2, uv));
-    }
+            .push((descriptor, texture, rect_vec2, uv));
+    });
 }
 
 fn clear_selection(

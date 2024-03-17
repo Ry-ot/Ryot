@@ -4,8 +4,7 @@
 //! It provides common ways of dealing with OT content, such as loading sprites and appearances,
 //! configuring the game, and handling asynchronous events.
 use crate::appearances::{ContentType, SpriteSheetDataSet};
-use crate::position::{tile_size, update_sprite_position, TilePosition};
-use crate::prelude::sprites::LoadSpriteBatch;
+use crate::position::{animate_sprite_position, tile_size, update_sprite_position, TilePosition};
 use crate::{Layer, SpriteLayout, TILE_SIZE};
 use bevy::app::{App, Plugin, Update};
 use bevy::asset::embedded_asset;
@@ -133,7 +132,6 @@ impl<C: PreloadedContentAssets + Default> Plugin for ContentPlugin<C> {
         app.init_resource::<C>()
             .register_type::<TilePosition>()
             .init_resource::<SpriteMeshes>()
-            .add_event::<LoadSpriteBatch>()
             .add_plugins(JsonAssetPlugin::<Catalog>::new(&["json"]))
             .add_plugins(AppearanceAssetPlugin)
             .add_optional_plugin(StrokedTextPlugin)
@@ -158,20 +156,18 @@ impl<C: PreloadedContentAssets + Default> Plugin for ContentPlugin<C> {
                 OnEnter(InternalContentState::PreparingSprites),
                 sprites::prepare_sprites::<C>,
             )
-            .add_event::<sprites::SpriteSheetTextureWasLoaded>()
-            .add_systems(
-                Update,
-                sprites::load_sprite_sheets_from_command::<C>.run_if(on_event::<LoadSpriteBatch>()),
-            )
-            .add_systems(Update, sprites::store_atlases_assets_after_loading::<C>)
             .init_resource::<sprite_animations::SpriteAnimationEnabled>()
             .init_resource::<sprite_animations::SynchronizedAnimationTimers>()
+            .init_resource::<sprites::LoadedAppearances>()
+            .add_event::<sprites::LoadAppearanceEvent>()
+            .add_systems(PreUpdate, sprites::load_from_entities_system)
             .add_systems(
                 Update,
                 (
-                    sprites::load_sprite_system::<C>,
-                    sprites::update_sprite_system::<C>,
-                    sprites::sprite_material_system::<C>,
+                    sprites::load_sprite_system::<C>
+                        .run_if(on_event::<sprites::LoadAppearanceEvent>()),
+                    sprites::ensure_appearance_initialized,
+                    sprites::update_sprite_system,
                     sprite_animations::tick_animation_system.run_if(resource_exists_and_equals(
                         sprite_animations::SpriteAnimationEnabled(true),
                     )),
@@ -179,7 +175,10 @@ impl<C: PreloadedContentAssets + Default> Plugin for ContentPlugin<C> {
                     .chain()
                     .run_if(in_state(InternalContentState::Ready)),
             )
-            .add_systems(PostUpdate, update_sprite_position);
+            .add_systems(
+                PostUpdate,
+                (update_sprite_position, animate_sprite_position),
+            );
 
         embedded_asset!(app, "shaders/sprite.wgsl");
     }

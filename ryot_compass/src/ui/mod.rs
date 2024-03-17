@@ -1,7 +1,6 @@
 use crate::sprites::LoadedSprite;
 use crate::{CursorCommand, TilesetCategory, ToolMode};
 use bevy::prelude::*;
-use bevy::utils::HashMap;
 use egui::{Align, Ui};
 use ryot::bevy_ryot::{AppearanceDescriptor, ContentAssets};
 use std::ops::Range;
@@ -15,9 +14,9 @@ pub struct PaletteState {
     pub tile_padding: f32,
     pub selected_tile: Option<AppearanceDescriptor>,
     pub selected_category: TilesetCategory,
-    pub category_sprites: HashMap<u32, u32>,
+    pub category_sprites: Vec<AppearanceDescriptor>,
     pub visible_rows: Range<usize>,
-    pub loaded_images: Vec<(LoadedSprite, Handle<Image>, egui::Vec2, egui::Rect)>,
+    pub loaded_images: Vec<(AppearanceDescriptor, Handle<Image>, egui::Vec2, egui::Rect)>,
 }
 
 impl Default for PaletteState {
@@ -30,7 +29,7 @@ impl Default for PaletteState {
             tile_padding: 15.,
             selected_tile: None,
             selected_category: TilesetCategory::Raw,
-            category_sprites: HashMap::default(),
+            category_sprites: Vec::default(),
             visible_rows: Range { start: 0, end: 10 },
             loaded_images: vec![],
         }
@@ -156,7 +155,7 @@ pub fn draw_palette_picker(
 
 pub fn draw_palette_items(
     ui: &mut Ui,
-    egui_images: Vec<(&LoadedSprite, egui::Image)>,
+    egui_images: Vec<(&AppearanceDescriptor, egui::Image)>,
     palette_state: &mut ResMut<PaletteState>,
     cursor_events_writer: &mut EventWriter<CursorCommand>,
 ) {
@@ -179,19 +178,13 @@ pub fn draw_palette_items(
                         .chunks(palette_state.get_chunk_size())
                         .for_each(|chunk| {
                             ui.add_space(extra / 2.0);
-                            chunk.iter().for_each(|(sprite, image)| {
+                            chunk.iter().for_each(|(&descriptor, image)| {
                                 let size = palette_state.grid_size as f32;
 
                                 let tile =
                                     image.clone().fit_to_exact_size(egui::Vec2::new(size, size));
 
-                                let Some(content_id) = palette_state
-                                    .category_sprites
-                                    .get(&sprite.sprite_id)
-                                    .copied()
-                                else {
-                                    return;
-                                };
+                                let content_id = descriptor.id;
 
                                 let selected = match &palette_state.selected_tile {
                                     Some(AppearanceDescriptor { id, .. }) => *id == content_id,
@@ -217,16 +210,11 @@ pub fn draw_palette_items(
                                             debug!("Tile: {:?} deselected", content_id);
                                         }
                                         _ => {
-                                            let apperance = AppearanceDescriptor::new(
-                                                sprite.group,
-                                                content_id,
-                                                default(),
-                                            );
-                                            palette_state.selected_tile = Some(apperance);
+                                            palette_state.selected_tile = Some(descriptor);
 
                                             cursor_events_writer.send(
                                                 CursorCommand::ChangeToolMode(Some(
-                                                    ToolMode::Draw(apperance),
+                                                    ToolMode::Draw(descriptor),
                                                 )),
                                             );
                                             debug!("Tile: {:?} selected", content_id);

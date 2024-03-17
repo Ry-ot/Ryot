@@ -1,3 +1,5 @@
+#[cfg(feature = "bevy")]
+use bevy::prelude::*;
 use glam::{UVec2, Vec2};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 
@@ -18,6 +20,7 @@ pub mod error;
 #[derive(
     Serialize_repr, Deserialize_repr, Default, Eq, PartialEq, Debug, Copy, Clone, EnumIter, Hash,
 )]
+#[cfg_attr(feature = "bevy", derive(Component))]
 #[repr(u32)]
 pub enum SpriteLayout {
     #[default]

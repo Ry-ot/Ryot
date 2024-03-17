@@ -6,7 +6,7 @@ use bevy::utils::HashMap;
 use rand::Rng;
 use std::time::Duration;
 
-use self::sprites::LoadedSprite;
+use self::sprites::{LoadedSprite, SpriteMaterial};
 
 /// A resource to enable/disable sprite animation globally.
 #[derive(Resource, PartialEq, Debug, Clone)]
@@ -22,7 +22,7 @@ impl Default for SpriteAnimationEnabled {
 pub(crate) struct SynchronizedAnimationTimers(HashMap<AnimationKey, AnimationState>);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub(crate) enum AnimationStartPhase {
+pub enum AnimationStartPhase {
     Random,
     Fixed(usize),
 }
@@ -37,7 +37,7 @@ impl AnimationStartPhase {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-pub(crate) struct AnimationKey {
+pub struct AnimationKey {
     pub phase_durations: Vec<Duration>,
     pub start_phase: AnimationStartPhase,
     pub total_phases: usize,
@@ -126,10 +126,11 @@ impl AnimationState {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct AnimationDescriptor {
+pub struct AnimationDescriptor {
     pub sprites: Vec<LoadedSprite>,
     pub initial_index: usize,
     pub skip: usize,
+    pub synchronized: bool,
 }
 
 #[derive(Component, Clone, Debug)]
@@ -145,6 +146,26 @@ pub(crate) enum AnimationSprite {
     },
 }
 
+impl AnimationSprite {
+    pub(crate) fn from_key_and_descriptor(
+        key: &AnimationKey,
+        descriptor: &AnimationDescriptor,
+    ) -> Self {
+        if descriptor.synchronized {
+            AnimationSprite::Synchronized {
+                key: key.clone(),
+                descriptor: descriptor.clone(),
+            }
+        } else {
+            AnimationSprite::Independent {
+                key: key.clone(),
+                descriptor: descriptor.clone(),
+                state: key.default_state(),
+            }
+        }
+    }
+}
+
 /// An optional component to override animation timers.
 #[derive(Component, Default)]
 pub struct AnimationDuration(pub Duration);
@@ -157,10 +178,13 @@ pub fn toggle_sprite_animation(mut enabled: ResMut<SpriteAnimationEnabled>) {
 /// It's meant to run every frame to update the animation of the entities.
 /// It will only run if the entity has a `TextureAtlas` and an `AnimationSprite` component.
 pub(crate) fn tick_animation_system(
-    mut commands: Commands,
     time: Res<Time>,
     mut synced_timers: ResMut<SynchronizedAnimationTimers>,
-    mut q_sprites: Query<(Entity, &mut AnimationSprite, Option<&AnimationDuration>)>,
+    mut q_sprites: Query<(
+        &mut Handle<SpriteMaterial>,
+        &mut AnimationSprite,
+        Option<&AnimationDuration>,
+    )>,
 ) {
     let delta = time.delta();
     synced_timers
@@ -169,7 +193,7 @@ pub(crate) fn tick_animation_system(
 
     q_sprites
         .iter_mut()
-        .for_each(|(entity, mut anim, duration)| {
+        .for_each(|(mut material, mut anim, duration)| {
             if let AnimationSprite::Independent { key, state, .. } = &mut *anim {
                 if let Some(duration) = duration {
                     let frame_duration = duration.0 / key.total_phases as u32;
@@ -180,18 +204,26 @@ pub(crate) fn tick_animation_system(
                 state.tick(key, delta);
             }
 
-            let state = match anim.as_ref() {
-                AnimationSprite::Independent { state, .. } => state,
-                AnimationSprite::Synchronized { key, .. } => {
+            let (state, descriptor) = match anim.as_ref() {
+                AnimationSprite::Independent {
+                    state, descriptor, ..
+                } => (state, descriptor),
+                AnimationSprite::Synchronized { key, descriptor } => {
                     let Some(state) = synced_timers.get(key) else {
                         return;
                     };
-                    state
+                    (state, descriptor)
                 }
             };
 
             if state.just_finished() {
-                commands.entity(entity).remove::<LoadedSprite>();
+                let Some(sprite) = descriptor
+                    .sprites
+                    .get(descriptor.initial_index + state.current_phase * descriptor.skip)
+                else {
+                    return;
+                };
+                *material = sprite.material.clone();
             }
         });
 }

@@ -49,7 +49,7 @@ impl Plugin for DrawingPlugin {
 #[derive(Component, Debug, Copy, Clone, Default, Eq, PartialEq)]
 pub struct TileComponent;
 
-#[derive(Debug, Clone, Component, Copy, PartialEq)]
+#[derive(Debug, Clone, Component, Copy, PartialEq, Default)]
 pub struct Elevation {
     pub elevation: f32,
     pub base_height: u32,
