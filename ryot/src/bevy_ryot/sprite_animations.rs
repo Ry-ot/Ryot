@@ -6,7 +6,7 @@ use bevy::utils::HashMap;
 use rand::Rng;
 use std::time::Duration;
 
-use self::sprites::{LoadedSprite, SpriteMaterial};
+use self::sprites::{ChangingAppearanceFilter, LoadedAppearances, LoadedSprite, SpriteMaterial};
 
 /// A resource to enable/disable sprite animation globally.
 #[derive(Resource, PartialEq, Debug, Clone)]
@@ -172,6 +172,33 @@ pub struct AnimationDuration(pub Duration);
 
 pub fn toggle_sprite_animation(mut enabled: ResMut<SpriteAnimationEnabled>) {
     enabled.0 = !enabled.0;
+}
+
+pub(crate) fn initialize_animation_sprite_system(
+    mut commands: Commands,
+    q_maybe_animated: Query<(Entity, &AppearanceDescriptor), ChangingAppearanceFilter>,
+    loaded_appereances: Res<LoadedAppearances>,
+    mut synced_timers: ResMut<SynchronizedAnimationTimers>,
+) {
+    q_maybe_animated.iter().for_each(|(entity, descriptor)| {
+        let Some(loaded_appearance) = loaded_appereances.get(descriptor) else {
+            warn!("BUG: Loaded appearance for {:?} not found.", descriptor);
+            return;
+        };
+        let Some((ref key, ref descriptor)) = loaded_appearance.animation else {
+            commands.entity(entity).remove::<AnimationSprite>();
+            return;
+        };
+        commands
+            .entity(entity)
+            .insert(AnimationSprite::from_key_and_descriptor(key, descriptor));
+
+        if descriptor.synchronized {
+            synced_timers
+                .try_insert(key.clone(), key.default_state())
+                .ok();
+        }
+    });
 }
 
 /// A system that animates the sprites based on the `AnimationSprite` component.

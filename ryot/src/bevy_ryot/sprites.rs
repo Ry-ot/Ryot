@@ -14,10 +14,7 @@ use std::path::PathBuf;
 pub const SPRITE_BASE_SIZE: UVec2 = UVec2::new(32, 32);
 
 use self::drawing::Elevation;
-use self::sprite_animations::{
-    AnimationDescriptor, AnimationKey, AnimationSprite, SpriteAnimationExt,
-    SynchronizedAnimationTimers,
-};
+use self::sprite_animations::{AnimationDescriptor, AnimationKey, SpriteAnimationExt};
 
 pub struct LoadedAppearance {
     pub sprites: Vec<LoadedSprite>,
@@ -200,10 +197,10 @@ pub(crate) fn ensure_appearance_initialized(
     });
 }
 
-type ChangingAppearanceFilter = Or<(Changed<AppearanceDescriptor>, Changed<Directional>)>;
+pub(crate) type ChangingAppearanceFilter =
+    Or<(Changed<AppearanceDescriptor>, Changed<Directional>)>;
 
 pub(crate) fn update_sprite_system(
-    mut commands: Commands,
     mut q_updated: Query<
         (
             &AppearanceDescriptor,
@@ -215,9 +212,7 @@ pub(crate) fn update_sprite_system(
         ),
         ChangingAppearanceFilter,
     >,
-    q_maybe_animated: Query<(Entity, &AppearanceDescriptor), ChangingAppearanceFilter>,
     loaded_appereances: Res<LoadedAppearances>,
-    mut synced_timers: ResMut<SynchronizedAnimationTimers>,
 ) {
     q_updated.par_iter_mut().for_each(
         |(descriptor, direction, mut elevation, mut layout, mut mesh, mut material)| {
@@ -248,30 +243,7 @@ pub(crate) fn update_sprite_system(
             *material = sprite.material.clone();
         },
     );
-
-    q_maybe_animated.iter().for_each(|(entity, descriptor)| {
-        let Some(loaded_appearance) = loaded_appereances.get(descriptor) else {
-            warn!("BUG: Loaded appearance for {:?} not found.", descriptor);
-            return;
-        };
-        let Some((ref key, ref descriptor)) = loaded_appearance.animation else {
-            commands.entity(entity).remove::<AnimationSprite>();
-            return;
-        };
-        commands
-            .entity(entity)
-            .insert(AnimationSprite::from_key_and_descriptor(key, descriptor));
-
-        if descriptor.synchronized {
-            synced_timers
-                .try_insert(key.clone(), key.default_state())
-                .ok();
-        }
-    });
 }
-
-#[derive(Event)]
-pub struct LoadAppearanceEvent(pub AppearanceDescriptor);
 
 pub(crate) fn load_from_entities_system(
     query: Query<&AppearanceDescriptor, Changed<AppearanceDescriptor>>,
@@ -288,19 +260,14 @@ pub(crate) fn load_from_entities_system(
         });
 }
 
-/// Load sprites for entities that have a `AppearanceDescriptor` and a
-/// `TilePosition` component. This system will wait until all sprites are loaded
-/// before initializing the entity.
-/// It's meant to run only once to complete the initialization of the entities.
-pub(crate) fn load_sprite_system<C: ContentAssets>(
+#[derive(Event)]
+pub struct LoadAppearanceEvent(pub AppearanceDescriptor);
+
+pub(crate) fn process_load_events_system<C: ContentAssets>(
     content_assets: Res<C>,
-    layouts: Res<Assets<TextureAtlasLayout>>,
-    sprite_meshes: Res<SpriteMeshes>,
-    mut materials: ResMut<Assets<SpriteMaterial>>,
-    mut loaded_appearances: ResMut<LoadedAppearances>,
-    asset_server: Res<AssetServer>,
+    loaded_appearances: Res<LoadedAppearances>,
     mut events: EventReader<LoadAppearanceEvent>,
-) {
+) -> Option<HashMap<AppearanceDescriptor, SpriteInfo>> {
     let descriptors = events
         .read()
         .map(|LoadAppearanceEvent(descriptor)| descriptor)
@@ -310,7 +277,7 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
         .cloned()
         .collect::<Vec<_>>();
     if descriptors.is_empty() {
-        return;
+        return None;
     }
     debug!(
         "Loading ids: {:?}",
@@ -320,55 +287,80 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
             .collect::<Vec<u32>>()
     );
 
-    let descriptor_infos: HashMap<AppearanceDescriptor, SpriteInfo> = descriptors
-        .iter()
-        .filter_map(|&descriptor| {
-            let Some(prepared_appearance) = content_assets
-                .prepared_appearances()
-                .get_for_group(descriptor.group, descriptor.id)
-            else {
-                warn!("Appearance {:?} not found", descriptor);
-                return None;
-            };
+    Some(
+        descriptors
+            .iter()
+            .filter_map(|&descriptor| {
+                content_assets
+                    .prepared_appearances()
+                    .get_for_group(descriptor.group, descriptor.id)?
+                    .frame_groups
+                    .get(descriptor.frame_group_index() as usize)?
+                    .sprite_info
+                    .as_ref()
+                    .map(|sprite_info| (*descriptor, sprite_info.clone()))
+            })
+            .collect(),
+    )
+}
 
-            let Some(frame_group) = prepared_appearance
-                .frame_groups
-                .get(descriptor.frame_group_index() as usize)
-            else {
-                warn!("Frame group for appearance {:?} not found", descriptor);
-                return None;
-            };
-            frame_group
-                .sprite_info
-                .as_ref()
-                .map(|sprite_info| (*descriptor, sprite_info.clone()))
-        })
-        .collect();
+pub(crate) fn load_sprite_system<C: ContentAssets>(
+    In(descriptor_infos): In<Option<HashMap<AppearanceDescriptor, SpriteInfo>>>,
+    content_assets: Res<C>,
+    layouts: Res<Assets<TextureAtlasLayout>>,
+    sprite_meshes: Res<SpriteMeshes>,
+    mut materials: ResMut<Assets<SpriteMaterial>>,
+    asset_server: Res<AssetServer>,
+) -> Option<(
+    HashMap<AppearanceDescriptor, SpriteInfo>,
+    HashMap<u32, LoadedSprite>,
+)> {
+    let descriptor_infos = match descriptor_infos {
+        Some(descriptor_infos) => descriptor_infos,
+        None => return None,
+    };
 
-    let loaded_sprites: HashMap<u32, LoadedSprite> = descriptor_infos
-        .iter()
-        .map(|(descriptor, sprite_info)| (descriptor.group, sprite_info))
-        .group_by(|(group, _)| *group)
-        .into_iter()
-        .map(|(group, group_iter)| {
-            let sprite_ids: Vec<u32> = group_iter
-                .flat_map(|(_, sprite_info)| sprite_info.sprite_ids.clone())
-                .collect();
-            (group, sprite_ids)
-        })
-        .flat_map(|(group, sprite_ids)| {
-            load_sprites(
-                group,
-                sprite_ids,
-                &content_assets,
-                &layouts,
-                &sprite_meshes,
-                &mut materials,
-                &asset_server,
-            )
-        })
-        .map(|sprite| (sprite.sprite_id, sprite))
-        .collect();
+    Some((
+        descriptor_infos.clone(),
+        descriptor_infos
+            .iter()
+            .map(|(descriptor, sprite_info)| (descriptor.group, sprite_info))
+            .group_by(|(group, _)| *group)
+            .into_iter()
+            .map(|(group, group_iter)| {
+                let sprite_ids: Vec<u32> = group_iter
+                    .flat_map(|(_, sprite_info)| sprite_info.sprite_ids.clone())
+                    .collect();
+                (group, sprite_ids)
+            })
+            .flat_map(|(group, sprite_ids)| {
+                load_sprites(
+                    group,
+                    sprite_ids,
+                    &content_assets,
+                    &layouts,
+                    &sprite_meshes,
+                    &mut materials,
+                    &asset_server,
+                )
+            })
+            .map(|sprite| (sprite.sprite_id, sprite))
+            .collect(),
+    ))
+}
+
+pub(crate) fn store_loaded_appearances_system(
+    In(input): In<
+        Option<(
+            HashMap<AppearanceDescriptor, SpriteInfo>,
+            HashMap<u32, LoadedSprite>,
+        )>,
+    >,
+    mut loaded_appearances: ResMut<LoadedAppearances>,
+) {
+    let Some((descriptor_infos, loaded_sprites)) = input else {
+        return;
+    };
 
     descriptor_infos
         .iter()
