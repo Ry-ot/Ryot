@@ -164,10 +164,13 @@ impl<C: PreloadedContentAssets + Default> Plugin for ContentPlugin<C> {
             .add_systems(
                 Update,
                 (
-                    sprites::load_sprite_system::<C>
+                    sprites::process_load_events_system::<C>
+                        .pipe(sprites::load_sprite_system::<C>)
+                        .pipe(sprites::store_loaded_appearances_system)
                         .run_if(on_event::<sprites::LoadAppearanceEvent>()),
                     sprites::ensure_appearance_initialized,
                     sprites::update_sprite_system,
+                    sprite_animations::initialize_animation_sprite_system,
                     sprite_animations::tick_animation_system.run_if(resource_exists_and_equals(
                         sprite_animations::SpriteAnimationEnabled(true),
                     )),
