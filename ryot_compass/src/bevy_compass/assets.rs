@@ -22,10 +22,6 @@ pub struct CompassContentAssets {
     // Image related handles
     #[asset(path = "ryot_mascot.png")]
     mascot: Handle<Image>,
-    #[cfg(feature = "pre_loaded_sprites")]
-    #[asset(path = "sprite-sheets", collection(typed, mapped))]
-    sprite_sheets: HashMap<String, Handle<Image>>,
-    #[cfg(not(feature = "pre_loaded_sprites"))]
     sprite_sheets: HashMap<String, Handle<Image>>,
 }
 
@@ -44,16 +40,8 @@ impl PreloadedAssets for CompassContentAssets {
         &mut self.prepared_appearances
     }
 
-    fn sprite_sheets(&self) -> &HashMap<String, Handle<Image>> {
-        &self.sprite_sheets
-    }
-
     fn set_sprite_sheets_data(&mut self, sprite_sheet_set: SpriteSheetDataSet) {
         self.sheet_data_set.replace(sprite_sheet_set);
-    }
-
-    fn insert_texture(&mut self, file: &str, texture: Handle<Image>) {
-        self.sprite_sheets.insert(file.to_string(), texture);
     }
 }
 

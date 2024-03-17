@@ -64,7 +64,6 @@ pub enum InternalContentState {
     #[default]
     LoadingContent,
     PreparingContent,
-    PreparingSprites,
     Ready,
 }
 
@@ -93,9 +92,7 @@ pub trait PreloadedAssets: Resource + AssetCollection + Send + Sync + 'static {
     fn appearances(&self) -> Handle<Appearance>;
     fn catalog_content(&self) -> Handle<Catalog>;
     fn prepared_appearances_mut(&mut self) -> &mut PreparedAppearances;
-    fn sprite_sheets(&self) -> &HashMap<String, Handle<Image>>;
     fn set_sprite_sheets_data(&mut self, sprite_sheet_set: SpriteSheetDataSet);
-    fn insert_texture(&mut self, file: &str, texture: Handle<Image>);
 }
 
 /// The main ContentAssets of a Ryot game, is prepared by preparer systems
@@ -151,10 +148,6 @@ impl<C: PreloadedContentAssets + Default> Plugin for ContentPlugin<C> {
             .add_systems(
                 OnEnter(InternalContentState::PreparingContent),
                 (prepare_content::<C>, prepare_appearances::<C>),
-            )
-            .add_systems(
-                OnEnter(InternalContentState::PreparingSprites),
-                sprites::prepare_sprites::<C>,
             )
             .init_resource::<sprite_animations::SpriteAnimationEnabled>()
             .init_resource::<sprite_animations::SynchronizedAnimationTimers>()
@@ -216,7 +209,7 @@ fn prepare_content<C: PreloadedContentAssets>(
         .expect("No catalog loaded");
 
     content_assets.set_sprite_sheets_data(SpriteSheetDataSet::from_content(&catalog.content));
-    state.set(InternalContentState::PreparingSprites);
+    state.set(InternalContentState::Ready);
     contents.remove(content_assets.catalog_content());
     for sprite_layout in SpriteLayout::iter() {
         sprite_meshes.insert(

@@ -59,7 +59,6 @@ ryot = { version = "0.1.0", path = "../ryot" }
 [features]
 default = []
 lmdb = ["dep:heed", "ryot/lmdb", "ryot/compression"]
-pre_loaded_sprites = []
 diagnostics = []
 
 [lints.clippy]
