@@ -244,8 +244,13 @@ pub(crate) fn process_load_events_system<C: ContentAssets>(
 ) -> Option<HashMap<AppearanceDescriptor, SpriteInfo>> {
     let descriptors = events
         .read()
-        .map(|LoadAppearanceEvent(descriptor)| descriptor)
-        .filter(|descriptor| descriptor.id != 0)
+        .filter_map(|LoadAppearanceEvent(descriptor)| {
+            if descriptor.id != 0 {
+                Some(descriptor)
+            } else {
+                None
+            }
+        })
         .collect::<HashSet<_>>()
         .difference(&loaded_appearances.keys().collect::<HashSet<_>>())
         .cloned()
@@ -279,7 +284,7 @@ pub(crate) fn process_load_events_system<C: ContentAssets>(
 }
 
 pub(crate) fn load_sprite_system<C: ContentAssets>(
-    In(descriptor_infos): In<Option<HashMap<AppearanceDescriptor, SpriteInfo>>>,
+    In(descriptor_sprite_infos): In<Option<HashMap<AppearanceDescriptor, SpriteInfo>>>,
     content_assets: Res<C>,
     layouts: Res<Assets<TextureAtlasLayout>>,
     sprite_meshes: Res<SpriteMeshes>,
@@ -289,38 +294,35 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
     HashMap<AppearanceDescriptor, SpriteInfo>,
     HashMap<u32, LoadedSprite>,
 )> {
-    let descriptor_infos = match descriptor_infos {
-        Some(descriptor_infos) => descriptor_infos,
-        None => return None,
-    };
-
-    Some((
-        descriptor_infos.clone(),
-        descriptor_infos
-            .iter()
-            .map(|(descriptor, sprite_info)| (descriptor.group, sprite_info))
-            .group_by(|(group, _)| *group)
-            .into_iter()
-            .map(|(group, group_iter)| {
-                let sprite_ids: Vec<u32> = group_iter
-                    .flat_map(|(_, sprite_info)| sprite_info.sprite_ids.clone())
-                    .collect();
-                (group, sprite_ids)
-            })
-            .flat_map(|(group, sprite_ids)| {
-                load_sprites(
-                    group,
-                    sprite_ids,
-                    &content_assets,
-                    &layouts,
-                    &sprite_meshes,
-                    &mut materials,
-                    &asset_server,
-                )
-            })
-            .map(|sprite| (sprite.sprite_id, sprite))
-            .collect(),
-    ))
+    descriptor_sprite_infos.map(|descriptor_sprite_infos| {
+        (
+            descriptor_sprite_infos.clone(),
+            descriptor_sprite_infos
+                .iter()
+                .map(|(descriptor, sprite_info)| (descriptor.group, sprite_info))
+                .group_by(|(group, _)| *group)
+                .into_iter()
+                .map(|(group, group_iter)| {
+                    let sprite_ids: Vec<u32> = group_iter
+                        .flat_map(|(_, sprite_info)| sprite_info.sprite_ids.clone())
+                        .collect();
+                    (group, sprite_ids)
+                })
+                .flat_map(|(group, sprite_ids)| {
+                    load_sprites(
+                        group,
+                        sprite_ids,
+                        &content_assets,
+                        &layouts,
+                        &sprite_meshes,
+                        &mut materials,
+                        &asset_server,
+                    )
+                })
+                .map(|sprite| (sprite.sprite_id, sprite))
+                .collect(),
+        )
+    })
 }
 
 pub(crate) fn store_loaded_appearances_system(
@@ -332,11 +334,11 @@ pub(crate) fn store_loaded_appearances_system(
     >,
     mut loaded_appearances: ResMut<LoadedAppearances>,
 ) {
-    let Some((descriptor_infos, loaded_sprites)) = input else {
+    let Some((descriptor_sprite_infos, loaded_sprites)) = input else {
         return;
     };
 
-    descriptor_infos
+    descriptor_sprite_infos
         .iter()
         .for_each(|(descriptor, sprite_info)| {
             let sprites: Vec<LoadedSprite> = sprite_info
