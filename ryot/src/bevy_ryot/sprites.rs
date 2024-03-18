@@ -4,8 +4,12 @@ use crate::{get_decompressed_file_name, SPRITE_SHEET_FOLDER};
 use crate::{prelude::*, Directional};
 use bevy::prelude::*;
 use bevy::render::render_resource::{AsBindGroup, ShaderRef};
+#[cfg(feature = "debug")]
+use bevy::sprite::Anchor;
 use bevy::sprite::{Material2d, MaterialMesh2dBundle, Mesh2dHandle};
 use bevy::utils::{HashMap, HashSet};
+#[cfg(feature = "debug")]
+use bevy_stroked_text::{StrokedText, StrokedTextBundle};
 use itertools::Itertools;
 
 use std::path::PathBuf;
@@ -161,6 +165,10 @@ pub(crate) fn load_sprite_texture<C: ContentAssets>(
 pub(crate) fn ensure_appearance_initialized(
     mut commands: Commands,
     query: Query<Entity, (With<AppearanceDescriptor>, Without<Handle<SpriteMaterial>>)>,
+    #[cfg(feature = "debug")] q_debug: Query<
+        (Entity, &Layer),
+        (With<AppearanceDescriptor>, Without<Handle<SpriteMaterial>>),
+    >,
 ) {
     query.iter().for_each(|entity| {
         commands.entity(entity).insert((
@@ -168,6 +176,39 @@ pub(crate) fn ensure_appearance_initialized(
             SpriteLayout::default(),
             Elevation::default(),
         ));
+    });
+
+    #[cfg(feature = "debug")]
+    q_debug.iter().for_each(|(entity, layer)| {
+        commands.entity(entity).with_children(|builder| {
+            builder.spawn((
+                StrokedTextBundle::new(StrokedText {
+                    font_size: 16.,
+                    text_anchor: Anchor::TopRight,
+                    ..default()
+                })
+                .with_transform(
+                    Transform::from_translation(Vec3::new(8., debug_y_offset(layer), 1.))
+                        .with_scale(Vec3::splat(0.18)),
+                ),
+                PositionDebugText,
+                Layer::Hud(0),
+            ));
+            builder.spawn((
+                StrokedTextBundle::new(StrokedText {
+                    text: format!("{}", layer),
+                    font_size: 16.,
+                    text_anchor: Anchor::TopLeft,
+                    color: Color::from(layer),
+                    ..default()
+                })
+                .with_transform(
+                    Transform::from_translation(Vec3::new(8.5, debug_y_offset(layer), 1.))
+                        .with_scale(Vec3::splat(0.18)),
+                ),
+                Layer::Hud(0),
+            ));
+        });
     });
 }
 
