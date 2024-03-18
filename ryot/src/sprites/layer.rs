@@ -47,18 +47,29 @@ pub enum Layer {
 impl Display for Layer {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Ground => write!(f, "Ground"),
-            Self::Edge => write!(f, "Edge"),
-            Self::Bottom(bottom_layer) => write!(f, "Bottom({})", bottom_layer),
-            Self::Top => write!(f, "Top"),
-            Self::Hud(order) => write!(f, "Hud({})", order),
+            Self::Ground => write!(f, "G"),
+            Self::Edge => write!(f, "E"),
+            Self::Bottom(bottom_layer) => write!(f, "B({})", bottom_layer),
+            Self::Top => write!(f, "T"),
+            Self::Hud(order) => write!(f, "H({})", order),
         }
     }
 }
 
 impl Display for BottomLayer {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}({})", self.relative_layer, self.order)
+        write!(f, "{}({})", self.relative_layer, self.order)
+    }
+}
+
+impl Display for RelativeLayer {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Object => write!(f, "O"),
+            Self::Creature => write!(f, "C"),
+            Self::Effect => write!(f, "E"),
+            Self::Missile => write!(f, "M"),
+        }
     }
 }
 
@@ -103,7 +114,7 @@ impl quickcheck::Arbitrary for RelativeLayer {
 impl From<&Layer> for Color {
     fn from(value: &Layer) -> Self {
         match value {
-            Layer::Ground => Color::ORANGE_RED,
+            Layer::Ground => Color::ORANGE,
             Layer::Edge => Color::YELLOW,
             Layer::Bottom(layer) => Color::from(layer.relative_layer),
             Layer::Top => Color::PINK,

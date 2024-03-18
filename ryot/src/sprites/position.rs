@@ -11,6 +11,8 @@ use std::{
 #[cfg(feature = "bevy")]
 use crate::bevy_ryot::drawing::Elevation;
 use crate::SpriteLayout;
+#[cfg(all(feature = "bevy", feature = "debug"))]
+use bevy_stroked_text::StrokedText;
 #[cfg(feature = "bevy")]
 use std::time::Duration;
 
@@ -196,7 +198,7 @@ pub fn tile_offset() -> Vec2 {
 
 #[cfg(feature = "debug")]
 pub fn debug_y_offset(layer: &Layer) -> f32 {
-    (tile_size().as_vec2().y / 8.)
+    (tile_size().as_vec2().y / 24.)
         * match layer {
             Layer::Ground => 0.,
             Layer::Edge => 1.,
@@ -396,6 +398,28 @@ pub fn update_sprite_position(
         .for_each(|(layout, tile_pos, elevation, layer, mut transform)| {
             transform.translation =
                 tile_pos.to_elevated_translation(*layout, *layer, Anchor::from(*elevation));
+        });
+}
+
+#[cfg(all(feature = "bevy", feature = "debug"))]
+pub fn debug_sprite_position(
+    mut query: Query<
+        (&Elevation, &Transform, Option<&Children>),
+        Or<(Changed<Transform>, Changed<Elevation>)>,
+    >,
+    mut children_query: Query<&mut StrokedText, With<PositionDebugText>>,
+) {
+    query
+        .iter_mut()
+        .for_each(|(elevation, transform, children)| {
+            let Some(children) = children else {
+                return;
+            };
+            children.iter().for_each(|child| {
+                if let Ok(mut text) = children_query.get_mut(*child) {
+                    text.text = format!("{:.02} [{}]", 1000. * transform.translation.z, elevation);
+                }
+            });
         });
 }
 

@@ -57,7 +57,7 @@ pub struct Elevation {
 
 impl Display for Elevation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Elevation: {}", self.delta())
+        write!(f, "E:{}", self.delta())
     }
 }
 
@@ -306,24 +306,28 @@ impl DetailLevel {
                 Layer::Edge,
                 Layer::Bottom(BottomLayer::new(10, RelativeLayer::Object)),
                 Layer::Top,
+                Layer::Hud(Order::MAX),
             ],
             Self::Medium => vec![
                 Layer::Ground,
                 Layer::Edge,
                 Layer::Bottom(BottomLayer::new(5, RelativeLayer::Object)),
                 Layer::Top,
+                Layer::Hud(Order::MAX),
             ],
             Self::Minimal => vec![
                 Layer::Ground,
                 Layer::Edge,
                 Layer::Bottom(BottomLayer::new(3, RelativeLayer::Object)),
+                Layer::Hud(Order::MAX),
             ],
             Self::GroundBottom => vec![
                 Layer::Ground,
                 Layer::Edge,
                 Layer::Bottom(BottomLayer::new(1, RelativeLayer::Object)),
+                Layer::Hud(Order::MAX),
             ],
-            Self::GroundOnly => vec![Layer::Ground, Layer::Edge],
+            Self::GroundOnly => vec![Layer::Ground, Layer::Edge, Layer::Hud(Order::MAX)],
             Self::None => vec![],
         };
 
@@ -354,9 +358,13 @@ impl From<Option<appearances::AppearanceFlags>> for Layer {
     }
 }
 
+#[allow(clippy::type_complexity)]
 fn apply_detail_level_to_visibility(
     mut q_visible_entities: Query<(&mut VisibleEntities, &Sector), With<Camera>>,
-    mut tiles_query: Query<(&mut ViewVisibility, &Layer), (Without<Deletion>, With<TileComponent>)>,
+    mut q_all_entities: Query<
+        (&mut ViewVisibility, Option<&Layer>),
+        (Without<Deletion>, With<TileComponent>),
+    >,
 ) {
     for (mut visible_entities, sector) in q_visible_entities.iter_mut() {
         let detail_level = DetailLevel::from_area(sector.area());
@@ -365,18 +373,20 @@ fn apply_detail_level_to_visibility(
             .entities
             .iter()
             .filter_map(|entity| {
-                let Ok((mut view_visibility, layer)) = tiles_query.get_mut(*entity) else {
+                let Ok((mut view_visibility, layer)) = q_all_entities.get_mut(*entity) else {
                     // If no tile is found we cannot infer anything about the detail level, so we
                     // just keep the entity visible.
                     return Some(*entity);
                 };
 
-                if !detail_level.is_layer_visible(layer) {
-                    *view_visibility = ViewVisibility::HIDDEN;
-                    return None;
+                if let Some(layer) = layer {
+                    if !detail_level.is_layer_visible(layer) {
+                        *view_visibility = ViewVisibility::HIDDEN;
+                        return None;
+                    }
                 }
 
-                Some(*entity)
+                view_visibility.get().then_some(*entity)
             })
             .collect::<Vec<_>>();
 

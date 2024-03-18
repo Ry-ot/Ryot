@@ -4,6 +4,8 @@
 //! It provides common ways of dealing with OT content, such as loading sprites and appearances,
 //! configuring the game, and handling asynchronous events.
 use crate::appearances::{ContentType, SpriteSheetDataSet};
+#[cfg(feature = "debug")]
+use crate::position::debug_sprite_position;
 use crate::position::{
     finish_position_animation, move_sprites_with_animation, tile_size, update_sprite_position,
     TilePosition,
@@ -157,6 +159,8 @@ impl<C: PreloadedContentAssets + Default> Plugin for ContentPlugin<C> {
             .add_systems(
                 Update,
                 (
+                    #[cfg(feature = "debug")]
+                    debug_sprite_position,
                     sprites::process_load_events_system::<C>
                         .pipe(sprites::load_sprite_system::<C>)
                         .pipe(sprites::store_loaded_appearances_system)
