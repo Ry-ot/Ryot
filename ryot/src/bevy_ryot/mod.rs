@@ -5,7 +5,7 @@
 //! configuring the game, and handling asynchronous events.
 use crate::appearances::{ContentType, SpriteSheetDataSet};
 use crate::position::{
-    animate_sprite_position, finish_position_animation, tile_size, update_sprite_position,
+    finish_position_animation, move_sprites_with_animation, tile_size, update_sprite_position,
     TilePosition,
 };
 use crate::{Layer, SpriteLayout, TILE_SIZE};
@@ -175,7 +175,7 @@ impl<C: PreloadedContentAssets + Default> Plugin for ContentPlugin<C> {
                 PostUpdate,
                 (
                     update_sprite_position,
-                    (animate_sprite_position, finish_position_animation).chain(),
+                    (move_sprites_with_animation, finish_position_animation).chain(),
                 ),
             );
 

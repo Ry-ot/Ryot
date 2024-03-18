@@ -400,7 +400,7 @@ pub fn update_sprite_position(
 }
 
 #[cfg(feature = "bevy")]
-pub fn animate_sprite_position(
+pub fn move_sprites_with_animation(
     mut query: Query<
         (
             &SpriteLayout,
