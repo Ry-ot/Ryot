@@ -82,6 +82,9 @@ pub struct Catalog {
 #[derive(Resource, Debug, Clone, Default, Deref, DerefMut)]
 pub struct SpriteMeshes(pub HashMap<SpriteLayout, Handle<Mesh>>);
 
+#[derive(Resource, Debug, Clone, Default, Deref, DerefMut)]
+pub struct RectMeshes(pub HashMap<SpriteLayout, Handle<Mesh>>);
+
 /// A trait that represents Preloaded and Content assets.
 /// Most of the PreloadedAssets are not directly available to the game.
 /// They are only used to prepare the ContentAssets and then discarded.
@@ -131,6 +134,7 @@ impl<C: PreloadedContentAssets + Default> Plugin for ContentPlugin<C> {
         app.init_resource::<C>()
             .register_type::<TilePosition>()
             .init_resource::<SpriteMeshes>()
+            .init_resource::<RectMeshes>()
             .add_plugins(JsonAssetPlugin::<Catalog>::new(&["json"]))
             .add_plugins(AppearanceAssetPlugin)
             .add_optional_plugin(StrokedTextPlugin)
@@ -198,6 +202,7 @@ fn prepare_content<C: PreloadedContentAssets>(
     mut state: ResMut<NextState<InternalContentState>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut sprite_meshes: ResMut<SpriteMeshes>,
+    mut rect_meshes: ResMut<RectMeshes>,
     atlas_layouts: Res<Assets<TextureAtlasLayout>>,
 ) {
     debug!("Preparing content");
@@ -220,6 +225,12 @@ fn prepare_content<C: PreloadedContentAssets>(
     contents.remove(content_assets.catalog_content());
     for sprite_layout in SpriteLayout::iter() {
         sprite_meshes.insert(
+            sprite_layout,
+            meshes.add(Rectangle::from_size(
+                sprite_layout.get_size(&tile_size()).as_vec2() * 2.,
+            )),
+        );
+        rect_meshes.insert(
             sprite_layout,
             meshes.add(Rectangle::from_size(
                 sprite_layout.get_size(&tile_size()).as_vec2(),

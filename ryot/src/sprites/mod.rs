@@ -13,6 +13,8 @@ pub mod layer;
 pub use layer::Layer;
 use strum::EnumIter;
 
+use crate::bevy_ryot::sprites::SpriteMaterial;
+
 pub mod position;
 
 pub mod error;
@@ -28,6 +30,38 @@ pub enum SpriteLayout {
     OneByTwo = 1,
     TwoByOne = 2,
     TwoByTwo = 3,
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct SpriteOutline {
+    color: Color,
+    thickness: f32,
+}
+
+#[derive(Component, Debug, Clone, PartialEq, Default)]
+pub struct SpriteParams {
+    pub outline: Option<SpriteOutline>,
+}
+
+impl SpriteParams {
+    pub fn outline(color: Color, thickness: f32) -> Self {
+        Self {
+            outline: Some(SpriteOutline { color, thickness }),
+        }
+    }
+
+    pub fn has_any(&self) -> bool {
+        self.outline.is_some()
+    }
+
+    pub fn to_material(&self, base: SpriteMaterial) -> SpriteMaterial {
+        let mut material = base;
+        if let Some(outline) = &self.outline {
+            material.outline_color = outline.color;
+            material.outline_thickness = outline.thickness;
+        }
+        material
+    }
 }
 
 impl SpriteLayout {

@@ -115,6 +115,7 @@ pub fn load_sprites<C: ContentAssets>(
                     index: sprite_sheet
                         .get_sprite_index(*sprite_id)
                         .expect("Sprite must exist in sheet") as u32,
+                    ..default()
                 }),
             })
         })
@@ -212,14 +213,18 @@ pub(crate) fn ensure_appearance_initialized(
     });
 }
 
-pub(crate) type ChangingAppearanceFilter =
-    Or<(Changed<AppearanceDescriptor>, Changed<Directional>)>;
+pub(crate) type ChangingAppearanceFilter = Or<(
+    Changed<AppearanceDescriptor>,
+    Changed<Directional>,
+    Changed<SpriteParams>,
+)>;
 
 pub(crate) fn update_sprite_system(
     mut q_updated: Query<
         (
             &AppearanceDescriptor,
             Option<&Directional>,
+            Option<&SpriteParams>,
             &mut Elevation,
             &mut SpriteLayout,
             &mut Mesh2dHandle,
@@ -227,10 +232,19 @@ pub(crate) fn update_sprite_system(
         ),
         ChangingAppearanceFilter,
     >,
+    mut materials: ResMut<Assets<SpriteMaterial>>,
     loaded_appereances: Res<LoadedAppearances>,
 ) {
-    q_updated.par_iter_mut().for_each(
-        |(descriptor, direction, mut elevation, mut layout, mut mesh, mut material)| {
+    q_updated.iter_mut().for_each(
+        |(
+            descriptor,
+            direction,
+            sprite_params,
+            mut elevation,
+            mut layout,
+            mut mesh,
+            mut material,
+        )| {
             if descriptor.id == 0 {
                 return;
             }
@@ -251,10 +265,18 @@ pub(crate) fn update_sprite_system(
                 );
                 return;
             };
-            elevation.elevation = 0.;
             elevation.base_height = sprite.sprite_sheet.layout.get_height(&SPRITE_BASE_SIZE);
             *layout = sprite.sprite_sheet.layout;
             *mesh = Mesh2dHandle(sprite.mesh.clone());
+            if let Some(params) = sprite_params {
+                if params.has_any() {
+                    let Some(current) = materials.as_ref().get(material.id()).cloned() else {
+                        return;
+                    };
+                    *material = materials.add(params.to_material(current));
+                    return;
+                }
+            }
             *material = sprite.material.clone();
         },
     );
@@ -413,12 +435,16 @@ pub(crate) fn store_loaded_appearances_system(
         });
 }
 
-#[derive(AsBindGroup, TypePath, Asset, Debug, Clone)]
+#[derive(AsBindGroup, TypePath, Asset, Debug, Clone, Default)]
 pub struct SpriteMaterial {
     #[uniform(0)]
     pub index: u32,
     #[uniform(0)]
     pub counts: Vec2,
+    #[uniform(0)]
+    pub outline_thickness: f32,
+    #[uniform(0)]
+    pub outline_color: Color,
     #[texture(1)]
     #[sampler(2)]
     pub texture: Handle<Image>,
