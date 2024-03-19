@@ -252,7 +252,7 @@ pub struct BottomLayer {
 impl Default for BottomLayer {
     fn default() -> Self {
         Self {
-            order: Order::MAX,
+            order: Order::MIN,
             relative_layer: Default::default(),
         }
     }

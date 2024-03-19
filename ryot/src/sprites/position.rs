@@ -211,6 +211,7 @@ pub fn debug_y_offset(layer: &Layer) -> f32 {
             Layer::Top => 6.,
             Layer::Hud(_) => 7.,
         }
+        - tile_size().as_vec2().y / 2.
 }
 
 #[derive(Hash, Eq, PartialEq, Default, Clone, Copy, Debug)]

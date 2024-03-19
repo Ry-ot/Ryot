@@ -184,7 +184,7 @@ pub(crate) fn ensure_appearance_initialized(
             builder.spawn((
                 StrokedTextBundle::new(StrokedText {
                     font_size: 16.,
-                    text_anchor: Anchor::TopRight,
+                    text_anchor: Anchor::BottomRight,
                     ..default()
                 })
                 .with_transform(
@@ -198,7 +198,7 @@ pub(crate) fn ensure_appearance_initialized(
                 StrokedTextBundle::new(StrokedText {
                     text: format!("{}", layer),
                     font_size: 16.,
-                    text_anchor: Anchor::TopLeft,
+                    text_anchor: Anchor::BottomLeft,
                     color: Color::from(layer),
                     ..default()
                 })

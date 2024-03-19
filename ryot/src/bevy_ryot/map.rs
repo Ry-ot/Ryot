@@ -173,10 +173,18 @@ impl<T: Copy> MapTile<T> {
     }
 
     fn push_bottom(&mut self, bottom_layer: BottomLayer, entity: T) {
-        self.bottom
-            .entry(bottom_layer.relative_layer)
-            .or_default()
-            .insert(bottom_layer.order, entity);
+        let bottom = self.bottom.entry(bottom_layer.relative_layer).or_default();
+        let order = if bottom_layer.order == Order::MAX {
+            bottom
+                .iter()
+                .map(|(order, _)| order)
+                .max()
+                .cloned()
+                .map_or_else(Order::default, |order| order + 1)
+        } else {
+            bottom_layer.order
+        };
+        bottom.insert(order, entity);
     }
 }
 
@@ -272,6 +280,55 @@ mod test {
         );
         assert_eq!(iter.next(), Some((Layer::Top, Entity::from_raw(2))));
         assert_eq!(iter.next(), None);
+    }
+
+    #[test]
+    fn test_map_tile_iterator_with_objects() {
+        let mut map_tile = MapTile::<Entity>::default();
+        let entity = Entity::from_raw(0);
+        map_tile.push_for_layer(Layer::Ground, entity);
+        let entity = Entity::from_raw(1);
+        map_tile.push_for_layer(
+            Layer::Bottom(BottomLayer::stack(RelativeLayer::Object)),
+            entity,
+        );
+        let entity = Entity::from_raw(2);
+        map_tile.push_for_layer(
+            Layer::Bottom(BottomLayer::stack(RelativeLayer::Object)),
+            entity,
+        );
+
+        let mut iter = map_tile.into_iter();
+        assert_eq!(iter.next(), Some((Layer::Ground, Entity::from_raw(0))));
+        assert_eq!(
+            iter.next(),
+            Some((
+                Layer::Bottom(BottomLayer::new(0, RelativeLayer::Object)),
+                Entity::from_raw(1)
+            ))
+        );
+        assert_eq!(
+            iter.next(),
+            Some((
+                Layer::Bottom(BottomLayer::new(1, RelativeLayer::Object)),
+                Entity::from_raw(2)
+            ))
+        );
+
+        assert_eq!(
+            map_tile.into_iter().collect::<Vec<_>>(),
+            vec![
+                (Layer::Ground, Entity::from_raw(0)),
+                (
+                    Layer::Bottom(BottomLayer::new(0, RelativeLayer::Object)),
+                    Entity::from_raw(1)
+                ),
+                (
+                    Layer::Bottom(BottomLayer::new(1, RelativeLayer::Object)),
+                    Entity::from_raw(2)
+                ),
+            ]
+        )
     }
 
     #[test]
