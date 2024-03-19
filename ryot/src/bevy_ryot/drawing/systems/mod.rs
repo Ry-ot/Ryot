@@ -5,13 +5,12 @@
 use crate::prelude::drawing::TileComponent;
 use crate::prelude::{drawing::*, map::*, *};
 use bevy::prelude::*;
-// use bevy::sprite::Anchor;
-use bevy::utils::HashMap;
 
 mod deletion;
 pub use deletion::*;
 
 mod update;
+use itertools::Itertools;
 pub use update::*;
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
@@ -87,42 +86,42 @@ type ElevationFilter = (
 
 pub fn apply_elevation<C: ContentAssets>(
     content_assets: Res<C>,
-    mut q_tile: Query<
-        (
-            &mut Elevation,
-            &Layer,
-            &TilePosition,
-            &Visibility,
-            &AppearanceDescriptor,
-        ),
-        ElevationFilter,
+    q_tile: Query<(&TilePosition, &Layer), ElevationFilter>,
+    mut q_entities: Query<
+        (&mut Elevation, &Visibility, &AppearanceDescriptor),
+        With<TileComponent>,
     >,
-    mut elevation_per_pos: Local<HashMap<TilePosition, u32>>,
+    map_tiles: Res<MapTiles<Entity>>,
 ) {
     let appearances = content_assets.prepared_appearances();
+    for tile in q_tile
+        .iter()
+        .filter(|(_, layer)| matches!(layer, Layer::Bottom(_)))
+        .map(|(pos, _)| *pos)
+        .unique()
+        .filter_map(|pos| map_tiles.get(&pos))
+    {
+        tile.into_iter()
+            .filter(|(layer, _)| matches!(layer, Layer::Bottom(_)))
+            .map(|(_, entity)| entity)
+            .fold(0., |tile_elevation, entity| {
+                let Ok((mut elevation, visibility, appearance_desc)) = q_entities.get_mut(entity)
+                else {
+                    return tile_elevation;
+                };
 
-    for (mut elevation, layer, tile_pos, visibility, appearance_desc) in q_tile.iter_mut() {
-        let Layer::Bottom(_) = layer else {
-            continue;
-        };
+                let elevation_delta = appearances
+                    .get_for_group(appearance_desc.group, appearance_desc.id)
+                    .cloned()
+                    .and_then(|app| app.flags?.height?.elevation)
+                    .unwrap_or(0) as f32;
+                elevation.elevation = tile_elevation;
 
-        let elevation_delta = (|| -> Option<u32> {
-            appearances
-                .get_for_group(appearance_desc.group, appearance_desc.id)?
-                .clone()
-                .flags?
-                .height?
-                .elevation
-        })()
-        .unwrap_or(0);
-
-        let tile_elevation = elevation_per_pos.entry(*tile_pos).or_default();
-        elevation.elevation = *tile_elevation as f32;
-
-        if visibility == Visibility::Hidden {
-            *tile_elevation -= elevation_delta;
-        } else {
-            *tile_elevation += elevation_delta;
-        }
+                if visibility != Visibility::Hidden {
+                    tile_elevation + elevation_delta
+                } else {
+                    tile_elevation
+                }
+            });
     }
 }
