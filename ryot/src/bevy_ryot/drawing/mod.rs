@@ -3,9 +3,9 @@ use std::time::Duration;
 
 use crate::appearances::{self, FixedFrameGroup};
 use crate::bevy_ryot::{AppearanceDescriptor, InternalContentState};
-use crate::directional::*;
 use crate::layer::*;
 use crate::position::{Sector, SpriteMovement, TilePosition};
+use crate::{directional::*, SpriteLayout};
 use bevy::prelude::*;
 use bevy::render::view::{check_visibility, VisibilitySystems, VisibleEntities};
 
@@ -18,6 +18,8 @@ pub use commands::*;
 
 mod systems;
 pub use systems::*;
+
+use super::sprites::SPRITE_BASE_SIZE;
 
 pub struct DrawingPlugin;
 
@@ -49,10 +51,19 @@ impl Plugin for DrawingPlugin {
 #[derive(Component, Debug, Copy, Clone, Default, Eq, PartialEq)]
 pub struct TileComponent;
 
-#[derive(Debug, Clone, Component, Copy, PartialEq, Default)]
+#[derive(Debug, Clone, Component, Copy, PartialEq)]
 pub struct Elevation {
     pub elevation: f32,
     pub base_height: u32,
+}
+
+impl Default for Elevation {
+    fn default() -> Self {
+        Elevation {
+            elevation: 0.0,
+            base_height: SpriteLayout::OneByOne.get_height(&SPRITE_BASE_SIZE),
+        }
+    }
 }
 
 impl Display for Elevation {
