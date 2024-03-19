@@ -9,6 +9,7 @@ use bevy_pancam::*;
 use leafwing_input_manager::common_conditions::action_just_pressed;
 use leafwing_input_manager::prelude::*;
 use ryot::bevy_ryot::drawing::{DrawingBundle, Elevation};
+use ryot::bevy_ryot::map::MapTiles;
 use ryot::bevy_ryot::sprites::SpriteMaterial;
 use ryot::position::{Sector, TilePosition};
 use ryot::prelude::drawing::{BrushItem, BrushParams, Brushes};
@@ -54,10 +55,6 @@ impl<C: CompassAssets> Plugin for CameraPlugin<C> {
                     update_pan_cam_actions.run_if(resource_changed::<UiState>),
                 )
                     .run_if(in_state(InternalContentState::Ready)),
-            )
-            .add_systems(
-                PostUpdate,
-                (update_cursor_sprite).run_if(in_state(InternalContentState::Ready)),
             );
     }
 }
@@ -66,6 +63,9 @@ impl<C: CompassAssets> Plugin for CameraPlugin<C> {
 pub struct Cursor {
     pub drawing_state: DrawingState,
 }
+
+#[derive(Component)]
+pub struct Hovered;
 
 #[derive(Eq, PartialEq, Clone, Copy, Default, Reflect)]
 pub struct DrawingState {
@@ -164,11 +164,28 @@ fn spawn_camera(
 
 fn update_cursor_preview(
     mut commands: Commands,
-    mut q_cursor: Query<(Entity, &Cursor)>,
-    meshes: Res<SpriteMeshes>,
+    mut q_cursor: Query<(Entity, &Cursor, &TilePosition)>,
+    mut q_hovered: Query<(Entity, &mut SpriteParams), With<Hovered>>,
+    meshes: Res<RectMeshes>,
     mut materials: ResMut<Assets<ColorMaterial>>,
+    map_tiles: Res<MapTiles<Entity>>,
 ) {
-    for (entity, cursor) in q_cursor.iter_mut() {
+    for (entity, cursor, pos) in q_cursor.iter_mut() {
+        let hovered_entity = map_tiles
+            .get(pos)
+            .and_then(|tile| tile.peek())
+            .map(|(_, entity)| entity);
+        q_hovered.iter_mut().for_each(|(entity, mut params)| {
+            if Some(entity) != hovered_entity {
+                commands.entity(entity).remove::<Hovered>();
+                *params = SpriteParams::default();
+            }
+        });
+
+        if let Some(entity) = hovered_entity {
+            commands.entity(entity).insert(Hovered);
+        }
+
         match cursor.drawing_state.tool_mode {
             Some(ToolMode::Draw(appearance)) => {
                 commands
@@ -176,7 +193,7 @@ fn update_cursor_preview(
                     .insert(appearance)
                     .remove::<Handle<ColorMaterial>>();
             }
-            _ => {
+            Some(ToolMode::Erase) => {
                 commands
                     .entity(entity)
                     .remove::<AppearanceDescriptor>()
@@ -188,8 +205,20 @@ fn update_cursor_preview(
                                 .expect("Meshes not initialized")
                                 .clone(),
                         ),
-                        materials.add(Color::rgba(1.0, 0.0, 0.0, 0.5)),
+                        materials.add(Color::rgba(1.0, 0.0, 0.0, 0.3)),
                     ));
+                if let Some(entity) = hovered_entity {
+                    commands
+                        .entity(entity)
+                        .insert(SpriteParams::outline(Color::RED.with_a(0.9), 2.0));
+                };
+            }
+            None => {
+                if let Some(entity) = hovered_entity {
+                    commands
+                        .entity(entity)
+                        .insert(SpriteParams::outline(Color::BLUE.with_a(0.9), 2.0));
+                };
             }
         };
     }
@@ -237,29 +266,6 @@ fn move_to_cursor(
     for mut transform in q_camera.iter_mut() {
         let screen_pos: Vec2 = tile_pos.into();
         transform.translation = screen_pos.extend(transform.translation.z);
-    }
-}
-
-fn update_cursor_sprite(
-    mut cursor: Query<(&Cursor, &mut Sprite), (Without<BrushPreviewTile>, With<Cursor>)>,
-    mut preview_query: Query<&mut Sprite, With<BrushPreviewTile>>,
-) {
-    let Ok((cursor, mut cursor_sprite)) = cursor.get_single_mut() else {
-        return;
-    };
-
-    cursor_sprite.color = match cursor.drawing_state.tool_mode {
-        Some(ToolMode::Draw(_)) => Color::WHITE,
-        Some(ToolMode::Erase) => Color::CRIMSON,
-        _ => Color::NONE,
-    };
-
-    if cursor_sprite.color != Color::NONE {
-        cursor_sprite.color.set_a(0.5);
-    }
-
-    for mut sprite in preview_query.iter_mut() {
-        *sprite = cursor_sprite.clone();
     }
 }
 
