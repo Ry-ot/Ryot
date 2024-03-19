@@ -2,12 +2,14 @@ use crate::bevy_compass::CompassAssets;
 use crate::{CompassAction, CompassContentAssets, HudLayers, UiState};
 use bevy::math::{Vec2, Vec3};
 use bevy::prelude::*;
+use bevy::sprite::Mesh2dHandle;
 use bevy::window::PrimaryWindow;
 use bevy_egui::{EguiContext, EguiContexts};
 use bevy_pancam::*;
 use leafwing_input_manager::common_conditions::action_just_pressed;
 use leafwing_input_manager::prelude::*;
-use ryot::bevy_ryot::drawing::DrawingBundle;
+use ryot::bevy_ryot::drawing::{DrawingBundle, Elevation};
+use ryot::bevy_ryot::sprites::SpriteMaterial;
 use ryot::position::{Sector, TilePosition};
 use ryot::prelude::drawing::{BrushItem, BrushParams, Brushes};
 use ryot::prelude::*;
@@ -106,7 +108,9 @@ fn spawn_cursor(mut commands: Commands) {
         Cursor::default(),
         Layer::from(HudLayers::Cursor),
         TilePosition::default(),
-        AppearanceDescriptor::default(),
+        SpriteLayout::default(),
+        Elevation::default(),
+        SpatialBundle::default(),
     ));
 }
 
@@ -158,16 +162,36 @@ fn spawn_camera(
     });
 }
 
-fn update_cursor_preview(mut cursor_query: Query<(&Cursor, &mut AppearanceDescriptor)>) {
-    for (cursor, mut desired_appearance) in cursor_query.iter_mut() {
-        let appearance = match cursor.drawing_state.tool_mode {
-            Some(ToolMode::Draw(appearance)) => appearance,
-            _ => AppearanceDescriptor::object(799),
+fn update_cursor_preview(
+    mut commands: Commands,
+    mut q_cursor: Query<(Entity, &Cursor)>,
+    meshes: Res<SpriteMeshes>,
+    mut materials: ResMut<Assets<ColorMaterial>>,
+) {
+    for (entity, cursor) in q_cursor.iter_mut() {
+        match cursor.drawing_state.tool_mode {
+            Some(ToolMode::Draw(appearance)) => {
+                commands
+                    .entity(entity)
+                    .insert(appearance)
+                    .remove::<Handle<ColorMaterial>>();
+            }
+            _ => {
+                commands
+                    .entity(entity)
+                    .remove::<AppearanceDescriptor>()
+                    .remove::<Handle<SpriteMaterial>>()
+                    .insert((
+                        Mesh2dHandle(
+                            meshes
+                                .get(&SpriteLayout::OneByOne)
+                                .expect("Meshes not initialized")
+                                .clone(),
+                        ),
+                        materials.add(Color::rgba(1.0, 0.0, 0.0, 0.5)),
+                    ));
+            }
         };
-
-        if *desired_appearance != appearance {
-            *desired_appearance = appearance;
-        }
     }
 }
 
