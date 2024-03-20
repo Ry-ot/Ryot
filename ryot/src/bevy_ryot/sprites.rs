@@ -17,7 +17,9 @@ use std::path::PathBuf;
 pub const SPRITE_BASE_SIZE: UVec2 = UVec2::new(32, 32);
 
 use self::drawing::Elevation;
-use self::sprite_animations::{AnimationDescriptor, AnimationKey, SpriteAnimationExt};
+use self::sprite_animations::{
+    AnimationDescriptor, AnimationKey, AnimationSprite, SpriteAnimationExt,
+};
 
 pub struct LoadedAppearance {
     pub sprites: Vec<LoadedSprite>,
@@ -216,7 +218,7 @@ pub(crate) fn ensure_appearance_initialized(
 pub(crate) type ChangingAppearanceFilter = Or<(
     Changed<AppearanceDescriptor>,
     Changed<Directional>,
-    Changed<SpriteParams>,
+    (Without<AnimationSprite>, Changed<SpriteParams>),
 )>;
 
 pub(crate) fn update_sprite_system(
@@ -268,18 +270,29 @@ pub(crate) fn update_sprite_system(
             elevation.base_height = sprite.sprite_sheet.layout.get_height(&SPRITE_BASE_SIZE);
             *layout = sprite.sprite_sheet.layout;
             *mesh = Mesh2dHandle(sprite.mesh.clone());
-            if let Some(params) = sprite_params {
-                if params.has_any() {
-                    let Some(current) = materials.as_ref().get(material.id()).cloned() else {
-                        return;
-                    };
-                    *material = materials.add(params.to_material(current));
-                    return;
-                }
-            }
-            *material = sprite.material.clone();
+            *material = sprite_material_from_params(sprite_params, &mut materials, sprite);
         },
     );
+}
+
+pub(crate) fn sprite_material_from_params(
+    sprite_params: Option<&SpriteParams>,
+    materials: &mut ResMut<'_, Assets<SpriteMaterial>>,
+    sprite: &LoadedSprite,
+) -> Handle<SpriteMaterial> {
+    sprite_params
+        .map(|params| {
+            if params.has_any() {
+                materials
+                    .get(sprite.material.id())
+                    .map(|base| params.to_material(base.clone()))
+                    .map(|material| materials.add(material))
+                    .unwrap_or_else(|| sprite.material.clone())
+            } else {
+                sprite.material.clone()
+            }
+        })
+        .unwrap_or_else(|| sprite.material.clone())
 }
 
 pub(crate) fn load_from_entities_system(
@@ -435,7 +448,7 @@ pub(crate) fn store_loaded_appearances_system(
         });
 }
 
-#[derive(AsBindGroup, TypePath, Asset, Debug, Clone, Default)]
+#[derive(AsBindGroup, TypePath, Asset, Debug, Clone, Default, PartialEq)]
 pub struct SpriteMaterial {
     #[uniform(0)]
     pub index: u32,

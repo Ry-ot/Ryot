@@ -6,7 +6,10 @@ use bevy::utils::HashMap;
 use rand::Rng;
 use std::time::Duration;
 
-use self::sprites::{ChangingAppearanceFilter, LoadedAppearances, LoadedSprite, SpriteMaterial};
+use self::sprites::{
+    sprite_material_from_params, ChangingAppearanceFilter, LoadedAppearances, LoadedSprite,
+    SpriteMaterial,
+};
 
 /// A resource to enable/disable sprite animation globally.
 #[derive(Resource, PartialEq, Debug, Clone)]
@@ -210,8 +213,10 @@ pub(crate) fn tick_animation_system(
     mut q_sprites: Query<(
         &mut Handle<SpriteMaterial>,
         &mut AnimationSprite,
+        Option<&SpriteParams>,
         Option<&AnimationDuration>,
     )>,
+    mut materials: ResMut<Assets<SpriteMaterial>>,
 ) {
     let delta = time.delta();
     synced_timers
@@ -219,8 +224,8 @@ pub(crate) fn tick_animation_system(
         .for_each(|(key, state)| state.tick(key, delta));
 
     q_sprites
-        .par_iter_mut()
-        .for_each(|(mut material, mut anim, duration)| {
+        .iter_mut()
+        .for_each(|(mut material, mut anim, sprite_params, duration)| {
             if let AnimationSprite::Independent { key, state, .. } = &mut *anim {
                 if let Some(duration) = duration {
                     let frame_duration = duration.0 / key.total_phases as u32;
@@ -250,7 +255,7 @@ pub(crate) fn tick_animation_system(
                 else {
                     return;
                 };
-                *material = sprite.material.clone();
+                *material = sprite_material_from_params(sprite_params, &mut materials, sprite);
             }
         });
 }

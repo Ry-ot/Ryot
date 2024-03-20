@@ -8,7 +8,7 @@ use bevy_egui::{EguiContext, EguiContexts};
 use bevy_pancam::*;
 use leafwing_input_manager::common_conditions::action_just_pressed;
 use leafwing_input_manager::prelude::*;
-use ryot::bevy_ryot::drawing::{DrawingBundle, Elevation};
+use ryot::bevy_ryot::drawing::{Deletion, DrawingBundle, Elevation};
 use ryot::bevy_ryot::map::MapTiles;
 use ryot::bevy_ryot::sprites::SpriteMaterial;
 use ryot::position::{Sector, TilePosition};
@@ -166,24 +166,37 @@ fn update_cursor_preview(
     mut commands: Commands,
     mut q_cursor: Query<(Entity, &Cursor, &TilePosition)>,
     mut q_hovered: Query<(Entity, &mut SpriteParams), With<Hovered>>,
+    q_entities: Query<Entity, Without<Deletion>>,
     meshes: Res<RectMeshes>,
     mut materials: ResMut<Assets<ColorMaterial>>,
     map_tiles: Res<MapTiles<Entity>>,
 ) {
     for (entity, cursor, pos) in q_cursor.iter_mut() {
+        let mut already_hovered = false;
         let hovered_entity = map_tiles
             .get(pos)
-            .and_then(|tile| tile.peek())
+            .cloned()
+            .unwrap_or_default()
+            .into_iter()
+            .rev()
+            .find(|(layer, entity)| {
+                if matches!(layer, Layer::Hud(_)) {
+                    return false;
+                }
+                q_entities.contains(*entity)
+            })
             .map(|(_, entity)| entity);
         q_hovered.iter_mut().for_each(|(entity, mut params)| {
             if Some(entity) != hovered_entity {
                 commands.entity(entity).remove::<Hovered>();
                 *params = SpriteParams::default();
+            } else {
+                already_hovered = true;
             }
         });
 
-        if let Some(entity) = hovered_entity {
-            commands.entity(entity).insert(Hovered);
+        if let Some(hovered_entity) = hovered_entity {
+            commands.entity(hovered_entity).insert(Hovered);
         }
 
         match cursor.drawing_state.tool_mode {
@@ -205,6 +218,7 @@ fn update_cursor_preview(
                                 .expect("Meshes not initialized")
                                 .clone(),
                         ),
+                        Elevation::default(),
                         materials.add(Color::rgba(1.0, 0.0, 0.0, 0.3)),
                     ));
                 if let Some(entity) = hovered_entity {
@@ -217,7 +231,7 @@ fn update_cursor_preview(
                 if let Some(entity) = hovered_entity {
                     commands
                         .entity(entity)
-                        .insert(SpriteParams::outline(Color::BLUE.with_a(0.9), 2.0));
+                        .insert(SpriteParams::outline(Color::BLUE.with_a(0.7), 2.0));
                 };
             }
         };
