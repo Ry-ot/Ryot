@@ -168,7 +168,6 @@ fn update_cursor_preview(
     mut q_hovered: Query<(Entity, &mut SpriteParams), With<Hovered>>,
     q_entities: Query<Entity, Without<Deletion>>,
     meshes: Res<RectMeshes>,
-    mut materials: ResMut<Assets<ColorMaterial>>,
     map_tiles: Res<MapTiles<Entity>>,
 ) {
     for (entity, cursor, pos) in q_cursor.iter_mut() {
@@ -219,19 +218,22 @@ fn update_cursor_preview(
                                 .clone(),
                         ),
                         Elevation::default(),
-                        materials.add(Color::rgba(1.0, 0.0, 0.0, 0.3)),
                     ));
                 if let Some(entity) = hovered_entity {
-                    commands
-                        .entity(entity)
-                        .insert(SpriteParams::outline(Color::RED.with_a(0.9), 2.0));
+                    commands.entity(entity).insert(
+                        SpriteParams::default()
+                            .with_outline(Color::RED.with_a(0.9), 2.0)
+                            .with_tint(Color::RED.with_a(0.5)),
+                    );
                 };
             }
             None => {
                 if let Some(entity) = hovered_entity {
-                    commands
-                        .entity(entity)
-                        .insert(SpriteParams::outline(Color::BLUE.with_a(0.7), 2.0));
+                    commands.entity(entity).insert(
+                        SpriteParams::default()
+                            .with_outline(Color::BLUE.with_a(0.7), 2.0)
+                            .with_tint(Color::BLUE.with_a(0.2)),
+                    );
                 };
             }
         };
