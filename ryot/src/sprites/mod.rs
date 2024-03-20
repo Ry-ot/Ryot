@@ -64,6 +64,17 @@ impl SpriteParams {
     }
 }
 
+impl From<&SpriteMaterial> for SpriteParams {
+    fn from(material: &SpriteMaterial) -> Self {
+        Self {
+            outline: Some(SpriteOutline {
+                color: material.outline_color,
+                thickness: material.outline_thickness,
+            }),
+        }
+    }
+}
+
 impl SpriteLayout {
     pub fn get_width(&self, tile_size: &UVec2) -> u32 {
         match self {
