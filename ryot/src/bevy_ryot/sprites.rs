@@ -458,6 +458,8 @@ pub struct SpriteMaterial {
     pub outline_thickness: f32,
     #[uniform(0)]
     pub outline_color: Color,
+    #[uniform(0)]
+    pub tint: Color,
     #[texture(1)]
     #[sampler(2)]
     pub texture: Handle<Image>,
