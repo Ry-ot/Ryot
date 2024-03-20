@@ -39,7 +39,7 @@ jobs:
       - name: Build Compass Release
         working-directory: ./ryot_compass
         run: |
-          trunk build --release
+          trunk build --release --public-url "/${GITHUB_REPOSITORY#*/}/"
       - name: optimize Wasm
         uses: NiklasEi/wasm-opt-action@v2
         with:
