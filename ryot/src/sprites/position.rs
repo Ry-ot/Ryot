@@ -469,7 +469,7 @@ pub fn move_sprites_with_animation(
 #[cfg(feature = "bevy")]
 pub fn finish_position_animation(
     mut commands: Commands,
-    query: Query<(Entity, &SpriteMovement), (PositionChangedFilter, With<SpriteMovement>)>,
+    query: Query<(Entity, &SpriteMovement), PositionChangedFilter>,
 ) {
     query
         .iter()
