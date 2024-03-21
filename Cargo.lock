@@ -687,7 +687,7 @@ dependencies = [
 [[package]]
 name = "bevy_asset_loader"
 version = "0.20.0"
-source = "git+https://github.com/lgrossi/bevy_asset_loader?branch=lucas/set-of-dynamic-standard-assets#9888663bad4afce97f2fb630d6d7906c98a8a681"
+source = "git+https://github.com/NiklasEi/bevy_asset_loader?branch=main#fce89e2fdacecc09ed1e6b2bb3bdf2f9ba13fe00"
 dependencies = [
  "anyhow",
  "bevy",
@@ -700,7 +700,7 @@ dependencies = [
 [[package]]
 name = "bevy_asset_loader_derive"
 version = "0.20.0"
-source = "git+https://github.com/lgrossi/bevy_asset_loader?branch=lucas/set-of-dynamic-standard-assets#9888663bad4afce97f2fb630d6d7906c98a8a681"
+source = "git+https://github.com/NiklasEi/bevy_asset_loader?branch=main#fce89e2fdacecc09ed1e6b2bb3bdf2f9ba13fe00"
 dependencies = [
  "proc-macro2",
  "quote",
