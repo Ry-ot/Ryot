@@ -1,11 +1,11 @@
 use std::fmt::Display;
 use std::time::Duration;
 
-use crate::appearances::{self, FixedFrameGroup};
-use crate::bevy_ryot::{AppearanceDescriptor, InternalContentState};
+use crate::appearances::{self};
+use crate::bevy_ryot::{GameObjectId, InternalContentState};
+use crate::directional::*;
 use crate::layer::*;
 use crate::position::{Sector, SpriteMovement, TilePosition};
-use crate::{directional::*, SpriteLayout};
 use bevy::prelude::*;
 use bevy::render::view::{check_visibility, VisibilitySystems, VisibleEntities};
 
@@ -19,7 +19,7 @@ pub use commands::*;
 mod systems;
 pub use systems::*;
 
-use super::sprites::SPRITE_BASE_SIZE;
+use super::sprites::FrameGroupComponent;
 
 pub struct DrawingPlugin;
 
@@ -54,40 +54,24 @@ pub struct TileComponent;
 #[derive(Debug, Clone, Component, Copy, PartialEq)]
 pub struct Elevation {
     pub elevation: f32,
-    pub base_height: u32,
 }
 
 impl Default for Elevation {
     fn default() -> Self {
-        Elevation {
-            elevation: 0.0,
-            base_height: SpriteLayout::OneByOne.get_height(&SPRITE_BASE_SIZE),
-        }
+        Elevation { elevation: 0.0 }
     }
 }
 
 impl Display for Elevation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "E:{}", self.delta())
+        write!(f, "E:{}", self.elevation)
     }
 }
 
 impl Elevation {
-    pub fn new(elevation: f32, base_height: u32) -> Self {
-        Elevation {
-            elevation,
-            base_height,
-        }
-    }
-
-    pub fn delta(&self) -> f32 {
-        self.elevation / self.base_height as f32
-    }
-
     pub fn lerp(&self, other: &Elevation, fraction: f32) -> Elevation {
         Elevation {
             elevation: self.elevation.lerp(other.elevation, fraction),
-            base_height: self.base_height,
         }
     }
 }
@@ -95,8 +79,8 @@ impl Elevation {
 impl From<Elevation> for Anchor {
     fn from(value: Elevation) -> Self {
         Anchor::Custom(Vec2::new(
-            (0.5 + value.delta()).clamp(0.5, 1.5),
-            (-0.5 - value.delta()).clamp(-1.5, -0.5),
+            (0.5 + value.elevation).clamp(0.5, 1.5),
+            (-0.5 - value.elevation).clamp(-1.5, -0.5),
         ))
     }
 }
@@ -113,27 +97,17 @@ impl From<Elevation> for Anchor {
 pub struct DrawingBundle {
     pub layer: Layer,
     pub tile_pos: TilePosition,
-    pub appearance: AppearanceDescriptor,
+    pub object_id: GameObjectId,
+    pub frame_group: FrameGroupComponent,
     pub visibility: Visibility,
     pub tile: TileComponent,
 }
 
 impl BrushItem for DrawingBundle {
     fn from_position(original: Self, tile_pos: TilePosition) -> Self {
-        let DrawingBundle {
-            layer,
-            appearance,
-            visibility,
-            tile,
-            ..
-        } = original;
-
         DrawingBundle {
-            layer,
             tile_pos,
-            appearance,
-            visibility,
-            tile,
+            ..original
         }
     }
 
@@ -146,12 +120,14 @@ impl DrawingBundle {
     pub fn new(
         layer: impl Into<Layer>,
         tile_pos: TilePosition,
-        appearance: AppearanceDescriptor,
+        object_id: GameObjectId,
+        frame_group: FrameGroupComponent,
     ) -> Self {
         Self {
             layer: layer.into(),
             tile_pos,
-            appearance,
+            object_id,
+            frame_group,
             tile: TileComponent,
             visibility: Visibility::Visible,
         }
@@ -165,28 +141,29 @@ impl DrawingBundle {
     }
 
     pub fn object(layer: impl Into<Layer>, tile_pos: TilePosition, id: u32) -> Self {
-        Self::new(layer, tile_pos, AppearanceDescriptor::object(id))
+        Self::new(layer, tile_pos, GameObjectId::Object(id), default())
     }
 
     pub fn outfit(
         layer: impl Into<Layer>,
         tile_pos: TilePosition,
         id: u32,
-        frame_group_index: FixedFrameGroup,
+        frame_group: impl Into<FrameGroupComponent>,
     ) -> Self {
         Self::new(
             layer,
             tile_pos,
-            AppearanceDescriptor::outfit(id, frame_group_index),
+            GameObjectId::Outfit(id),
+            frame_group.into(),
         )
     }
 
     pub fn effect(layer: impl Into<Layer>, tile_pos: TilePosition, id: u32) -> Self {
-        Self::new(layer, tile_pos, AppearanceDescriptor::effect(id))
+        Self::new(layer, tile_pos, GameObjectId::Effect(id), default())
     }
 
     pub fn missile(layer: impl Into<Layer>, tile_pos: TilePosition, id: u32) -> Self {
-        Self::new(layer, tile_pos, AppearanceDescriptor::missile(id))
+        Self::new(layer, tile_pos, GameObjectId::Missile(id), default())
     }
 
     pub fn with_position(mut self, tile_pos: TilePosition) -> Self {

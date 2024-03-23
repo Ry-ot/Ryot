@@ -85,7 +85,12 @@ impl TilePosition {
         TilePosition::from(position)
     }
 
-    fn to_elevated_translation(self, layout: SpriteLayout, layer: Layer, anchor: Anchor) -> Vec3 {
+    pub fn to_elevated_translation(
+        self,
+        layout: SpriteLayout,
+        layer: Layer,
+        anchor: Anchor,
+    ) -> Vec3 {
         self.to_vec3(&layer)
             - (layout.get_size(&tile_size()).as_vec2() * anchor.as_vec()).extend(0.)
     }
@@ -434,7 +439,7 @@ pub fn move_sprites_with_animation(
             &mut Transform,
             &mut SpriteMovement,
         ),
-        (PositionChangedFilter, With<SpriteMovement>),
+        PositionChangedFilter,
     >,
     time: Res<Time>,
 ) {
