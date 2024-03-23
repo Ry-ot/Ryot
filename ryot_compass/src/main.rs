@@ -4,7 +4,6 @@ use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy::winit::WinitWindows;
 use bevy_egui::EguiContexts;
-use ryot::bevy_ryot::drawing::apply_elevation;
 use ryot::prelude::*;
 use ryot_compass::*;
 use std::io::Cursor;
@@ -61,7 +60,7 @@ fn main() {
     let mut app = App::new();
 
     app.add_plugins((
-        GamePlugin,
+        GamePlugin::<CompassContentAssets>::default(),
         InputPlugin,
         AppPlugin,
         UiPlugin::<CompassContentAssets>::default(),
@@ -71,7 +70,6 @@ fn main() {
         DrawingPlugin::<CompassContentAssets>::default(),
         ErrorPlugin,
     ))
-    .add_systems(Update, apply_elevation::<CompassContentAssets>)
     .add_systems(Startup, set_window_icon)
     .add_systems(Startup, setup_window);
 

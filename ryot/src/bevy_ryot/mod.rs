@@ -93,20 +93,25 @@ pub trait PreloadedContentAssets: PreloadedAssets + ContentAssets {}
 
 /// A trait that represents assets that are preloaded within ryot.
 /// It contains preloaded assets and mutable preparation methods for the ContentAssets.
-pub trait PreloadedAssets: Resource + AssetCollection + Send + Sync + 'static {
-    fn appearances(&self) -> Handle<Appearance>;
+pub trait PreloadedAssets:
+    Resource + AppearanceAssets + AssetCollection + Send + Sync + 'static
+{
     fn catalog_content(&self) -> Handle<Catalog>;
-    fn prepared_appearances_mut(&mut self) -> &mut PreparedAppearances;
     fn set_sprite_sheets_data(&mut self, sprite_sheet_set: SpriteSheetDataSet);
 }
 
 /// The main ContentAssets of a Ryot game, is prepared by preparer systems
 /// during the loading process and is used by the game to access the content.
-pub trait ContentAssets: Resource + Send + Sync + 'static {
-    fn prepared_appearances(&self) -> &PreparedAppearances;
+pub trait ContentAssets: Resource + AppearanceAssets + Send + Sync + 'static {
     fn sprite_sheet_data_set(&self) -> Option<&SpriteSheetDataSet>;
     fn get_texture(&self, file: &str) -> Option<Handle<Image>>;
     fn get_atlas_layout(&self, layout: SpriteLayout) -> Option<Handle<TextureAtlasLayout>>;
+}
+
+pub trait AppearanceAssets: Resource + AssetCollection + Send + Sync + 'static {
+    fn appearances(&self) -> Handle<Appearance>;
+    fn prepared_appearances_mut(&mut self) -> &mut PreparedAppearances;
+    fn prepared_appearances(&self) -> &PreparedAppearances;
 }
 
 /// A plugin that registers implementations of ContentAssets and loads them.
@@ -115,45 +120,75 @@ pub trait ContentAssets: Resource + Send + Sync + 'static {
 ///
 /// It also manages the loading state of the content assets, the lifecycle of the content
 /// and the events that allow lazy loading of sprites.
-pub struct ContentPlugin<C: PreloadedContentAssets>(PhantomData<C>);
+macro_rules! content_plugin {
+    ($plugin_name:ident, $content_assets:tt) => {
+        pub struct $plugin_name<C: $content_assets>(PhantomData<C>);
 
-impl<C: PreloadedContentAssets> ContentPlugin<C> {
-    pub fn new() -> Self {
-        Self(PhantomData)
-    }
+        impl<C: $content_assets> Default for $plugin_name<C> {
+            fn default() -> Self {
+                Self(PhantomData)
+            }
+        }
+    };
 }
 
-impl<C: PreloadedContentAssets> Default for ContentPlugin<C> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+content_plugin!(BaseContentPlugin, AppearanceAssets);
 
-impl<C: PreloadedContentAssets + Default> Plugin for ContentPlugin<C> {
+impl<C: AppearanceAssets + Default> Plugin for BaseContentPlugin<C> {
     fn build(&self, app: &mut App) {
-        app.init_resource::<C>()
+        app.init_state::<InternalContentState>()
+            .init_resource::<C>()
             .register_type::<TilePosition>()
-            .init_resource::<SpriteMeshes>()
-            .init_resource::<RectMeshes>()
-            .add_plugins(JsonAssetPlugin::<Catalog>::new(&["json"]))
             .add_plugins(AppearanceAssetPlugin)
-            .add_optional_plugin(StrokedTextPlugin)
-            .add_plugins(Material2dPlugin::<SpriteMaterial>::default())
-            .add_plugins(RonAssetPlugin::<StandardDynamicAssetArrayCollection>::new(
-                &["atlases.ron"],
-            ))
             .add_loading_state(
                 LoadingState::new(InternalContentState::LoadingContent)
-                    .register_dynamic_asset_collection::<StandardDynamicAssetArrayCollection>()
-                    .with_dynamic_assets_file::<StandardDynamicAssetArrayCollection>(
-                        "dynamic.atlases.ron",
-                    )
                     .continue_to_state(InternalContentState::PreparingContent)
                     .load_collection::<C>(),
             )
             .add_systems(
                 OnEnter(InternalContentState::PreparingContent),
-                (prepare_content::<C>, prepare_appearances::<C>),
+                prepare_appearances::<C>,
+            );
+    }
+}
+
+content_plugin!(MetaContentPlugin, AppearanceAssets);
+
+impl<C: AppearanceAssets + Default> Plugin for MetaContentPlugin<C> {
+    fn build(&self, app: &mut App) {
+        app.add_plugins(BaseContentPlugin::<C>::default())
+            .add_systems(
+                OnEnter(InternalContentState::PreparingContent),
+                transition_to_ready.after(prepare_appearances::<C>),
+            );
+    }
+}
+
+content_plugin!(VisualContentPlugin, PreloadedContentAssets);
+
+impl<C: PreloadedContentAssets + Default> Plugin for VisualContentPlugin<C> {
+    fn build(&self, app: &mut App) {
+        app.add_plugins(BaseContentPlugin::<C>::default())
+            .configure_loading_state(
+                LoadingStateConfig::new(InternalContentState::LoadingContent)
+                    .register_dynamic_asset_collection::<StandardDynamicAssetArrayCollection>()
+                    .with_dynamic_assets_file::<StandardDynamicAssetArrayCollection>(
+                        "dynamic.atlases.ron",
+                    ),
+            )
+            .init_resource::<SpriteMeshes>()
+            .init_resource::<RectMeshes>()
+            .add_plugins(JsonAssetPlugin::<Catalog>::new(&["json"]))
+            .add_optional_plugin(StrokedTextPlugin)
+            .add_plugins(Material2dPlugin::<SpriteMaterial>::default())
+            .add_plugins(RonAssetPlugin::<StandardDynamicAssetArrayCollection>::new(
+                &["atlases.ron"],
+            ))
+            .add_systems(
+                OnEnter(InternalContentState::PreparingContent),
+                (prepare_content::<C>, transition_to_ready)
+                    .chain()
+                    .after(prepare_appearances::<C>),
             )
             .init_resource::<sprite_animations::SpriteAnimationEnabled>()
             .init_resource::<sprite_animations::SynchronizedAnimationTimers>()
@@ -199,7 +234,6 @@ impl<C: PreloadedContentAssets + Default> Plugin for ContentPlugin<C> {
 fn prepare_content<C: PreloadedContentAssets>(
     mut contents: ResMut<Assets<Catalog>>,
     mut content_assets: ResMut<C>,
-    mut state: ResMut<NextState<InternalContentState>>,
     mut meshes: ResMut<Assets<Mesh>>,
     mut sprite_meshes: ResMut<SpriteMeshes>,
     mut rect_meshes: ResMut<RectMeshes>,
@@ -221,7 +255,6 @@ fn prepare_content<C: PreloadedContentAssets>(
         .expect("No catalog loaded");
 
     content_assets.set_sprite_sheets_data(SpriteSheetDataSet::from_content(&catalog.content));
-    state.set(InternalContentState::Ready);
     contents.remove(content_assets.catalog_content());
     for sprite_layout in SpriteLayout::iter() {
         sprite_meshes.insert(
@@ -239,6 +272,10 @@ fn prepare_content<C: PreloadedContentAssets>(
     }
 
     debug!("Finished preparing content");
+}
+
+fn transition_to_ready(mut state: ResMut<NextState<InternalContentState>>) {
+    state.set(InternalContentState::Ready);
 }
 
 /// Quick way to create WASM compatible windows with a title.

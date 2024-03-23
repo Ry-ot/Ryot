@@ -95,7 +95,7 @@ impl From<appearances::Appearance> for Option<PreparedAppearance> {
     }
 }
 
-#[derive(Debug, Default)]
+#[derive(Resource, Debug, Default)]
 pub struct PreparedAppearances {
     groups: HashMap<AppearanceGroup, HashMap<u32, PreparedAppearance>>,
 }
@@ -137,7 +137,7 @@ pub enum AppearanceGroup {
 ///
 /// A prepared appearance must have at least an id and a main sprite id.
 /// Appearances that don't have at least these two fields are ignored.
-pub(crate) fn prepare_appearances<C: PreloadedContentAssets>(
+pub(crate) fn prepare_appearances<C: AppearanceAssets>(
     mut content_assets: ResMut<C>,
     mut appearances_assets: ResMut<Assets<Appearance>>,
 ) {
