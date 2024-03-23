@@ -186,18 +186,20 @@ pub(crate) fn load_sprite_texture<C: ContentAssets>(
 /// A system that ensures that all entities with an AppearanceDescriptor have a SpriteMaterial mesh bundle.
 pub(crate) fn ensure_appearance_initialized(
     mut commands: Commands,
-    query: Query<Entity, (With<GameObjectId>, Without<Handle<SpriteMaterial>>)>,
+    query: Query<(Entity, Has<Elevation>), (With<GameObjectId>, Without<Handle<SpriteMaterial>>)>,
     #[cfg(feature = "debug")] q_debug: Query<
         (Entity, &Layer),
         (With<GameObjectId>, Without<Handle<SpriteMaterial>>),
     >,
 ) {
-    query.iter().for_each(|entity| {
+    query.iter().for_each(|(entity, has_elevation)| {
         commands.entity(entity).insert((
             MaterialMesh2dBundle::<SpriteMaterial>::default(),
             SpriteLayout::default(),
-            Elevation::default(),
         ));
+        if !has_elevation {
+            commands.entity(entity).insert(Elevation::default());
+        }
     });
 
     #[cfg(feature = "debug")]

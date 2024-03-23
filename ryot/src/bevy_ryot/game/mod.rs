@@ -95,6 +95,7 @@ impl fmt::Display for GameObjectId {
 pub struct GameObjectBundle {
     pub object_id: GameObjectId,
     pub position: TilePosition,
+    pub elevation: Elevation,
     pub layer: Layer,
 }
 
@@ -104,6 +105,7 @@ impl GameObjectBundle {
             object_id,
             position,
             layer,
+            elevation: default(),
         }
     }
 }
@@ -113,13 +115,17 @@ pub struct LoadObjects(pub Vec<GameObjectBundle>);
 
 type ElevationFilter = (
     With<GameObjectId>,
-    Or<(Changed<Visibility>, Changed<TilePosition>)>,
+    Or<(
+        Changed<GameObjectId>,
+        Changed<Visibility>,
+        Changed<TilePosition>,
+    )>,
 );
 
 fn apply_elevation<C: AppearanceAssets>(
     appearance_asets: Res<C>,
     q_tile: Query<(&TilePosition, &Layer), ElevationFilter>,
-    mut q_entities: Query<(&mut Elevation, &Visibility, &GameObjectId)>,
+    mut q_entities: Query<(&mut Elevation, &GameObjectId, Option<&Visibility>)>,
     map_tiles: Res<MapTiles<Entity>>,
 ) {
     let appearances = appearance_asets.prepared_appearances();
@@ -134,18 +140,25 @@ fn apply_elevation<C: AppearanceAssets>(
             .filter(|(layer, _)| matches!(layer, Layer::Bottom(_)))
             .map(|(_, entity)| entity)
             .fold(0., |tile_elevation, entity| {
-                let Ok((mut elevation, visibility, object_id)) = q_entities.get_mut(entity) else {
+                let Ok((mut elevation, object_id, visibility)) = q_entities.get_mut(entity) else {
                     return tile_elevation;
                 };
                 let Some((group, id)) = object_id.as_group_and_id() else {
                     return tile_elevation;
                 };
 
-                let appearance = appearances.get_for_group(group, id).cloned();
-                let elevation_delta = appearance
-                    .and_then(|app| app.flags?.height?.elevation)
-                    .unwrap_or(0) as f32
-                    / SPRITE_BASE_SIZE.y as f32;
+                let elevation_delta =
+                    if visibility.cloned().unwrap_or_default() != Visibility::Hidden {
+                        appearances
+                            .get_for_group(group, id)
+                            .cloned()
+                            .and_then(|app| app.flags?.height?.elevation)
+                            .unwrap_or(0) as f32
+                            / SPRITE_BASE_SIZE.y as f32
+                    } else {
+                        0.
+                    };
+
                 elevation.elevation = match group {
                     AppearanceGroup::Object => tile_elevation,
                     AppearanceGroup::Outfit => tile_elevation,
@@ -153,11 +166,7 @@ fn apply_elevation<C: AppearanceAssets>(
                     AppearanceGroup::Missile => 0.,
                 };
 
-                if visibility != Visibility::Hidden {
-                    tile_elevation + elevation_delta
-                } else {
-                    tile_elevation
-                }
+                tile_elevation + elevation_delta
             });
     }
 }
