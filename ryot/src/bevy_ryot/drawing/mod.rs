@@ -1,4 +1,3 @@
-use std::fmt::Display;
 use std::time::Duration;
 
 use crate::appearances::{self};
@@ -10,7 +9,6 @@ use bevy::prelude::*;
 use bevy::render::view::{check_visibility, VisibilitySystems, VisibleEntities};
 
 mod brushes;
-use bevy::sprite::Anchor;
 pub use brushes::*;
 
 mod commands;
@@ -19,6 +17,7 @@ pub use commands::*;
 mod systems;
 pub use systems::*;
 
+use super::elevation::Elevation;
 use super::sprites::FrameGroupComponent;
 
 pub struct DrawingPlugin;
@@ -50,40 +49,6 @@ impl Plugin for DrawingPlugin {
 
 #[derive(Component, Debug, Copy, Clone, Default, Eq, PartialEq)]
 pub struct TileComponent;
-
-#[derive(Debug, Clone, Component, Copy, PartialEq)]
-pub struct Elevation {
-    pub elevation: f32,
-}
-
-impl Default for Elevation {
-    fn default() -> Self {
-        Elevation { elevation: 0.0 }
-    }
-}
-
-impl Display for Elevation {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "E:{}", self.elevation)
-    }
-}
-
-impl Elevation {
-    pub fn lerp(&self, other: &Elevation, fraction: f32) -> Elevation {
-        Elevation {
-            elevation: self.elevation.lerp(other.elevation, fraction),
-        }
-    }
-}
-
-impl From<Elevation> for Anchor {
-    fn from(value: Elevation) -> Self {
-        Anchor::Custom(Vec2::new(
-            (0.5 + value.elevation).clamp(0.5, 1.5),
-            (-0.5 - value.elevation).clamp(-1.5, -0.5),
-        ))
-    }
-}
 
 /// A bundle that represents an entity drawn to a location (Layer + TilePosition) in the map.
 /// The DrawingBundle is used to create and update the entities that are drawn on the map.

@@ -13,7 +13,7 @@
 //! trigger the drawing flow, and then we use the ECS API to perform the operations.
 use crate::bevy_ryot::drawing::DrawingBundle;
 use crate::bevy_ryot::sprites::FrameGroupComponent;
-use crate::bevy_ryot::GameObjectId;
+use crate::bevy_ryot::{GameObjectBundle, GameObjectId};
 use crate::position::TilePosition;
 use crate::Layer;
 use bevy::prelude::*;
@@ -70,6 +70,17 @@ impl From<DrawingBundle> for DrawingInfo {
             bundle.layer,
             bundle.visibility,
             Some((bundle.object_id, bundle.frame_group)),
+        )
+    }
+}
+
+impl From<GameObjectBundle> for DrawingInfo {
+    fn from(bundle: GameObjectBundle) -> Self {
+        (
+            bundle.position,
+            bundle.layer,
+            Visibility::Visible,
+            Some((bundle.object_id, default())),
         )
     }
 }
