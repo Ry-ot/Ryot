@@ -7,7 +7,7 @@ use bevy::prelude::*;
 use bevy::utils::HashMap;
 use bevy_egui::EguiPlugin;
 use leafwing_input_manager::common_conditions::action_just_pressed;
-use ryot::bevy_ryot::sprites::{LoadAppearanceEvent, LoadedAppearances};
+use ryot::bevy_ryot::sprites::{FrameGroupComponent, LoadAppearanceEvent, LoadedAppearances};
 use ryot::prelude::*;
 use std::marker::PhantomData;
 
@@ -106,16 +106,12 @@ pub fn update_palette_category<C: ContentAssets>(
     }
 
     let category = palette_state.selected_category;
-    palette_state
-        .category_sprites
-        .extend(
-            palettes
-                .get_for_category(&category)
-                .iter()
-                .map(|content_id| {
-                    AppearanceDescriptor::new(AppearanceGroup::Object, *content_id, default())
-                }),
-        );
+    palette_state.category_sprites.extend(
+        palettes
+            .get_for_category(&category)
+            .iter()
+            .map(|content_id| GameObjectId::Object(*content_id)),
+    );
 }
 
 pub fn update_palette_items<C: ContentAssets>(
@@ -134,17 +130,16 @@ pub fn update_palette_items<C: ContentAssets>(
     let begin = palette_state.begin().min(if len < 5 { 0 } else { len - 5 });
     let end = palette_state.end().min(len);
 
-    let mut appearance_descriptors = palette_state.category_sprites.to_vec();
-    appearance_descriptors.sort_by(|d1, d2| d1.id.cmp(&d2.id));
-    let appearance_descriptors = &appearance_descriptors[begin..end];
+    let mut object_ids = palette_state.category_sprites.to_vec();
+    object_ids.sort();
+    let object_ids = &object_ids[begin..end];
 
     if palette_state
         .loaded_images
         .iter()
-        .map(|(descriptor, ..)| descriptor)
-        .cloned()
+        .map(|(object_id, ..)| *object_id)
         .collect::<Vec<_>>()
-        .eq(appearance_descriptors)
+        .eq(object_ids)
     {
         debug!("Palette content didn't change, no need to reload images");
         return;
@@ -152,17 +147,21 @@ pub fn update_palette_items<C: ContentAssets>(
 
     palette_state.loaded_images.clear();
 
-    let (loaded, to_load): (Vec<AppearanceDescriptor>, Vec<AppearanceDescriptor>) =
-        appearance_descriptors
-            .iter()
-            .partition(|&descriptor| loaded_appearances.contains_key(descriptor));
+    let (loaded, to_load): (Vec<GameObjectId>, Vec<GameObjectId>) =
+        object_ids.iter().partition(|&object_id| {
+            loaded_appearances.contains_key(&(*object_id, FrameGroupComponent::default()))
+        });
 
-    to_load.iter().for_each(|descriptor| {
-        events.send(LoadAppearanceEvent(*descriptor));
+    to_load.iter().for_each(|object_id| {
+        events.send(LoadAppearanceEvent {
+            object_id: *object_id,
+            frame_group: FrameGroupComponent::default(),
+        });
     });
 
-    loaded.into_iter().for_each(|descriptor| {
-        let Some(appearance) = loaded_appearances.get(&descriptor) else {
+    loaded.into_iter().for_each(|object_id| {
+        let Some(appearance) = loaded_appearances.get(&(object_id, FrameGroupComponent::default()))
+        else {
             return;
         };
         let Some(sprite) = appearance.sprites.first() else {
@@ -178,7 +177,7 @@ pub fn update_palette_items<C: ContentAssets>(
 
         palette_state
             .loaded_images
-            .push((descriptor, texture, rect_vec2, uv));
+            .push((object_id, texture, rect_vec2, uv));
     });
 }
 

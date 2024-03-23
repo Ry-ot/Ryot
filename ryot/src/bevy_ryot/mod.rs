@@ -159,12 +159,12 @@ impl<C: PreloadedContentAssets + Default> Plugin for ContentPlugin<C> {
             .init_resource::<sprite_animations::SynchronizedAnimationTimers>()
             .init_resource::<sprites::LoadedAppearances>()
             .add_event::<sprites::LoadAppearanceEvent>()
-            .add_systems(PreUpdate, sprites::load_from_entities_system)
             .add_systems(
                 Update,
                 (
                     #[cfg(feature = "debug")]
                     debug_sprite_position,
+                    sprites::load_from_entities_system,
                     sprites::process_load_events_system::<C>
                         .pipe(sprites::load_sprite_system::<C>)
                         .pipe(sprites::store_loaded_appearances_system)

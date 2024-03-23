@@ -1,8 +1,7 @@
 //! # Appearances
 //! This module contains the code to load the appearances.dat file.
 //! This file contains the information needed to load sprites and other content.
-use crate::appearances::{self, FixedFrameGroup};
-use crate::appearances::{AppearanceFlags, Appearances, FrameGroup};
+use crate::appearances::{self, AppearanceFlags, Appearances, FrameGroup};
 use crate::layer::Layer;
 use crate::prelude::*;
 use bevy::asset::io::Reader;
@@ -66,60 +65,6 @@ impl AssetLoader for AppearanceAssetLoader {
 
     fn extensions(&self) -> &[&str] {
         &["dat"]
-    }
-}
-
-#[derive(Component, Debug, Copy, Clone, Default, Hash, Eq, PartialEq, Reflect)]
-pub struct AppearanceDescriptor {
-    pub group: AppearanceGroup,
-    pub id: u32,
-    #[reflect(ignore)]
-    pub fixed_frame_group: FixedFrameGroup,
-}
-
-impl AppearanceDescriptor {
-    pub fn new(group: AppearanceGroup, id: u32, fixed_frame_group: FixedFrameGroup) -> Self {
-        Self {
-            group,
-            id,
-            fixed_frame_group,
-        }
-    }
-
-    pub(crate) fn frame_group_index(&self) -> i32 {
-        match self.fixed_frame_group {
-            FixedFrameGroup::OutfitIdle => 0,
-            FixedFrameGroup::OutfitMoving => 1,
-            FixedFrameGroup::ObjectInitial => 0,
-        }
-    }
-
-    pub fn object(id: u32) -> Self {
-        Self::new(AppearanceGroup::Object, id, FixedFrameGroup::ObjectInitial)
-    }
-
-    pub fn outfit(id: u32, frame_group_index: FixedFrameGroup) -> Self {
-        Self::new(AppearanceGroup::Outfit, id, frame_group_index)
-    }
-
-    pub fn effect(id: u32) -> Self {
-        Self::new(AppearanceGroup::Effect, id, FixedFrameGroup::ObjectInitial)
-    }
-
-    pub fn missile(id: u32) -> Self {
-        Self::new(AppearanceGroup::Missile, id, FixedFrameGroup::ObjectInitial)
-    }
-
-    pub fn moving(&mut self, value: bool) -> Self {
-        if self.fixed_frame_group == FixedFrameGroup::ObjectInitial {
-            return *self;
-        }
-        self.fixed_frame_group = if value {
-            FixedFrameGroup::OutfitMoving
-        } else {
-            FixedFrameGroup::OutfitIdle
-        };
-        *self
     }
 }
 

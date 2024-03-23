@@ -6,6 +6,8 @@ use bevy::prelude::*;
 #[cfg(feature = "lmdb")]
 use crate::bevy_ryot::lmdb::LmdbEnv;
 #[cfg(feature = "lmdb")]
+use crate::bevy_ryot::GameObjectId;
+#[cfg(feature = "lmdb")]
 use crate::lmdb::{GetKey, Item, ItemRepository, ItemsFromHeedLmdb, Tile};
 #[cfg(feature = "lmdb")]
 use crate::position::TilePosition;
@@ -161,14 +163,19 @@ pub fn persist_update(
             new_tiles.insert(tile.position, tile);
         }
 
-        for (tile_pos, layer, appearance) in &to_draw {
+        for (tile_pos, layer, (object_id, _frame_group)) in &to_draw {
             let tile = new_tiles
                 .entry(*tile_pos)
                 .or_insert(Tile::from_pos(*tile_pos));
 
+            let id = match object_id {
+                GameObjectId::Object(id) => *id as u16,
+                _ => continue,
+            };
+
             tile.set_item(
                 Item {
-                    id: appearance.id as u16,
+                    id,
                     attributes: vec![],
                 },
                 *layer,

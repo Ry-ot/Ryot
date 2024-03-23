@@ -76,7 +76,7 @@ pub struct DrawingState {
 
 #[derive(Eq, PartialEq, Clone, Default, Copy, Debug, Reflect)]
 pub enum ToolMode {
-    Draw(AppearanceDescriptor),
+    Draw(GameObjectId),
     #[default]
     Erase,
 }
@@ -208,7 +208,7 @@ fn update_cursor_preview(
             Some(ToolMode::Erase) => {
                 commands
                     .entity(entity)
-                    .remove::<AppearanceDescriptor>()
+                    .remove::<GameObjectId>()
                     .remove::<Handle<SpriteMaterial>>()
                     .insert((
                         Mesh2dHandle(
@@ -331,7 +331,7 @@ type CursorHasChangedFilter = (
         Changed<Cursor>,
         Changed<Visibility>,
         Changed<TilePosition>,
-        Changed<AppearanceDescriptor>,
+        Changed<GameObjectId>,
     )>,
 );
 
@@ -350,16 +350,12 @@ type CursorBrushPreviewFilter = (With<BrushPreviewTile>, Without<Cursor>);
 fn update_cursor_brush_preview(
     brushes: Res<Brushes<DrawingBundle>>,
     cursor: Query<
-        (&Cursor, &TilePosition, &AppearanceDescriptor, &Visibility),
+        (&Cursor, &TilePosition, &GameObjectId, &Visibility),
         (Without<BrushPreviewTile>, CursorHasChangedFilter),
     >,
     mut commands: Commands,
     mut brush_preview_tiles: Query<
-        (
-            &mut TilePosition,
-            &mut AppearanceDescriptor,
-            &mut Visibility,
-        ),
+        (&mut TilePosition, &mut GameObjectId, &mut Visibility),
         CursorBrushPreviewFilter,
     >,
 ) {

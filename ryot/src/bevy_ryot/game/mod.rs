@@ -1,3 +1,5 @@
+use core::fmt;
+
 use crate::prelude::drawing::DrawingInfo;
 use crate::prelude::*;
 use bevy::prelude::*;
@@ -11,17 +13,62 @@ impl Plugin for GamePlugin {
     }
 }
 
-#[derive(Component, Clone, Copy, Debug, Serialize, Deserialize)]
+#[derive(
+    Component,
+    Clone,
+    Copy,
+    Debug,
+    Serialize,
+    Deserialize,
+    PartialEq,
+    Eq,
+    Hash,
+    Default,
+    Reflect,
+    PartialOrd,
+    Ord,
+)]
 pub enum GameObjectId {
+    #[default]
+    None,
     Object(u32),
     Outfit(u32),
+    Effect(u32),
+    Missile(u32),
 }
 
-impl From<GameObjectId> for AppearanceDescriptor {
-    fn from(id: GameObjectId) -> Self {
-        match id {
-            GameObjectId::Object(id) => AppearanceDescriptor::object(id),
-            GameObjectId::Outfit(_) => panic!("Outfit is not supported yet"),
+impl GameObjectId {
+    pub fn is_none(&self) -> bool {
+        matches!(self, Self::None)
+    }
+
+    pub fn as_group_and_id(&self) -> Option<(AppearanceGroup, u32)> {
+        match self {
+            GameObjectId::None => None,
+            GameObjectId::Object(id) => Some((AppearanceGroup::Object, *id)),
+            GameObjectId::Outfit(id) => Some((AppearanceGroup::Outfit, *id)),
+            GameObjectId::Effect(id) => Some((AppearanceGroup::Effect, *id)),
+            GameObjectId::Missile(id) => Some((AppearanceGroup::Missile, *id)),
+        }
+    }
+
+    pub fn group(&self) -> Option<AppearanceGroup> {
+        self.as_group_and_id().map(|(group, _)| group)
+    }
+
+    pub fn id(&self) -> Option<u32> {
+        self.as_group_and_id().map(|(_, id)| id)
+    }
+}
+
+impl fmt::Display for GameObjectId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            GameObjectId::None => write!(f, "None"),
+            GameObjectId::Object(id) => write!(f, "Object({})", id),
+            GameObjectId::Outfit(id) => write!(f, "Outfit({})", id),
+            GameObjectId::Effect(id) => write!(f, "Effect({})", id),
+            GameObjectId::Missile(id) => write!(f, "Missile({})", id),
         }
     }
 }
@@ -49,7 +96,7 @@ impl From<GameObjectBundle> for DrawingInfo {
             bundle.position,
             bundle.layer,
             Visibility::Visible,
-            Some(bundle.object_id.into()),
+            Some((bundle.object_id, default())),
         )
     }
 }

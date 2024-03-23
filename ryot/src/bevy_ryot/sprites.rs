@@ -1,5 +1,5 @@
 //! Sprite loading and drawing.
-use crate::appearances::{SpriteInfo, SpriteSheetData, SpriteSheetDataSet};
+use crate::appearances::{FixedFrameGroup, SpriteInfo, SpriteSheetData, SpriteSheetDataSet};
 use crate::{get_decompressed_file_name, SPRITE_SHEET_FOLDER};
 use crate::{prelude::*, Directional};
 use bevy::prelude::*;
@@ -27,8 +27,27 @@ pub struct LoadedAppearance {
     pub animation: Option<(AnimationKey, AnimationDescriptor)>,
 }
 
+#[derive(Component, Debug, Clone, Copy, Deref, DerefMut, PartialEq, Eq, Hash, Default)]
+pub struct FrameGroupComponent(pub FixedFrameGroup);
+
+impl FrameGroupComponent {
+    pub(crate) fn frame_group_index(&self) -> i32 {
+        match self.0 {
+            FixedFrameGroup::OutfitIdle => 0,
+            FixedFrameGroup::OutfitMoving => 1,
+            FixedFrameGroup::ObjectInitial => 0,
+        }
+    }
+}
+
+impl From<FixedFrameGroup> for FrameGroupComponent {
+    fn from(group: FixedFrameGroup) -> Self {
+        Self(group)
+    }
+}
+
 #[derive(Resource, Default, Deref, DerefMut)]
-pub struct LoadedAppearances(pub HashMap<AppearanceDescriptor, LoadedAppearance>);
+pub struct LoadedAppearances(pub HashMap<(GameObjectId, FrameGroupComponent), LoadedAppearance>);
 
 /// A struct that holds the information needed to draw a sprite.
 /// It's a wrapper around a sprite sheet and a sprite id, that also holds the
@@ -167,10 +186,10 @@ pub(crate) fn load_sprite_texture<C: ContentAssets>(
 /// A system that ensures that all entities with an AppearanceDescriptor have a SpriteMaterial mesh bundle.
 pub(crate) fn ensure_appearance_initialized(
     mut commands: Commands,
-    query: Query<Entity, (With<AppearanceDescriptor>, Without<Handle<SpriteMaterial>>)>,
+    query: Query<Entity, (With<GameObjectId>, Without<Handle<SpriteMaterial>>)>,
     #[cfg(feature = "debug")] q_debug: Query<
         (Entity, &Layer),
-        (With<AppearanceDescriptor>, Without<Handle<SpriteMaterial>>),
+        (With<GameObjectId>, Without<Handle<SpriteMaterial>>),
     >,
 ) {
     query.iter().for_each(|entity| {
@@ -216,7 +235,9 @@ pub(crate) fn ensure_appearance_initialized(
 }
 
 pub(crate) type ChangingAppearanceFilter = Or<(
-    Changed<AppearanceDescriptor>,
+    Changed<GameObjectId>,
+    Changed<FrameGroupComponent>,
+    Changed<FrameGroupComponent>,
     Changed<Directional>,
     (Without<AnimationSprite>, Changed<SpriteParams>),
 )>;
@@ -224,10 +245,10 @@ pub(crate) type ChangingAppearanceFilter = Or<(
 pub(crate) fn update_sprite_system(
     mut q_updated: Query<
         (
-            &AppearanceDescriptor,
+            &GameObjectId,
+            Option<&FrameGroupComponent>,
             Option<&Directional>,
             Option<&SpriteParams>,
-            &mut Elevation,
             &mut SpriteLayout,
             &mut Mesh2dHandle,
             &mut Handle<SpriteMaterial>,
@@ -238,20 +259,14 @@ pub(crate) fn update_sprite_system(
     loaded_appereances: Res<LoadedAppearances>,
 ) {
     q_updated.iter_mut().for_each(
-        |(
-            descriptor,
-            direction,
-            sprite_params,
-            mut elevation,
-            mut layout,
-            mut mesh,
-            mut material,
-        )| {
-            if descriptor.id == 0 {
+        |(object_id, frame_group, direction, sprite_params, mut layout, mut mesh, mut material)| {
+            if object_id.is_none() {
                 return;
             }
-            let Some(loaded_appearance) = loaded_appereances.get(descriptor) else {
-                warn!("BUG: Loaded appearance for {:?} not found.", descriptor);
+            let Some(loaded_appearance) =
+                loaded_appereances.get(&(*object_id, frame_group.cloned().unwrap_or_default()))
+            else {
+                warn!("BUG: Loaded appearance for {:?} not found.", object_id);
                 return;
             };
 
@@ -263,11 +278,10 @@ pub(crate) fn update_sprite_system(
             let Some(sprite) = loaded_appearance.sprites.get(direction_index) else {
                 warn!(
                     "Sprite for appearance {:?} not found for direction {:?}",
-                    descriptor, direction
+                    object_id, direction
                 );
                 return;
             };
-            elevation.base_height = sprite.sprite_sheet.layout.get_height(&SPRITE_BASE_SIZE);
             *layout = sprite.sprite_sheet.layout;
             *mesh = Mesh2dHandle(sprite.mesh.clone());
             *material = sprite_material_from_params(sprite_params, &mut materials, sprite);
@@ -296,86 +310,98 @@ pub(crate) fn sprite_material_from_params(
 }
 
 pub(crate) fn load_from_entities_system(
-    query: Query<&AppearanceDescriptor, Changed<AppearanceDescriptor>>,
+    query: Query<
+        (&GameObjectId, Option<&FrameGroupComponent>),
+        Or<(Changed<GameObjectId>, Changed<FrameGroupComponent>)>,
+    >,
     loaded_appearances: Res<LoadedAppearances>,
     mut events: EventWriter<LoadAppearanceEvent>,
 ) {
     query
         .iter()
         .unique()
-        .filter(|descriptor| !loaded_appearances.contains_key(*descriptor))
-        .cloned()
-        .for_each(|descriptor| {
-            events.send(LoadAppearanceEvent(descriptor));
+        .filter(|(&object_id, frame_group)| {
+            !loaded_appearances.contains_key(&(object_id, frame_group.cloned().unwrap_or_default()))
+        })
+        .for_each(|(&object_id, frame_group)| {
+            events.send(LoadAppearanceEvent {
+                object_id,
+                frame_group: frame_group.cloned().unwrap_or_default(),
+            });
         });
 }
 
 #[derive(Event)]
-pub struct LoadAppearanceEvent(pub AppearanceDescriptor);
+pub struct LoadAppearanceEvent {
+    pub object_id: GameObjectId,
+    pub frame_group: FrameGroupComponent,
+}
 
 pub(crate) fn process_load_events_system<C: ContentAssets>(
     content_assets: Res<C>,
     loaded_appearances: Res<LoadedAppearances>,
     mut events: EventReader<LoadAppearanceEvent>,
-) -> Option<HashMap<AppearanceDescriptor, SpriteInfo>> {
-    let descriptors = events
+) -> Option<HashMap<(GameObjectId, FrameGroupComponent), SpriteInfo>> {
+    let keys = loaded_appearances.keys().cloned().collect::<HashSet<_>>();
+    let ids_and_frame_groups = events
         .read()
-        .filter_map(|LoadAppearanceEvent(descriptor)| {
-            if descriptor.id != 0 {
-                Some(descriptor)
-            } else {
-                None
-            }
-        })
+        .filter_map(
+            |LoadAppearanceEvent {
+                 object_id,
+                 frame_group,
+             }| {
+                if object_id.is_none() {
+                    None
+                } else {
+                    Some((*object_id, *frame_group))
+                }
+            },
+        )
         .collect::<HashSet<_>>()
-        .difference(&loaded_appearances.keys().collect::<HashSet<_>>())
+        .difference(&keys)
         .cloned()
         .collect::<Vec<_>>();
-    if descriptors.is_empty() {
+    if ids_and_frame_groups.is_empty() {
         return None;
     }
-    debug!(
-        "Loading ids: {:?}",
-        descriptors
-            .iter()
-            .map(|descriptor| descriptor.id)
-            .collect::<Vec<u32>>()
-    );
 
     Some(
-        descriptors
+        ids_and_frame_groups
             .iter()
-            .filter_map(|&descriptor| {
+            .filter_map(|(object_id, frame_group)| {
+                let (group, id) = object_id.as_group_and_id()?;
                 content_assets
                     .prepared_appearances()
-                    .get_for_group(descriptor.group, descriptor.id)?
+                    .get_for_group(group, id)?
                     .frame_groups
-                    .get(descriptor.frame_group_index() as usize)?
+                    .get(frame_group.frame_group_index() as usize)?
                     .sprite_info
                     .as_ref()
-                    .map(|sprite_info| (*descriptor, sprite_info.clone()))
+                    .map(|sprite_info| ((*object_id, *frame_group), sprite_info.clone()))
             })
             .collect(),
     )
 }
 
 pub(crate) fn load_sprite_system<C: ContentAssets>(
-    In(descriptor_sprite_infos): In<Option<HashMap<AppearanceDescriptor, SpriteInfo>>>,
+    In(inputs): In<Option<HashMap<(GameObjectId, FrameGroupComponent), SpriteInfo>>>,
     content_assets: Res<C>,
     layouts: Res<Assets<TextureAtlasLayout>>,
     sprite_meshes: Res<SpriteMeshes>,
     mut materials: ResMut<Assets<SpriteMaterial>>,
     asset_server: Res<AssetServer>,
 ) -> Option<(
-    HashMap<AppearanceDescriptor, SpriteInfo>,
+    HashMap<(GameObjectId, FrameGroupComponent), SpriteInfo>,
     HashMap<u32, LoadedSprite>,
 )> {
-    descriptor_sprite_infos.map(|descriptor_sprite_infos| {
+    inputs.map(|object_id_sprite_info| {
         (
-            descriptor_sprite_infos.clone(),
-            descriptor_sprite_infos
+            object_id_sprite_info.clone(),
+            object_id_sprite_info
                 .iter()
-                .map(|(descriptor, sprite_info)| (descriptor.group, sprite_info))
+                .filter_map(|((object_id, _frame_group), sprite_info)| {
+                    object_id.group().map(|group| (group, sprite_info))
+                })
                 .group_by(|(group, _)| *group)
                 .into_iter()
                 .map(|(group, group_iter)| {
@@ -404,19 +430,19 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
 pub(crate) fn store_loaded_appearances_system(
     In(input): In<
         Option<(
-            HashMap<AppearanceDescriptor, SpriteInfo>,
+            HashMap<(GameObjectId, FrameGroupComponent), SpriteInfo>,
             HashMap<u32, LoadedSprite>,
         )>,
     >,
     mut loaded_appearances: ResMut<LoadedAppearances>,
 ) {
-    let Some((descriptor_sprite_infos, loaded_sprites)) = input else {
+    let Some((object_id_sprite_infos, loaded_sprites)) = input else {
         return;
     };
 
-    descriptor_sprite_infos
+    object_id_sprite_infos
         .iter()
-        .for_each(|(descriptor, sprite_info)| {
+        .for_each(|((object_id, frame_group), sprite_info)| {
             let sprites: Vec<LoadedSprite> = sprite_info
                 .sprite_ids
                 .iter()
@@ -444,7 +470,7 @@ pub(crate) fn store_loaded_appearances_system(
                 animation: animation_tuple,
             };
 
-            loaded_appearances.insert(*descriptor, loaded_appearance);
+            loaded_appearances.insert((*object_id, *frame_group), loaded_appearance);
         });
 }
 

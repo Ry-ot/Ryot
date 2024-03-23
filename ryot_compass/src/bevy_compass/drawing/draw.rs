@@ -6,6 +6,7 @@ use bevy::ecs::query::QueryFilter;
 use bevy::prelude::*;
 use leafwing_input_manager::action_state::ActionState;
 use ryot::bevy_ryot::map::MapTiles;
+use ryot::bevy_ryot::sprites::FrameGroupComponent;
 use ryot::bevy_ryot::*;
 use ryot::prelude::{drawing::*, position::*};
 use ryot::Layer;
@@ -20,8 +21,11 @@ pub fn handle_drawing_input<C: ContentAssets>(
     mut command_history: ResMut<CommandHistory>,
     content_assets: Res<C>,
     brushes: Res<Brushes<DrawingBundle>>,
-    q_current_appearance: Query<(&Visibility, &Layer, &AppearanceDescriptor), With<TileComponent>>,
-    cursor_query: Query<(Option<&AppearanceDescriptor>, &TilePosition, &Cursor)>,
+    q_current: Query<
+        (&Visibility, &GameObjectId, Option<&FrameGroupComponent>),
+        (With<TileComponent>, With<Layer>),
+    >,
+    cursor_query: Query<(Option<&GameObjectId>, &TilePosition, &Cursor)>,
 ) {
     get_cursor_inputs(
         &content_assets,
@@ -34,12 +38,12 @@ pub fn handle_drawing_input<C: ContentAssets>(
                     &mut commands,
                     &mut command_history,
                     &mut tiles,
-                    &q_current_appearance,
+                    &q_current,
                 );
             }
             Some(ToolMode::Erase) => {
                 delete_top_most_elements_in_positions(
-                    get_top_most_visible_for_bundles(&bundles, &mut tiles, &q_current_appearance),
+                    get_top_most_visible_for_bundles(&bundles, &mut tiles, &q_current),
                     &mut commands,
                     &mut command_history,
                 );
@@ -52,7 +56,7 @@ pub fn handle_drawing_input<C: ContentAssets>(
 fn get_cursor_inputs<C: ContentAssets, F: QueryFilter>(
     content_assets: &Res<C>,
     brushes: &Res<Brushes<DrawingBundle>>,
-    cursor_query: &Query<(Option<&AppearanceDescriptor>, &TilePosition, &Cursor), F>,
+    cursor_query: &Query<(Option<&GameObjectId>, &TilePosition, &Cursor), F>,
     mut callback: impl FnMut(&Cursor, Vec<DrawingBundle>),
 ) {
     if content_assets.sprite_sheet_data_set().is_none() {
@@ -60,21 +64,21 @@ fn get_cursor_inputs<C: ContentAssets, F: QueryFilter>(
         return;
     };
 
-    for (appearance, tile_pos, cursor) in cursor_query {
-        let (appearance, layer) = match appearance {
-            None => (AppearanceDescriptor::default(), Layer::default()),
-            Some(appearance) => {
+    for (object_id, tile_pos, cursor) in cursor_query {
+        let (object_id, layer) = match object_id {
+            None => (GameObjectId::default(), Layer::default()),
+            Some(object_id) => {
+                let Some((group, id)) = object_id.as_group_and_id() else {
+                    continue;
+                };
                 let Some(prepared_appearance) = content_assets
                     .prepared_appearances()
-                    .get_for_group(appearance.group, appearance.id)
+                    .get_for_group(group, id)
                 else {
                     continue;
                 };
 
-                (
-                    AppearanceDescriptor::new(appearance.group, appearance.id, default()),
-                    prepared_appearance.layer,
-                )
+                (*object_id, prepared_appearance.layer)
             }
         };
 
@@ -83,7 +87,7 @@ fn get_cursor_inputs<C: ContentAssets, F: QueryFilter>(
             brushes(
                 cursor.drawing_state.brush_index,
                 cursor.drawing_state.input_type.into(),
-                DrawingBundle::new(layer, *tile_pos, appearance),
+                DrawingBundle::new(layer, *tile_pos, object_id, default()),
             ),
         );
     }
@@ -94,7 +98,10 @@ fn create_or_update_content_for_positions(
     commands: &mut Commands,
     command_history: &mut ResMut<CommandHistory>,
     tiles: &mut ResMut<MapTiles<Entity>>,
-    q_current_appearance: &Query<(&Visibility, &Layer, &AppearanceDescriptor), With<TileComponent>>,
+    q_current: &Query<
+        (&Visibility, &GameObjectId, Option<&FrameGroupComponent>),
+        (With<TileComponent>, With<Layer>),
+    >,
 ) {
     let mut old_info: Vec<DrawingInfo> = vec![];
     let mut to_draw = to_draw.to_vec();
@@ -102,11 +109,8 @@ fn create_or_update_content_for_positions(
     for new_bundle in to_draw.iter_mut() {
         match new_bundle.layer {
             Layer::Bottom(_) => {
-                let top_most = get_top_most_visible_bottom_layer(
-                    new_bundle.tile_pos,
-                    tiles,
-                    q_current_appearance,
-                );
+                let top_most =
+                    get_top_most_visible_bottom_layer(new_bundle.tile_pos, tiles, q_current);
 
                 let Some((_, old_bundle)) = top_most else {
                     old_info.push((
@@ -128,7 +132,7 @@ fn create_or_update_content_for_positions(
                         if new_bundle.layer != old_bundle.layer {
                             None
                         } else {
-                            Some(old_bundle.appearance)
+                            Some((old_bundle.object_id, old_bundle.frame_group))
                         },
                     ));
                 };
@@ -137,7 +141,7 @@ fn create_or_update_content_for_positions(
                 new_bundle.tile_pos,
                 new_bundle.layer,
                 new_bundle.visibility,
-                get_current_appearance(*new_bundle, tiles, q_current_appearance),
+                get_current_appearance(*new_bundle, tiles, q_current),
             )),
         }
     }
@@ -150,8 +154,8 @@ fn create_or_update_content_for_positions(
 
     if new_info
         .iter()
-        .filter_map(|info| Some(info.3?.id))
-        .eq(old_info.iter().filter_map(|info| Some(info.3?.id)))
+        .filter_map(|info| info.3?.0.id())
+        .eq(old_info.iter().filter_map(|info| info.3?.0.id()))
     {
         return;
     }
@@ -166,14 +170,19 @@ fn create_or_update_content_for_positions(
 pub fn get_current_appearance(
     new_bundle: DrawingBundle,
     tiles: &mut ResMut<MapTiles<Entity>>,
-    q_current_appearance: &Query<(&Visibility, &Layer, &AppearanceDescriptor), With<TileComponent>>,
-) -> Option<AppearanceDescriptor> {
-    match q_current_appearance.get(
+    q_current: &Query<
+        (&Visibility, &GameObjectId, Option<&FrameGroupComponent>),
+        (With<TileComponent>, With<Layer>),
+    >,
+) -> Option<(GameObjectId, FrameGroupComponent)> {
+    match q_current.get(
         tiles
             .get(&new_bundle.tile_pos)?
             .peek_for_layer(new_bundle.layer)?,
     ) {
-        Ok((visibility, _, appearance)) if visibility != Visibility::Hidden => Some(*appearance),
+        Ok((visibility, object_id, frame_group)) if visibility != Visibility::Hidden => {
+            Some((*object_id, frame_group.cloned().unwrap_or_default()))
+        }
         _ => None,
     }
 }

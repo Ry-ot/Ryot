@@ -2,7 +2,7 @@ use crate::sprites::LoadedSprite;
 use crate::{CursorCommand, TilesetCategory, ToolMode};
 use bevy::prelude::*;
 use egui::{Align, Ui};
-use ryot::bevy_ryot::{AppearanceDescriptor, ContentAssets};
+use ryot::bevy_ryot::{ContentAssets, GameObjectId};
 use std::ops::Range;
 
 #[derive(Resource, Debug)]
@@ -12,11 +12,11 @@ pub struct PaletteState {
     pub width: f32,
     pub grid_size: u32,
     pub tile_padding: f32,
-    pub selected_tile: Option<AppearanceDescriptor>,
+    pub selected_tile: Option<GameObjectId>,
     pub selected_category: TilesetCategory,
-    pub category_sprites: Vec<AppearanceDescriptor>,
+    pub category_sprites: Vec<GameObjectId>,
     pub visible_rows: Range<usize>,
-    pub loaded_images: Vec<(AppearanceDescriptor, Handle<Image>, egui::Vec2, egui::Rect)>,
+    pub loaded_images: Vec<(GameObjectId, Handle<Image>, egui::Vec2, egui::Rect)>,
 }
 
 impl Default for PaletteState {
@@ -155,7 +155,7 @@ pub fn draw_palette_picker(
 
 pub fn draw_palette_items(
     ui: &mut Ui,
-    egui_images: Vec<(&AppearanceDescriptor, egui::Image)>,
+    egui_images: Vec<(&GameObjectId, egui::Image)>,
     palette_state: &mut ResMut<PaletteState>,
     cursor_events_writer: &mut EventWriter<CursorCommand>,
 ) {
@@ -178,16 +178,14 @@ pub fn draw_palette_items(
                         .chunks(palette_state.get_chunk_size())
                         .for_each(|chunk| {
                             ui.add_space(extra / 2.0);
-                            chunk.iter().for_each(|(&descriptor, image)| {
+                            chunk.iter().for_each(|(&object_id, image)| {
                                 let size = palette_state.grid_size as f32;
 
                                 let tile =
                                     image.clone().fit_to_exact_size(egui::Vec2::new(size, size));
 
-                                let content_id = descriptor.id;
-
                                 let selected = match &palette_state.selected_tile {
-                                    Some(AppearanceDescriptor { id, .. }) => *id == content_id,
+                                    Some(selected_object_id) => *selected_object_id == object_id,
                                     _ => false,
                                 };
 
@@ -195,29 +193,29 @@ pub fn draw_palette_items(
                                     ui.add(egui::ImageButton::new(tile).selected(selected));
 
                                 let ui_button = ui_button
-                                    .on_hover_text(format!("{}", content_id))
+                                    .on_hover_text(format!("{}", object_id))
                                     .on_hover_cursor(egui::CursorIcon::PointingHand);
 
                                 if ui_button.clicked() {
                                     match palette_state.selected_tile {
-                                        Some(AppearanceDescriptor { id, .. })
-                                            if id == content_id =>
+                                        Some(selected_object_id)
+                                            if selected_object_id == object_id =>
                                         {
                                             palette_state.selected_tile = None;
 
                                             cursor_events_writer
                                                 .send(CursorCommand::ChangeToolMode(None));
-                                            debug!("Tile: {:?} deselected", content_id);
+                                            debug!("Tile: {:?} deselected", object_id);
                                         }
                                         _ => {
-                                            palette_state.selected_tile = Some(descriptor);
+                                            palette_state.selected_tile = Some(object_id);
 
                                             cursor_events_writer.send(
                                                 CursorCommand::ChangeToolMode(Some(
-                                                    ToolMode::Draw(descriptor),
+                                                    ToolMode::Draw(object_id),
                                                 )),
                                             );
-                                            debug!("Tile: {:?} selected", content_id);
+                                            debug!("Tile: {:?} selected", object_id);
                                         }
                                     }
                                 }

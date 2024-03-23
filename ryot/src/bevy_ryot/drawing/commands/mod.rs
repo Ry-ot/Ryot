@@ -12,7 +12,8 @@
 //! To avoid having god-like commands responsible for everything, we use the command pattern to
 //! trigger the drawing flow, and then we use the ECS API to perform the operations.
 use crate::bevy_ryot::drawing::DrawingBundle;
-use crate::bevy_ryot::AppearanceDescriptor;
+use crate::bevy_ryot::sprites::FrameGroupComponent;
+use crate::bevy_ryot::GameObjectId;
 use crate::position::TilePosition;
 use crate::Layer;
 use bevy::prelude::*;
@@ -59,7 +60,7 @@ pub type DrawingInfo = (
     TilePosition,
     Layer,
     Visibility,
-    Option<AppearanceDescriptor>,
+    Option<(GameObjectId, FrameGroupComponent)>,
 );
 
 impl From<DrawingBundle> for DrawingInfo {
@@ -68,7 +69,7 @@ impl From<DrawingBundle> for DrawingInfo {
             bundle.tile_pos,
             bundle.layer,
             bundle.visibility,
-            Some(bundle.appearance),
+            Some((bundle.object_id, bundle.frame_group)),
         )
     }
 }
