@@ -16,7 +16,7 @@ use std::path::PathBuf;
 
 pub const SPRITE_BASE_SIZE: UVec2 = UVec2::new(32, 32);
 
-use self::drawing::Elevation;
+use self::elevation::Elevation;
 use self::sprite_animations::{
     AnimationDescriptor, AnimationKey, AnimationSprite, SpriteAnimationExt,
 };

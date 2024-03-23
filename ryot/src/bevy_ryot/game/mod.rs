@@ -1,9 +1,10 @@
 use core::fmt;
 
-use crate::prelude::drawing::DrawingInfo;
 use crate::prelude::*;
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};
+
+pub mod elevation;
 
 pub struct GamePlugin;
 
@@ -87,17 +88,6 @@ impl GameObjectBundle {
             position,
             layer,
         }
-    }
-}
-
-impl From<GameObjectBundle> for DrawingInfo {
-    fn from(bundle: GameObjectBundle) -> Self {
-        (
-            bundle.position,
-            bundle.layer,
-            Visibility::Visible,
-            Some((bundle.object_id, default())),
-        )
     }
 }
 

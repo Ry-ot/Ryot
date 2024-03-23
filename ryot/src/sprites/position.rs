@@ -9,7 +9,7 @@ use std::{
 };
 
 #[cfg(feature = "bevy")]
-use crate::bevy_ryot::drawing::Elevation;
+use crate::bevy_ryot::elevation::Elevation;
 use crate::SpriteLayout;
 #[cfg(all(feature = "bevy", feature = "debug"))]
 use bevy_stroked_text::StrokedText;
@@ -403,7 +403,7 @@ pub fn update_sprite_position(
         .par_iter_mut()
         .for_each(|(layout, tile_pos, elevation, layer, mut transform)| {
             transform.translation =
-                tile_pos.to_elevated_translation(*layout, *layer, Anchor::from(*elevation));
+                tile_pos.to_elevated_translation(*layout, *layer, elevation.to_anchor());
         });
 }
 
@@ -457,12 +457,12 @@ pub fn move_sprites_with_animation(
             let origin_translation = movement.origin.0.to_elevated_translation(
                 *layout,
                 *layer,
-                Anchor::from(origin_elevation),
+                origin_elevation.to_anchor(),
             );
             let destination_translation = movement.destination.to_elevated_translation(
                 *layout,
                 *layer,
-                Anchor::from(destination_elevation),
+                destination_elevation.to_anchor(),
             );
             transform.translation = origin_translation
                 .lerp(destination_translation, movement.timer.fraction())
@@ -515,5 +515,18 @@ impl SubAssign<IVec2> for TilePosition {
     #[inline]
     fn sub_assign(&mut self, rhs: IVec2) {
         *self = *self - rhs;
+    }
+}
+
+trait ElevationExt {
+    fn to_anchor(self) -> Anchor;
+}
+
+impl ElevationExt for Elevation {
+    fn to_anchor(self) -> Anchor {
+        Anchor::Custom(Vec2::new(
+            (0.5 + self.elevation).clamp(0.5, 1.5),
+            (-0.5 - self.elevation).clamp(-1.5, -0.5),
+        ))
     }
 }
