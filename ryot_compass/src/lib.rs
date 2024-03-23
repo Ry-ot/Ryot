@@ -36,8 +36,7 @@ pub struct AppPlugin;
 
 impl Plugin for AppPlugin {
     fn build(&self, app: &mut App) {
-        app.init_state::<InternalContentState>()
-            .add_event::<AppExit>()
+        app.add_event::<AppExit>()
             .insert_resource(AssetMetaCheck::Never)
             .add_plugins(InputManagerPlugin::<ToggleFeatures>::default())
             .init_resource::<ActionState<ToggleFeatures>>()
@@ -57,7 +56,7 @@ impl Plugin for AppPlugin {
                 DefaultPlugins
                     .set(entitled_window("Compass".to_string()))
                     .set(ImagePlugin::default_nearest()),
-                ContentPlugin::<CompassContentAssets>::new(),
+                VisualContentPlugin::<CompassContentAssets>::default(),
                 WorldInspectorPlugin::default()
                     .run_if(action_toggle_active(false, ToggleFeatures::Inspector)),
             ))

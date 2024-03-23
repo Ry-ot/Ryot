@@ -28,16 +28,8 @@ pub struct CompassContentAssets {
 impl PreloadedContentAssets for CompassContentAssets {}
 
 impl PreloadedAssets for CompassContentAssets {
-    fn appearances(&self) -> Handle<Appearance> {
-        self.appearances.clone_weak()
-    }
-
     fn catalog_content(&self) -> Handle<Catalog> {
         self.catalog_content.clone_weak()
-    }
-
-    fn prepared_appearances_mut(&mut self) -> &mut PreparedAppearances {
-        &mut self.prepared_appearances
     }
 
     fn set_sprite_sheets_data(&mut self, sprite_sheet_set: SpriteSheetDataSet) {
@@ -46,9 +38,6 @@ impl PreloadedAssets for CompassContentAssets {
 }
 
 impl ContentAssets for CompassContentAssets {
-    fn prepared_appearances(&self) -> &PreparedAppearances {
-        &self.prepared_appearances
-    }
     fn sprite_sheet_data_set(&self) -> Option<&SpriteSheetDataSet> {
         self.sheet_data_set.as_ref()
     }
@@ -59,6 +48,20 @@ impl ContentAssets for CompassContentAssets {
 
     fn get_atlas_layout(&self, layout: SpriteLayout) -> Option<Handle<TextureAtlasLayout>> {
         self.atlas_layout.get(layout as usize).cloned()
+    }
+}
+
+impl AppearanceAssets for CompassContentAssets {
+    fn appearances(&self) -> Handle<Appearance> {
+        self.appearances.clone_weak()
+    }
+
+    fn prepared_appearances_mut(&mut self) -> &mut PreparedAppearances {
+        &mut self.prepared_appearances
+    }
+
+    fn prepared_appearances(&self) -> &PreparedAppearances {
+        &self.prepared_appearances
     }
 }
 
