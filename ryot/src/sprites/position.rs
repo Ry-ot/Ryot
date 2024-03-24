@@ -441,14 +441,18 @@ pub fn move_sprites_with_animation(
 }
 
 #[cfg(feature = "bevy")]
-pub fn finish_position_animation(mut commands: Commands, query: Query<(Entity, &SpriteMovement)>) {
+pub fn finish_position_animation(
+    mut commands: Commands,
+    mut query: Query<(Entity, &mut Transform, &SpriteMovement)>,
+) {
     query
-        .iter()
-        .filter(|(_, movement)| movement.timer.just_finished())
-        .for_each(|(entity, movement)| {
+        .iter_mut()
+        .filter(|(_, _, movement)| movement.timer.just_finished())
+        .for_each(|(entity, mut transform, movement)| {
             if movement.despawn_on_end {
                 commands.entity(entity).despawn_recursive();
             } else {
+                transform.translation.z = movement.destination.z;
                 commands.entity(entity).remove::<SpriteMovement>();
             }
         });
