@@ -1,5 +1,5 @@
 #[cfg(feature = "bevy")]
-use bevy::{prelude::*, sprite::Anchor};
+use bevy::prelude::*;
 
 use std::hash::Hash;
 use std::ops::{Add, AddAssign, DerefMut, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
@@ -75,24 +75,19 @@ impl TilePosition {
         Vec2::from(self).extend(compute_z_transform(&self, layer))
     }
 
-    pub fn from_elevated_translation(
-        translation: Vec3,
-        layout: SpriteLayout,
-        anchor: Anchor,
-    ) -> Self {
-        let position =
-            translation.truncate() + (layout.get_size(&tile_size()).as_vec2() * anchor.as_vec());
-        TilePosition::from(position)
-    }
-
     pub fn to_elevated_translation(
         self,
         layout: SpriteLayout,
         layer: Layer,
-        anchor: Anchor,
+        elevation: Elevation,
     ) -> Vec3 {
+        let anchor = Vec2::new(
+            (elevation.elevation).clamp(0.0, 1.0),
+            (-elevation.elevation).clamp(-1.0, 0.0),
+        );
         self.to_vec3(&layer)
-            - (layout.get_size(&tile_size()).as_vec2() * anchor.as_vec()).extend(0.)
+            - (SpriteLayout::OneByOne.get_size(&tile_size()).as_vec2() * anchor).extend(0.)
+            - (layout.get_size(&tile_size()).as_vec2() * Vec2::new(0.5, -0.5)).extend(0.)
     }
 }
 
@@ -398,8 +393,7 @@ pub fn update_sprite_position(
     query
         .par_iter_mut()
         .for_each(|(layout, tile_pos, elevation, layer, mut transform)| {
-            transform.translation =
-                tile_pos.to_elevated_translation(*layout, *layer, elevation.to_anchor());
+            transform.translation = tile_pos.to_elevated_translation(*layout, *layer, *elevation);
         });
 }
 
@@ -487,18 +481,5 @@ impl SubAssign<IVec2> for TilePosition {
     #[inline]
     fn sub_assign(&mut self, rhs: IVec2) {
         *self = *self - rhs;
-    }
-}
-
-pub trait ElevationExt {
-    fn to_anchor(self) -> Anchor;
-}
-
-impl ElevationExt for Elevation {
-    fn to_anchor(self) -> Anchor {
-        Anchor::Custom(Vec2::new(
-            (0.5 + self.elevation).clamp(0.5, 1.5),
-            (-0.5 - self.elevation).clamp(-1.5, -0.5),
-        ))
     }
 }
