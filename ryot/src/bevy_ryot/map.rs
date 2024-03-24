@@ -133,7 +133,9 @@ impl<T: Copy> MapTile<T> {
         match layer {
             Layer::Ground => self.ground = Some(entity),
             Layer::Edge => self.edge = Some(entity),
-            Layer::Bottom(bottom) => self.push_bottom(bottom, entity),
+            Layer::Bottom(bottom) => {
+                self.push_bottom(bottom, entity);
+            }
             Layer::Top => self.top = Some(entity),
             Layer::Hud(_) => (),
         }
@@ -152,27 +154,27 @@ impl<T: Copy> MapTile<T> {
         }
     }
 
-    fn remove_bottom(&mut self, relative_layer: RelativeLayer, order: &Order) -> Option<T> {
+    pub fn remove_bottom(&mut self, relative_layer: RelativeLayer, order: &Order) -> Option<T> {
         self.bottom
             .get_mut(&relative_layer)
             .and_then(|entities| entities.remove(order))
     }
 
-    fn peek_bottom(&self, relative_layer: RelativeLayer) -> Option<T> {
+    pub fn peek_bottom(&self, relative_layer: RelativeLayer) -> Option<T> {
         self.bottom
             .get(&relative_layer)
             .and_then(|entities| entities.iter().last())
             .map(|(_, entity)| *entity)
     }
 
-    fn get_bottom(&self, relative_layer: RelativeLayer, order: &Order) -> Option<T> {
+    pub fn get_bottom(&self, relative_layer: RelativeLayer, order: &Order) -> Option<T> {
         self.bottom
             .get(&relative_layer)
             .and_then(|entities| entities.get(order))
             .copied()
     }
 
-    fn push_bottom(&mut self, bottom_layer: BottomLayer, entity: T) {
+    pub fn push_bottom(&mut self, bottom_layer: BottomLayer, entity: T) -> Layer {
         let bottom = self.bottom.entry(bottom_layer.relative_layer).or_default();
         let order = if bottom_layer.order == Order::MAX {
             bottom
@@ -185,6 +187,10 @@ impl<T: Copy> MapTile<T> {
             bottom_layer.order
         };
         bottom.insert(order, entity);
+        Layer::Bottom(BottomLayer {
+            order,
+            relative_layer: bottom_layer.relative_layer,
+        })
     }
 }
 
