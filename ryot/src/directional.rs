@@ -1,6 +1,6 @@
 use std::ops::Deref;
 
-use glam::IVec2;
+use glam::{IVec2, Vec2, Vec3};
 use rand::distributions::Distribution;
 use serde::{Deserialize, Serialize};
 use strum::EnumIter;
@@ -117,6 +117,28 @@ impl From<IVec2> for OrdinalDirection {
             IVec2 { x: -1, y: 1 } => OrdinalDirection::NorthWest,
             _ => OrdinalDirection::None,
         }
+    }
+}
+
+impl From<Vec2> for OrdinalDirection {
+    fn from(value: Vec2) -> Self {
+        match value.clamp(Vec2::splat(-1.0), Vec2::splat(1.0)).as_ivec2() {
+            IVec2 { x: 0, y: 1 } => OrdinalDirection::North,
+            IVec2 { x: 1, y: 1 } => OrdinalDirection::NorthEast,
+            IVec2 { x: 1, y: 0 } => OrdinalDirection::East,
+            IVec2 { x: 1, y: -1 } => OrdinalDirection::SouthEast,
+            IVec2 { x: 0, y: -1 } => OrdinalDirection::South,
+            IVec2 { x: -1, y: -1 } => OrdinalDirection::SouthWest,
+            IVec2 { x: -1, y: 0 } => OrdinalDirection::West,
+            IVec2 { x: -1, y: 1 } => OrdinalDirection::NorthWest,
+            _ => OrdinalDirection::None,
+        }
+    }
+}
+
+impl From<Vec3> for OrdinalDirection {
+    fn from(value: Vec3) -> Self {
+        value.truncate().into()
     }
 }
 

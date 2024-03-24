@@ -37,8 +37,8 @@ pub struct PositionDebugText;
 #[cfg(feature = "bevy")]
 #[derive(Component, Debug, Clone)]
 pub struct SpriteMovement {
-    pub origin: (TilePosition, Elevation),
-    pub destination: TilePosition,
+    pub origin: Vec3,
+    pub destination: Vec3,
     pub timer: Timer,
     pub despawn_on_end: bool,
 }
@@ -166,11 +166,7 @@ impl quickcheck::Arbitrary for TilePosition {
 
 #[cfg(feature = "bevy")]
 impl SpriteMovement {
-    pub fn new(
-        origin: (TilePosition, Elevation),
-        destination: TilePosition,
-        duration: Duration,
-    ) -> Self {
+    pub fn new(origin: Vec3, destination: Vec3, duration: Duration) -> Self {
         Self {
             origin,
             destination,
@@ -431,51 +427,27 @@ pub fn debug_sprite_position(
 
 #[cfg(feature = "bevy")]
 pub fn move_sprites_with_animation(
-    mut query: Query<
-        (
-            &SpriteLayout,
-            &Elevation,
-            &Layer,
-            &mut Transform,
-            &mut SpriteMovement,
-        ),
-        PositionChangedFilter,
-    >,
+    mut query: Query<(&mut Transform, &mut SpriteMovement)>,
     time: Res<Time>,
 ) {
     query
         .par_iter_mut()
-        .for_each(|(layout, elevation, layer, mut transform, mut movement)| {
+        .for_each(|(mut transform, mut movement)| {
             movement.timer.tick(time.delta());
             // We need the moving entity to be on top of other entities
             // This is to ensure that the layering logic is consistent no matter what direction
             // the entity is moving in
-            let z = compute_z_transform(&movement.origin.0, layer)
-                .max(compute_z_transform(&movement.destination, layer));
-            let origin_elevation = movement.origin.1;
-            let destination_elevation = *elevation;
-            let origin_translation = movement.origin.0.to_elevated_translation(
-                *layout,
-                *layer,
-                origin_elevation.to_anchor(),
-            );
-            let destination_translation = movement.destination.to_elevated_translation(
-                *layout,
-                *layer,
-                destination_elevation.to_anchor(),
-            );
-            transform.translation = origin_translation
-                .lerp(destination_translation, movement.timer.fraction())
+            let z = movement.origin.z.max(movement.destination.z);
+            transform.translation = movement
+                .origin
+                .lerp(movement.destination, movement.timer.fraction())
                 .truncate()
                 .extend(z);
         });
 }
 
 #[cfg(feature = "bevy")]
-pub fn finish_position_animation(
-    mut commands: Commands,
-    query: Query<(Entity, &SpriteMovement), PositionChangedFilter>,
-) {
+pub fn finish_position_animation(mut commands: Commands, query: Query<(Entity, &SpriteMovement)>) {
     query
         .iter()
         .filter(|(_, movement)| movement.timer.just_finished())
@@ -518,7 +490,7 @@ impl SubAssign<IVec2> for TilePosition {
     }
 }
 
-trait ElevationExt {
+pub trait ElevationExt {
     fn to_anchor(self) -> Anchor;
 }
 

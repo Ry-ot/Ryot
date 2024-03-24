@@ -31,12 +31,31 @@ pub struct LoadedAppearance {
 pub struct FrameGroupComponent(pub FixedFrameGroup);
 
 impl FrameGroupComponent {
+    pub fn moving() -> Self {
+        Self(FixedFrameGroup::OutfitMoving)
+    }
+
+    pub fn idle() -> Self {
+        Self(FixedFrameGroup::OutfitIdle)
+    }
+
     pub(crate) fn frame_group_index(&self) -> i32 {
         match self.0 {
             FixedFrameGroup::OutfitIdle => 0,
             FixedFrameGroup::OutfitMoving => 1,
             FixedFrameGroup::ObjectInitial => 0,
         }
+    }
+
+    pub fn set_moving(&mut self, value: bool) {
+        if self.0 == FixedFrameGroup::ObjectInitial {
+            return;
+        }
+        self.0 = if value {
+            FixedFrameGroup::OutfitMoving
+        } else {
+            FixedFrameGroup::OutfitIdle
+        };
     }
 }
 
@@ -238,7 +257,6 @@ pub(crate) fn ensure_appearance_initialized(
 
 pub(crate) type ChangingAppearanceFilter = Or<(
     Changed<GameObjectId>,
-    Changed<FrameGroupComponent>,
     Changed<FrameGroupComponent>,
     Changed<Directional>,
     (Without<AnimationSprite>, Changed<SpriteParams>),
@@ -456,7 +474,7 @@ pub(crate) fn store_loaded_appearances_system(
                     animation.get_animation_key(),
                     AnimationDescriptor {
                         sprites: sprites.clone(),
-                        initial_index: 0,
+                        layers: sprite_info.layers() as usize,
                         skip: (sprite_info.layers()
                             * sprite_info.pattern_width()
                             * sprite_info.pattern_height()
