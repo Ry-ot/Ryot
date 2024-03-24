@@ -131,7 +131,7 @@ impl AnimationState {
 #[derive(Debug, Clone)]
 pub struct AnimationDescriptor {
     pub sprites: Vec<LoadedSprite>,
-    pub initial_index: usize,
+    pub layers: usize,
     pub skip: usize,
     pub synchronized: bool,
 }
@@ -220,6 +220,7 @@ pub(crate) fn tick_animation_system(
     mut q_sprites: Query<(
         &mut Handle<SpriteMaterial>,
         &mut AnimationSprite,
+        Option<&Directional>,
         Option<&SpriteParams>,
         Option<&AnimationDuration>,
     )>,
@@ -230,9 +231,8 @@ pub(crate) fn tick_animation_system(
         .iter_mut()
         .for_each(|(key, state)| state.tick(key, delta));
 
-    q_sprites
-        .iter_mut()
-        .for_each(|(mut material, mut anim, sprite_params, duration)| {
+    q_sprites.iter_mut().for_each(
+        |(mut material, mut anim, direction, sprite_params, duration)| {
             if let AnimationSprite::Independent { key, state, .. } = &mut *anim {
                 if let Some(duration) = duration {
                     let frame_duration = duration.0 / key.total_phases as u32;
@@ -256,13 +256,18 @@ pub(crate) fn tick_animation_system(
             };
 
             if state.just_finished() {
+                let direction_index = match direction {
+                    Some(dir) => dir.index(),
+                    None => 0,
+                } * descriptor.layers;
                 let Some(sprite) = descriptor
                     .sprites
-                    .get(descriptor.initial_index + state.current_phase * descriptor.skip)
+                    .get(direction_index + state.current_phase * descriptor.skip)
                 else {
                     return;
                 };
                 *material = sprite_material_from_params(sprite_params, &mut materials, sprite);
             }
-        });
+        },
+    );
 }

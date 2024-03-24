@@ -17,7 +17,6 @@ pub use commands::*;
 mod systems;
 pub use systems::*;
 
-use super::elevation::Elevation;
 use super::sprites::FrameGroupComponent;
 
 pub struct DrawingPlugin;
@@ -154,44 +153,59 @@ impl DrawingBundle {
 /// The moving is removed from the map when the duration is over by default.
 #[derive(Bundle, Debug, Clone)]
 pub struct MovementBundle {
-    pub drawing: DrawingBundle,
+    pub layer: Layer,
+    pub object_id: GameObjectId,
+    pub frame_group: FrameGroupComponent,
     pub movement: SpriteMovement,
     pub direction: Directional,
 }
 
 impl MovementBundle {
     pub fn new(
-        drawing: DrawingBundle,
-        start: (TilePosition, Elevation),
-        end: TilePosition,
+        layer: Layer,
+        object_id: GameObjectId,
+        frame_group: FrameGroupComponent,
+        start: Vec3,
+        end: Vec3,
         duration: Duration,
     ) -> Self {
         Self {
-            drawing: drawing.with_position(end),
+            layer,
+            object_id,
+            frame_group,
             movement: SpriteMovement::new(start, end, duration).despawn_on_end(true),
-            direction: Directional::Ordinal(OrdinalDirection::from(end - start.0)),
+            direction: Directional::Ordinal(OrdinalDirection::from(end - start)),
         }
     }
 
     pub fn object(
-        start: (TilePosition, Elevation),
-        end: TilePosition,
+        start: Vec3,
+        end: Vec3,
         layer: impl Into<Layer>,
-        id: u32,
-        duration: Duration,
-    ) -> Self {
-        Self::new(DrawingBundle::object(layer, end, id), start, end, duration)
-    }
-
-    pub fn missile(
-        layer: impl Into<Layer>,
-        start: (TilePosition, Elevation),
-        end: TilePosition,
         id: u32,
         duration: Duration,
     ) -> Self {
         Self::new(
-            DrawingBundle::missile(layer.into(), end, id),
+            layer.into(),
+            GameObjectId::Object(id),
+            default(),
+            start,
+            end,
+            duration,
+        )
+    }
+
+    pub fn missile(
+        layer: impl Into<Layer>,
+        start: Vec3,
+        end: Vec3,
+        id: u32,
+        duration: Duration,
+    ) -> Self {
+        Self::new(
+            layer.into(),
+            GameObjectId::Missile(id),
+            default(),
             start,
             end,
             duration,
@@ -200,12 +214,19 @@ impl MovementBundle {
 
     pub fn effect(
         layer: impl Into<Layer>,
-        start: (TilePosition, Elevation),
-        end: TilePosition,
+        start: Vec3,
+        end: Vec3,
         id: u32,
         duration: Duration,
     ) -> Self {
-        Self::new(DrawingBundle::effect(layer, end, id), start, end, duration)
+        Self::new(
+            layer.into(),
+            GameObjectId::Effect(id),
+            default(),
+            start,
+            end,
+            duration,
+        )
     }
 
     pub fn sticky(self) -> Self {
