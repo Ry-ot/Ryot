@@ -1,6 +1,7 @@
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;
 
+use std::collections::HashSet;
 use std::hash::Hash;
 use std::ops::{Add, AddAssign, DerefMut, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 use std::{
@@ -10,7 +11,8 @@ use std::{
 
 #[cfg(feature = "bevy")]
 use crate::bevy_ryot::elevation::Elevation;
-use crate::SpriteLayout;
+use crate::{SpriteLayout};
+use bevy::math::bounding::{Aabb3d, BoundingSphere};
 #[cfg(all(feature = "bevy", feature = "debug"))]
 use bevy_stroked_text::StrokedText;
 #[cfg(feature = "bevy")]
@@ -46,6 +48,7 @@ pub struct SpriteMovement {
 impl TilePosition {
     /// The minimum possible tile position. This has to be something that when multiplied by the tile size does not overflow f32.
     pub const MIN: TilePosition = TilePosition(IVec3::new(i16::MIN as i32, i16::MIN as i32, 0));
+
     /// The maximum possible tile position. This has to be something that when multiplied by the tile size does not overflow f32.
     pub const MAX: TilePosition = TilePosition(IVec3::new(i16::MAX as i32, i16::MAX as i32, 0));
 
@@ -88,6 +91,84 @@ impl TilePosition {
         self.to_vec3(&layer)
             - (SpriteLayout::OneByOne.get_size(&tile_size()).as_vec2() * anchor).extend(0.)
             - (layout.get_size(&tile_size()).as_vec2() * Vec2::new(0.5, -0.5)).extend(0.)
+    }
+
+    /// Generates a straight line from `self` to `end` using Bresenham's line algorithm.
+    /// This algorithm determines the points of an n-dimensional raster that should be selected
+    /// to form a close approximation to a straight line between two points.
+    pub fn bresenhams_line(self, end: Self) -> Vec<TilePosition> {
+        let mut points = Vec::new();
+
+        let dx = (end.x - self.x).abs();
+        let sx = if self.x < end.x { 1 } else { -1 };
+        let dy = -(end.y - self.y).abs();
+        let sy = if self.y < end.y { 1 } else { -1 };
+        let mut err = dx + dy;
+
+        let mut x = self.x;
+        let mut y = self.y;
+        loop {
+            points.push(TilePosition::new(x, y, self.z));
+            if x == end.x && y == end.y {
+                break;
+            }
+            let e2 = 2 * err;
+            if e2 >= dy {
+                err += dy;
+                x += sx;
+            }
+            if e2 <= dx {
+                err += dx;
+                y += sy;
+            }
+        }
+
+        points
+    }
+
+    /// Checks if there's a direct path between `self` and `target` without any interruptions.
+    /// Utilizes the Bresenham's line algorithm to compute the straight line path and checks
+    /// if all positions along the path are contained within a specified set of positions.
+    pub fn is_directly_connected(
+        self,
+        target: TilePosition,
+        positions: &HashSet<TilePosition>,
+    ) -> bool {
+        if self.z != target.z {
+            return false;
+        }
+
+        for pos in self.bresenhams_line(target) {
+            if !positions.contains(&pos) {
+                return false;
+            }
+        }
+
+        true
+    }
+
+    /// Calculates the positions on the circumference of an arc with the given parameters.
+    /// This function is useful for creating fields of view or effect areas in game mechanics.
+    pub fn tiles_on_arc_circumference(
+        self,
+        radius: i32,
+        start_angle_deg: i32,
+        end_angle_deg: i32,
+        angle_step: usize,
+    ) -> Vec<TilePosition> {
+        let mut tiles = Vec::new();
+
+        for angle_deg in (start_angle_deg..=end_angle_deg).step_by(angle_step) {
+            let angle = (angle_deg as f32).to_radians();
+            let dx = (angle.cos() * radius as f32).round() as i32;
+            let dy = (angle.sin() * radius as f32).round() as i32;
+            tiles.push(TilePosition::new(self.x + dx, self.y + dy, self.z));
+        }
+
+        tiles.sort_by(|a, b| a.x.cmp(&b.x).then(a.y.cmp(&b.y)));
+        tiles.dedup();
+
+        tiles
     }
 }
 
@@ -486,4 +567,33 @@ impl SubAssign<IVec2> for TilePosition {
     fn sub_assign(&mut self, rhs: IVec2) {
         *self = *self - rhs;
     }
+}
+
+/// Converts `TilePosition` to `Aabb3d` (Axis Aligned Bounding Box 3D).
+/// This conversion allows `TilePosition` to be used in spatial queries and collision detection.
+impl From<TilePosition> for Aabb3d {
+    fn from(tile_pos: TilePosition) -> Self {
+        let vec3 = Vec3::new(tile_pos.x as f32, tile_pos.y as f32, tile_pos.z as f32);
+        Aabb3d::new(vec3, Vec3::new(0.35, 0.35, 0.))
+    }
+}
+
+/// Converts `TilePosition` to `BoundingSphere`.
+/// This conversion allows `TilePosition` to be used in spatial queries and collision detection
+/// with spherical bounds.
+impl From<TilePosition> for BoundingSphere {
+    fn from(tile_pos: TilePosition) -> Self {
+        let vec3 = Vec3::new(tile_pos.x as f32, tile_pos.y as f32, tile_pos.z as f32);
+        BoundingSphere::new(vec3, 0.55)
+    }
+}
+
+/// Sorts a slice of `TilePosition` by their x and y coordinates.
+/// This function is useful for organizing tiles in a consistent order, facilitating operations
+/// like drawing or collision detection.
+pub fn sort_tile_positions_by_xy(tile_positions: &mut [TilePosition]) {
+    tile_positions.sort_by(|a, b| {
+        a.x.cmp(&b.x) // First, sort by x
+            .then(a.y.cmp(&b.y)) // Then, sort by y if x's are equal
+    });
 }
