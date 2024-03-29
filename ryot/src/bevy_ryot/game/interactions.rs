@@ -1,6 +1,6 @@
 //! This module provides a handy way of dealing with tile level interactions like movement and
 //! sight restrictions, and more. Any component flag like BlockWalk, BlockSight or others
-//! custom defined behaviors can be used to filter out positions or entities.
+//! custom defined behaviors can be used to filter positions or entities.
 //!
 //! The pieces provided in this module are designed to be used like building blocks in a bevy
 //! pipeline, and can be combined in any way to achieve the desired behavior.
@@ -34,7 +34,8 @@
 //!     Update,
 //!     get_all_visible_positions
 //!         .pipe(without_flag)
-//!         .pipe(filter_positions_by_flag::<(&BlockWalk, &BlockSight), TilePosition>)
+//!         .pipe(partition_positions_by_flag::<(&BlockWalk, &BlockSight), TilePosition>)
+//!         .pipe(get_elements_meeting_condition)
 //!         .pipe(print_walkable_count)
 //! );
 //!
@@ -84,35 +85,47 @@ pub fn without_flag<T: Copy + Into<TilePosition>>(
     (FilterMode::WithoutFlag, positions)
 }
 
-/// Main system that filters the positions based on the flag component provided in the query.
-/// It receives an intention and an array of positions, and returns a filtered array of positions.
-///
-/// This system will go through all the positions and check if any entity in the position has the
-/// given flag component. If an entity with the flag is found, the position is kept in the list,
-/// otherwise it is removed. It only considers entities that are visible.
-pub fn filter_positions_by_flag<F: QueryData, T: Copy + Into<TilePosition>>(
+/// Main system that partitions the positions based on the flag component provided in the query.
+/// It receives an intention and an array of positions, and returns two arrays: one with the
+/// positions that contain entities with the flag, and another with the positions that don't.
+/// It only considers entities that are visible.
+pub fn partition_positions_by_flag<F: QueryData, T: Copy + Into<TilePosition>>(
     In((mode, positions)): In<(FilterMode, Vec<T>)>,
     map_tiles: Res<MapTiles<Entity>>,
     q_flag: Query<F>,
     q_visibility: Query<&Visibility>,
+) -> (Vec<T>, Vec<T>) {
+    positions.iter().partition(|&has_pos| {
+        let pos: TilePosition = (*has_pos).into();
+
+        let Some(tile) = map_tiles.get(&pos) else {
+            return false;
+        };
+
+        let contains_flag = tile.clone().into_iter().any(|(_, entity)| {
+            q_flag.contains(entity) && !matches!(q_visibility.get(entity), Ok(Visibility::Hidden))
+        });
+
+        match mode {
+            FilterMode::WithFlag if contains_flag => true,
+            FilterMode::WithoutFlag if !contains_flag => true,
+            _ => false,
+        }
+    })
+}
+
+/// Retrieves the subset of positions that meet the specified condition based on the flag component.
+pub fn get_elements_meeting_condition<T: Copy + Into<TilePosition>>(
+    In((meeting_condition_positions, _)): In<(Vec<T>, Vec<T>)>,
 ) -> Vec<T> {
-    positions
-        .iter()
-        .filter_map(|has_pos| {
-            let pos: TilePosition = (*has_pos).into();
+    meeting_condition_positions
+}
 
-            let contains_flag = map_tiles.get(&pos)?.clone().into_iter().any(|(_, entity)| {
-                q_flag.contains(entity)
-                    && !matches!(q_visibility.get(entity), Ok(Visibility::Hidden))
-            });
-
-            match mode {
-                FilterMode::WithFlag if contains_flag => Some(*has_pos),
-                FilterMode::WithoutFlag if !contains_flag => Some(*has_pos),
-                _ => None,
-            }
-        })
-        .collect()
+/// Retrieves the subset of positions that do not meet the specified condition based on the flag component.
+pub fn get_elements_not_meeting_condition<T: Copy + Into<TilePosition>>(
+    In((_, not_meeting_condition_positions)): In<(Vec<T>, Vec<T>)>,
+) -> Vec<T> {
+    not_meeting_condition_positions
 }
 
 /// Example system that adds the `BlockWalk` component to all positions that contain entities
