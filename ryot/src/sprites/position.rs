@@ -10,7 +10,7 @@ use std::{
 
 #[cfg(feature = "bevy")]
 use crate::bevy_ryot::elevation::Elevation;
-use crate::SpriteLayout;
+use crate::{OrdinalDirection, SpriteLayout};
 #[cfg(all(feature = "bevy", feature = "debug"))]
 use bevy_stroked_text::StrokedText;
 #[cfg(feature = "bevy")]
@@ -88,6 +88,10 @@ impl TilePosition {
         self.to_vec3(&layer)
             - (SpriteLayout::OneByOne.get_size(&tile_size()).as_vec2() * anchor).extend(0.)
             - (layout.get_size(&tile_size()).as_vec2() * Vec2::new(0.5, -0.5)).extend(0.)
+    }
+
+    pub fn direction_to(self, other: Self) -> OrdinalDirection {
+        (other - self).into()
     }
 }
 

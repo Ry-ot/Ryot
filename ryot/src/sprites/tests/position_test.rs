@@ -1,4 +1,5 @@
 use crate::position::TilePosition;
+use crate::OrdinalDirection;
 use glam::Vec2;
 use rstest::rstest;
 
@@ -66,4 +67,58 @@ fn test_reversible(#[case] input: (i32, i32)) {
         "position: {:?}, screen: {:?}",
         position, screen
     );
+}
+
+#[rstest]
+#[case(
+    TilePosition::new(0, 0, 0),
+    TilePosition::new(0, 10, 0),
+    OrdinalDirection::North
+)]
+#[case(
+    TilePosition::new(0, 0, 0),
+    TilePosition::new(10, 0, 0),
+    OrdinalDirection::East
+)]
+#[case(
+    TilePosition::new(0, 0, 0),
+    TilePosition::new(0, -5, 0),
+    OrdinalDirection::South
+)]
+#[case(
+    TilePosition::new(0, 0, 0),
+    TilePosition::new(-5, 0, 0),
+    OrdinalDirection::West
+)]
+#[case(
+    TilePosition::new(0, 0, 0),
+    TilePosition::new(7, 7, 0),
+    OrdinalDirection::NorthEast
+)]
+#[case(
+    TilePosition::new(0, 0, 0),
+    TilePosition::new(15, -15, 0),
+    OrdinalDirection::SouthEast
+)]
+#[case(
+    TilePosition::new(0, 0, 0),
+    TilePosition::new(-13, -13, 0),
+    OrdinalDirection::SouthWest
+)]
+#[case(
+    TilePosition::new(0, 0, 0),
+    TilePosition::new(-111, 111, 0),
+    OrdinalDirection::NorthWest
+)]
+#[case(
+    TilePosition::new(0, 0, 0),
+    TilePosition::new(0, 0, 0),
+    OrdinalDirection::None
+)]
+fn test_direction_to(
+    #[case] from: TilePosition,
+    #[case] to: TilePosition,
+    #[case] expected: OrdinalDirection,
+) {
+    assert_eq!(from.direction_to(to), expected);
 }
