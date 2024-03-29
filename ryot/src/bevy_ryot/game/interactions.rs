@@ -55,12 +55,28 @@ use serde::{Deserialize, Serialize};
 use crate::appearances::is_true;
 use crate::bevy_ryot::map::MapTiles;
 use crate::bevy_ryot::{AppearanceAssets, GameObjectId};
-use crate::prelude::TilePosition;
+use crate::prelude::{PreparedAppearance, TilePosition};
+
+/// A trait that represents a flag component that can be used to filter positions or entities.
+pub trait InteractionFlag: Component {
+    fn component() -> impl Component;
+    fn check(appearance: PreparedAppearance) -> Option<bool>;
+}
 
 /// A flag component that represent entities that are not walkable, meaning that they block the
 /// walking in the tile/positions that they are contained.
 #[derive(Debug, Clone, Component, Copy, PartialEq, Serialize, Deserialize)]
 pub struct BlockWalk;
+
+impl InteractionFlag for BlockWalk {
+    fn component() -> impl Component {
+        Self
+    }
+
+    fn check(appearance: PreparedAppearance) -> Option<bool> {
+        appearance.flags?.is_not_walkable
+    }
+}
 
 /// Represents the filtering intention in the interaction pipeline. You can either filter for
 /// all positions that contain entities with a specific flag (WithFlag), or filter for all
@@ -73,16 +89,42 @@ pub enum FilterMode {
 
 /// Helper system that initializes the interaction filtering pipeline from a list of positions
 /// with an intention of filtering for positions that contain entities with a specific flag.
-pub fn with_flag<T: Copy + Into<TilePosition>>(In(positions): In<Vec<T>>) -> (FilterMode, Vec<T>) {
+pub fn with_flag<T: Copy + Into<TilePosition>>(
+    In(positions): In<impl SplitInPartitions<Item = T>>,
+) -> (FilterMode, impl SplitInPartitions<Item = T>) {
     (FilterMode::WithFlag, positions)
 }
 
 /// Helper system that initializes the interaction filtering pipeline from a list of positions
 /// with an intention of filtering for positions that don't contain entities with a specific flag.
 pub fn without_flag<T: Copy + Into<TilePosition>>(
-    In(positions): In<Vec<T>>,
-) -> (FilterMode, Vec<T>) {
+    In(positions): In<impl SplitInPartitions<Item = T>>,
+) -> (FilterMode, impl SplitInPartitions<Item = T>) {
     (FilterMode::WithoutFlag, positions)
+}
+
+/// A trait that splits a list of items into two partitions based on a condition.
+pub trait SplitInPartitions {
+    type Item;
+
+    fn split<B, F>(self, f: F) -> (B, B)
+    where
+        Self: Sized,
+        B: Default + Extend<Self::Item>,
+        F: Fn(&Self::Item) -> bool;
+}
+
+impl<T: Clone> SplitInPartitions for Vec<T> {
+    type Item = T;
+
+    fn split<B, F>(self, f: F) -> (B, B)
+    where
+        Self: Sized,
+        B: Default + Extend<Self::Item>,
+        F: Fn(&Self::Item) -> bool,
+    {
+        self.clone().into_iter().partition(f)
+    }
 }
 
 /// Main system that partitions the positions based on the flag component provided in the query.
@@ -90,13 +132,13 @@ pub fn without_flag<T: Copy + Into<TilePosition>>(
 /// positions that contain entities with the flag, and another with the positions that don't.
 /// It only considers entities that are visible.
 pub fn partition_positions_by_flag<F: QueryData, T: Copy + Into<TilePosition>>(
-    In((mode, positions)): In<(FilterMode, Vec<T>)>,
+    In((mode, e)): In<(FilterMode, impl SplitInPartitions<Item = T>)>,
     map_tiles: Res<MapTiles<Entity>>,
     q_flag: Query<F>,
     q_visibility: Query<&Visibility>,
 ) -> (Vec<T>, Vec<T>) {
-    positions.iter().partition(|&has_pos| {
-        let pos: TilePosition = (*has_pos).into();
+    e.split(|pos| {
+        let pos: TilePosition = (*pos).into();
 
         let Some(tile) = map_tiles.get(&pos) else {
             return false;
@@ -128,25 +170,25 @@ pub fn get_elements_not_meeting_condition<T: Copy + Into<TilePosition>>(
     not_meeting_condition_positions
 }
 
-/// Example system that adds the `BlockWalk` component to all positions that contain entities
-/// with is_not_walkable flag. This needs to be made more generic and configurable.
-pub fn check_interaction_flags<C: AppearanceAssets>(
+/// Example system that adds the `InteractionFlag` component to all positions that contain entities
+/// that check positive for the flag condition.
+pub fn check_interaction_flag<C: AppearanceAssets, F: InteractionFlag>(
     mut commands: Commands,
     appearance_assets: Res<C>,
     q_updated_game_object_ids: Query<(Entity, &GameObjectId), Changed<GameObjectId>>,
 ) {
     let appearances = appearance_assets.prepared_appearances();
     for (entity, object_id) in q_updated_game_object_ids.iter() {
-        let is_not_walkable = || -> Option<bool> {
+        let has_flag = || -> Option<bool> {
             let (group, id) = object_id.as_group_and_id()?;
             let appearance = appearances.get_for_group(group, id).cloned()?;
-            appearance.flags?.is_not_walkable
+            F::check(appearance)
         };
 
-        if is_true(is_not_walkable()) {
-            commands.entity(entity).insert(BlockWalk);
+        if is_true(has_flag()) {
+            commands.entity(entity).insert(F::component());
         } else {
-            commands.entity(entity).remove::<BlockWalk>();
+            commands.entity(entity).remove::<F>();
         }
     }
 }
