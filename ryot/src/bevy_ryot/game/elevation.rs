@@ -43,12 +43,12 @@ type ElevationFilter = (
 );
 
 pub(crate) fn apply_elevation<C: AppearanceAssets>(
-    appearance_asets: Res<C>,
+    appearance_assets: Res<C>,
     q_tile: Query<(&TilePosition, &Layer), ElevationFilter>,
     mut q_entities: Query<(&mut Elevation, &GameObjectId, Option<&Visibility>)>,
     map_tiles: Res<MapTiles<Entity>>,
 ) {
-    let appearances = appearance_asets.prepared_appearances();
+    let appearances = appearance_assets.prepared_appearances();
     for tile in q_tile
         .iter()
         .filter(|(_, layer)| matches!(layer, Layer::Bottom(_)))
