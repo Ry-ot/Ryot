@@ -34,7 +34,7 @@
 //!     Update,
 //!     get_all_visible_positions
 //!         .pipe(without_flag)
-//!         .pipe(filter_positions_by_flag::<(&BlockWalk, &BlockSight)>)
+//!         .pipe(filter_positions_by_flag::<(&BlockWalk, &BlockSight), TilePosition>)
 //!         .pipe(print_walkable_count)
 //! );
 //!
@@ -72,13 +72,15 @@ pub enum FilterMode {
 
 /// Helper system that initializes the interaction filtering pipeline from a list of positions
 /// with an intention of filtering for positions that contain entities with a specific flag.
-pub fn with_flag(In(positions): In<Vec<TilePosition>>) -> (FilterMode, Vec<TilePosition>) {
+pub fn with_flag<T: Copy + Into<TilePosition>>(In(positions): In<Vec<T>>) -> (FilterMode, Vec<T>) {
     (FilterMode::WithFlag, positions)
 }
 
 /// Helper system that initializes the interaction filtering pipeline from a list of positions
 /// with an intention of filtering for positions that don't contain entities with a specific flag.
-pub fn without_flag(In(positions): In<Vec<TilePosition>>) -> (FilterMode, Vec<TilePosition>) {
+pub fn without_flag<T: Copy + Into<TilePosition>>(
+    In(positions): In<Vec<T>>,
+) -> (FilterMode, Vec<T>) {
     (FilterMode::WithoutFlag, positions)
 }
 
@@ -88,23 +90,25 @@ pub fn without_flag(In(positions): In<Vec<TilePosition>>) -> (FilterMode, Vec<Ti
 /// This system will go through all the positions and check if any entity in the position has the
 /// given flag component. If an entity with the flag is found, the position is kept in the list,
 /// otherwise it is removed. It only considers entities that are visible.
-pub fn filter_positions_by_flag<F: QueryData>(
-    In((mode, positions)): In<(FilterMode, Vec<TilePosition>)>,
+pub fn filter_positions_by_flag<F: QueryData, T: Copy + Into<TilePosition>>(
+    In((mode, positions)): In<(FilterMode, Vec<T>)>,
     map_tiles: Res<MapTiles<Entity>>,
     q_flag: Query<F>,
     q_visibility: Query<&Visibility>,
-) -> Vec<TilePosition> {
+) -> Vec<T> {
     positions
         .iter()
-        .filter_map(|pos| {
-            let contains_flag = map_tiles.get(pos)?.clone().into_iter().any(|(_, entity)| {
+        .filter_map(|has_pos| {
+            let pos: TilePosition = (*has_pos).into();
+
+            let contains_flag = map_tiles.get(&pos)?.clone().into_iter().any(|(_, entity)| {
                 q_flag.contains(entity)
                     && !matches!(q_visibility.get(entity), Ok(Visibility::Hidden))
             });
 
             match mode {
-                FilterMode::WithFlag if contains_flag => Some(*pos),
-                FilterMode::WithoutFlag if !contains_flag => Some(*pos),
+                FilterMode::WithFlag if contains_flag => Some(*has_pos),
+                FilterMode::WithoutFlag if !contains_flag => Some(*has_pos),
                 _ => None,
             }
         })
