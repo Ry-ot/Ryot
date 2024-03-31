@@ -135,7 +135,7 @@ message Flags {
   optional bool is_liquid_pool = 12;
   optional bool is_not_walkable = 13;
   optional bool is_not_movable = 14;
-  optional bool blocks_visibility = 15;
+  optional bool blocks_sight = 15;
   optional bool is_avoidable = 16;
   optional bool has_no_movement_animation = 17;
   optional bool can_be_taken = 18;

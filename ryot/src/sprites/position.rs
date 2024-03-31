@@ -1,6 +1,7 @@
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;
 
+use std::cmp::Ordering;
 use std::collections::HashSet;
 use std::hash::Hash;
 use std::ops::{Add, AddAssign, DerefMut, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
@@ -11,7 +12,7 @@ use std::{
 
 #[cfg(feature = "bevy")]
 use crate::bevy_ryot::elevation::Elevation;
-use crate::{SpriteLayout};
+use crate::{OrdinalDirection, SpriteLayout};
 use bevy::math::bounding::{Aabb3d, BoundingSphere};
 #[cfg(all(feature = "bevy", feature = "debug"))]
 use bevy_stroked_text::StrokedText;
@@ -65,7 +66,7 @@ impl TilePosition {
     }
 
     pub fn is_valid(self) -> bool {
-        self.clamp(Self::MIN.0, Self::MAX.0).truncate() == self.truncate()
+        self.deref().clamp(Self::MIN.0, Self::MAX.0).truncate() == self.truncate()
     }
 
     pub fn distance(self, other: Self) -> f32 {
@@ -91,6 +92,10 @@ impl TilePosition {
         self.to_vec3(&layer)
             - (SpriteLayout::OneByOne.get_size(&tile_size()).as_vec2() * anchor).extend(0.)
             - (layout.get_size(&tile_size()).as_vec2() * Vec2::new(0.5, -0.5)).extend(0.)
+    }
+
+    pub fn direction_to(self, other: Self) -> OrdinalDirection {
+        (other - self).into()
     }
 
     /// Generates a straight line from `self` to `end` using Bresenham's line algorithm.
@@ -151,11 +156,19 @@ impl TilePosition {
     /// This function is useful for creating fields of view or effect areas in game mechanics.
     pub fn tiles_on_arc_circumference(
         self,
-        radius: i32,
-        start_angle_deg: i32,
-        end_angle_deg: i32,
+        radius: u8,
+        start_angle_deg: u16,
+        end_angle_deg: u16,
         angle_step: usize,
     ) -> Vec<TilePosition> {
+        if angle_step == 0 || radius == 0 {
+            return vec![];
+        }
+
+        if start_angle_deg == end_angle_deg {
+            return vec![];
+        }
+
         let mut tiles = Vec::new();
 
         for angle_deg in (start_angle_deg..=end_angle_deg).step_by(angle_step) {
@@ -588,12 +601,17 @@ impl From<TilePosition> for BoundingSphere {
     }
 }
 
-/// Sorts a slice of `TilePosition` by their x and y coordinates.
-/// This function is useful for organizing tiles in a consistent order, facilitating operations
-/// like drawing or collision detection.
-pub fn sort_tile_positions_by_xy(tile_positions: &mut [TilePosition]) {
-    tile_positions.sort_by(|a, b| {
-        a.x.cmp(&b.x) // First, sort by x
-            .then(a.y.cmp(&b.y)) // Then, sort by y if x's are equal
-    });
+impl PartialOrd<Self> for TilePosition {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for TilePosition {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.x
+            .cmp(&other.x)
+            .then(self.y.cmp(&other.y))
+            .then(self.z.cmp(&other.z))
+    }
 }

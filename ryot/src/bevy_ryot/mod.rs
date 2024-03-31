@@ -3,13 +3,11 @@
 //! This module is intended to be used as a library dependency for RyOT games.
 //! It provides common ways of dealing with OT content, such as loading sprites and appearances,
 //! configuring the game, and handling asynchronous events.
+use self::sprites::SpriteMaterial;
 use crate::appearances::{ContentType, SpriteSheetDataSet};
 #[cfg(feature = "debug")]
 use crate::position::debug_sprite_position;
-use crate::position::{
-    finish_position_animation, move_sprites_with_animation, tile_size, update_sprite_position,
-    TilePosition,
-};
+use crate::position::*;
 use crate::{Layer, SpriteLayout, TILE_SIZE};
 use bevy::app::{App, Plugin, Update};
 use bevy::asset::embedded_asset;
@@ -51,13 +49,28 @@ pub mod drawing;
 
 pub mod sprites;
 
+pub mod perspective;
+
 pub(crate) mod sprite_animations;
 pub use sprite_animations::{toggle_sprite_animation, AnimationDuration};
 
-use self::sprites::SpriteMaterial;
-
 pub static RYOT_ANCHOR: Anchor = Anchor::BottomRight;
 pub static GRID_LAYER: Layer = Layer::Hud(0);
+
+/// A generic cache structure leveraging `HashMap` for storing and quickly accessing data.
+/// This structure is particularly useful for caching expensive computations, assets, or
+/// other data for rapid retrieval.
+#[derive(Resource, Default, Deref, DerefMut)]
+pub struct Cache<K, V>(HashMap<K, V>);
+
+/// Defines system sets for managing cache-related systems.
+/// This enum is used to organize and control the execution order of systems that interact with
+/// caches, allowing for a structured update and clean-up process.
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
+pub enum CacheSystems {
+    UpdateCache,
+    CleanCache,
+}
 
 /// The states that the content loading process can be in.
 /// This is used to track the progress of the content loading process.

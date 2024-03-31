@@ -1,6 +1,7 @@
 use crate::position::TilePosition;
 use glam::Vec2;
 use rstest::rstest;
+use std::collections::HashSet;
 
 #[rstest]
 #[case((0, 0), (0., -32.))]
@@ -66,4 +67,32 @@ fn test_reversible(#[case] input: (i32, i32)) {
         "position: {:?}, screen: {:?}",
         position, screen
     );
+}
+
+#[rstest]
+#[case(
+    TilePosition::new(0, 0, 0),
+    TilePosition::new(0, 1, 0),
+    &HashSet::from([TilePosition::new(0, 0, 0), TilePosition::new(0, 1, 0), TilePosition::new(0, 2, 0)]),
+    true
+)]
+#[case(
+    TilePosition::new(0, 0, 0),
+    TilePosition::new(0, 1, 0),
+    &HashSet::from([TilePosition::new(0, 1, 0), TilePosition::new(0, 2, 0)]),
+    false
+)]
+#[case(
+    TilePosition::new(0, 0, 0),
+    TilePosition::new(0, 1, 0),
+    &HashSet::from([TilePosition::new(0, 0, 0), TilePosition::new(0, 2, 0)]),
+    false
+)]
+fn test_is_directly_connected(
+    #[case] from: TilePosition,
+    #[case] to: TilePosition,
+    #[case] positions: &HashSet<TilePosition>,
+    #[case] expected: bool,
+) {
+    assert_eq!(from.is_directly_connected(to, positions), expected);
 }

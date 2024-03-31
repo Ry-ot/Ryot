@@ -179,10 +179,7 @@ impl DoubleEndedIterator for Layer {
                     })
                 })
                 .or(Some(Self::Edge)),
-            Self::Top => Some(Self::Bottom(BottomLayer {
-                order: BottomLayer::TOP_MOST_LAYER,
-                relative_layer: RelativeLayer::iter().last().unwrap(),
-            })),
+            Self::Top => Some(Self::Bottom(BottomLayer::bottom_most())),
             Self::Hud(order) => {
                 if order == 0 {
                     Some(Self::Top)
@@ -247,6 +244,12 @@ impl DoubleEndedIterator for RelativeLayer {
 pub struct BottomLayer {
     pub order: Order,
     pub relative_layer: RelativeLayer,
+}
+
+impl From<BottomLayer> for Layer {
+    fn from(value: BottomLayer) -> Self {
+        Layer::Bottom(value)
+    }
 }
 
 impl Default for BottomLayer {
@@ -317,6 +320,13 @@ impl BottomLayer {
         let order = self.order as f32 * order_width;
         // Final number between 0.0..TOTAL_WIDTH
         min + order
+    }
+
+    pub fn bottom_most() -> Self {
+        Self {
+            order: Self::TOP_MOST_LAYER,
+            relative_layer: RelativeLayer::iter().last().unwrap(),
+        }
     }
 }
 
