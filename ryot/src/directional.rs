@@ -3,7 +3,7 @@ use std::ops::Deref;
 use glam::{IVec2, Vec2, Vec3};
 use rand::distributions::Distribution;
 use serde::{Deserialize, Serialize};
-use strum::EnumIter;
+use strum::{EnumIter, IntoEnumIterator};
 
 #[cfg(feature = "bevy")]
 use bevy::ecs::component::Component;
@@ -32,17 +32,32 @@ impl From<IVec2> for CardinalDirection {
 }
 
 #[derive(Hash, PartialEq, Eq, EnumIter, Default, Clone, Copy, Debug, Serialize, Deserialize)]
+#[repr(u8)]
 pub enum OrdinalDirection {
-    NorthWest,
-    North,
+    North = 0,
     NorthEast,
+    East,
+    SouthEast,
+    South,
+    SouthWest,
     West,
+    NorthWest,
     #[default]
     None,
-    East,
-    SouthWest,
-    South,
-    SouthEast,
+}
+
+impl OrdinalDirection {
+    pub fn get_next(&self) -> Self {
+        Self::iter()
+            .find(|&dir| dir as u8 == (*self as u8 + 1) % 8)
+            .unwrap_or_default()
+    }
+
+    pub fn get_previous(&self) -> Self {
+        Self::iter()
+            .find(|&dir| dir as u8 == (*self as u8 + 7) % 8)
+            .unwrap_or_default()
+    }
 }
 
 impl Distribution<OrdinalDirection> for rand::distributions::Standard {

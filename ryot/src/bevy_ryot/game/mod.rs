@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 
 pub mod elevation;
+pub mod tile_flags;
 
 pub struct GamePlugin<C: AppearanceAssets>(PhantomData<C>);
 
