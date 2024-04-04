@@ -56,10 +56,10 @@ impl ViewPoint {
 /// `Perspective` objects that represent the observable area from the center position.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Component)]
 pub struct RadialViewPoint {
-    pub(crate) range: u8,
-    pub(crate) center_pos: TilePosition,
-    pub(crate) angle_step: usize,
-    pub(crate) angle_range: (u16, u16),
+    pub range: u8,
+    pub center_pos: TilePosition,
+    pub angle_step: usize,
+    pub angle_range: (u16, u16),
 }
 
 impl ConditionalViewPoint for RadialViewPoint {
