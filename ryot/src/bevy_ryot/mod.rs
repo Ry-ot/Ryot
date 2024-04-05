@@ -34,6 +34,8 @@ pub use appearances::*;
 mod async_events;
 pub use async_events::*;
 
+pub mod camera;
+
 mod conditions;
 pub use conditions::*;
 
@@ -52,6 +54,7 @@ pub mod sprites;
 pub mod perspective;
 
 pub(crate) mod sprite_animations;
+
 pub use sprite_animations::{toggle_sprite_animation, AnimationDuration};
 
 pub static RYOT_ANCHOR: Anchor = Anchor::BottomRight;
