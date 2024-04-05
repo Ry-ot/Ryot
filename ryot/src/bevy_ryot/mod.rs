@@ -179,6 +179,19 @@ impl<C: AppearanceAssets + Default> Plugin for MetaContentPlugin<C> {
 
 content_plugin!(VisualContentPlugin, PreloadedContentAssets);
 
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
+pub enum SpriteSystems {
+    Load,
+    Initialize,
+    Update,
+}
+
+#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
+pub enum AnimationSystems {
+    Initialize,
+    Update,
+}
+
 impl<C: PreloadedContentAssets + Default> Plugin for VisualContentPlugin<C> {
     fn build(&self, app: &mut App) {
         app.add_plugins(BaseContentPlugin::<C>::default())
@@ -212,17 +225,21 @@ impl<C: PreloadedContentAssets + Default> Plugin for VisualContentPlugin<C> {
                 (
                     #[cfg(feature = "debug")]
                     debug_sprite_position,
-                    sprites::load_from_entities_system,
+                    sprites::load_from_entities_system.in_set(SpriteSystems::Load),
                     sprites::process_load_events_system::<C>
                         .pipe(sprites::load_sprite_system::<C>)
                         .pipe(sprites::store_loaded_appearances_system)
-                        .run_if(on_event::<sprites::LoadAppearanceEvent>()),
-                    sprites::ensure_appearance_initialized,
-                    sprites::update_sprite_system,
-                    sprite_animations::initialize_animation_sprite_system,
-                    sprite_animations::tick_animation_system.run_if(resource_exists_and_equals(
-                        sprite_animations::SpriteAnimationEnabled(true),
-                    )),
+                        .run_if(on_event::<sprites::LoadAppearanceEvent>())
+                        .in_set(SpriteSystems::Load),
+                    sprites::ensure_appearance_initialized.in_set(SpriteSystems::Initialize),
+                    sprites::update_sprite_system.in_set(SpriteSystems::Update),
+                    sprite_animations::initialize_animation_sprite_system
+                        .in_set(AnimationSystems::Initialize),
+                    sprite_animations::tick_animation_system
+                        .run_if(resource_exists_and_equals(
+                            sprite_animations::SpriteAnimationEnabled(true),
+                        ))
+                        .in_set(AnimationSystems::Update),
                 )
                     .chain()
                     .run_if(in_state(InternalContentState::Ready)),
