@@ -40,6 +40,7 @@ pub struct SpriteOutline {
 
 #[derive(Component, Debug, Clone, PartialEq, Default)]
 pub struct SpriteParams {
+    pub alpha: Option<f32>,
     pub outline: Option<SpriteOutline>,
     pub tint: Option<Color>,
 }
@@ -59,19 +60,33 @@ impl SpriteParams {
         }
     }
 
+    pub fn with_alpha(self, alpha: f32) -> Self {
+        Self {
+            alpha: Some(alpha),
+            ..self
+        }
+    }
+
     pub fn has_any(&self) -> bool {
-        self.outline.is_some() || self.tint.is_some()
+        self.outline.is_some() || self.tint.is_some() || self.alpha.is_some()
     }
 
     pub fn to_material(&self, base: SpriteMaterial) -> SpriteMaterial {
         let mut material = base;
+
         if let Some(outline) = &self.outline {
             material.outline_color = outline.color;
             material.outline_thickness = outline.thickness;
         }
+
         if let Some(tint) = &self.tint {
             material.tint = *tint;
         }
+
+        if let Some(alpha) = &self.alpha {
+            material.alpha = *alpha;
+        }
+
         material
     }
 }
@@ -84,6 +99,7 @@ impl From<&SpriteMaterial> for SpriteParams {
                 thickness: material.outline_thickness,
             }),
             tint: Some(material.tint),
+            alpha: Some(material.alpha),
         }
     }
 }

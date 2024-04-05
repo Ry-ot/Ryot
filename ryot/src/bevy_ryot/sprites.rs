@@ -155,6 +155,7 @@ pub fn load_sprites<C: ContentAssets>(
                     index: sprite_sheet
                         .get_sprite_index(*sprite_id)
                         .expect("Sprite must exist in sheet") as u32,
+                    alpha: 1.,
                     ..default()
                 }),
             })
@@ -506,6 +507,8 @@ pub struct SpriteMaterial {
     pub outline_color: Color,
     #[uniform(0)]
     pub tint: Color,
+    #[uniform(0)]
+    pub alpha: f32,
     #[texture(1)]
     #[sampler(2)]
     pub texture: Handle<Image>,
