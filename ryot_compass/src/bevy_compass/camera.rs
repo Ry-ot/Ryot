@@ -8,6 +8,7 @@ use bevy_egui::{EguiContext, EguiContexts};
 use bevy_pancam::*;
 use leafwing_input_manager::common_conditions::action_just_pressed;
 use leafwing_input_manager::prelude::*;
+use ryot::bevy_ryot::camera::update_camera_visible_sector;
 use ryot::bevy_ryot::drawing::{Deletion, DrawingBundle};
 use ryot::bevy_ryot::elevation::Elevation;
 use ryot::bevy_ryot::map::MapTiles;
@@ -430,20 +431,6 @@ fn update_cursor_brush_preview(
             *cursor_visibility,
             Layer::from(HudLayers::BrushPreview),
         ));
-    }
-}
-
-fn update_camera_visible_sector(
-    mut camera_query: Query<(&mut Sector, &Transform, &OrthographicProjection), With<Camera>>,
-) {
-    for (mut sector, transform, projection) in camera_query.iter_mut() {
-        let new_sector = Sector::from_transform_and_projection(transform, projection);
-
-        if new_sector == *sector {
-            continue;
-        }
-
-        *sector = new_sector;
     }
 }
 

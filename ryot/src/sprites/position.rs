@@ -304,7 +304,7 @@ pub fn debug_y_offset(layer: &Layer) -> f32 {
         - tile_size().as_vec2().y / 2.
 }
 
-#[derive(Hash, Eq, PartialEq, Default, Clone, Copy, Debug)]
+#[derive(Hash, Eq, PartialEq, Default, Clone, Copy, Debug, Serialize, Deserialize)]
 #[cfg_attr(feature = "bevy", derive(Component))]
 pub struct Sector {
     pub min: TilePosition,
@@ -369,6 +369,14 @@ impl Sector {
 
     pub fn area(&self) -> u32 {
         (self.size().x * self.size().y).unsigned_abs()
+    }
+
+    pub fn contains(&self, pos: TilePosition) -> bool {
+        pos.x >= self.min.x
+            && pos.x <= self.max.x
+            && pos.y >= self.min.y
+            && pos.y <= self.max.y
+            && pos.z == self.min.z
     }
 }
 
