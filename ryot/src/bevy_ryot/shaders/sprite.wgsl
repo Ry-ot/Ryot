@@ -5,6 +5,7 @@ struct SpriteMaterial {
     outline_thickness: f32,
     outline_color: vec4<f32>,
     tint: vec4<f32>,
+    alpha: f32,
 };
 @group(2) @binding(0)
 var<uniform> material: SpriteMaterial;
@@ -71,6 +72,7 @@ fn fragment(
 
     var outlined = mix(base, outline_color, outline_alpha - base.a);
     var tinted = mix(outlined, vec4<f32>(outlined.rgb * material.tint.rgb, outlined.a), material.tint.a);
+    tinted.a *= material.alpha;
     return tinted;
 }
 
