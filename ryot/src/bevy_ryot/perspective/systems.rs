@@ -74,9 +74,20 @@ pub fn process_perspectives<V: ConditionalViewPoint>(
         });
 
     for (entity, pos) in rx.try_iter() {
+        let mut shared_with_vec = Vec::new();
         if let Ok((_, _, mut interest_positions)) = q_radial_view_points.get_mut(entity) {
             interest_positions.positions.push(pos);
+
+            for shared_with in &interest_positions.shared_with {
+                shared_with_vec.push(*shared_with);
+            }
         };
+
+        for shared_with in shared_with_vec {
+            if let Ok((_, _, mut interest_positions)) = q_radial_view_points.get_mut(shared_with) {
+                interest_positions.positions.push(pos);
+            };
+        }
     }
 
     q_radial_view_points
