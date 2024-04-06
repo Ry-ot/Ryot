@@ -3,7 +3,7 @@
 use bevy::prelude::*;
 
 use crate::appearances::*;
-use crate::bevy_ryot::drawing::TileComponent;
+use crate::bevy_ryot::map::MapTiles;
 use crate::bevy_ryot::*;
 use crate::position::TilePosition;
 
@@ -33,7 +33,6 @@ impl<C: AppearanceAssets> Plugin for TileFlagPlugin<C> {
 /// and whether it obstructs the line of sight. These properties are essential for gameplay mechanics.
 #[derive(Debug, Clone, Component, Copy, Eq, PartialEq, Reflect)]
 pub struct TileFlags {
-    pub visible: bool,
     pub walkable: bool,
     pub blocks_sight: bool,
 }
@@ -41,7 +40,6 @@ pub struct TileFlags {
 impl Default for TileFlags {
     fn default() -> Self {
         TileFlags {
-            visible: true,
             walkable: true,
             blocks_sight: false,
         }
@@ -51,9 +49,11 @@ impl Default for TileFlags {
 impl TileFlags {
     /// Updates the flags based on the appearance attributes of the tile.
     /// This allows dynamic modification of tile properties based on in-game events or conditions.
-    pub fn for_appearance_flags(&mut self, flags: Flags) {
-        self.walkable = !is_true(flags.is_not_walkable);
-        self.blocks_sight = is_true(flags.blocks_sight);
+    pub fn for_appearance_flags(self, flags: Flags) -> Self {
+        TileFlags {
+            walkable: self.walkable && !is_true(flags.is_not_walkable),
+            blocks_sight: self.blocks_sight || is_true(flags.blocks_sight),
+        }
     }
 }
 
@@ -73,33 +73,49 @@ impl TileFlags {
 /// Run as part of [`CacheSystems::UpdateCache`].
 pub fn update_tile_flag_cache<C: AppearanceAssets>(
     appearance_assets: Res<C>,
+    map_tiles: Res<MapTiles<Entity>>,
     mut cache: ResMut<Cache<TilePosition, TileFlags>>,
-    q_updated_visibility: Query<
-        (&TilePosition, &Visibility),
-        (Changed<Visibility>, With<TileComponent>),
+    q_updated_entities: Query<
+        &TilePosition,
+        Or<(
+            Changed<GameObjectId>,
+            Changed<Visibility>,
+            Changed<TilePosition>,
+        )>,
     >,
-    q_updated_game_object_ids: Query<(&TilePosition, &GameObjectId), Changed<GameObjectId>>,
+    q_object_and_visibility: Query<(&GameObjectId, Option<&Visibility>)>,
 ) {
-    for (pos, visibility) in q_updated_visibility.iter() {
-        cache.entry(*pos).or_insert_with(TileFlags::default).visible =
-            *visibility != Visibility::Hidden;
-    }
-
     let appearances = appearance_assets.prepared_appearances();
-    for (pos, object_id) in q_updated_game_object_ids.iter() {
-        let appearance_flags = || -> Option<Flags> {
-            let (group, id) = object_id.as_group_and_id()?;
-            let appearance = appearances.get_for_group(group, id).cloned()?;
-            appearance.flags
-        };
 
-        let Some(appearance_flags) = appearance_flags() else {
+    for pos in q_updated_entities.iter() {
+        let Some(tile) = map_tiles.get(pos) else {
             continue;
         };
 
-        cache
-            .entry(*pos)
-            .or_insert_with(TileFlags::default)
-            .for_appearance_flags(appearance_flags);
+        cache.insert(
+            *pos,
+            tile.into_iter()
+                .fold(TileFlags::default(), |flags, (_, entity)| {
+                    let Ok((object_id, visibility)) = q_object_and_visibility.get(entity) else {
+                        return flags;
+                    };
+
+                    if visibility == Some(&Visibility::Hidden) {
+                        return flags;
+                    }
+
+                    let appearance_flags = || -> Option<Flags> {
+                        let (group, id) = object_id.as_group_and_id()?;
+                        let appearance = appearances.get_for_group(group, id).cloned()?;
+                        appearance.flags
+                    };
+
+                    let Some(appearance_flags) = appearance_flags() else {
+                        return flags;
+                    };
+
+                    flags.for_appearance_flags(appearance_flags)
+                }),
+        );
     }
 }
