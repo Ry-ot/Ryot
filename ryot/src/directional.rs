@@ -163,6 +163,22 @@ impl From<TilePosition> for OrdinalDirection {
     }
 }
 
+impl From<OrdinalDirection> for (u16, u16) {
+    fn from(ordinal: OrdinalDirection) -> Self {
+        match ordinal {
+            OrdinalDirection::East => (0, 1),
+            OrdinalDirection::NorthEast => (45, 46),
+            OrdinalDirection::North => (90, 91),
+            OrdinalDirection::NorthWest => (135, 136),
+            OrdinalDirection::West => (180, 181),
+            OrdinalDirection::SouthWest => (225, 226),
+            OrdinalDirection::South => (270, 271),
+            OrdinalDirection::SouthEast => (315, 316),
+            _ => (0, 0),
+        }
+    }
+}
+
 #[derive(Hash, PartialEq, Eq, Clone, Copy, Debug, Serialize, Deserialize)]
 #[cfg_attr(feature = "bevy", derive(Component))]
 pub enum Directional {

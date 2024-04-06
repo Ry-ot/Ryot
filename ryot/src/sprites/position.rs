@@ -3,6 +3,7 @@ use bevy::prelude::*;
 
 use std::cmp::Ordering;
 use std::collections::HashSet;
+use std::f32::consts::PI;
 use std::hash::Hash;
 use std::ops::{Add, AddAssign, DerefMut, Div, DivAssign, Mul, MulAssign, Sub, SubAssign};
 use std::{
@@ -182,6 +183,19 @@ impl TilePosition {
         tiles.dedup();
 
         tiles
+    }
+
+    pub fn get_angle_between(&self, target: Self) -> u16 {
+        let dx = target.x - self.x;
+        let dy = target.y - self.y;
+
+        let angle = (dy as f32).atan2(dx as f32) * (180.0 / PI);
+
+        if angle < 0.0 {
+            (angle + 360.0) as u16
+        } else {
+            angle as u16
+        }
     }
 }
 
