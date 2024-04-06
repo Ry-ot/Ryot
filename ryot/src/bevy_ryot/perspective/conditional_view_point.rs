@@ -47,7 +47,7 @@ pub trait ConditionalViewPoint: Component + Send + Sync + 'static {
     /// This method should be used to check conditions related to the entity's interaction with the
     /// environment, such as obstructions, visibility, or other criteria defined by `TileFlags`.
     fn meets_condition(&self, flags: &TileFlags, _: &TilePosition) -> bool {
-        flags.visible
+        flags.walkable
     }
 }
 

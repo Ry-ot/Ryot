@@ -1,8 +1,6 @@
 //! This module introduces the concepts of `ViewPoint` and `RadialViewPoint` for calculating
 //! and representing the visible area or perspective from a given position. It utilizes ray casting
 //! and angle-based calculations to determine visible tiles in a game world.
-use crate::bevy_ryot::perspective::ConditionalViewPoint;
-use crate::bevy_ryot::tile_flags::TileFlags;
 use bevy::math::bounding::{Aabb3d, RayCast3d};
 use bevy::math::Ray3d;
 use bevy::prelude::Component;
@@ -60,16 +58,6 @@ pub struct RadialViewPoint {
     pub center_pos: TilePosition,
     pub angle_step: usize,
     pub angle_range: (u16, u16),
-}
-
-impl ConditionalViewPoint for RadialViewPoint {
-    fn get_view_point(&self) -> RadialViewPoint {
-        *self
-    }
-
-    fn meets_condition(&self, flags: &TileFlags, _: &TilePosition) -> bool {
-        !flags.blocks_sight && flags.visible
-    }
 }
 
 impl Default for RadialViewPoint {
