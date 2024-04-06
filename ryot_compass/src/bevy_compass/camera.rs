@@ -1,5 +1,5 @@
 use crate::bevy_compass::CompassAssets;
-use crate::{CompassAction, CompassContentAssets, HudLayers, UiState};
+use crate::{gui_is_not_in_use, CompassAction, CompassContentAssets, HudLayers, UiState};
 use bevy::math::{Vec2, Vec3};
 use bevy::prelude::*;
 use bevy::sprite::Mesh2dHandle;
@@ -52,6 +52,9 @@ impl<C: CompassAssets> Plugin for CameraPlugin<C> {
                         update_cursor_preview,
                         update_cursor_brush_preview,
                         update_cursor_visibility.map(drop),
+                        cursor_sliding_camera::<Cursor>
+                            .map(drop)
+                            .run_if(gui_is_not_in_use()),
                         update_camera_visible_sector,
                     )
                         .chain(),

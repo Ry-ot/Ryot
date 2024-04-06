@@ -1,4 +1,4 @@
-use crate::position::TilePosition;
+use crate::position::{Sector, TilePosition};
 use bevy::hierarchy::Children;
 use bevy::prelude::{
     Camera, Component, Entity, GlobalTransform, In, Query, Transform, Window, With,
@@ -63,6 +63,44 @@ pub fn draw_cursor_system<C: Component>(
         if let Ok(mut cursor_text) = child_text_query.get_mut(child) {
             cursor_text.text = format!("{tile_pos}");
         }
+    }
+
+    Ok(())
+}
+
+pub fn cursor_sliding_camera<C: Component>(
+    sector_query: Query<&Sector, With<Camera>>,
+    cursor_query: Query<&TilePosition, With<C>>,
+    mut camera_query: Query<&mut Transform, With<Camera>>,
+) -> color_eyre::Result<()> {
+    let main_camera_sector = sector_query.get_single()?;
+    let cursor_pos = cursor_query.get_single()?;
+
+    for mut camera_transform in camera_query.iter_mut() {
+        let speed = 3.;
+        let margin = 2;
+
+        let get_move = |position: i32, min_edge: i32, max_edge: i32| -> f32 {
+            if position - min_edge <= margin {
+                -speed
+            } else if max_edge - position <= margin {
+                speed
+            } else {
+                0.
+            }
+        };
+
+        camera_transform.translation.x += get_move(
+            cursor_pos.x,
+            main_camera_sector.min.0.x,
+            main_camera_sector.max.0.x,
+        );
+
+        camera_transform.translation.y += get_move(
+            cursor_pos.y,
+            main_camera_sector.min.0.y,
+            main_camera_sector.max.0.y,
+        );
     }
 
     Ok(())
