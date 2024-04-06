@@ -3,12 +3,13 @@ use crate::{CompassAction, CompassContentAssets, HudLayers, UiState};
 use bevy::math::{Vec2, Vec3};
 use bevy::prelude::*;
 use bevy::sprite::Mesh2dHandle;
-use bevy::window::PrimaryWindow;
+
 use bevy_egui::{EguiContext, EguiContexts};
 use bevy_pancam::*;
+
 use leafwing_input_manager::common_conditions::action_just_pressed;
 use leafwing_input_manager::prelude::*;
-use ryot::bevy_ryot::camera::update_camera_visible_sector;
+use ryot::bevy_ryot::camera::*;
 use ryot::bevy_ryot::drawing::{Deletion, DrawingBundle};
 use ryot::bevy_ryot::elevation::Elevation;
 use ryot::bevy_ryot::map::MapTiles;
@@ -46,8 +47,8 @@ impl<C: CompassAssets> Plugin for CameraPlugin<C> {
                 Update,
                 (
                     (
-                        move_to_cursor.run_if(action_just_pressed(CompassAction::Focus)),
-                        update_cursor_pos.map(drop),
+                        move_to_cursor::<Cursor>.run_if(action_just_pressed(CompassAction::Focus)),
+                        get_camera_with_egui_offset.pipe(update_cursor_pos::<Cursor>.map(drop)),
                         update_cursor_preview,
                         update_cursor_brush_preview,
                         update_cursor_visibility.map(drop),
@@ -242,49 +243,18 @@ fn update_cursor_preview(
     }
 }
 
-fn update_cursor_pos(
+fn get_camera_with_egui_offset(
     contexts: EguiContexts,
-    camera_query: Query<(&Camera, &GlobalTransform)>,
-    window_query: Query<&Window, With<PrimaryWindow>>,
-    mut cursor_query: Query<&mut TilePosition, With<Cursor>>,
-) -> color_eyre::Result<()> {
-    let (camera, camera_transform) = camera_query.get_single()?;
+    camera_query: Query<(Entity, &Camera)>,
+) -> Option<(Entity, Vec2)> {
+    let (entity, camera) = camera_query.get_single().ok()?;
 
-    let Some(cursor_position) = window_query.get_single()?.cursor_position() else {
-        return Ok(());
+    let base_position = match &camera.viewport {
+        Some(viewport) => viewport.physical_position.as_vec2() / contexts.ctx().pixels_per_point(),
+        None => Vec2::ZERO,
     };
 
-    let mut base_positon = Vec2::ZERO;
-    if let Some(vlewport) = &camera.viewport {
-        base_positon = vlewport.physical_position.as_vec2() / contexts.ctx().pixels_per_point();
-    }
-    let Some(point) = camera.viewport_to_world_2d(camera_transform, cursor_position - base_positon)
-    else {
-        return Ok(());
-    };
-
-    let mut cursor_pos = cursor_query.get_single_mut()?;
-    let new_pos = TilePosition::from(point).with_z(0);
-
-    if *cursor_pos == new_pos {
-        return Ok(());
-    }
-
-    *cursor_pos = new_pos;
-
-    Ok(())
-}
-
-fn move_to_cursor(
-    q_cursor: Query<&mut TilePosition, With<Cursor>>,
-    mut q_camera: Query<&mut Transform, With<Camera>>,
-) {
-    let tile_pos = q_cursor.single();
-
-    for mut transform in q_camera.iter_mut() {
-        let screen_pos: Vec2 = tile_pos.into();
-        transform.translation = screen_pos.extend(transform.translation.z);
-    }
+    Some((entity, base_position))
 }
 
 fn update_cursor_visibility(
