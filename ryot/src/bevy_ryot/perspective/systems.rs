@@ -1,6 +1,6 @@
 //! This module focuses on updating and processing the perspectives and visibility
 //! for entities based on their positions and visibility conditions.
-//! It leverages RadialViewPoints to calculate potential intersections and updates
+//! It leverages RadialAreas to calculate potential intersections and updates
 //! entities' visible positions accordingly.
 use std::sync::mpsc;
 
@@ -20,19 +20,19 @@ pub enum PerspectiveSystems {
 
 /// Updates the cache of intersections for radial view points that have changed.
 /// This is crucial for maintaining an updated view of what each entity can potentially see,
-/// based on their RadialViewPoint and the current state of the game world.
+/// based on their RadialArea and the current state of the game world.
 ///
 /// Run as part of [`CacheSystems::UpdateCache`].
-pub fn update_intersection_cache<V: ConditionalViewPoint>(
-    mut intersection_cache: ResMut<Cache<RadialViewPoint, Vec<Vec<TilePosition>>>>,
-    q_radial_view_points: Query<&V, Changed<V>>,
+pub fn update_intersection_cache<T: Trajectory>(
+    mut intersection_cache: ResMut<Cache<RadialArea, Vec<Vec<TilePosition>>>>,
+    q_radial_areas: Query<&T, Changed<T>>,
 ) {
-    q_radial_view_points.iter().for_each(|view_point| {
-        let radial_view_point: RadialViewPoint = view_point.get_view_point();
+    q_radial_areas.iter().for_each(|trajectory| {
+        let radial_area: RadialArea = trajectory.get_area();
 
         intersection_cache
-            .entry(radial_view_point)
-            .or_insert_with(|| Perspective::from(radial_view_point).get_filtered_intersections());
+            .entry(radial_area)
+            .or_insert_with(|| Perspective::from(radial_area).get_intersections());
     });
 }
 
@@ -41,30 +41,29 @@ pub fn update_intersection_cache<V: ConditionalViewPoint>(
 /// conditions (e.g., obstructions, visibility flags) and updates each entity's InterestPositions.
 ///
 /// Run as part of [`PerspectiveSystems::CalculatePerspectives`].
-pub fn process_perspectives<V: ConditionalViewPoint>(
+pub fn process_perspectives<T: Trajectory>(
     tile_flags_cache: Res<Cache<TilePosition, TileFlags>>,
-    intersection_cache: Res<Cache<RadialViewPoint, Vec<Vec<TilePosition>>>>,
-    mut q_radial_view_points: Query<(Entity, &V, &mut InterestPositions<V>)>,
+    intersection_cache: Res<Cache<RadialArea, Vec<Vec<TilePosition>>>>,
+    mut q_radial_areas: Query<(Entity, &T, &mut InterestPositions<T>)>,
 ) {
     let (tx, rx) = mpsc::channel::<(Entity, TilePosition)>();
 
-    q_radial_view_points
+    q_radial_areas
         .par_iter_mut()
-        .for_each(|(entity, view_point, mut interest_positions)| {
+        .for_each(|(entity, trajectory, mut interest_positions)| {
             interest_positions.positions.clear();
 
-            let radial_view_point: RadialViewPoint = view_point.get_view_point();
+            let radial_area: RadialArea = trajectory.get_area();
 
-            let Some(intersections_per_view_point) = intersection_cache.get(&radial_view_point)
-            else {
+            let Some(intersections_per_trajectory) = intersection_cache.get(&radial_area) else {
                 return;
             };
 
-            for intersections in intersections_per_view_point {
+            for intersections in intersections_per_trajectory {
                 for pos in intersections {
                     let flags = tile_flags_cache.get(pos).copied().unwrap_or_default();
 
-                    if view_point.meets_condition(&flags, pos) {
+                    if trajectory.meets_condition(&flags, pos) {
                         tx.send((entity, *pos)).ok();
                     } else {
                         break;
@@ -75,7 +74,7 @@ pub fn process_perspectives<V: ConditionalViewPoint>(
 
     for (entity, pos) in rx.try_iter() {
         let mut shared_with_vec = Vec::new();
-        if let Ok((_, _, mut interest_positions)) = q_radial_view_points.get_mut(entity) {
+        if let Ok((_, _, mut interest_positions)) = q_radial_areas.get_mut(entity) {
             interest_positions.positions.push(pos);
 
             for shared_with in &interest_positions.shared_with {
@@ -84,13 +83,13 @@ pub fn process_perspectives<V: ConditionalViewPoint>(
         };
 
         for shared_with in shared_with_vec {
-            if let Ok((_, _, mut interest_positions)) = q_radial_view_points.get_mut(shared_with) {
+            if let Ok((_, _, mut interest_positions)) = q_radial_areas.get_mut(shared_with) {
                 interest_positions.positions.push(pos);
             };
         }
     }
 
-    q_radial_view_points
+    q_radial_areas
         .par_iter_mut()
         .for_each(|(_, _, mut interest_positions)| {
             interest_positions.positions = interest_positions

@@ -4,60 +4,56 @@
 use std::marker::PhantomData;
 
 use bevy::math::bounding::Aabb3d;
-use bevy::utils::HashSet;
 
 use crate::bevy_ryot::Cache;
 use crate::position::TilePosition;
 
-mod conditional_view_point;
-pub use conditional_view_point::*;
+mod trajectory;
+pub use trajectory::*;
 
-mod sight;
-pub use sight::*;
+mod traversal;
+pub use traversal::*;
 
 mod systems;
 pub use systems::*;
 
-mod view_point;
-pub use view_point::*;
-
-/// Represents a perspective, which consists of multiple view points. A view point is essentially
-/// a perspective from a single point, determining what can be seen from that point. A perspective
-/// combines multiple view points to form a comprehensive view of what an entity can see.
+/// A group of multiple traversals representing all the possible trajectories from a single point,
+/// determining what can be reached from that point. Reachable is an abstract concept that depends
+/// on the context of the game and the specific traversal logic (e.g. vision, path, etc).
 #[derive(Debug, Clone, Default)]
 pub struct Perspective {
-    pub view_points: Vec<ViewPoint>,
+    pub traversals: Vec<Traversal>,
 }
 
 impl Perspective {
-    pub fn new(view_points: Vec<ViewPoint>) -> Self {
-        Self { view_points }
+    pub fn new(traversals: Vec<Traversal>) -> Self {
+        Self { traversals }
     }
 
     /// Gets the intersections filtered by the provided condition across all view points in the
     /// perspective. This represents calculating what's visible from the entire perspective.
-    pub fn get_filtered_intersections(self) -> Vec<Vec<TilePosition>> {
-        self.view_points
+    pub fn get_intersections(self) -> Vec<Vec<TilePosition>> {
+        self.traversals
             .into_iter()
-            .map(|view_point| view_point.get_filtered_intersections())
+            .map(|traversal| traversal.get_intersections())
             .collect()
     }
 
-    /// Similar to `get_filtered_intersections`, but allows specifying a custom AABB transformer
+    /// Similar to `get_intersections`, but allows specifying a custom AABB transformer
     /// function. This can be used to apply custom filters or transformations to the intersections.
-    pub fn get_filtered_intersections_with(
+    pub fn get_intersections_with(
         self,
         aabb_transformer: impl Fn(&TilePosition) -> Aabb3d + Copy,
     ) -> Vec<Vec<TilePosition>> {
-        self.view_points
+        self.traversals
             .into_iter()
-            .map(|view_point| view_point.get_filtered_intersections_with(aabb_transformer))
+            .map(|traversal| traversal.get_intersections_with(aabb_transformer))
             .collect()
     }
 }
 
-impl<T: Copy + Into<RadialViewPoint>> From<&T> for RadialViewPoint {
-    fn from(element: &T) -> RadialViewPoint {
+impl<T: Copy + Into<RadialArea>> From<&T> for RadialArea {
+    fn from(element: &T) -> RadialArea {
         (*element).into()
     }
 }
