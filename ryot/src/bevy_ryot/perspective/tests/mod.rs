@@ -1,12 +1,12 @@
-use crate::prelude::perspective::RadialViewPoint;
+use crate::prelude::perspective::RadialArea;
 use crate::prelude::*;
 use bevy::prelude::*;
 
-mod view_point_test;
+mod traversal_test;
 
-impl quickcheck::Arbitrary for RadialViewPoint {
+impl quickcheck::Arbitrary for RadialArea {
     fn arbitrary(g: &mut quickcheck::Gen) -> Self {
-        RadialViewPoint::default()
+        RadialArea::default()
             .with_range(u8::arbitrary(g) % 10 + 1)
             .with_angle_step(usize::arbitrary(g) % 90 + 1)
             .with_angle_range((u16::arbitrary(g), u16::arbitrary(g)))

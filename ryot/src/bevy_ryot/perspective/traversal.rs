@@ -1,4 +1,4 @@
-//! This module introduces the concepts of `ViewPoint` and `RadialViewPoint` for calculating
+//! This module introduces the concepts of `Trajectory` and `RadialArea` for calculating
 //! and representing the visible area or perspective from a given position. It utilizes ray casting
 //! and angle-based calculations to determine visible tiles in a game world.
 use bevy::math::bounding::{Aabb3d, RayCast3d};
@@ -9,32 +9,31 @@ use glam::Vec3;
 use crate::position::TilePosition;
 use crate::prelude::perspective::Perspective;
 
-/// Represents a single point of view within the game world, defined by a raycast and a target area.
-/// This struct is pivotal for calculating which areas of the game world are visible from a certain
-/// position, using ray casting for precise visibility checks.
+/// Represents an area that can be traversable by a ray cast. This struct is pivotal for
+/// calculating which areas of the game world are reachable from a certain position, using ray
+/// casting for precise checks.
 #[derive(Debug, Clone)]
-pub struct ViewPoint {
+pub struct Traversal {
     pub ray_cast: RayCast3d,
     pub target_area: Vec<TilePosition>,
 }
 
-impl ViewPoint {
+impl Traversal {
     pub fn new(ray_cast: RayCast3d, target_area: Vec<TilePosition>) -> Self {
-        ViewPoint {
+        Traversal {
             ray_cast,
             target_area,
         }
     }
 
-    /// Returns a vector of tile positions that are visible, filtered through a default AABB3d
-    /// transformation.
-    pub fn get_filtered_intersections(self) -> Vec<TilePosition> {
-        self.get_filtered_intersections_with(|pos| Aabb3d::from(*pos))
+    /// Returns a vector of tile positions from the target area that intersect with the ray cast.
+    pub fn get_intersections(self) -> Vec<TilePosition> {
+        self.get_intersections_with(|pos| Aabb3d::from(*pos))
     }
 
     /// Allows for custom AABB3d transformations when filtering intersections,
     /// providing flexibility in how intersections are calculated.
-    pub fn get_filtered_intersections_with(
+    pub fn get_intersections_with(
         self,
         aabb_transformer: impl Fn(&TilePosition) -> Aabb3d,
     ) -> Vec<TilePosition> {
@@ -53,14 +52,14 @@ impl ViewPoint {
 /// a range, center position, step angle, and an angle range. This struct is used to generate
 /// `Perspective` objects that represent the observable area from the center position.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Component)]
-pub struct RadialViewPoint {
+pub struct RadialArea {
     pub range: u8,
     pub center_pos: TilePosition,
     pub angle_step: usize,
     pub angle_range: (u16, u16),
 }
 
-impl Default for RadialViewPoint {
+impl Default for RadialArea {
     fn default() -> Self {
         Self {
             range: 1,
@@ -71,7 +70,7 @@ impl Default for RadialViewPoint {
     }
 }
 
-impl RadialViewPoint {
+impl RadialArea {
     pub fn new() -> Self {
         Self::default()
     }
@@ -114,17 +113,17 @@ impl RadialViewPoint {
     }
 }
 
-/// Implements conversion from `RadialViewPoint` to `Perspective`, allowing easy creation of
+/// Implements conversion from `RadialArea` to `Perspective`, allowing easy creation of
 /// perspective objects based on radial descriptions. This facilitates the dynamic generation
 /// of visible areas based on the position and defined view angle of entities.
-impl From<RadialViewPoint> for Perspective {
-    fn from(radial_view_point: RadialViewPoint) -> Self {
-        let RadialViewPoint {
+impl From<RadialArea> for Perspective {
+    fn from(radial_area: RadialArea) -> Self {
+        let RadialArea {
             range,
             center_pos,
             angle_step,
             angle_range: (start_angle, end_angle),
-        } = radial_view_point;
+        } = radial_area;
 
         if range == 0 {
             return Perspective::default();
@@ -145,7 +144,7 @@ impl From<RadialViewPoint> for Perspective {
                         Ray3d::new(center_pos_vec3, (arc_tile.0 - center_pos.0).as_vec3()),
                         range as f32,
                     );
-                    ViewPoint::new(ray_cast, center_pos.bresenhams_line(arc_tile))
+                    Traversal::new(ray_cast, center_pos.bresenhams_line(arc_tile))
                 })
                 .collect::<Vec<_>>(),
         )

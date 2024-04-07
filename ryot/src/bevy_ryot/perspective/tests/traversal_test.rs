@@ -7,55 +7,55 @@ use time_test::time_test;
 #[cfg(not(target_os = "windows"))]
 #[rstest]
 #[
-    case(RadialViewPoint::default().with_angle_range((315, 405)),
+    case(RadialArea::default().with_angle_range((315, 405)),
     vec![vec![TilePosition::new(1, -1, 0), TilePosition::new(0, 0, 0)], vec![TilePosition::new(1, 0, 0), TilePosition::new(0, 0, 0)], vec![TilePosition::new(1, 1, 0), TilePosition::new(0, 0, 0)]]
 )]
 #[
-    case(RadialViewPoint::default().with_angle_range((0, 0)),
+    case(RadialArea::default().with_angle_range((0, 0)),
     vec![]
 )]
 #[
-    case(RadialViewPoint::default().with_angle_range((0, 1)),
+    case(RadialArea::default().with_angle_range((0, 1)),
     vec![vec![TilePosition::new(0, 0, 0), TilePosition::new(1, 0, 0)]]
 )]
 #[
-    case(RadialViewPoint::default().with_angle_range((45, 46)),
+    case(RadialArea::default().with_angle_range((45, 46)),
     vec![vec![TilePosition::new(0, 0, 0), TilePosition::new(1, 1, 0)]]
 )]
 #[
-    case(RadialViewPoint::default().with_angle_range((90, 91)),
+    case(RadialArea::default().with_angle_range((90, 91)),
     vec![vec![TilePosition::new(0, 0, 0), TilePosition::new(0, 1, 0)]]
 )]
 #[
-    case(RadialViewPoint::default().with_angle_range((135, 136)),
+    case(RadialArea::default().with_angle_range((135, 136)),
     vec![vec![TilePosition::new(0, 0, 0), TilePosition::new(-1, 1, 0)]]
 )]
 #[
-    case(RadialViewPoint::default().with_angle_range((180, 181)),
+    case(RadialArea::default().with_angle_range((180, 181)),
     vec![vec![TilePosition::new(0, 0, 0), TilePosition::new(-1, 0, 0)]]
 )]
 #[
-    case(RadialViewPoint::default().with_angle_range((225, 226)),
+    case(RadialArea::default().with_angle_range((225, 226)),
     vec![vec![TilePosition::new(0, 0, 0), TilePosition::new(-1, -1, 0)]]
 )]
 #[
-    case(RadialViewPoint::default().with_angle_range((270, 271)),
+    case(RadialArea::default().with_angle_range((270, 271)),
     vec![vec![TilePosition::new(0, 0, 0), TilePosition::new(0, -1, 0)]]
 )]
 #[
-    case(RadialViewPoint::default().with_angle_range((315, 316)),
+    case(RadialArea::default().with_angle_range((315, 316)),
     vec![vec![TilePosition::new(0, 0, 0), TilePosition::new(1, -1, 0)]]
 )]
 #[
-    case(RadialViewPoint::default().with_angle_range((360, 361)),
+    case(RadialArea::default().with_angle_range((360, 361)),
     vec![vec![TilePosition::new(0, 0, 0), TilePosition::new(1, 0, 0)]]
 )]
 #[
-    case(RadialViewPoint::default().with_angle_range((675, 675)),
+    case(RadialArea::default().with_angle_range((675, 675)),
     vec![]
 )]
 #[
-    case(RadialViewPoint::default().with_angle_range((0, 360)),
+    case(RadialArea::default().with_angle_range((0, 360)),
     vec![
         vec![TilePosition::new(-1, -1, 0), TilePosition::new(0, 0, 0)],
         vec![TilePosition::new(-1, 0, 0), TilePosition::new(0, 0, 0)],
@@ -68,7 +68,7 @@ use time_test::time_test;
     ]
 )]
 #[
-    case(RadialViewPoint::default().with_range(3).with_angle_range((0, 360)),
+    case(RadialArea::default().with_range(3).with_angle_range((0, 360)),
     vec![
         vec![TilePosition::new(-2, -2, 0), TilePosition::new(-1, -1, 0), TilePosition::new(0, 0, 0)],
         vec![TilePosition::new(-2, 2, 0), TilePosition::new(-1, 1, 0), TilePosition::new(0, 0, 0)],
@@ -91,13 +91,13 @@ use time_test::time_test;
         vec![TilePosition::new(0, 0, 0), TilePosition::new(1, 0, 0), TilePosition::new(2, 1, 0), TilePosition::new(3, 1, 0)],
         vec![TilePosition::new(0, 0, 0), TilePosition::new(1, 1, 0), TilePosition::new(2, 1, 0), TilePosition::new(3, 2, 0)]]
     )]
-fn radial_view_point_should_generate_the_correct_target_area(
-    #[case] radial_view_point: RadialViewPoint,
+fn radial_area_should_generate_the_correct_target_area(
+    #[case] radial_area: RadialArea,
     #[case] mut target_areas: Vec<Vec<TilePosition>>,
 ) {
-    let perspective: Perspective = radial_view_point.into();
+    let perspective: Perspective = radial_area.into();
     let mut areas = perspective
-        .view_points
+        .traversals
         .iter()
         .map(|pov| pov.target_area.clone())
         .collect::<Vec<_>>();
@@ -123,51 +123,49 @@ fn radial_view_point_should_generate_the_correct_target_area(
 }
 
 #[quickcheck]
-fn perspective_generates_valid_viewpoints(radial_view_point: RadialViewPoint) -> bool {
-    let perspective = Perspective::from(radial_view_point);
+fn perspective_generates_valid_traversals(radial_area: RadialArea) -> bool {
+    let perspective = Perspective::from(radial_area);
 
-    if radial_view_point.angle_range.0 == radial_view_point.angle_range.1 {
+    if radial_area.angle_range.0 == radial_area.angle_range.1 {
         return true;
     }
 
-    if perspective.view_points.is_empty() {
+    if perspective.traversals.is_empty() {
         println!("Failed:");
-        println!("\tradial_view_point: {:?}", radial_view_point);
-        println!("\t  view_points_len: {}", perspective.view_points.len());
+        println!("\tradial_area: {:?}", radial_area);
+        println!("\t  traversals_len: {}", perspective.traversals.len());
     }
 
     true
 }
 
 #[quickcheck]
-fn radial_view_point_should_generate_the_correct_line_of_sight(
-    radial_view_point: RadialViewPoint,
-) -> bool {
-    let perspective: Perspective = radial_view_point.into();
+fn radial_area_should_generate_the_correct_line_of_sight(radial_area: RadialArea) -> bool {
+    let perspective: Perspective = radial_area.into();
     let expected_len = TilePosition::new(0, 0, 0)
         .tiles_on_arc_circumference(
-            radial_view_point.range,
-            radial_view_point.angle_range.0,
-            radial_view_point.angle_range.1,
-            radial_view_point.angle_step,
+            radial_area.range,
+            radial_area.angle_range.0,
+            radial_area.angle_range.1,
+            radial_area.angle_step,
         )
         .len();
 
-    if perspective.view_points.len() != expected_len {
+    if perspective.traversals.len() != expected_len {
         println!("Failed:");
-        println!("\tradial_view_point: {:?}", radial_view_point);
+        println!("\tradial_area: {:?}", radial_area);
         println!("\t     expected_len: {}", expected_len);
-        println!("\t  view_points_len: {}", perspective.view_points.len());
+        println!("\t  traversals_len: {}", perspective.traversals.len());
     }
 
     true
 }
 
 #[quickcheck]
-fn test_view_point_ray_cast_collisions_count(test_pos: tests::TilePosition3x3) -> bool {
-    let povs: Perspective = RadialViewPoint::circle().with_range(3).into();
+fn test_radial_area_cast_collisions_count(test_pos: tests::TilePosition3x3) -> bool {
+    let povs: Perspective = RadialArea::circle().with_range(3).into();
     let count = povs
-        .view_points
+        .traversals
         .iter()
         .filter(|pov| {
             pov.ray_cast
@@ -202,14 +200,11 @@ fn test_view_point_ray_cast_collisions_count(test_pos: tests::TilePosition3x3) -
 }
 
 #[quickcheck]
-fn test_view_point_ray_cast_collisions(
-    test_pos: TilePosition,
-    view_point: RadialViewPoint,
-) -> bool {
-    let povs: Perspective = view_point.into();
+fn test_radial_area_ray_cast_collisions(test_pos: TilePosition, radial_area: RadialArea) -> bool {
+    let povs: Perspective = radial_area.into();
 
     let count = povs
-        .view_points
+        .traversals
         .iter()
         .filter(|pov| {
             pov.ray_cast
@@ -219,15 +214,15 @@ fn test_view_point_ray_cast_collisions(
         .count();
 
     // Check if the test position is within the specified range of the center
-    let distance_from_center = (((test_pos.x - view_point.center_pos.x) as i64).pow(2)
-        + ((test_pos.y - view_point.center_pos.y) as i64).pow(2))
+    let distance_from_center = (((test_pos.x - radial_area.center_pos.x) as i64).pow(2)
+        + ((test_pos.y - radial_area.center_pos.y) as i64).pow(2))
         as f64;
-    let is_within_range = distance_from_center.sqrt() <= view_point.range as f64;
+    let is_within_range = distance_from_center.sqrt() <= radial_area.range as f64;
 
     if is_within_range && count == 0 {
         println!("Failed:");
         println!("\t       test_pos: {:?}", test_pos);
-        println!("\t     view_point: {:?}", view_point);
+        println!("\t    radial_area: {:?}", radial_area);
         println!("\tis_within_range: {}", is_within_range);
         println!("\t          count: {}", count);
         println!(
@@ -242,7 +237,7 @@ fn test_view_point_ray_cast_collisions(
 #[ignore]
 fn stress_test_ray_cast() {
     {
-        let radial = RadialViewPoint::circle().with_range(5);
+        let radial = RadialArea::circle().with_range(5);
 
         {
             time_test!("Creates 300k circular Perspective (5x5)");
@@ -256,13 +251,13 @@ fn stress_test_ray_cast() {
 
             time_test!("Checks 400k circular Perspective (5x5)");
             for _ in 0..400_000 {
-                povs.clone().get_filtered_intersections();
+                povs.clone().get_intersections();
             }
         }
     }
 
     {
-        let radial = RadialViewPoint::circle().with_range(3);
+        let radial = RadialArea::circle().with_range(3);
 
         {
             time_test!("Creates 550k circular Perspective (3x3)");
@@ -276,13 +271,13 @@ fn stress_test_ray_cast() {
 
             time_test!("Checks 1.2M circular Perspective (3x3)");
             for _ in 0..1_200_000 {
-                povs.clone().get_filtered_intersections();
+                povs.clone().get_intersections();
             }
         }
     }
 
     {
-        let radial = RadialViewPoint::sector(45, 135).with_range(5);
+        let radial = RadialArea::sector(45, 135).with_range(5);
 
         {
             time_test!("Creates 1.1M sector Perspective (90degrees - 5x5)");
@@ -296,13 +291,13 @@ fn stress_test_ray_cast() {
 
             time_test!("Checks 1.8M sector Perspective (90degrees - 5x5)");
             for _ in 0..1_800_000 {
-                povs.clone().get_filtered_intersections();
+                povs.clone().get_intersections();
             }
         }
     }
 
     {
-        let radial = RadialViewPoint::sector(45, 135).with_range(3);
+        let radial = RadialArea::sector(45, 135).with_range(3);
 
         {
             time_test!("Creates 2.2M sector Perspective (90degrees - 3x3)");
@@ -316,7 +311,7 @@ fn stress_test_ray_cast() {
 
             time_test!("Checks 3.5M sector Perspective (90degrees - 3x3)");
             for _ in 0..3_500_000 {
-                povs.clone().get_filtered_intersections();
+                povs.clone().get_intersections();
             }
         }
     }
