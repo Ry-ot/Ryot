@@ -13,7 +13,11 @@ use std::{
 
 #[cfg(feature = "bevy")]
 use crate::bevy_ryot::elevation::Elevation;
-use crate::{OrdinalDirection, SpriteLayout};
+use crate::OrdinalDirection;
+#[cfg(feature = "bevy")]
+use crate::SpriteLayout;
+
+#[cfg(feature = "bevy")]
 use bevy::math::bounding::{Aabb3d, BoundingSphere};
 #[cfg(all(feature = "bevy", feature = "debug"))]
 use bevy_stroked_text::StrokedText;
@@ -80,6 +84,7 @@ impl TilePosition {
         Vec2::from(self).extend(compute_z_transform(&self, layer))
     }
 
+    #[cfg(feature = "bevy")]
     pub fn to_elevated_translation(
         self,
         layout: SpriteLayout,
@@ -606,6 +611,7 @@ impl SubAssign<IVec2> for TilePosition {
 
 /// Converts `TilePosition` to `Aabb3d` (Axis Aligned Bounding Box 3D).
 /// This conversion allows `TilePosition` to be used in spatial queries and collision detection.
+#[cfg(feature = "bevy")]
 impl From<TilePosition> for Aabb3d {
     fn from(tile_pos: TilePosition) -> Self {
         let vec3 = Vec3::new(tile_pos.x as f32, tile_pos.y as f32, tile_pos.z as f32);
@@ -616,6 +622,7 @@ impl From<TilePosition> for Aabb3d {
 /// Converts `TilePosition` to `BoundingSphere`.
 /// This conversion allows `TilePosition` to be used in spatial queries and collision detection
 /// with spherical bounds.
+#[cfg(feature = "bevy")]
 impl From<TilePosition> for BoundingSphere {
     fn from(tile_pos: TilePosition) -> Self {
         let vec3 = Vec3::new(tile_pos.x as f32, tile_pos.y as f32, tile_pos.z as f32);
