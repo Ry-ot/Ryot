@@ -5,7 +5,7 @@ edition = "2021"
 exclude = ["dist", "build", "assets", "credits"]
 
 [dependencies]
-ryot = { version = "0.1.0", path = "../ryot", features = ["egui"] }
+ryot = { version = "0.2.0", path = "../ryot", features = ["egui"] }
 
 async-std = "1.12"
 egui_dock = "0.11"
@@ -54,7 +54,7 @@ rstest.workspace = true
 
 [build-dependencies]
 embed-resource = "2.4"
-ryot = { version = "0.1.0", path = "../ryot" }
+ryot = { version = "0.2.0", path = "../ryot" }
 
 [features]
 default = []
