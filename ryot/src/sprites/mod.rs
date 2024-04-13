@@ -1,7 +1,10 @@
 #[cfg(feature = "bevy")]
+use crate::bevy_ryot::sprites::SpriteMaterial;
+#[cfg(feature = "bevy")]
 use bevy::prelude::*;
 use glam::{UVec2, Vec2};
 use serde_repr::{Deserialize_repr, Serialize_repr};
+use strum::EnumIter;
 
 mod config;
 pub use config::*;
@@ -11,9 +14,6 @@ pub use sheet_loading::*;
 
 pub mod layer;
 pub use layer::Layer;
-use strum::EnumIter;
-
-use crate::bevy_ryot::sprites::SpriteMaterial;
 
 pub mod position;
 
@@ -34,18 +34,22 @@ pub enum SpriteLayout {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct SpriteOutline {
+    #[cfg(feature = "bevy")]
     color: Color,
     thickness: f32,
 }
 
-#[derive(Component, Debug, Clone, PartialEq, Default)]
+#[derive(Debug, Clone, PartialEq, Default)]
+#[cfg_attr(feature = "bevy", derive(Component))]
 pub struct SpriteParams {
     pub alpha: Option<f32>,
     pub outline: Option<SpriteOutline>,
+    #[cfg(feature = "bevy")]
     pub tint: Option<Color>,
 }
 
 impl SpriteParams {
+    #[cfg(feature = "bevy")]
     pub fn with_outline(self, color: Color, thickness: f32) -> Self {
         Self {
             outline: Some(SpriteOutline { color, thickness }),
@@ -53,6 +57,15 @@ impl SpriteParams {
         }
     }
 
+    #[cfg(not(feature = "bevy"))]
+    pub fn with_outline(self, thickness: f32) -> Self {
+        Self {
+            outline: Some(SpriteOutline { thickness }),
+            ..self
+        }
+    }
+
+    #[cfg(feature = "bevy")]
     pub fn with_tint(self, color: Color) -> Self {
         Self {
             tint: Some(color),
@@ -67,10 +80,17 @@ impl SpriteParams {
         }
     }
 
+    #[cfg(feature = "bevy")]
     pub fn has_any(&self) -> bool {
         self.outline.is_some() || self.tint.is_some() || self.alpha.is_some()
     }
 
+    #[cfg(not(feature = "bevy"))]
+    pub fn has_any(&self) -> bool {
+        self.outline.is_some() || self.alpha.is_some()
+    }
+
+    #[cfg(feature = "bevy")]
     pub fn to_material(&self, base: SpriteMaterial) -> SpriteMaterial {
         let mut material = base;
 
@@ -79,6 +99,7 @@ impl SpriteParams {
             material.outline_thickness = outline.thickness;
         }
 
+        #[cfg(not(feature = "bevy"))]
         if let Some(tint) = &self.tint {
             material.tint = *tint;
         }
@@ -91,6 +112,7 @@ impl SpriteParams {
     }
 }
 
+#[cfg(feature = "bevy")]
 impl From<&SpriteMaterial> for SpriteParams {
     fn from(material: &SpriteMaterial) -> Self {
         Self {
