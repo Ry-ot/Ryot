@@ -1,11 +1,11 @@
 use crate::bevy_compass::CompassAssets;
+use crate::pancam::*;
 use crate::{gui_is_not_in_use, CompassAction, CompassContentAssets, HudLayers, UiState};
 use bevy::math::{Vec2, Vec3};
 use bevy::prelude::*;
 use bevy::sprite::Mesh2dHandle;
 
 use bevy_egui::{EguiContext, EguiContexts};
-use bevy_pancam::*;
 
 use leafwing_input_manager::common_conditions::action_just_pressed;
 use leafwing_input_manager::prelude::*;
