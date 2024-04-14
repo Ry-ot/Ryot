@@ -15,10 +15,6 @@ uuid = "1.6"
 wasm-bindgen-futures = "0.4"
 winit = "0.29"
 
-bevy_pancam = { git = "https://github.com/luan/bevy_pancam", branch = "luan/modifier-keys", features = [
-    "leafwing-input-manager",
-] }
-
 bevy.workspace = true
 bevy_asset_loader.workspace = true
 bevy_common_assets.workspace = true

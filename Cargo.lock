@@ -1055,15 +1055,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "bevy_pancam"
-version = "0.11.0"
-source = "git+https://github.com/luan/bevy_pancam?branch=luan/modifier-keys#82c17bb1f84cecdb8db68134950d53788cb8029c"
-dependencies = [
- "bevy",
- "leafwing-input-manager",
-]
-
-[[package]]
 name = "bevy_pbr"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5071,7 +5062,6 @@ dependencies = [
  "bevy_asset_loader",
  "bevy_common_assets",
  "bevy_egui",
- "bevy_pancam",
  "bytes",
  "color-eyre",
  "egui",

@@ -32,6 +32,8 @@ pub use tileset::*;
 mod ui;
 pub use ui::*;
 
+mod pancam;
+
 pub struct AppPlugin;
 
 impl Plugin for AppPlugin {
