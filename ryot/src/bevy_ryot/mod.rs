@@ -48,6 +48,9 @@ pub mod map;
 
 pub mod drawing;
 
+#[cfg(feature = "pathfinding")]
+pub mod pathfinding;
+
 pub mod sprites;
 
 pub mod perspective;
@@ -62,7 +65,7 @@ pub static GRID_LAYER: Layer = Layer::Hud(0);
 /// A generic cache structure leveraging `HashMap` for storing and quickly accessing data.
 /// This structure is particularly useful for caching expensive computations, assets, or
 /// other data for rapid retrieval.
-#[derive(Resource, Default, Deref, DerefMut)]
+#[derive(Resource, Default, Deref, DerefMut, Debug)]
 pub struct Cache<K, V>(HashMap<K, V>);
 
 /// Defines system sets for managing cache-related systems.
