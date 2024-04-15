@@ -31,7 +31,10 @@ use derive_more::{Add, Sub};
 use glam::{IVec2, IVec3, UVec2, Vec2, Vec3};
 use serde::{Deserialize, Serialize};
 
-/// A 2d position in the tile grid. This is is not the position of the tile on
+#[cfg(feature = "pathfinding")]
+mod pathfinding;
+
+/// A 2d position in the tile grid. This is not the position of the tile on
 /// the screen, because it doesn't take into account the tile size. Z is used to
 /// calculate the rendering order of the tile.
 #[derive(Eq, PartialEq, Deserialize, Serialize, Default, Clone, Copy, Debug, Hash, Add, Sub)]
