@@ -30,7 +30,13 @@ pub(super) fn trigger_path_finding_tasks<P: Pathable + Component>(
             .insert(PathFindingTask(thread_pool.spawn(async move {
                 from.path_to(
                     query.to,
-                    |p| flags_cache.get(p).copied().unwrap_or_default().walkable,
+                    |p| {
+                        flags_cache
+                            .get(p)
+                            .copied()
+                            .unwrap_or_default()
+                            .is_walkable()
+                    },
                     query.timeout,
                 )
             })));
