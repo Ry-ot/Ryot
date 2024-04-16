@@ -48,7 +48,7 @@ pub trait Trajectory: Component + Send + Sync + 'static {
     /// This method should be used to check conditions related to the entity's interaction with the
     /// environment, such as obstructions, visibility, or other criteria defined by `TileFlags`.
     fn meets_condition(&self, flags: &TileFlags, _: &TilePosition) -> bool {
-        flags.walkable
+        flags.is_walkable()
     }
 }
 
@@ -109,7 +109,7 @@ impl<T: Copy + Send + Sync + 'static> Trajectory for VisibleTrajectory<T> {
     }
 
     fn meets_condition(&self, flags: &TileFlags, _: &TilePosition) -> bool {
-        !flags.blocks_sight
+        !flags.blocks_sight()
     }
 }
 
