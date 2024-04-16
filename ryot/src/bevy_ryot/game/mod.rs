@@ -25,7 +25,8 @@ impl<C: AppearanceAssets> Default for GamePlugin<C> {
 impl<C: AppearanceAssets> Plugin for GamePlugin<C> {
     fn build(&self, app: &mut App) {
         app.add_event::<LoadObjects>()
-            .add_systems(Update, apply_elevation::<C>);
+            .add_systems(Update, apply_elevation::<C>)
+            .add_systems(Last, track_position_changes);
     }
 }
 

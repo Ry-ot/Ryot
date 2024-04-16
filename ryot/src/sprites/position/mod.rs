@@ -647,3 +647,21 @@ impl Ord for TilePosition {
             .then(self.z.cmp(&other.z))
     }
 }
+
+#[derive(Default, Clone, Copy, Debug, Deref, DerefMut)]
+#[cfg_attr(feature = "bevy", derive(Component, Reflect))]
+pub struct PreviousPosition(pub TilePosition);
+
+#[cfg(feature = "bevy")]
+pub fn track_position_changes(
+    mut commands: Commands,
+    mut query: Query<(Entity, &TilePosition, Option<&mut PreviousPosition>), Changed<TilePosition>>,
+) {
+    for (entity, pos, prev_pos) in query.iter_mut() {
+        if let Some(mut prev_pos) = prev_pos {
+            prev_pos.0 = *pos;
+        } else {
+            commands.entity(entity).insert(PreviousPosition(*pos));
+        }
+    }
+}

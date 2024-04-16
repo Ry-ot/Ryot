@@ -31,6 +31,7 @@
 #![feature(fn_traits)]
 #![feature(lazy_cell)]
 #![feature(unboxed_closures)]
+#![feature(let_chains)]
 
 pub mod appearances;
 
