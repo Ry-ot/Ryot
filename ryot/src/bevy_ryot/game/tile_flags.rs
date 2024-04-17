@@ -77,12 +77,14 @@ impl TileFlags {
             blocks_sight: self.blocks_sight || flags.blocks_sight,
         }
     }
+}
 
-    pub fn is_walkable(&self) -> bool {
+impl Flag for TileFlags {
+    fn is_walkable(&self) -> bool {
         self.walkable
     }
 
-    pub fn blocks_sight(&self) -> bool {
+    fn blocks_sight(&self) -> bool {
         self.blocks_sight
     }
 }

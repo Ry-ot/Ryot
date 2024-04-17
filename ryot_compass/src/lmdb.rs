@@ -14,7 +14,6 @@ use ryot::lmdb;
 use ryot::lmdb::*;
 use ryot::prelude::drawing::TileComponent;
 use ryot::prelude::*;
-use ryot_grid::prelude::*;
 use std::collections::HashMap;
 use std::sync::atomic::Ordering;
 use std::{cmp, fs};

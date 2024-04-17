@@ -1,8 +1,5 @@
-#[cfg(feature = "core")]
-pub use ryot_core::*;
+pub use ryot_core::prelude::*;
+pub use ryot_grid::prelude::*;
 
-#[cfg(feature = "grid")]
-pub use ryot_grid::*;
-
-#[cfg(feature = "pathfinder")]
-pub use ryot_pathfinder::*;
+#[cfg(feature = "ryot_pathfinder")]
+pub use ryot_pathfinder::prelude::*;

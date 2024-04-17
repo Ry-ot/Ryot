@@ -5,7 +5,6 @@ edition = "2021"
 exclude = ["dist", "build", "assets", "credits"]
 
 [dependencies]
-ryot_grid = { path = "../crates/ryot_grid", version = "0.2.0" }
 ryot = { version = "0.2.0", path = "../ryot", features = ["egui"] }
 
 async-std = "1.12"

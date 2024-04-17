@@ -1,4 +1,4 @@
-use ryot_grid::prelude::*;
+use ryot::prelude::*;
 
 #[repr(u8)]
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
