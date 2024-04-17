@@ -1,4 +1,4 @@
-use crate::position::TilePosition;
+use crate::prelude::*;
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;
 use serde::{Deserialize, Serialize};

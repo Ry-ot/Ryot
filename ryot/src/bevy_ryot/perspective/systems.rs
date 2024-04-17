@@ -7,8 +7,7 @@ use std::sync::mpsc;
 use bevy::prelude::*;
 use itertools::Itertools;
 
-use crate::position::TilePosition;
-use crate::prelude::{perspective::*, tile_flags::TileFlags, *};
+use crate::prelude::{perspective::*, tile_flags::TileFlags};
 
 /// Defines system sets for managing perspective calculation systems.
 /// This enum categorizes systems related to perspective calculations, facilitating the organization

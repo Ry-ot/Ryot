@@ -14,7 +14,6 @@ use ryot::bevy_ryot::drawing::{Deletion, DrawingBundle};
 use ryot::bevy_ryot::elevation::Elevation;
 use ryot::bevy_ryot::map::MapTiles;
 use ryot::bevy_ryot::sprites::SpriteMaterial;
-use ryot::position::{Sector, TilePosition};
 use ryot::prelude::drawing::{BrushItem, BrushParams, Brushes};
 use ryot::prelude::*;
 use std::marker::PhantomData;

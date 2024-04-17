@@ -4,7 +4,8 @@ use crate::appearances::{self, is_true};
 use crate::bevy_ryot::{GameObjectId, InternalContentState};
 use crate::directional::*;
 use crate::layer::*;
-use crate::position::{Sector, SpriteMovement, TilePosition};
+use crate::position::SpriteMovement;
+use crate::prelude::*;
 use bevy::prelude::*;
 use bevy::render::view::{check_visibility, VisibilitySystems, VisibleEntities};
 

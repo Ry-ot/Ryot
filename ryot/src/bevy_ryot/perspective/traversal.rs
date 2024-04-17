@@ -6,8 +6,8 @@ use bevy::math::Ray3d;
 use bevy::prelude::Component;
 use glam::Vec3;
 
-use crate::position::TilePosition;
 use crate::prelude::perspective::Perspective;
+use crate::prelude::*;
 
 /// Represents an area that can be traversable by a ray cast. This struct is pivotal for
 /// calculating which areas of the game world are reachable from a certain position, using ray

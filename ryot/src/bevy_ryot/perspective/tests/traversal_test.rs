@@ -1,5 +1,4 @@
 use crate::bevy_ryot::perspective::*;
-use crate::position::TilePosition;
 use quickcheck_macros::quickcheck;
 use rstest::rstest;
 use time_test::time_test;

@@ -3,7 +3,6 @@
 //! they are deleted. Their interaction is controlled by the state of Deletion component.
 
 use crate::bevy_ryot::drawing::*;
-use crate::position::TilePosition;
 
 #[cfg(feature = "lmdb")]
 use bevy::utils::HashMap;
