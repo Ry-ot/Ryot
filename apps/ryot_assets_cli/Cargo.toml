@@ -1,5 +1,5 @@
 [package]
-name = "ryot-assets-cli"
+name = "ryot_assets_cli"
 version = "0.1.0"
 edition = "2021"
 authors = [
@@ -13,12 +13,12 @@ homepage = "https://github.com/opentibiabr/Ryot"
 documentation = "https://docs.rs/ryot/"
 keywords = ["gamedev", "assets", "ryot", "otbr", "bevy"]
 categories = ["game-development"]
-readme = "../README.md"
+readme = "../../README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-ryot = { version = "0.2.0", path = "../ryot", default-features = false, features = [
+ryot = { version = "0.2.0", path = "../../ryot", default-features = false, features = [
     "compression",
 ] }
 config = "0.13"
