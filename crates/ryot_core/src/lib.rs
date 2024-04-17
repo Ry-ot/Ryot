@@ -1,7 +1,10 @@
 #[cfg(feature = "bevy")]
 pub mod cache;
 
+pub mod async_task;
+
 pub mod prelude {
+    pub use crate::async_task::execute;
     #[cfg(feature = "bevy")]
     pub use crate::cache::{Cache, CacheSystems};
     pub use crate::Flag;
