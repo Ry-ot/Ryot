@@ -5015,7 +5015,6 @@ dependencies = [
  "leafwing-input-manager",
  "log",
  "lzma-rs",
- "pathfinding",
  "postcard",
  "prost",
  "prost-build",
@@ -5025,6 +5024,9 @@ dependencies = [
  "rand",
  "rayon",
  "rstest",
+ "ryot_core",
+ "ryot_grid",
+ "ryot_internal",
  "serde",
  "serde_json",
  "serde_repr",
@@ -5084,6 +5086,7 @@ dependencies = [
  "rfd",
  "rstest",
  "ryot",
+ "ryot_grid",
  "serde",
  "serde_json",
  "strum",
@@ -5092,6 +5095,63 @@ dependencies = [
  "uuid",
  "wasm-bindgen-futures",
  "winit",
+]
+
+[[package]]
+name = "ryot_core"
+version = "0.2.0"
+dependencies = [
+ "bevy_ecs",
+ "bevy_utils",
+ "derive_more",
+]
+
+[[package]]
+name = "ryot_grid"
+version = "0.2.0"
+dependencies = [
+ "bevy_ecs",
+ "bevy_math",
+ "bevy_reflect",
+ "bevy_render",
+ "bevy_transform",
+ "derive_more",
+ "glam",
+ "quickcheck",
+ "quickcheck_macros",
+ "rand",
+ "rstest",
+ "ryot_core",
+ "serde",
+ "strum",
+ "time-test",
+]
+
+[[package]]
+name = "ryot_internal"
+version = "0.2.0"
+dependencies = [
+ "ryot_core",
+ "ryot_grid",
+ "ryot_pathfinder",
+]
+
+[[package]]
+name = "ryot_pathfinder"
+version = "0.2.0"
+dependencies = [
+ "bevy_app",
+ "bevy_ecs",
+ "bevy_tasks",
+ "derive_more",
+ "pathfinding",
+ "quickcheck",
+ "quickcheck_macros",
+ "rand",
+ "rstest",
+ "ryot_core",
+ "ryot_grid",
+ "time-test",
 ]
 
 [[package]]

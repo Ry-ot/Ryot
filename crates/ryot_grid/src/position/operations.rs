@@ -1,4 +1,4 @@
-use crate::grid::TilePosition;
+use crate::prelude::TilePosition;
 use glam::IVec2;
 use std::cmp::Ordering;
 use std::ops::{Add, AddAssign, Sub, SubAssign};

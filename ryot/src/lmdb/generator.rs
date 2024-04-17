@@ -79,11 +79,9 @@ house:id -> {
     beds: u8,
 }
  */
-use crate::layer::{BottomLayer, RelativeLayer};
 use crate::lmdb::*;
-use crate::prelude::*;
-use crate::Layer;
 use rand::Rng;
+use ryot_grid::prelude::*;
 
 pub fn build_map(z_size: i32) -> Plan {
     let mut map = Plan::default();

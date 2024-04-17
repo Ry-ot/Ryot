@@ -1,6 +1,7 @@
-use crate::pathfinding::Pathable;
-use bevy::prelude::*;
-use bevy::tasks::Task;
+use crate::Pathable;
+use bevy_ecs::prelude::*;
+use bevy_tasks::Task;
+use derive_more::*;
 use std::hash::Hash;
 use std::time::Duration;
 

@@ -1,10 +1,9 @@
 use crate::bevy_ryot::map::MapTiles;
 use crate::bevy_ryot::sprites::SPRITE_BASE_SIZE;
 use crate::bevy_ryot::{AppearanceAssets, AppearanceGroup, GameObjectId};
-use crate::prelude::*;
-use crate::Layer;
 use bevy::prelude::*;
 use itertools::Itertools;
+use ryot_grid::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 

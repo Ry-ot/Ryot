@@ -2,13 +2,14 @@
 //! This module contains the code to load the appearances.dat file.
 //! This file contains the information needed to load sprites and other content.
 use crate::appearances::{self, Flags, Frame, VisualElements};
-use crate::layer::Layer;
+use crate::prelude::drawing::appearance_flags_to_layer;
 use crate::prelude::*;
 use bevy::asset::io::Reader;
 use bevy::asset::{Asset, AssetLoader, AsyncReadExt, BoxedFuture, LoadContext};
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use prost::Message;
+use ryot_grid::prelude::*;
 use std::result;
 use thiserror::Error;
 
@@ -87,7 +88,7 @@ impl From<appearances::VisualElement> for Option<PreparedAppearance> {
         Some(PreparedAppearance {
             id: item.id?,
             name: item.name.unwrap_or(id.to_string()),
-            layer: Layer::from(item.flags.clone()),
+            layer: appearance_flags_to_layer(item.flags.clone()),
             main_sprite_id,
             frame_groups: item.frames.clone(),
             flags: item.flags.clone(),

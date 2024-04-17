@@ -1,5 +1,5 @@
-use crate::grid::TilePosition;
-use crate::OrdinalDirection;
+use crate::directional::OrdinalDirection;
+use crate::prelude::TilePosition;
 use std::collections::HashSet;
 use std::f32::consts::PI;
 

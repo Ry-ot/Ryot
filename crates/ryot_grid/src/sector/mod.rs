@@ -1,10 +1,15 @@
-use crate::grid::TilePosition;
+use crate::prelude::TilePosition;
 use glam::{IVec2, IVec3, Vec2};
 use std::fmt;
 use std::fmt::Formatter;
 
 #[cfg(feature = "bevy")]
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
+#[cfg(feature = "bevy")]
+use bevy_render::prelude::*;
+#[cfg(feature = "bevy")]
+use bevy_transform::prelude::*;
+
 use serde::{Deserialize, Serialize};
 
 mod operations;

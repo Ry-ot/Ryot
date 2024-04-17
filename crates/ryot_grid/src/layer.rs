@@ -1,6 +1,11 @@
 use crate::prelude::*;
 #[cfg(feature = "bevy")]
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
+#[cfg(feature = "bevy")]
+use bevy_reflect::prelude::*;
+#[cfg(all(feature = "bevy", feature = "debug"))]
+use bevy_render::color::*;
+
 use serde::{Deserialize, Serialize};
 use std::{
     cmp::Ordering,
@@ -110,7 +115,7 @@ impl quickcheck::Arbitrary for RelativeLayer {
     }
 }
 
-#[cfg(feature = "debug")]
+#[cfg(all(feature = "bevy", feature = "debug"))]
 impl From<&Layer> for Color {
     fn from(value: &Layer) -> Self {
         match value {
@@ -123,7 +128,7 @@ impl From<&Layer> for Color {
     }
 }
 
-#[cfg(feature = "debug")]
+#[cfg(all(feature = "bevy", feature = "debug"))]
 impl From<RelativeLayer> for Color {
     fn from(value: RelativeLayer) -> Self {
         match value {
@@ -337,7 +342,7 @@ impl PartialOrd for BottomLayer {
 }
 
 impl Ord for BottomLayer {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    fn cmp(&self, other: &Self) -> Ordering {
         self.z().partial_cmp(&other.z()).unwrap()
     }
 }
@@ -357,7 +362,7 @@ pub fn compute_z_transform(pos: &TilePosition, layer: &Layer) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use bevy::reflect::Enum;
+    use bevy_reflect::Enum;
     use quickcheck_macros::quickcheck;
 
     #[quickcheck]

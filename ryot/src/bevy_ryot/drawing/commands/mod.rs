@@ -14,9 +14,8 @@
 use crate::bevy_ryot::drawing::DrawingBundle;
 use crate::bevy_ryot::sprites::FrameGroupComponent;
 use crate::bevy_ryot::{GameObjectBundle, GameObjectId};
-use crate::prelude::*;
-use crate::Layer;
 use bevy::prelude::*;
+use ryot_grid::prelude::*;
 
 mod update;
 pub use update::*;

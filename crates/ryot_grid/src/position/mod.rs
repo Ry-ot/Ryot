@@ -1,15 +1,16 @@
-use crate::layer::compute_z_transform;
-use crate::{Layer, SpriteLayout};
 use derive_more::{Add, Sub};
 use glam::{IVec3, Vec2, Vec3};
 use std::fmt;
 use std::fmt::Formatter;
 use std::ops::{Deref, DerefMut};
 
-use crate::bevy_ryot::elevation::Elevation;
-use crate::grid::tile_size;
+use crate::tile_size;
+
 #[cfg(feature = "bevy")]
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
+#[cfg(feature = "bevy")]
+use bevy_reflect::prelude::*;
+
 use serde::{Deserialize, Serialize};
 
 mod conversion;
@@ -18,11 +19,7 @@ mod interactions;
 
 mod operations;
 
-#[cfg(feature = "pathfinding")]
-mod pathfinding;
-
 mod previous;
-
 pub use previous::*;
 
 /// A 2d position in the tile grid. This is not the position of the tile on
@@ -54,22 +51,6 @@ impl TilePosition {
     pub fn is_valid(self) -> bool {
         self.deref().clamp(Self::MIN.0, Self::MAX.0).truncate() == self.truncate()
     }
-
-    // TODO: Probably not living here.
-    pub fn to_elevated_translation(
-        self,
-        layout: SpriteLayout,
-        layer: Layer,
-        elevation: Elevation,
-    ) -> Vec3 {
-        let anchor = Vec2::new(
-            (elevation.elevation).clamp(0.0, 1.0),
-            (-elevation.elevation).clamp(-1.0, 0.0),
-        );
-        self.to_vec3(&layer)
-            - (SpriteLayout::OneByOne.get_size(&tile_size()).as_vec2() * anchor).extend(0.)
-            - (layout.get_size(&tile_size()).as_vec2() * Vec2::new(0.5, -0.5)).extend(0.)
-    }
 }
 
 impl fmt::Display for TilePosition {
@@ -92,7 +73,7 @@ impl DerefMut for TilePosition {
     }
 }
 
-#[cfg(test)]
+#[cfg(feature = "test-utils")]
 impl quickcheck::Arbitrary for TilePosition {
     fn arbitrary(g: &mut quickcheck::Gen) -> Self {
         Self::new(

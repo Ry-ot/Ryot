@@ -1,12 +1,10 @@
-use crate::prelude::*;
 use bevy::hierarchy::Children;
-use bevy::prelude::{
-    Camera, Component, Entity, GlobalTransform, In, Query, Transform, Window, With,
-};
+use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy_stroked_text::StrokedText;
 use color_eyre::eyre::eyre;
 use glam::Vec2;
+use ryot_grid::prelude::*;
 
 pub fn update_cursor_pos<C: Component>(
     In(camera_info): In<Option<(Entity, Vec2)>>,

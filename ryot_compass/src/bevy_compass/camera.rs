@@ -16,6 +16,7 @@ use ryot::bevy_ryot::map::MapTiles;
 use ryot::bevy_ryot::sprites::SpriteMaterial;
 use ryot::prelude::drawing::{BrushItem, BrushParams, Brushes};
 use ryot::prelude::*;
+use ryot_grid::prelude::*;
 use std::marker::PhantomData;
 
 pub struct CameraPlugin<C: CompassAssets>(PhantomData<C>);

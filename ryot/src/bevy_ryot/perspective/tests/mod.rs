@@ -1,6 +1,6 @@
 use crate::prelude::perspective::RadialArea;
-use crate::prelude::*;
 use bevy::prelude::*;
+use ryot_grid::prelude::*;
 
 mod traversal_test;
 

@@ -1,6 +1,11 @@
-use crate::grid::position::*;
-use bevy::math::bounding::{Aabb3d, BoundingSphere};
+use crate::layer::*;
+use crate::position::*;
 use glam::Vec2;
+
+#[cfg(feature = "bevy")]
+use bevy_math::bounding::{Aabb3d, BoundingSphere};
+#[cfg(feature = "bevy")]
+use bevy_transform::prelude::*;
 
 impl TilePosition {
     pub fn to_vec3(self, layer: &Layer) -> Vec3 {

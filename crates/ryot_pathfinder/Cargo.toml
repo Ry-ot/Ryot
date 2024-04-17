@@ -1,0 +1,47 @@
+[package]
+name = "ryot_pathfinder"
+version = "0.2.0"
+edition = "2021"
+authors = [
+    "Lucas Grossi <lucas.ggrosis@gmail.com>",
+    "Luan Santos <cargo@luan.sh>",
+]
+license = "MIT OR Apache-2.0"
+description = "An implementation of the pathfinding crate targeting 2d tile-based games using bevy ecs and ryot ecossystem."
+homepage = "https://github.com/opentibiabr/Ryot"
+repository = "https://github.com/opentibiabr/Ryot"
+documentation = "https://docs.rs/ryot/"
+keywords = ["gamedev", "ryot", "pathfinding", "tiled-2d", "tiled"]
+categories = ["game-development", "games"]
+
+[package.metadata.docs.rs]
+rustdoc-args = ["-Zunstable-options", "--cfg", "docsrs"]
+all-features = true
+
+[features]
+tiled = []
+
+[dependencies.bevy_app]
+version = "0.13"
+
+[dependencies.bevy_ecs]
+version = "0.13"
+features = ["bevy_reflect"]
+
+[dependencies.bevy_tasks]
+version = "0.13"
+
+[dependencies.pathfinding]
+version = "4.9.1"
+
+[dependencies]
+derive_more.workspace = true
+ryot_core = { path = "../ryot_core", version = "0.2.0" }
+ryot_grid = { path = "../ryot_grid", version = "0.2.0" }
+
+[dev-dependencies]
+quickcheck.workspace = true
+quickcheck_macros.workspace = true
+rstest.workspace = true
+time-test.workspace = true
+rand.workspace = true

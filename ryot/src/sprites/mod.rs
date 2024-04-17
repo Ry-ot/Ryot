@@ -1,8 +1,10 @@
+use crate::bevy_ryot::elevation::Elevation;
 #[cfg(feature = "bevy")]
 use crate::bevy_ryot::sprites::SpriteMaterial;
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;
 use glam::{UVec2, Vec2};
+use ryot_grid::prelude::*;
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use strum::EnumIter;
 
@@ -11,9 +13,6 @@ pub use config::*;
 
 mod sheet_loading;
 pub use sheet_loading::*;
-
-pub mod layer;
-pub use layer::Layer;
 
 pub mod position;
 
@@ -155,6 +154,21 @@ impl SpriteLayout {
             SpriteLayout::TwoByTwo => Vec2::new(width / 2., height / 2.),
         }
     }
+}
+
+pub fn elevate_position(
+    position: &TilePosition,
+    layout: SpriteLayout,
+    layer: Layer,
+    elevation: Elevation,
+) -> Vec3 {
+    let anchor = Vec2::new(
+        elevation.elevation.clamp(0.0, 1.0),
+        (-elevation.elevation).clamp(-1.0, 0.0),
+    );
+    position.to_vec3(&layer)
+        - (SpriteLayout::OneByOne.get_size(&tile_size()).as_vec2() * anchor).extend(0.)
+        - (layout.get_size(&tile_size()).as_vec2() * Vec2::new(0.5, -0.5)).extend(0.)
 }
 
 #[cfg(test)]

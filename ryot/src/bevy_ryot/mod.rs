@@ -7,7 +7,7 @@ use self::sprites::SpriteMaterial;
 use crate::appearances::{ContentType, SpriteSheetDataSet};
 #[cfg(feature = "debug")]
 use crate::position::debug_sprite_position;
-use crate::{Layer, SpriteLayout, TILE_SIZE};
+use crate::SpriteLayout;
 use bevy::app::{App, Plugin, Update};
 use bevy::asset::embedded_asset;
 use bevy::asset::{Asset, Assets, Handle};
@@ -23,6 +23,7 @@ use bevy_asset_loader::prelude::*;
 use bevy_asset_loader::standard_dynamic_asset::StandardDynamicAssetArrayCollection;
 use bevy_common_assets::json::JsonAssetPlugin;
 use bevy_stroked_text::StrokedTextPlugin;
+use ryot_grid::prelude::*;
 use std::marker::PhantomData;
 use strum::IntoEnumIterator;
 
@@ -58,21 +59,6 @@ pub use sprite_animations::{toggle_sprite_animation, AnimationDuration};
 
 pub static RYOT_ANCHOR: Anchor = Anchor::BottomRight;
 pub static GRID_LAYER: Layer = Layer::Hud(0);
-
-/// A generic cache structure leveraging `HashMap` for storing and quickly accessing data.
-/// This structure is particularly useful for caching expensive computations, assets, or
-/// other data for rapid retrieval.
-#[derive(Resource, Default, Deref, DerefMut, Debug)]
-pub struct Cache<K, V>(HashMap<K, V>);
-
-/// Defines system sets for managing cache-related systems.
-/// This enum is used to organize and control the execution order of systems that interact with
-/// caches, allowing for a structured update and clean-up process.
-#[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
-pub enum CacheSystems {
-    UpdateCache,
-    CleanCache,
-}
 
 /// The states that the content loading process can be in.
 /// This is used to track the progress of the content loading process.

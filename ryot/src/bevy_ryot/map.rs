@@ -1,9 +1,7 @@
 use bevy::prelude::{Deref, DerefMut, Reflect, Resource};
 use bevy::utils::HashMap;
 
-use crate::layer::Layer;
-use crate::layer::{BottomLayer, Order, RelativeLayer};
-use crate::prelude::*;
+use ryot_grid::prelude::*;
 
 /// A resource that holds the map tiles and the entities that are drawn on them.
 /// An entity location is represented by the combination of a Layer and a Position.
@@ -198,7 +196,6 @@ impl<T: Copy> MapTile<T> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::layer::{BottomLayer, Layer, RelativeLayer};
     use bevy::prelude::Entity;
 
     #[test]

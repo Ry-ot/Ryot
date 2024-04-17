@@ -1,12 +1,15 @@
-use crate::grid::TilePosition;
+use crate::prelude::TilePosition;
+use derive_more::{Deref, DerefMut};
 
 #[cfg(feature = "bevy")]
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
+#[cfg(feature = "bevy")]
+use bevy_reflect::prelude::*;
 
 /// Component to track the previous position of an entity.
 /// Useful when needing to deal with both the current and previous position of an entity.
-#[derive(Default, Clone, Copy, Debug, Deref, DerefMut)]
-#[cfg_attr(feature = "bevy", derive(Component, Reflect))]
+#[derive(Default, Clone, Copy, Debug)]
+#[cfg_attr(feature = "bevy", derive(Component, Reflect, Deref, DerefMut))]
 pub struct PreviousPosition(pub TilePosition);
 
 /// System to track changes in the position of entities. Needs to be run after the position

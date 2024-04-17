@@ -1,15 +1,28 @@
-use crate::pathfinding::systems::*;
-use bevy::prelude::*;
+use crate::systems::*;
+use bevy_app::prelude::*;
+use bevy_ecs::prelude::*;
+use ryot_core::Flag;
 use std::hash::Hash;
 use std::time::Duration;
 
 pub mod components;
 pub mod systems;
 
+#[cfg(feature = "tiled")]
+pub mod tiled;
+
+pub mod prelude {
+    pub use crate::{
+        components::{Path, PathFindingQuery},
+        systems::PathFindingSystems,
+        Pathable, PathableApp,
+    };
+}
+
 /// Represents an App that can add one or more `Pathable` to its systems.
 /// Requires the `Cache<P, TileFlags>` resource to be initialized.
 pub trait PathableApp {
-    fn add_pathable<P: Pathable + Component>(&mut self) -> &mut Self;
+    fn add_pathable<P: Pathable + Component, F: Flag>(&mut self) -> &mut Self;
 }
 
 /// Represents an element that can be used in path finding calculations.
@@ -33,11 +46,11 @@ pub trait Pathable: Eq + Hash + Copy + Clone + Sync + Send + 'static {
 }
 
 impl PathableApp for App {
-    fn add_pathable<P: Pathable + Component>(&mut self) -> &mut Self {
+    fn add_pathable<P: Pathable + Component, F: Flag>(&mut self) -> &mut Self {
         self.add_systems(
             Update,
             (
-                trigger_path_finding_tasks::<P>.in_set(PathFindingSystems::TriggerTask),
+                trigger_path_finding_tasks::<P, F>.in_set(PathFindingSystems::TriggerTask),
                 handle_path_finding_tasks::<P>
                     .in_set(PathFindingSystems::ExecuteTask)
                     .after(PathFindingSystems::TriggerTask),
@@ -45,3 +58,6 @@ impl PathableApp for App {
         )
     }
 }
+
+#[cfg(test)]
+mod bench;
