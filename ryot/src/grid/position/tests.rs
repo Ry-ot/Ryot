@@ -1,9 +1,7 @@
-use crate::bevy_ryot::pathfinding::Pathable;
-use crate::position::TilePosition;
+use crate::prelude::*;
 use glam::Vec2;
 use rstest::rstest;
 use std::collections::HashSet;
-use time_test::time_test;
 
 #[rstest]
 #[case((0, 0), (0., -32.))]
@@ -101,7 +99,20 @@ fn test_is_directly_connected(
 
 #[test]
 #[ignore]
+#[cfg(feature = "pathfinding")]
 fn stress_test_path_finding() {
+    use time_test::time_test;
+
+    fn format_number(num: usize) -> String {
+        if num >= 1_000_000 {
+            format!("{:.1}M", num / 1_000_000)
+        } else if num >= 1_000 {
+            format!("{:.1}k", num / 1_000)
+        } else {
+            format!("{}", num)
+        }
+    }
+
     let scenarios = [
         (2, 3_000_000usize),
         (3, 1_700_000usize),
@@ -129,15 +140,5 @@ fn stress_test_path_finding() {
                 panic!("Path finding failed");
             }
         }
-    }
-}
-
-fn format_number(num: usize) -> String {
-    if num >= 1_000_000 {
-        format!("{:.1}M", num / 1_000_000)
-    } else if num >= 1_000 {
-        format!("{:.1}k", num / 1_000)
-    } else {
-        format!("{}", num)
     }
 }

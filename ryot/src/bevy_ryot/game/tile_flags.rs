@@ -5,7 +5,7 @@ use bevy::prelude::*;
 use crate::appearances::*;
 use crate::bevy_ryot::map::MapTiles;
 use crate::bevy_ryot::*;
-use crate::position::TilePosition;
+use crate::prelude::*;
 
 /// `TileFlagPlugin` provides the necessary system and resource setup for managing `TileFlags`
 /// within the game world. It ensures that the flag cache is up-to-date and reflects the latest

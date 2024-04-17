@@ -8,7 +8,7 @@ use leafwing_input_manager::action_state::ActionState;
 use ryot::bevy_ryot::map::MapTiles;
 use ryot::bevy_ryot::sprites::FrameGroupComponent;
 use ryot::bevy_ryot::*;
-use ryot::prelude::{drawing::*, position::*};
+use ryot::prelude::{drawing::*, TilePosition};
 use ryot::Layer;
 
 /// System responsible for handling the drawing inputs. Drawing inputs can be a multitude of things,

@@ -1,7 +1,7 @@
 use crate::layer::Layer;
 use crate::lmdb;
 use crate::lmdb::*;
-use crate::position::{Sector, TilePosition};
+use crate::prelude::{Sector, TilePosition};
 use heed::types::Bytes;
 use rayon::prelude::*;
 use std::collections::HashMap;

@@ -8,7 +8,7 @@ use strum::{EnumIter, IntoEnumIterator};
 #[cfg(feature = "bevy")]
 use bevy::ecs::component::Component;
 
-use crate::position::TilePosition;
+use crate::prelude::*;
 
 #[derive(Hash, PartialEq, Eq, Clone, Copy, Default, Debug, Serialize, Deserialize)]
 pub enum CardinalDirection {

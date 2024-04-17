@@ -7,7 +7,6 @@ use self::sprites::SpriteMaterial;
 use crate::appearances::{ContentType, SpriteSheetDataSet};
 #[cfg(feature = "debug")]
 use crate::position::debug_sprite_position;
-use crate::position::*;
 use crate::{Layer, SpriteLayout, TILE_SIZE};
 use bevy::app::{App, Plugin, Update};
 use bevy::asset::embedded_asset;
@@ -48,15 +47,13 @@ pub mod map;
 
 pub mod drawing;
 
-#[cfg(feature = "pathfinding")]
-pub mod pathfinding;
-
 pub mod sprites;
 
 pub mod perspective;
 
 pub(crate) mod sprite_animations;
 
+use crate::prelude::*;
 pub use sprite_animations::{toggle_sprite_animation, AnimationDuration};
 
 pub static RYOT_ANCHOR: Anchor = Anchor::BottomRight;

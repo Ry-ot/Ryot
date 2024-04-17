@@ -1,12 +1,10 @@
+use crate::pathfinding::systems::*;
 use bevy::prelude::*;
 use std::hash::Hash;
 use std::time::Duration;
 
-mod components;
-pub use components::*;
-
-mod systems;
-pub use systems::*;
+pub mod components;
+pub mod systems;
 
 /// Represents an App that can add one or more `Pathable` to its systems.
 /// Requires the `Cache<P, TileFlags>` resource to be initialized.

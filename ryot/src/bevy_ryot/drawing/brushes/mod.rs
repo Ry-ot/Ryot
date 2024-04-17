@@ -1,4 +1,4 @@
-use crate::position::TilePosition;
+use crate::prelude::*;
 use bevy::prelude::{Deref, DerefMut, Resource};
 
 mod diamond;

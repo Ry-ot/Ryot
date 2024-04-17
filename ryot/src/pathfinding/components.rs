@@ -1,4 +1,4 @@
-use crate::bevy_ryot::pathfinding::Pathable;
+use crate::pathfinding::Pathable;
 use bevy::prelude::*;
 use bevy::tasks::Task;
 use std::hash::Hash;

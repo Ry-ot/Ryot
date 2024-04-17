@@ -1,5 +1,4 @@
-use crate::bevy_ryot::pathfinding::Pathable;
-use crate::position::TilePosition;
+use crate::prelude::*;
 use pathfinding::prelude::astar;
 use std::time::{Duration, Instant};
 

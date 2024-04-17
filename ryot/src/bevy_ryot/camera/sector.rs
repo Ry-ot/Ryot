@@ -1,4 +1,4 @@
-use crate::position::Sector;
+use crate::prelude::Sector;
 use bevy::prelude::{Camera, OrthographicProjection, Query, Transform, With};
 
 pub fn update_camera_visible_sector(

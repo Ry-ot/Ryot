@@ -10,7 +10,7 @@ use crate::bevy_ryot::GameObjectId;
 #[cfg(feature = "lmdb")]
 use crate::lmdb::{GetKey, Item, ItemRepository, ItemsFromHeedLmdb, Tile};
 #[cfg(feature = "lmdb")]
-use crate::position::TilePosition;
+use crate::prelude::*;
 #[cfg(feature = "lmdb")]
 use bevy::log::error;
 #[cfg(feature = "lmdb")]

@@ -46,6 +46,11 @@ pub use compression::{compress, decompress, Compression, Zstd};
 pub mod content;
 pub use content::*;
 
+pub mod grid;
+
+#[cfg(feature = "pathfinding")]
+pub mod pathfinding;
+
 #[cfg(feature = "lmdb")]
 pub mod lmdb;
 
@@ -59,6 +64,19 @@ pub use directional::*;
 pub mod helpers;
 
 pub mod prelude {
+    pub use crate::grid::{
+        position::{track_position_changes, PreviousPosition, TilePosition},
+        sector::Sector,
+        tile_offset, tile_size,
+    };
+
+    #[cfg(feature = "pathfinding")]
+    pub use crate::pathfinding::{
+        components::{Path, PathFindingQuery},
+        systems::PathFindingSystems,
+        Pathable, PathableApp,
+    };
+
     #[cfg(feature = "bevy")]
     pub use crate::bevy_ryot::*;
     #[cfg(feature = "compression")]

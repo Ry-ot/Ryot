@@ -1,4 +1,4 @@
-use crate::position::{Sector, TilePosition};
+use crate::prelude::*;
 use bevy::hierarchy::Children;
 use bevy::prelude::{
     Camera, Component, Entity, GlobalTransform, In, Query, Transform, Window, With,

@@ -1,6 +1,6 @@
-use crate::bevy_ryot::pathfinding::{Path, PathFindingQuery, PathFindingTask, Pathable};
 use crate::bevy_ryot::tile_flags::TileFlags;
 use crate::bevy_ryot::Cache;
+use crate::pathfinding::{components::*, Pathable};
 use bevy::prelude::{Changed, Commands, Component, Entity, Query, Res, SystemSet};
 use bevy::tasks::{block_on, poll_once, AsyncComputeTaskPool};
 
