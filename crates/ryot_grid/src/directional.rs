@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use strum::{EnumIter, IntoEnumIterator};
 
 #[cfg(feature = "bevy")]
-use bevy::ecs::component::Component;
+use bevy_ecs::component::Component;
 
 use crate::prelude::*;
 

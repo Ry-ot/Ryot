@@ -1,7 +1,4 @@
-use std::sync::OnceLock;
-
 use crate::{error, SpriteSheetConfig};
-use glam::UVec2;
 use serde::Deserialize;
 use std::fs;
 use std::io::Read;
@@ -9,8 +6,6 @@ use std::path::PathBuf;
 
 pub static DYNAMIC_ASSETS_PATH: &str = "dyanmic.assets.ron";
 pub static SPRITE_SHEET_FOLDER: &str = "sprite-sheets";
-
-pub static TILE_SIZE: OnceLock<UVec2> = OnceLock::new();
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct ContentConfigs {

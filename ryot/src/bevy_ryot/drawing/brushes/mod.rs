@@ -1,5 +1,5 @@
-use crate::prelude::*;
 use bevy::prelude::{Deref, DerefMut, Resource};
+use ryot_grid::prelude::*;
 
 mod diamond;
 pub use diamond::*;

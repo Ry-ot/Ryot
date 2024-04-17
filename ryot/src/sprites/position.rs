@@ -9,10 +9,10 @@ use glam::Vec3;
 
 #[cfg(feature = "bevy")]
 use crate::bevy_ryot::elevation::Elevation;
-use crate::layer::Layer;
-use crate::prelude::*;
+use crate::sprites::elevate_position;
 #[cfg(feature = "bevy")]
 use crate::SpriteLayout;
+use ryot_grid::prelude::*;
 
 #[cfg(feature = "debug")]
 #[derive(Component)]
@@ -53,10 +53,10 @@ pub fn debug_y_offset(layer: &Layer) -> f32 {
             Layer::Ground => 0.,
             Layer::Edge => 1.,
             Layer::Bottom(layer) => match layer.relative_layer {
-                crate::layer::RelativeLayer::Object => 2.,
-                crate::layer::RelativeLayer::Creature => 3.,
-                crate::layer::RelativeLayer::Effect => 4.,
-                crate::layer::RelativeLayer::Missile => 5.,
+                RelativeLayer::Object => 2.,
+                RelativeLayer::Creature => 3.,
+                RelativeLayer::Effect => 4.,
+                RelativeLayer::Missile => 5.,
             },
             Layer::Top => 6.,
             Layer::Hud(_) => 7.,
@@ -94,7 +94,7 @@ pub fn update_sprite_position(
     query
         .par_iter_mut()
         .for_each(|(layout, tile_pos, elevation, layer, mut transform)| {
-            transform.translation = tile_pos.to_elevated_translation(*layout, *layer, *elevation);
+            transform.translation = elevate_position(tile_pos, *layout, *layer, *elevation);
         });
 }
 

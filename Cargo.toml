@@ -1,5 +1,5 @@
 [workspace]
-members = ["ryot-assets-cli", "ryot", "ryot_compass"]
+members = ["crates/*", "ryot-assets-cli", "ryot", "ryot_compass"]
 resolver = "2"
 
 # Enable a small amount of optimization in debug mode
@@ -21,6 +21,7 @@ bevy_stroked_text = "0.2"
 bytes = "1.5"
 color-eyre = "0.6"
 config = "0.13"
+derive_more = "0.99.17"
 egui = { version = "0.26", default-features = false, features = ["bytemuck"] }
 egui_extras = { version = "0.26", features = ["all_loaders"] }
 glam = { version = "0.25", features = ["serde"] }
@@ -36,11 +37,13 @@ prost-types = "0.12"
 rand = "0.8"
 rayon = "1.8.0"
 rstest = "0.18"
-serde = { version = "1.0" }
+serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 strum = { version = "0.26", features = ["derive"] }
 thiserror = "1.0"
 time-test = "0.2.3"
+quickcheck = "1"
+quickcheck_macros = "1"
 wasm-bindgen-futures = "0.4"
 zstd = "0.13"
 
@@ -72,3 +75,4 @@ features = [
     "x11",
     "zstd",
 ]
+

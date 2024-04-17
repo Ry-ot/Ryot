@@ -1,11 +1,10 @@
 //! This module provides functionality for managing and processing perspectives and visibility
 //! of entities in a game environment. Perspectives are defined by sets of view points that
 //! determine what an entity can see, based on tile positions and other spatial considerations.
+use ryot_grid::prelude::*;
 use std::marker::PhantomData;
 
 use bevy::math::bounding::Aabb3d;
-
-use crate::prelude::*;
 
 mod trajectory;
 pub use trajectory::*;

@@ -2,12 +2,10 @@ use std::time::Duration;
 
 use crate::appearances::{self, is_true};
 use crate::bevy_ryot::{GameObjectId, InternalContentState};
-use crate::directional::*;
-use crate::layer::*;
 use crate::position::SpriteMovement;
-use crate::prelude::*;
 use bevy::prelude::*;
 use bevy::render::view::{check_visibility, VisibilitySystems, VisibleEntities};
+use ryot_grid::prelude::*;
 
 mod brushes;
 pub use brushes::*;
@@ -321,15 +319,13 @@ impl DetailLevel {
     }
 }
 
-impl From<Option<appearances::Flags>> for Layer {
-    fn from(flags: Option<appearances::Flags>) -> Self {
-        match flags {
-            Some(flags) if is_true(flags.is_top) => Layer::Top,
-            Some(flags) if flags.ground.is_some() => Layer::Ground,
-            Some(flags) if is_true(flags.is_ground) => Layer::Ground,
-            Some(flags) if is_true(flags.is_edge) => Layer::Edge,
-            _ => Layer::Bottom(BottomLayer::new(0, RelativeLayer::Object)),
-        }
+pub fn appearance_flags_to_layer(flags: Option<appearances::Flags>) -> Layer {
+    match flags {
+        Some(flags) if is_true(flags.is_top) => Layer::Top,
+        Some(flags) if flags.ground.is_some() => Layer::Ground,
+        Some(flags) if is_true(flags.is_ground) => Layer::Ground,
+        Some(flags) if is_true(flags.is_edge) => Layer::Edge,
+        _ => Layer::Bottom(BottomLayer::new(0, RelativeLayer::Object)),
     }
 }
 

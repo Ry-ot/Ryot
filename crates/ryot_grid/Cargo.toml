@@ -1,0 +1,71 @@
+[package]
+name = "ryot_grid"
+version = "0.2.0"
+edition = "2021"
+authors = [
+    "Lucas Grossi <lucas.ggrosis@gmail.com>",
+    "Luan Santos <cargo@luan.sh>",
+]
+license = "MIT OR Apache-2.0"
+description = "A 2d tile grid system for the Ryot engine."
+homepage = "https://github.com/opentibiabr/Ryot"
+repository = "https://github.com/opentibiabr/Ryot"
+documentation = "https://docs.rs/ryot/"
+keywords = ["gamedev", "ryot", "grid", "tiled-2d", "tiled"]
+categories = ["game-development", "games"]
+
+[package.metadata.docs.rs]
+rustdoc-args = ["-Zunstable-options", "--cfg", "docsrs"]
+all-features = true
+
+[features]
+default = ["bevy"]
+
+bevy = [
+    "dep:bevy_ecs",
+    "dep:bevy_math",
+    "dep:bevy_reflect",
+    "dep:bevy_render",
+    "dep:bevy_transform"
+]
+
+debug = []
+test-utils = ["dep:quickcheck", "dep:quickcheck_macros"]
+
+[dependencies.bevy_ecs]
+version = "0.13"
+features = ["bevy_reflect"]
+optional = true
+
+[dependencies.bevy_math]
+version = "0.13"
+features = ["serialize"]
+optional = true
+
+[dependencies.bevy_reflect]
+version = "0.13"
+features = ["bevy"]
+optional = true
+
+[dependencies.bevy_render]
+version = "0.13"
+optional = true
+
+[dependencies.bevy_transform]
+version = "0.13"
+features = ["serialize"]
+optional = true
+
+[dependencies]
+derive_more.workspace = true
+glam.workspace = true
+rand.workspace = true
+serde.workspace = true
+strum.workspace = true
+quickcheck = { workspace = true, optional = true }
+quickcheck_macros = { workspace = true, optional = true }
+ryot_core = { path = "../ryot_core", version = "0.2.0" }
+
+[dev-dependencies]
+rstest.workspace = true
+time-test.workspace = true

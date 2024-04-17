@@ -1,5 +1,5 @@
-use crate::prelude::Sector;
-use bevy::prelude::{Camera, OrthographicProjection, Query, Transform, With};
+use bevy::prelude::*;
+use ryot_grid::prelude::*;
 
 pub fn update_camera_visible_sector(
     mut camera_query: Query<(&mut Sector, &Transform, &OrthographicProjection), With<Camera>>,
