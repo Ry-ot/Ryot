@@ -5100,9 +5100,11 @@ dependencies = [
 name = "ryot_core"
 version = "0.2.0"
 dependencies = [
+ "async-std",
  "bevy_ecs",
  "bevy_utils",
  "derive_more",
+ "wasm-bindgen-futures",
 ]
 
 [[package]]

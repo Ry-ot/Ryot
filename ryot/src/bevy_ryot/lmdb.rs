@@ -1,8 +1,7 @@
 use crate::bevy_ryot::map::MapTiles;
 use crate::bevy_ryot::{GameObjectBundle, LoadObjects};
-use crate::lmdb::{DatabaseName, Item, ItemRepository, ItemsFromHeedLmdb, SerdePostcard};
+use crate::lmdb::*;
 use crate::prelude::*;
-use crate::{helpers::execute, lmdb};
 use bevy::prelude::*;
 use heed::types::Bytes;
 use heed::Env;
@@ -28,7 +27,7 @@ pub struct LmdbEnv(pub Option<Env>);
 impl Default for LmdbEnv {
     fn default() -> Self {
         Self(Some(
-            lmdb::create_env(lmdb::get_storage_path()).expect("Failed to create LMDB env"),
+            create_env(get_storage_path()).expect("Failed to create LMDB env"),
         ))
     }
 }
@@ -76,7 +75,7 @@ pub fn compact_map(time: Res<Time>, env: Res<LmdbEnv>, mut lmdb_compactor: ResMu
             .is_ok();
 
         if can_run {
-            lmdb::compact(env_clone).unwrap();
+            compact(env_clone).unwrap();
             is_running.store(false, Ordering::SeqCst);
         }
     });
@@ -175,8 +174,7 @@ fn init_tiles_db(lmdb_env: Res<LmdbEnv>) -> color_eyre::Result<()> {
         return Ok(());
     };
 
-    let (wtxn, _) =
-        lmdb::rw::<Bytes, SerdePostcard<HashMap<Layer, Item>>>(env, DatabaseName::Tiles)?;
+    let (wtxn, _) = rw::<Bytes, SerdePostcard<HashMap<Layer, Item>>>(env, DatabaseName::Tiles)?;
 
     wtxn.commit()?;
 

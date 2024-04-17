@@ -53,8 +53,6 @@ pub mod sprites;
 
 pub use sprites::*;
 
-pub mod helpers;
-
 pub mod prelude {
     #[cfg(feature = "bevy")]
     pub use crate::bevy_ryot::*;
