@@ -1,13 +1,24 @@
-use bevy::prelude::{Deref, DerefMut, Reflect, Resource};
-use bevy::utils::HashMap;
+use crate::layer::*;
+use crate::position::TilePosition;
 
-use ryot_grid::prelude::*;
+#[cfg(feature = "bevy")]
+use bevy_ecs::prelude::*;
+#[cfg(feature = "bevy")]
+use bevy_reflect::Reflect;
+#[cfg(feature = "bevy")]
+use bevy_utils::HashMap;
+
+#[cfg(not(feature = "bevy"))]
+use std::collections::HashMap;
+
+use derive_more::*;
 
 /// A resource that holds the map tiles and the entities that are drawn on them.
 /// An entity location is represented by the combination of a Layer and a Position.
 /// The MapTiles are represented by a HashMap of TilePosition and a HashMap of Layer and Entity.
 /// The MapTiles is used to keep track of the entities that are drawn on the map and their position.
-#[derive(Debug, Resource, Deref, DerefMut)]
+#[derive(Debug, Deref, DerefMut)]
+#[cfg_attr(feature = "bevy", derive(Resource))]
 pub struct MapTiles<T: Copy>(pub HashMap<TilePosition, MapTile<T>>);
 
 impl<T: Copy> Default for MapTiles<T> {
@@ -16,7 +27,8 @@ impl<T: Copy> Default for MapTiles<T> {
     }
 }
 
-#[derive(Debug, Clone, Reflect)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "bevy", derive(Reflect))]
 pub struct MapTile<T: Copy> {
     ground: Option<T>,
     edge: Option<T>,
@@ -196,7 +208,7 @@ impl<T: Copy> MapTile<T> {
 #[cfg(test)]
 mod test {
     use super::*;
-    use bevy::prelude::Entity;
+    use bevy_ecs::prelude::Entity;
 
     #[test]
     fn test_map_tile() {

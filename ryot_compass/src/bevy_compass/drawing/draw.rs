@@ -5,7 +5,6 @@ use crate::{
 use bevy::ecs::query::QueryFilter;
 use bevy::prelude::*;
 use leafwing_input_manager::action_state::ActionState;
-use ryot::bevy_ryot::map::MapTiles;
 use ryot::bevy_ryot::sprites::FrameGroupComponent;
 use ryot::bevy_ryot::*;
 use ryot::prelude::{drawing::*, *};

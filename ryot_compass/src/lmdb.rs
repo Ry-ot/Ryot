@@ -7,7 +7,6 @@ use ryot::bevy_ryot::lmdb::{
     compact_map, read_area, reload_visible_area, LmdbCompactor, LmdbEnv,
     LmdbPlugin as RyotLmdbPlugin,
 };
-use ryot::bevy_ryot::map::MapTiles;
 use ryot::bevy_ryot::{AsyncEventApp, GameObjectBundle, InternalContentState};
 use ryot::lmdb;
 use ryot::lmdb::*;

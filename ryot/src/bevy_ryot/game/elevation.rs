@@ -1,4 +1,3 @@
-use crate::bevy_ryot::map::MapTiles;
 use crate::bevy_ryot::sprites::SPRITE_BASE_SIZE;
 use crate::bevy_ryot::{AppearanceAssets, AppearanceGroup, GameObjectId};
 use bevy::prelude::*;

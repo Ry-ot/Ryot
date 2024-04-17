@@ -1,5 +1,4 @@
 use crate::bevy_ryot::drawing::{CommandState, Deletion, DrawingInfo, TileComponent};
-use crate::bevy_ryot::map::MapTiles;
 use ryot_grid::prelude::*;
 
 use bevy::prelude::*;
