@@ -5116,6 +5116,7 @@ dependencies = [
  "bevy_reflect",
  "bevy_render",
  "bevy_transform",
+ "bevy_utils",
  "derive_more",
  "glam",
  "quickcheck",

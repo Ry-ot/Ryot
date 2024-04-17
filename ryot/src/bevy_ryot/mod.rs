@@ -44,8 +44,6 @@ pub use game::*;
 #[cfg(feature = "lmdb")]
 pub mod lmdb;
 
-pub mod map;
-
 pub mod drawing;
 
 pub mod sprites;

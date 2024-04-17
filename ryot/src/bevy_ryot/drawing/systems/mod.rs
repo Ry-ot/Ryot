@@ -3,7 +3,7 @@
 //! The systems manipulate basic drawing entities that are added by the drawing commands.
 //! Those entities are the trigger for the drawing systems within the ECS.
 use crate::prelude::drawing::TileComponent;
-use crate::prelude::{drawing::*, map::*, *};
+use crate::prelude::{drawing::*, *};
 use bevy::prelude::*;
 use ryot_grid::prelude::*;
 

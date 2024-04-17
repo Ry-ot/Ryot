@@ -3,6 +3,7 @@ use std::sync::OnceLock;
 
 pub mod directional;
 pub mod layer;
+pub mod map;
 pub mod position;
 pub mod sector;
 
@@ -13,6 +14,7 @@ pub mod prelude {
             compute_z_transform, BottomLayer, Layer, LayerIter, Order, RelativeLayer,
             RelativeLayerIter,
         },
+        map::{MapTile, MapTileIter, MapTiles},
         position::{PreviousPosition, TilePosition},
         sector::Sector,
         tile_offset, tile_size, TILE_SIZE,
