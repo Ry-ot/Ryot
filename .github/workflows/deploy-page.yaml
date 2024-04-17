@@ -33,23 +33,23 @@ jobs:
           path: tibia-client
       - name: Copy Tibia Client Assets
         run: |
-          cp -r tibia-client/assets ryot_compass/assets/cip-catalog
-          cargo run --release --bin assets-cli extract
-          rm -rf ryot_compass/assets/cip-catalog
+          cp -r tibia-client/assets apps/ryot_compass/assets/cip-catalog
+          cargo run --release --bin ryot_assets_cli extract
+          rm -rf apps/ryot_compass/assets/cip-catalog
       - name: Build Compass Release
-        working-directory: ./ryot_compass
+        working-directory: ./apps/ryot_compass
         run: |
           trunk build --release --public-url "/${GITHUB_REPOSITORY#*/}/"
       - name: optimize Wasm
         uses: NiklasEi/wasm-opt-action@v2
         with:
-          file: ryot_compass/dist/*.wasm
+          file: apps/ryot_compass/dist/*.wasm
       - name: Copy generated assets to dist folder
-        working-directory: ./ryot_compass
+        working-directory: ./apps/ryot_compass
         run: |
           cp -r assets/* dist/assets/
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4.2.5
         with:
           branch: gh-pages
-          folder: ryot_compass/dist
+          folder: apps/ryot_compass/dist

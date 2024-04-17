@@ -1,6 +1,6 @@
 [directories]
-source_path = "ryot_compass/assets/cip-catalog"
-destination_path = "ryot_compass/assets"
+source_path = "apps/ryot_compass/assets/cip-catalog"
+destination_path = "apps/ryot_compass/assets"
 
 [sprite_sheet]
 sheet_size = [384, 384]
