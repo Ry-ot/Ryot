@@ -63,6 +63,5 @@ pub mod prelude {
     pub use crate::content::*;
     pub use crate::position::*;
     pub use crate::sprites::*;
+    pub use ryot_internal::prelude::*;
 }
-
-pub use ryot_internal::*;

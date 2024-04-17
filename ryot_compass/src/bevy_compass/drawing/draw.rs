@@ -8,8 +8,7 @@ use leafwing_input_manager::action_state::ActionState;
 use ryot::bevy_ryot::map::MapTiles;
 use ryot::bevy_ryot::sprites::FrameGroupComponent;
 use ryot::bevy_ryot::*;
-use ryot::prelude::drawing::*;
-use ryot_grid::prelude::*;
+use ryot::prelude::{drawing::*, *};
 
 /// System responsible for handling the drawing inputs. Drawing inputs can be a multitude of things,
 /// such as drawing, erasing, selecting, etc. In our context, we are only handling drawing and erasing,
