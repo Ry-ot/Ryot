@@ -13,3 +13,8 @@ pub mod grid {
 pub mod pathfinder {
     pub use ryot_pathfinder::*;
 }
+
+#[cfg(feature = "ryot_legacy_assets")]
+pub mod legacy_assets {
+    pub use ryot_legacy_assets::*;
+}

@@ -3,13 +3,12 @@ use crate::bevy_ryot::elevation::Elevation;
 use crate::bevy_ryot::sprites::SpriteMaterial;
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;
-use glam::{UVec2, Vec2};
+use glam::Vec2;
 use ryot_grid::prelude::*;
-use serde_repr::{Deserialize_repr, Serialize_repr};
-use strum::EnumIter;
 
 mod config;
 pub use config::*;
+use ryot_core::prelude::SpriteLayout;
 
 mod sheet_loading;
 pub use sheet_loading::*;
@@ -17,19 +16,6 @@ pub use sheet_loading::*;
 pub mod position;
 
 pub mod error;
-
-#[derive(
-    Serialize_repr, Deserialize_repr, Default, Eq, PartialEq, Debug, Copy, Clone, EnumIter, Hash,
-)]
-#[cfg_attr(feature = "bevy", derive(Component))]
-#[repr(u32)]
-pub enum SpriteLayout {
-    #[default]
-    OneByOne = 0,
-    OneByTwo = 1,
-    TwoByOne = 2,
-    TwoByTwo = 3,
-}
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct SpriteOutline {
@@ -125,37 +111,6 @@ impl From<&SpriteMaterial> for SpriteParams {
     }
 }
 
-impl SpriteLayout {
-    pub fn get_width(&self, tile_size: &UVec2) -> u32 {
-        match self {
-            SpriteLayout::OneByOne | SpriteLayout::OneByTwo => tile_size.x,
-            SpriteLayout::TwoByOne | SpriteLayout::TwoByTwo => tile_size.x * 2,
-        }
-    }
-
-    pub fn get_height(&self, tile_size: &UVec2) -> u32 {
-        match self {
-            SpriteLayout::OneByOne | SpriteLayout::TwoByOne => tile_size.y,
-            SpriteLayout::OneByTwo | SpriteLayout::TwoByTwo => tile_size.y * 2,
-        }
-    }
-
-    pub fn get_size(&self, tile_size: &UVec2) -> UVec2 {
-        UVec2::new(self.get_width(tile_size), self.get_height(tile_size))
-    }
-
-    pub fn get_counts(&self, sheet_size: Vec2, tile_size: Vec2) -> Vec2 {
-        let width = sheet_size.x / tile_size.x;
-        let height = sheet_size.y / tile_size.y;
-        match self {
-            SpriteLayout::OneByOne => Vec2::new(width, height),
-            SpriteLayout::OneByTwo => Vec2::new(width, height / 2.),
-            SpriteLayout::TwoByOne => Vec2::new(width / 2., height),
-            SpriteLayout::TwoByTwo => Vec2::new(width / 2., height / 2.),
-        }
-    }
-}
-
 pub fn elevate_position(
     position: &TilePosition,
     layout: SpriteLayout,
@@ -170,6 +125,3 @@ pub fn elevate_position(
         - (SpriteLayout::OneByOne.get_size(&tile_size()).as_vec2() * anchor).extend(0.)
         - (layout.get_size(&tile_size()).as_vec2() * Vec2::new(0.5, -0.5)).extend(0.)
 }
-
-#[cfg(test)]
-mod tests;

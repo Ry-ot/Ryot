@@ -33,8 +33,6 @@
 #![feature(unboxed_closures)]
 #![feature(let_chains)]
 
-pub mod appearances;
-
 #[cfg(feature = "bevy")]
 pub mod bevy_ryot;
 

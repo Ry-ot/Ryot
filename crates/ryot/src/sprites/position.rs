@@ -11,7 +11,7 @@ use glam::Vec3;
 use crate::bevy_ryot::elevation::Elevation;
 use crate::sprites::elevate_position;
 #[cfg(feature = "bevy")]
-use crate::SpriteLayout;
+use ryot_core::prelude::SpriteLayout;
 use ryot_grid::prelude::*;
 
 #[cfg(feature = "debug")]

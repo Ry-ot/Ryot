@@ -18,6 +18,7 @@ derive_more = "0.99.17"
 serde_repr = "0.1"
 ryot_core = { path = "../ryot_core", version = "0.2.0" }
 ryot_grid = { path = "../ryot_grid", version = "0.2.0" }
+ryot_legacy_assets = { path = "../ryot_legacy_assets", version = "0.2.0" }
 ryot_internal = { path = "../ryot_internal", version = "0.2.0" }
 
 bevy = { workspace = true, optional = true }
@@ -52,9 +53,6 @@ rstest.workspace = true
 quickcheck.workspace = true
 quickcheck_macros.workspace = true
 
-[build-dependencies]
-prost-build = "0.12"
-
 [features]
 default = [
     "bevy",
@@ -73,6 +71,7 @@ lmdb = ["dep:heed", "dep:postcard"]
 compression = ["dep:zstd"]
 egui = ["dep:egui"]
 
+legacy_assets = ["ryot_internal/ryot_legacy_assets"]
 pathfinder = ["ryot_internal/ryot_pathfinder"]
 tiled_pathfinder = ["ryot_internal/tiled", "ryot_internal/ryot_pathfinder"]
 

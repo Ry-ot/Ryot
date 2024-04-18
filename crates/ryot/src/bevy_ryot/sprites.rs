@@ -1,7 +1,7 @@
 //! Sprite loading and drawing.
-use crate::appearances::{FrameType, SpriteInfo, SpriteSheetData, SpriteSheetDataSet};
 use crate::prelude::*;
 use crate::{get_decompressed_file_name, SPRITE_SHEET_FOLDER};
+use ryot_legacy_assets::prelude::{FrameType, SpriteInfo, SpriteSheetData, SpriteSheetDataSet};
 
 use bevy::prelude::*;
 use bevy::render::render_resource::{AsBindGroup, ShaderRef};

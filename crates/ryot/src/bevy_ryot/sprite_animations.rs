@@ -1,10 +1,10 @@
 //! Sprite animations module.
-use crate::appearances::Animation;
 use crate::prelude::*;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use rand::Rng;
 use ryot_grid::prelude::*;
+use ryot_legacy_assets::appearances::Animation;
 use std::time::Duration;
 
 use self::sprites::{
