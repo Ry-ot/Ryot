@@ -4,12 +4,6 @@ use std::path::{Path, PathBuf};
 
 pub mod error;
 
-mod generator;
-pub use generator::*;
-
-mod plan;
-pub use plan::*;
-
 mod serde;
 pub use serde::*;
 

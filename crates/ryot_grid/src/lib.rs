@@ -3,6 +3,8 @@ use std::sync::OnceLock;
 
 pub mod directional;
 pub mod layer;
+#[cfg(feature = "lmdb")]
+pub mod lmdb;
 pub mod map;
 pub mod position;
 pub mod sector;
@@ -22,6 +24,9 @@ pub mod prelude {
 
     #[cfg(feature = "bevy")]
     pub use crate::position::track_position_changes;
+
+    #[cfg(feature = "lmdb")]
+    pub use crate::lmdb::*;
 }
 
 pub static TILE_SIZE: OnceLock<UVec2> = OnceLock::new();

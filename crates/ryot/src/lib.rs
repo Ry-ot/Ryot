@@ -36,9 +36,6 @@
 #[cfg(feature = "bevy")]
 pub mod bevy_ryot;
 
-#[cfg(feature = "lmdb")]
-pub mod lmdb;
-
 pub mod sprites;
 
 pub use sprites::*;

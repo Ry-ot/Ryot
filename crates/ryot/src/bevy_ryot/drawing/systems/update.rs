@@ -8,8 +8,6 @@ use crate::bevy_ryot::lmdb::LmdbEnv;
 #[cfg(feature = "lmdb")]
 use crate::bevy_ryot::GameObjectId;
 #[cfg(feature = "lmdb")]
-use crate::lmdb::{GetKey, Item, ItemRepository, ItemsFromHeedLmdb, Tile};
-#[cfg(feature = "lmdb")]
 use bevy::log::error;
 #[cfg(feature = "lmdb")]
 use std::collections::HashMap;

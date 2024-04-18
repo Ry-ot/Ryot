@@ -32,6 +32,7 @@ bevy = [
 
 debug = []
 test-utils = ["dep:quickcheck", "dep:quickcheck_macros"]
+lmdb = ["dep:heed"]
 
 [dependencies.bevy_ecs]
 version = "0.13"
@@ -69,6 +70,11 @@ serde.workspace = true
 strum.workspace = true
 quickcheck = { workspace = true, optional = true }
 quickcheck_macros = { workspace = true, optional = true }
+heed = { workspace = true, optional = true }
+rayon.workspace = true
+color-eyre.workspace = true
+postcard.workspace = true
+thiserror.workspace = true
 ryot_core = { path = "../ryot_core", version = "0.2.0" }
 
 [dev-dependencies]

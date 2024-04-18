@@ -68,7 +68,7 @@ bevy = [
 ]
 
 debug = ["dep:bevy_stroked_text", "ryot_internal/debug"]
-lmdb = ["dep:heed", "dep:postcard"]
+lmdb = ["dep:heed", "dep:postcard", "ryot_internal/lmdb"]
 compression = ["ryot_internal/compression"]
 egui = ["dep:egui"]
 
