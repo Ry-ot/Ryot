@@ -3,7 +3,6 @@
 use bevy::prelude::*;
 use ryot_core::prelude::*;
 
-use crate::appearances::*;
 use crate::bevy_ryot::*;
 
 /// `TileFlagPlugin` provides the necessary system and resource setup for managing `TileFlags`

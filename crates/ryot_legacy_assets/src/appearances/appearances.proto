@@ -96,7 +96,7 @@ message SpriteInfo {
   optional uint32 bounding_square = 7;
   optional Animation animation = 6;
   optional bool is_opaque = 8;
-  repeated Box bounding_box_per_direction = 9;
+  repeated BoundingBox bounding_box_per_direction = 9;
 }
 
 message Animation {
@@ -113,7 +113,7 @@ message Duration {
   optional uint32 max = 2;
 }
 
-message Box {
+message BoundingBox {
   optional uint32 x = 1;
   optional uint32 y = 2;
   optional uint32 width = 3;

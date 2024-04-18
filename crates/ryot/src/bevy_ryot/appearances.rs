@@ -1,15 +1,14 @@
 //! # Appearances
 //! This module contains the code to load the appearances.dat file.
 //! This file contains the information needed to load sprites and other content.
-use crate::appearances::{self, Flags, Frame, VisualElements};
-use crate::prelude::drawing::appearance_flags_to_layer;
 use crate::prelude::*;
 use bevy::asset::io::Reader;
 use bevy::asset::{Asset, AssetLoader, AsyncReadExt, BoxedFuture, LoadContext};
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use prost::Message;
-use ryot_grid::prelude::*;
+use ryot_legacy_assets::appearances::prepared_appearances::PreparedAppearance;
+use ryot_legacy_assets::prelude::*;
 use std::result;
 use thiserror::Error;
 
@@ -69,33 +68,6 @@ impl AssetLoader for AppearanceAssetLoader {
     }
 }
 
-#[derive(Debug, Clone, Default)]
-pub struct PreparedAppearance {
-    pub id: u32,
-    pub name: String,
-    pub layer: Layer,
-    pub main_sprite_id: u32,
-    pub frame_groups: Vec<Frame>,
-    pub flags: Option<Flags>,
-}
-
-impl From<appearances::VisualElement> for Option<PreparedAppearance> {
-    fn from(item: appearances::VisualElement) -> Self {
-        let id = item.id?;
-        let main_frame = item.frames.first()?.clone();
-        let main_sprite_id = *main_frame.sprite_info?.sprite_ids.first()?;
-
-        Some(PreparedAppearance {
-            id: item.id?,
-            name: item.name.unwrap_or(id.to_string()),
-            layer: appearance_flags_to_layer(item.flags.clone()),
-            main_sprite_id,
-            frame_groups: item.frames.clone(),
-            flags: item.flags.clone(),
-        })
-    }
-}
-
 #[derive(Resource, Debug, Default)]
 pub struct PreparedAppearances {
     groups: HashMap<AppearanceGroup, HashMap<u32, PreparedAppearance>>,
@@ -106,12 +78,7 @@ impl PreparedAppearances {
         self.groups.is_empty()
     }
 
-    pub fn insert(
-        &mut self,
-        group: AppearanceGroup,
-        id: u32,
-        appearance: appearances::VisualElement,
-    ) {
+    pub fn insert(&mut self, group: AppearanceGroup, id: u32, appearance: VisualElement) {
         let prepared: Option<PreparedAppearance> = appearance.into();
 
         if let Some(prepared) = prepared {
@@ -171,8 +138,8 @@ pub(crate) fn prepare_appearances<C: AppearanceAssets>(
 }
 
 fn process_appearances(
-    appearances: &[appearances::VisualElement],
-    mut insert_fn: impl FnMut(u32, &appearances::VisualElement),
+    appearances: &[VisualElement],
+    mut insert_fn: impl FnMut(u32, &VisualElement),
 ) {
     appearances
         .iter()

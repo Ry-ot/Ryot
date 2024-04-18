@@ -5017,7 +5017,6 @@ dependencies = [
  "lzma-rs",
  "postcard",
  "prost",
- "prost-build",
  "prost-types",
  "quickcheck",
  "quickcheck_macros",
@@ -5027,6 +5026,7 @@ dependencies = [
  "ryot_core",
  "ryot_grid",
  "ryot_internal",
+ "ryot_legacy_assets",
  "serde",
  "serde_json",
  "serde_repr",
@@ -5104,6 +5104,16 @@ dependencies = [
  "bevy_ecs",
  "bevy_utils",
  "derive_more",
+ "glam",
+ "quickcheck",
+ "quickcheck_macros",
+ "rand",
+ "rstest",
+ "serde",
+ "serde_json",
+ "serde_repr",
+ "strum",
+ "time-test",
  "wasm-bindgen-futures",
 ]
 
@@ -5135,7 +5145,29 @@ version = "0.2.0"
 dependencies = [
  "ryot_core",
  "ryot_grid",
+ "ryot_legacy_assets",
  "ryot_pathfinder",
+]
+
+[[package]]
+name = "ryot_legacy_assets"
+version = "0.2.0"
+dependencies = [
+ "bevy_ecs",
+ "bevy_utils",
+ "derive_more",
+ "glam",
+ "prost",
+ "prost-build",
+ "prost-types",
+ "quickcheck",
+ "quickcheck_macros",
+ "rstest",
+ "ryot_core",
+ "ryot_grid",
+ "serde",
+ "serde_json",
+ "strum",
 ]
 
 [[package]]

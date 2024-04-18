@@ -1,7 +1,6 @@
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use bevy_asset_loader::asset_collection::AssetCollection;
-use ryot::appearances::SpriteSheetDataSet;
 use ryot::bevy_ryot::{Appearance, Catalog, ContentAssets, PreparedAppearances};
 use ryot::prelude::*;
 

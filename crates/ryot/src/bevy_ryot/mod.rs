@@ -4,10 +4,8 @@
 //! It provides common ways of dealing with OT content, such as loading sprites and appearances,
 //! configuring the game, and handling asynchronous events.
 use self::sprites::SpriteMaterial;
-use crate::appearances::{ContentType, SpriteSheetDataSet};
 #[cfg(feature = "debug")]
 use crate::position::debug_sprite_position;
-use crate::SpriteLayout;
 use bevy::app::{App, Plugin, Update};
 use bevy::asset::embedded_asset;
 use bevy::asset::{Asset, Assets, Handle};
@@ -23,7 +21,9 @@ use bevy_asset_loader::prelude::*;
 use bevy_asset_loader::standard_dynamic_asset::StandardDynamicAssetArrayCollection;
 use bevy_common_assets::json::JsonAssetPlugin;
 use bevy_stroked_text::StrokedTextPlugin;
+use ryot_core::sprite_layout::SpriteLayout;
 use ryot_grid::prelude::*;
+use ryot_legacy_assets::prelude::*;
 use std::marker::PhantomData;
 use strum::IntoEnumIterator;
 

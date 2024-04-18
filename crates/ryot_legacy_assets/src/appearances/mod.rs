@@ -9,9 +9,11 @@ include!(concat!(env!("OUT_DIR"), "/appearances.rs"));
 
 use std::ops::Deref;
 
-use crate::SpriteLayout;
 use glam::UVec2;
+use ryot_core::sprite_layout::SpriteLayout;
 use serde::{Deserialize, Serialize};
+
+pub mod prepared_appearances;
 
 /// Those are the available contents within the content-catalog.json file
 /// There are 5 known types of content: appearances, staticdata, staticmapdata, map and sprite.
@@ -143,10 +145,6 @@ impl SpriteSheetDataSet {
     pub fn get_by_sprite_id(&self, sprite_id: u32) -> Option<&SpriteSheetData> {
         self.iter().find(|sheet| sheet.has_sprite(sprite_id))
     }
-}
-
-pub fn is_true(value: Option<bool>) -> bool {
-    value == Some(true)
 }
 
 #[cfg(test)]

@@ -1,6 +1,5 @@
 use std::time::Duration;
 
-use crate::appearances::{self, is_true};
 use crate::bevy_ryot::{GameObjectId, InternalContentState};
 use crate::position::SpriteMovement;
 use bevy::prelude::*;
@@ -316,16 +315,6 @@ impl DetailLevel {
         }
 
         false
-    }
-}
-
-pub fn appearance_flags_to_layer(flags: Option<appearances::Flags>) -> Layer {
-    match flags {
-        Some(flags) if is_true(flags.is_top) => Layer::Top,
-        Some(flags) if flags.ground.is_some() => Layer::Ground,
-        Some(flags) if is_true(flags.is_ground) => Layer::Ground,
-        Some(flags) if is_true(flags.is_edge) => Layer::Edge,
-        _ => Layer::Bottom(BottomLayer::new(0, RelativeLayer::Object)),
     }
 }
 
