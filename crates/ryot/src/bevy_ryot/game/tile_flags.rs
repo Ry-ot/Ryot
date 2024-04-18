@@ -152,7 +152,7 @@ pub fn update_tile_flag_cache<C: AppearanceAssets>(
                         if let Some(entity_flags) = entity_flags
                             && pos == new_pos
                         {
-                            flags.append(*entity_flags);
+                            flags = flags.append(*entity_flags);
                         }
 
                         let appearance_flags = || -> Option<Flags> {
