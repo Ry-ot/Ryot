@@ -1,27 +1,25 @@
 //! Sprite loading and drawing.
 use crate::prelude::*;
-use crate::{get_decompressed_file_name, SPRITE_SHEET_FOLDER};
 use ryot_legacy_assets::prelude::{FrameType, SpriteInfo, SpriteSheetData, SpriteSheetDataSet};
-
-use bevy::prelude::*;
-use bevy::render::render_resource::{AsBindGroup, ShaderRef};
-#[cfg(feature = "debug")]
-use bevy::sprite::Anchor;
-use bevy::sprite::{Material2d, MaterialMesh2dBundle, Mesh2dHandle};
-use bevy::utils::{HashMap, HashSet};
-#[cfg(feature = "debug")]
-use bevy_stroked_text::{StrokedText, StrokedTextBundle};
-use itertools::Itertools;
-
-use std::path::PathBuf;
-
-pub const SPRITE_BASE_SIZE: UVec2 = UVec2::new(32, 32);
 
 use self::elevation::Elevation;
 use self::sprite_animations::{
     AnimationDescriptor, AnimationKey, AnimationSprite, SpriteAnimationExt,
 };
+use bevy::prelude::*;
+use bevy::render::render_resource::{AsBindGroup, ShaderRef};
+use bevy::sprite::{Material2d, MaterialMesh2dBundle, Mesh2dHandle};
+use bevy::utils::{HashMap, HashSet};
+use itertools::Itertools;
 use ryot_grid::prelude::*;
+use std::path::PathBuf;
+
+#[cfg(feature = "debug")]
+use bevy::sprite::Anchor;
+#[cfg(feature = "debug")]
+use bevy_stroked_text::{StrokedText, StrokedTextBundle};
+
+pub const SPRITE_BASE_SIZE: UVec2 = UVec2::new(32, 32);
 
 pub struct LoadedAppearance {
     pub sprites: Vec<LoadedSprite>,

@@ -6,16 +6,9 @@ use bevy::prelude::*;
 use glam::Vec2;
 use ryot_grid::prelude::*;
 
-mod config;
-pub use config::*;
 use ryot_assets::prelude::SpriteLayout;
 
-mod sheet_loading;
-pub use sheet_loading::*;
-
 pub mod position;
-
-pub mod error;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct SpriteOutline {

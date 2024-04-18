@@ -5055,13 +5055,14 @@ dependencies = [
  "serde_json",
  "serde_repr",
  "strum",
+ "thiserror",
  "time-test",
  "wasm-bindgen-futures",
 ]
 
 [[package]]
 name = "ryot_assets_cli"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "clap",
  "color-eyre",
@@ -5069,11 +5070,14 @@ dependencies = [
  "glam",
  "image",
  "log",
+ "lzma-rs",
  "rayon",
  "rstest",
  "ryot",
  "serde",
+ "serde_json",
  "simple_logger",
+ "thiserror",
 ]
 
 [[package]]

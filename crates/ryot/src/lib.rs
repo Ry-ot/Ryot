@@ -36,9 +36,6 @@
 #[cfg(feature = "bevy")]
 pub mod bevy_ryot;
 
-pub mod content;
-pub use content::*;
-
 #[cfg(feature = "lmdb")]
 pub mod lmdb;
 
@@ -49,7 +46,6 @@ pub use sprites::*;
 pub mod prelude {
     #[cfg(feature = "bevy")]
     pub use crate::bevy_ryot::*;
-    pub use crate::content::*;
     pub use crate::position::*;
     pub use crate::sprites::*;
     pub use ryot_internal::prelude::*;
