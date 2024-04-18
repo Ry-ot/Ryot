@@ -23,6 +23,8 @@ debug = [
     "ryot_grid/debug",
 ]
 
+compression = ["ryot_core/compression"]
+
 tiled = ["ryot_pathfinder?/tiled"]
 
 [dependencies]

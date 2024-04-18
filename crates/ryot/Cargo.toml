@@ -69,7 +69,7 @@ bevy = [
 
 debug = ["dep:bevy_stroked_text", "ryot_internal/debug"]
 lmdb = ["dep:heed", "dep:postcard"]
-compression = ["dep:zstd"]
+compression = ["ryot_internal/compression"]
 egui = ["dep:egui"]
 
 legacy_assets = ["ryot_internal/ryot_legacy_assets"]

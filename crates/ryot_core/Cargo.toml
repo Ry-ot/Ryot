@@ -26,6 +26,8 @@ bevy = [
     "dep:bevy_utils",
 ]
 
+compression = ["dep:zstd"]
+
 [dependencies.bevy_ecs]
 version = "0.13"
 features = ["bevy_reflect"]
@@ -44,6 +46,7 @@ serde.workspace = true
 serde_json.workspace = true
 strum.workspace = true
 wasm-bindgen-futures = "0.4.42"
+zstd = { workspace = true, optional = true }
 
 [dev-dependencies]
 quickcheck.workspace = true
