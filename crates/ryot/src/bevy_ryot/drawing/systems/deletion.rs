@@ -10,9 +10,6 @@ use bevy::utils::HashMap;
 #[cfg(feature = "lmdb")]
 use crate::bevy_ryot::lmdb::LmdbEnv;
 
-#[cfg(feature = "lmdb")]
-use crate::lmdb::{GetKey, ItemRepository, ItemsFromHeedLmdb};
-
 /// A component that flags the entity to be deleted from the map and controls the state
 /// of the deletion. The state is used to control the deletion flows and avoid deleting
 /// the same entity multiple times.

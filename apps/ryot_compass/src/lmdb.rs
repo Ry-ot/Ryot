@@ -8,14 +8,11 @@ use ryot::bevy_ryot::lmdb::{
     LmdbPlugin as RyotLmdbPlugin,
 };
 use ryot::bevy_ryot::{AsyncEventApp, GameObjectBundle, InternalContentState};
-use ryot::lmdb;
-use ryot::lmdb::*;
 use ryot::prelude::drawing::TileComponent;
 use ryot::prelude::*;
 use std::collections::HashMap;
 use std::sync::atomic::Ordering;
 use std::{cmp, fs};
-use time_test::time_test;
 
 pub struct LmdbPlugin;
 
@@ -104,9 +101,9 @@ fn init_new_map(
     mut env: ResMut<LmdbEnv>,
     mut q_camera_transform: Query<&mut Transform, With<Camera>>,
 ) -> color_eyre::Result<()> {
-    let new_env = lmdb::create_env(lmdb::get_storage_path()).expect("Failed to create LMDB env");
+    let new_env = create_env(get_storage_path()).expect("Failed to create LMDB env");
     let (wtxn, _) =
-        lmdb::rw::<Bytes, SerdePostcard<HashMap<Layer, Item>>>(&new_env, DatabaseName::Tiles)?;
+        rw::<Bytes, SerdePostcard<HashMap<Layer, Item>>>(&new_env, DatabaseName::Tiles)?;
     wtxn.commit()?;
 
     *q_camera_transform.single_mut() = Transform::IDENTITY;
@@ -127,7 +124,7 @@ fn export_map(
 
     for ExportMap(destination) in map_export_events.read() {
         if !lmdb_compactor.is_running.load(Ordering::SeqCst) {
-            lmdb::compact(env.clone())?;
+            compact(env.clone())?;
         }
 
         let mut destination = destination.clone();
@@ -170,56 +167,4 @@ fn load_tile_content(world: &mut World) {
             CommandState::default().persist(),
         );
     }
-}
-
-pub fn lmdb_example() -> Result<(), Box<dyn std::error::Error>> {
-    let env = lmdb::create_env(lmdb::get_storage_path())?;
-    let item_repository = ItemsFromHeedLmdb::new(env.clone());
-    let z_size = 1;
-
-    let map = {
-        time_test!("Building ryot_compass");
-        build_map(z_size)
-    };
-
-    {
-        time_test!("Writing");
-        item_repository.save_from_tiles(map.tiles)?;
-    }
-
-    let initial_pos = TilePosition::new(-550, -550, 0);
-    let final_pos = TilePosition::new(550, 550, z_size - 1);
-
-    {
-        time_test!("Reading");
-        let area = item_repository.get_for_area(&Sector::new(initial_pos, final_pos))?;
-        println!("Count: {}", area.len());
-    }
-
-    execute(async {
-        // env.prepare_for_closing().wait();
-        // lmdb::compact().unwrap();
-
-        {
-            time_test!("Compressing");
-            compress::<Zstd>(
-                lmdb::get_storage_path().join("data.mdb").to_str().unwrap(),
-                Some(3),
-            )
-            .unwrap();
-        }
-
-        {
-            time_test!("Decompressing");
-            decompress::<Zstd>(
-                lmdb::get_storage_path()
-                    .join("data.mdb.snp")
-                    .to_str()
-                    .unwrap(),
-            )
-            .unwrap();
-        }
-    });
-
-    Ok(())
 }

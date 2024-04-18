@@ -24,6 +24,7 @@ debug = [
 ]
 
 compression = ["ryot_core/compression"]
+lmdb = ["ryot_grid/lmdb"]
 
 tiled = ["ryot_pathfinder?/tiled"]
 

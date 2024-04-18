@@ -1,8 +1,8 @@
 use crate::lmdb;
 use crate::lmdb::*;
+use crate::prelude::*;
 use heed::types::Bytes;
 use rayon::prelude::*;
-use ryot_grid::prelude::*;
 use std::collections::HashMap;
 
 pub fn build_keys_for_area(initial_pos: TilePosition, final_pos: TilePosition) -> Vec<Vec<u8>> {
@@ -111,4 +111,21 @@ impl ItemRepository for ItemsFromHeedLmdb {
 
         Ok(())
     }
+}
+
+fn get_chunks_per_z(sector: &Sector) -> Vec<Sector> {
+    let mut chunks = Vec::new();
+    let n = 1;
+
+    for z in sector.min.z..=sector.max.z {
+        for i in 1..=n {
+            let y_divided_by_6 = (sector.max.y - sector.min.y) / n;
+            let chunk_start =
+                TilePosition::new(sector.min.x, sector.min.y + y_divided_by_6 * (i - 1), z);
+            let chunk_end = TilePosition::new(sector.max.x, sector.min.y + y_divided_by_6 * i, z);
+            chunks.push(Sector::new(chunk_start, chunk_end));
+        }
+    }
+
+    chunks
 }
