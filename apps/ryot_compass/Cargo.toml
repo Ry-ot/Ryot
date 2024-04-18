@@ -54,7 +54,7 @@ ryot = { version = "0.2.0", path = "../../crates/ryot" }
 
 [features]
 default = []
-lmdb = ["dep:heed", "ryot/lmdb", "ryot/compression"]
+lmdb = ["dep:heed", "ryot/lmdb"]
 diagnostics = []
 
 [lints.clippy]

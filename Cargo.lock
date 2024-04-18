@@ -5137,6 +5137,7 @@ dependencies = [
  "strum",
  "time-test",
  "wasm-bindgen-futures",
+ "zstd",
 ]
 
 [[package]]
