@@ -21,7 +21,7 @@ use bevy_asset_loader::prelude::*;
 use bevy_asset_loader::standard_dynamic_asset::StandardDynamicAssetArrayCollection;
 use bevy_common_assets::json::JsonAssetPlugin;
 use bevy_stroked_text::StrokedTextPlugin;
-use ryot_core::sprite_layout::SpriteLayout;
+use ryot_assets::sprite_layout::SpriteLayout;
 use ryot_grid::prelude::*;
 use ryot_legacy_assets::prelude::*;
 use std::marker::PhantomData;

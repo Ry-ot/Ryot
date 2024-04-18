@@ -16,10 +16,11 @@ readme = "../../README.md"
 async-std = "1.12.0"
 derive_more = "0.99.17"
 serde_repr = "0.1"
+ryot_assets = { path = "../ryot_assets", version = "0.2.0" }
 ryot_core = { path = "../ryot_core", version = "0.2.0" }
 ryot_grid = { path = "../ryot_grid", version = "0.2.0" }
-ryot_legacy_assets = { path = "../ryot_legacy_assets", version = "0.2.0" }
 ryot_internal = { path = "../ryot_internal", version = "0.2.0" }
+ryot_legacy_assets = { path = "../ryot_legacy_assets", version = "0.2.0" }
 
 bevy = { workspace = true, optional = true }
 bevy_asset_loader = { workspace = true, optional = true }

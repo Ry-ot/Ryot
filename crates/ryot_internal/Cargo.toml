@@ -26,6 +26,7 @@ debug = [
 tiled = ["ryot_pathfinder?/tiled"]
 
 [dependencies]
+ryot_assets = { path = "../ryot_assets", version = "0.2.0" }
 ryot_core = { path = "../ryot_core", version = "0.2.0" }
 ryot_grid = { path = "../ryot_grid", version = "0.2.0" }
 ryot_legacy_assets = { path = "../ryot_legacy_assets", version = "0.2.0", optional = true }
