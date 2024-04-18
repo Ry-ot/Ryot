@@ -1,4 +1,3 @@
-use crate::{error::*, get_full_file_buffer, CompressionConfig, ContentConfigs, SpriteSheetConfig};
 use glam::UVec2;
 use image::error::{LimitError, LimitErrorKind};
 use image::{imageops, ImageFormat, Rgba, RgbaImage};
@@ -6,8 +5,33 @@ use log::{debug, warn};
 use lzma_rs::lzma_decompress_with_options;
 use rayon::prelude::IntoParallelRefIterator;
 use rayon::prelude::*;
+use ryot::prelude::{get_decompressed_file_name, SPRITE_SHEET_FOLDER};
 use std::fs;
 use std::path::{Path, PathBuf};
+use thiserror::Error;
+
+pub mod config;
+pub use config::*;
+
+pub mod content;
+pub use content::*;
+
+pub type Result<T> = std::result::Result<T, Error>;
+
+#[derive(Debug, Error)]
+pub enum Error {
+    /// An [IO Error](std::io::Error)
+    #[error("Could not read the file: {0}")]
+    Io(#[from] std::io::Error),
+    #[error("Could not serialize/deserialize file: {0}")]
+    Serde(#[from] serde_json::Error),
+    #[error("Could not decompress file: {0}")]
+    Lzma(#[from] lzma_rs::error::Error),
+    #[error("Invalid image: {0}")]
+    Image(#[from] image::ImageError),
+    #[error("Could not find sprite.")]
+    SpriteNotFound,
+}
 
 pub fn load_sprite_sheet_image(
     path: &PathBuf,
@@ -102,7 +126,7 @@ pub fn decompress_sprite_sheets(
     let sprite_sheet_path = content_configs
         .directories
         .destination_path
-        .join(crate::SPRITE_SHEET_FOLDER);
+        .join(SPRITE_SHEET_FOLDER);
 
     fs::create_dir_all(sprite_sheet_path.clone()).expect("Failed to create sprite sheets folder");
 
@@ -148,10 +172,6 @@ pub fn decompress_sprite_sheet(
             .expect("Failed to save sprite sheet"),
         Err(e) => panic!("{:?}", e),
     }
-}
-
-pub fn get_decompressed_file_name(file_name: &str) -> String {
-    file_name.replace(".bmp.lzma", ".png")
 }
 
 fn flip_vertically(img: &mut RgbaImage) {

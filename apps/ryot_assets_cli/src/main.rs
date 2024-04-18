@@ -2,7 +2,7 @@ use clap::{Parser, Subcommand};
 use config::Config;
 use glam::UVec2;
 use log::*;
-use ryot::{decompress_sprite_sheets, ContentConfigs};
+use ryot_assets_cli::{decompress_sprite_sheets, ContentConfigs};
 use simple_logger::SimpleLogger;
 use std::path::{Path, PathBuf};
 use std::{fs, result};

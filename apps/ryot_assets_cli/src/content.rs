@@ -1,11 +1,10 @@
-use crate::{error, SpriteSheetConfig};
+use crate::SpriteSheetConfig;
 use serde::Deserialize;
 use std::fs;
 use std::io::Read;
 use std::path::PathBuf;
 
 pub static DYNAMIC_ASSETS_PATH: &str = "dyanmic.assets.ron";
-pub static SPRITE_SHEET_FOLDER: &str = "sprite-sheets";
 
 #[derive(Debug, Clone, Deserialize, Default)]
 pub struct ContentConfigs {
@@ -39,7 +38,7 @@ pub fn assets_root_path() -> PathBuf {
     PathBuf::from("assets")
 }
 
-pub fn get_full_file_buffer(path: &PathBuf) -> error::Result<Vec<u8>> {
+pub fn get_full_file_buffer(path: &PathBuf) -> crate::Result<Vec<u8>> {
     let mut file = fs::File::open(path)?;
     let mut buffer: Vec<u8> = Vec::new();
     file.read_to_end(&mut buffer)?;

@@ -1,7 +1,8 @@
 use glam::UVec2;
 use image::RgbaImage;
 use rstest::{fixture, rstest};
-use ryot::prelude::*;
+use ryot::prelude::SPRITE_SHEET_FOLDER;
+use ryot_assets_cli::*;
 use std::fs::File;
 use std::io::BufReader;
 use std::path::PathBuf;
@@ -61,7 +62,7 @@ fn test_decompress_sprite_sheet(#[from(image_fixture)] expected: RgbaImage) {
 #[rstest]
 fn test_decompress_sprite_sheets(#[from(image_fixture)] expected: RgbaImage) {
     let content_config = ContentConfigs {
-        directories: ryot::prelude::DirectoryConfigs {
+        directories: DirectoryConfigs {
             source_path: PathBuf::from("tests/fixtures"),
             destination_path: PathBuf::from("tests/fixtures"),
         },
@@ -90,7 +91,9 @@ fn image_fixture() -> RgbaImage {
     load_fixture_image(&PathBuf::from("tests/fixtures/expected.png")).unwrap()
 }
 
-fn load_fixture_image(file_name: &PathBuf) -> Result<RgbaImage, Box<dyn std::error::Error>> {
+fn load_fixture_image(
+    file_name: &PathBuf,
+) -> core::result::Result<RgbaImage, Box<dyn std::error::Error>> {
     let mut reader = image::io::Reader::new(BufReader::new(File::open(file_name)?));
 
     reader.set_format(image::ImageFormat::Png);
