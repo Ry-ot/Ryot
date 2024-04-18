@@ -1,5 +1,5 @@
 [package]
-name = "ryot_legacy_assets"
+name = "ryot_assets"
 version = "0.2.0"
 edition = "2021"
 authors = [
@@ -7,11 +7,11 @@ authors = [
     "Luan Santos <cargo@luan.sh>",
 ]
 license = "MIT OR Apache-2.0"
-description = "A utility library for the Ryot game engine focused on Tibia-like graphics."
+description = "A game engine core for Ryot, a MMORPG game, with generic features and systems."
 homepage = "https://github.com/opentibiabr/Ryot"
 repository = "https://github.com/opentibiabr/Ryot"
 documentation = "https://docs.rs/ryot/"
-keywords = ["gamedev", "ryot", "tibia"]
+keywords = ["gamedev", "ryot", "core", "bevy"]
 categories = ["game-development", "game-engines", "games"]
 
 [package.metadata.docs.rs]
@@ -36,21 +36,18 @@ version = "0.13"
 optional = true
 
 [dependencies]
-ryot_assets = { path = "../ryot_assets", version = "0.2.0" }
-ryot_core = { path = "../ryot_core", version = "0.2.0" }
-ryot_grid = { path = "../ryot_grid", version = "0.2.0" }
+async-std = "1.12.0"
 derive_more.workspace = true
 glam.workspace = true
-prost.workspace = true
-prost-types.workspace = true
+serde_repr = "0.1"
 serde.workspace = true
 serde_json.workspace = true
 strum.workspace = true
+wasm-bindgen-futures = "0.4.42"
 
 [dev-dependencies]
-rstest.workspace = true
 quickcheck.workspace = true
 quickcheck_macros.workspace = true
-
-[build-dependencies]
-prost-build = "0.12"
+rstest.workspace = true
+time-test.workspace = true
+rand.workspace = true

@@ -1,6 +1,10 @@
 /// `use ryot::prelude::*;` to import common elements.
 pub mod prelude;
 
+pub mod assets {
+    pub use ryot_assets::*;
+}
+
 pub mod core {
     pub use ryot_core::*;
 }

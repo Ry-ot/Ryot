@@ -8,7 +8,7 @@ use ryot_grid::prelude::*;
 
 mod config;
 pub use config::*;
-use ryot_core::prelude::SpriteLayout;
+use ryot_assets::prelude::SpriteLayout;
 
 mod sheet_loading;
 pub use sheet_loading::*;

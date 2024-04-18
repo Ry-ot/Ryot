@@ -10,7 +10,7 @@ include!(concat!(env!("OUT_DIR"), "/appearances.rs"));
 use std::ops::Deref;
 
 use glam::UVec2;
-use ryot_core::sprite_layout::SpriteLayout;
+use ryot_assets::sprite_layout::SpriteLayout;
 use serde::{Deserialize, Serialize};
 
 pub mod prepared_appearances;
