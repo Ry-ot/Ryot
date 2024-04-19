@@ -4,12 +4,11 @@ use bevy::prelude::*;
 use bevy::utils::HashMap;
 use rand::Rng;
 use ryot_grid::prelude::*;
-use ryot_legacy_assets::appearances::Animation;
 use std::time::Duration;
 
 use self::sprites::{
-    sprite_material_from_params, ChangingAppearanceFilter, FrameGroupComponent, LoadedAppearances,
-    LoadedSprite, SpriteMaterial,
+    sprite_material_from_params, ChangingAppearanceFilter, LoadedAppearances, LoadedSprite,
+    SpriteMaterial,
 };
 
 /// A resource to enable/disable sprite animation globally.
@@ -74,8 +73,8 @@ impl SpriteAnimationExt for Animation {
         let phase_durations = self
             .phases
             .iter()
-            .map(|phase| -> Duration {
-                let range = phase.min()..phase.max();
+            .map(|(min, max)| -> Duration {
+                let range = *min..*max;
                 if range.start == range.end {
                     return Duration::from_millis(range.start.into());
                 }
@@ -85,9 +84,9 @@ impl SpriteAnimationExt for Animation {
 
         AnimationKey {
             phase_durations,
-            start_phase: match self.is_start_random() {
+            start_phase: match self.is_start_random {
                 true => AnimationStartPhase::Random,
-                false => AnimationStartPhase::Fixed(self.start_phase() as usize),
+                false => AnimationStartPhase::Fixed(self.start_phase as usize),
             },
             total_phases: self.phases.len(),
         }
@@ -180,10 +179,7 @@ pub fn toggle_sprite_animation(mut enabled: ResMut<SpriteAnimationEnabled>) {
 
 pub(crate) fn initialize_animation_sprite_system(
     mut commands: Commands,
-    q_maybe_animated: Query<
-        (Entity, &GameObjectId, Option<&FrameGroupComponent>),
-        ChangingAppearanceFilter,
-    >,
+    q_maybe_animated: Query<(Entity, &GameObjectId, Option<&FrameGroup>), ChangingAppearanceFilter>,
     loaded_appereances: Res<LoadedAppearances>,
     mut synced_timers: ResMut<SynchronizedAnimationTimers>,
 ) {

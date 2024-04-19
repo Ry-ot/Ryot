@@ -6,9 +6,7 @@ use bevy::asset::io::Reader;
 use bevy::asset::{Asset, AssetLoader, AsyncReadExt, BoxedFuture, LoadContext};
 use bevy::prelude::*;
 use bevy::utils::HashMap;
-use prost::Message;
-use ryot_legacy_assets::appearances::prepared_appearances::PreparedAppearance;
-use ryot_legacy_assets::prelude::*;
+use ryot_assets::prelude::*;
 use std::result;
 use thiserror::Error;
 
@@ -57,9 +55,8 @@ impl AssetLoader for AppearanceAssetLoader {
         Box::pin(async move {
             let mut bytes = Vec::new();
             reader.read_to_end(&mut bytes).await?;
-            let appearances = VisualElements::decode(&*bytes)?;
 
-            Ok(Appearance(appearances))
+            Ok(Appearance(cip::from_bytes(bytes)?))
         })
     }
 
@@ -70,7 +67,7 @@ impl AssetLoader for AppearanceAssetLoader {
 
 #[derive(Resource, Debug, Default)]
 pub struct PreparedAppearances {
-    groups: HashMap<AppearanceGroup, HashMap<u32, PreparedAppearance>>,
+    groups: HashMap<AppearanceGroup, HashMap<u32, VisualElement>>,
 }
 
 impl PreparedAppearances {
@@ -78,19 +75,18 @@ impl PreparedAppearances {
         self.groups.is_empty()
     }
 
-    pub fn insert(&mut self, group: AppearanceGroup, id: u32, appearance: VisualElement) {
-        let prepared: Option<PreparedAppearance> = appearance.into();
-
-        if let Some(prepared) = prepared {
-            self.groups.entry(group).or_default().insert(id, prepared);
-        };
+    pub fn insert(&mut self, group: AppearanceGroup, id: u32, visual_element: VisualElement) {
+        self.groups
+            .entry(group)
+            .or_default()
+            .insert(id, visual_element);
     }
 
-    pub fn get_group(&self, group: AppearanceGroup) -> Option<&HashMap<u32, PreparedAppearance>> {
+    pub fn get_group(&self, group: AppearanceGroup) -> Option<&HashMap<u32, VisualElement>> {
         self.groups.get(&group)
     }
 
-    pub fn get_for_group(&self, group: AppearanceGroup, id: u32) -> Option<&PreparedAppearance> {
+    pub fn get_for_group(&self, group: AppearanceGroup, id: u32) -> Option<&VisualElement> {
         self.groups.get(&group)?.get(&id)
     }
 }
@@ -144,25 +140,11 @@ fn process_appearances(
     appearances
         .iter()
         .filter_map(|appearance| {
-            if appearance.frames.is_empty() {
+            if appearance.sprites_info.is_empty() || appearance.id == 0 {
                 return None;
             }
 
-            let id = appearance.id?;
-
-            for frame_group in appearance.frames.iter() {
-                let Some(sprite_info) = &frame_group.sprite_info else {
-                    continue;
-                };
-
-                if sprite_info.sprite_ids.is_empty() {
-                    continue;
-                }
-
-                break;
-            }
-
-            Some((id, appearance))
+            Some((appearance.id, appearance))
         })
         .for_each(|(id, appearance)| insert_fn(id, appearance));
 }

@@ -1,6 +1,6 @@
 syntax = "proto2";
 
-package appearances;
+package cip;
 
 enum Action {
   ACTION_NONE = 0;

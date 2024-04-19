@@ -62,18 +62,17 @@ impl TileFlags {
 
     /// Updates the flags based on the appearance attributes of the tile.
     /// This allows dynamic modification of tile properties based on in-game events or conditions.
-    pub fn for_appearance_flags(self, flags: Flags) -> Self {
+    pub fn for_assets_flag(self, flags: Flags) -> Self {
         self.append(TileFlags {
-            walkable: !is_true(flags.is_not_walkable),
-            blocks_sight: is_true(flags.blocks_sight),
+            walkable: flags.is_walkable,
+            blocks_sight: flags.blocks_sight,
         })
     }
 
-    pub fn append(self, flags: TileFlags) -> Self {
-        TileFlags {
-            walkable: self.walkable && flags.walkable,
-            blocks_sight: self.blocks_sight || flags.blocks_sight,
-        }
+    pub fn append(mut self, flags: TileFlags) -> Self {
+        self.walkable &= flags.walkable;
+        self.blocks_sight |= flags.blocks_sight;
+        self
     }
 }
 
@@ -148,21 +147,20 @@ pub fn update_tile_flag_cache<C: AppearanceAssets>(
                             return flags;
                         }
 
-                        if let Some(entity_flags) = entity_flags
-                            && pos == new_pos
-                        {
-                            flags = flags.append(*entity_flags);
+                        if pos == new_pos {
+                            flags = entity_flags
+                                .map_or_else(|| flags, |entity_flags| flags.append(*entity_flags));
                         }
 
-                        let appearance_flags = || -> Option<Flags> {
-                            let (group, id) = object_id.as_group_and_id()?;
-                            let appearance = appearances.get_for_group(group, id).cloned()?;
-                            appearance.flags
-                        };
-
-                        if let Some(appearance_flags) = appearance_flags() {
-                            flags = flags.for_appearance_flags(appearance_flags);
-                        };
+                        flags = object_id
+                            .as_group_and_id()
+                            .and_then(|(group, id)| appearances.get_for_group(group, id))
+                            .map(|appearance| appearance.flags)
+                            .filter(|&flags| flags != Flags::default())
+                            .map_or_else(
+                                || flags,
+                                |appearance_flags| flags.for_assets_flag(appearance_flags),
+                            );
 
                         flags
                     }),

@@ -70,7 +70,7 @@ pub(crate) fn apply_elevation<C: AppearanceAssets>(
                         appearances
                             .get_for_group(group, id)
                             .cloned()
-                            .and_then(|app| app.flags?.elevation?.height)
+                            .map(|app| app.properties.elevation)
                             .unwrap_or(0) as f32
                             / SPRITE_BASE_SIZE.y as f32
                     } else {

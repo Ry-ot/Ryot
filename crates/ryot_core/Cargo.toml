@@ -22,15 +22,26 @@ all-features = true
 default = ["bevy"]
 
 bevy = [
+    "dep:bevy_app",
     "dep:bevy_ecs",
+    "dep:bevy_time",
     "dep:bevy_utils",
+    "dep:leafwing-input-manager",
 ]
 
 compression = ["dep:zstd"]
 
+[dependencies.bevy_app]
+version = "0.13"
+optional = true
+
 [dependencies.bevy_ecs]
 version = "0.13"
 features = ["bevy_reflect"]
+optional = true
+
+[dependencies.bevy_time]
+version = "0.13"
 optional = true
 
 [dependencies.bevy_utils]
@@ -41,6 +52,7 @@ optional = true
 async-std = "1.12.0"
 derive_more.workspace = true
 glam.workspace = true
+leafwing-input-manager = { workspace = true, optional = true }
 serde_repr = "0.1"
 serde.workspace = true
 serde_json.workspace = true

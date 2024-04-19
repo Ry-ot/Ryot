@@ -5,7 +5,6 @@ use crate::{
 use bevy::ecs::query::QueryFilter;
 use bevy::prelude::*;
 use leafwing_input_manager::action_state::ActionState;
-use ryot::bevy_ryot::sprites::FrameGroupComponent;
 use ryot::bevy_ryot::*;
 use ryot::prelude::{drawing::*, *};
 
@@ -20,7 +19,7 @@ pub fn handle_drawing_input<C: ContentAssets>(
     content_assets: Res<C>,
     brushes: Res<Brushes<DrawingBundle>>,
     q_current: Query<
-        (&Visibility, &GameObjectId, Option<&FrameGroupComponent>),
+        (&Visibility, &GameObjectId, Option<&FrameGroup>),
         (With<TileComponent>, With<Layer>),
     >,
     cursor_query: Query<(Option<&GameObjectId>, &TilePosition, &Cursor)>,
@@ -76,7 +75,7 @@ fn get_cursor_inputs<C: ContentAssets, F: QueryFilter>(
                     continue;
                 };
 
-                (*object_id, prepared_appearance.layer)
+                (*object_id, Layer::from(prepared_appearance.category))
             }
         };
 
@@ -97,7 +96,7 @@ fn create_or_update_content_for_positions(
     command_history: &mut ResMut<CommandHistory>,
     tiles: &mut ResMut<MapTiles<Entity>>,
     q_current: &Query<
-        (&Visibility, &GameObjectId, Option<&FrameGroupComponent>),
+        (&Visibility, &GameObjectId, Option<&FrameGroup>),
         (With<TileComponent>, With<Layer>),
     >,
 ) {
@@ -169,10 +168,10 @@ pub fn get_current_appearance(
     new_bundle: DrawingBundle,
     tiles: &mut ResMut<MapTiles<Entity>>,
     q_current: &Query<
-        (&Visibility, &GameObjectId, Option<&FrameGroupComponent>),
+        (&Visibility, &GameObjectId, Option<&FrameGroup>),
         (With<TileComponent>, With<Layer>),
     >,
-) -> Option<(GameObjectId, FrameGroupComponent)> {
+) -> Option<(GameObjectId, FrameGroup)> {
     match q_current.get(
         tiles
             .get(&new_bundle.tile_pos)?

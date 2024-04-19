@@ -18,7 +18,7 @@ pub mod pathfinder {
     pub use ryot_pathfinder::*;
 }
 
-#[cfg(feature = "ryot_legacy_assets")]
-pub mod legacy_assets {
-    pub use ryot_legacy_assets::*;
+#[cfg(feature = "ryot_cip_assets")]
+pub mod cip {
+    pub use ryot_cip_assets::*;
 }

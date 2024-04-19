@@ -1,4 +1,5 @@
 use egui::WidgetText;
+use ryot::prelude::cip::StoreCategory;
 use ryot::prelude::*;
 use std::cmp::Ordering;
 use strum::{EnumCount, EnumIter};
@@ -22,55 +23,25 @@ pub enum TilesetCategory {
     Raw,
 }
 
-impl From<&Flags> for TilesetCategory {
-    fn from(flags: &Flags) -> Self {
-        // Market has categories, so we can use it to determine the category of the item.
-        // If the item has a market flag, it's category is prioritized over the other flags.
-        if let Some(market) = &flags.market_info {
-            if let Some(category) = market.category {
-                return (&StoreCategory::try_from(category).unwrap()).into();
-            }
+impl From<&Category> for TilesetCategory {
+    fn from(category: &Category) -> Self {
+        match category {
+            Category::Bottom => TilesetCategory::BaseLayer,
+            Category::Containers => TilesetCategory::Containers,
+            Category::Corpses => TilesetCategory::Corpses,
+            Category::Decor => TilesetCategory::Decor,
+            Category::Edges => TilesetCategory::Edges,
+            Category::Ground => TilesetCategory::UpperLayer,
+            Category::Custom(category) => StoreCategory::try_from(*category).unwrap().into(),
+            Category::Miscellaneous => TilesetCategory::Miscellaneous,
+            Category::Top => TilesetCategory::Terrains,
+            Category::Wearable => TilesetCategory::Clothes,
         }
-
-        if flags.ground.is_some() || is_true(flags.is_ground) {
-            return TilesetCategory::Terrains;
-        }
-
-        if is_true(flags.is_edge) {
-            return TilesetCategory::Edges;
-        }
-
-        if is_true(flags.is_bottom) {
-            return TilesetCategory::BaseLayer;
-        }
-
-        if is_true(flags.is_top) {
-            return TilesetCategory::UpperLayer;
-        }
-
-        // Corpses are also containers, so they need to be checked first
-        if is_true(flags.is_corpse) || is_true(flags.is_player_corpse) {
-            return TilesetCategory::Corpses;
-        }
-
-        if is_true(flags.is_container) {
-            return TilesetCategory::Containers;
-        }
-
-        if is_true(flags.can_be_hanged) || is_true(flags.can_rotate) || flags.hook_info.is_some() {
-            return TilesetCategory::Decor;
-        }
-
-        if flags.slot.is_some() {
-            return TilesetCategory::Clothes;
-        }
-
-        TilesetCategory::Miscellaneous
     }
 }
 
-impl From<&StoreCategory> for TilesetCategory {
-    fn from(category: &StoreCategory) -> Self {
+impl From<StoreCategory> for TilesetCategory {
+    fn from(category: StoreCategory) -> Self {
         match category {
             StoreCategory::Ammunition
             | StoreCategory::Axes
@@ -102,22 +73,8 @@ impl From<&StoreCategory> for TilesetCategory {
 }
 
 impl From<&VisualElement> for TilesetCategory {
-    fn from(appearance: &VisualElement) -> Self {
-        if let Some(flags) = &appearance.flags {
-            return flags.into();
-        }
-
-        TilesetCategory::Miscellaneous
-    }
-}
-
-impl From<&PreparedAppearance> for TilesetCategory {
-    fn from(appearance: &PreparedAppearance) -> Self {
-        if let Some(flags) = &appearance.flags {
-            return flags.into();
-        }
-
-        TilesetCategory::Miscellaneous
+    fn from(visual_element: &VisualElement) -> Self {
+        (&visual_element.category).into()
     }
 }
 
@@ -128,7 +85,7 @@ impl PartialOrd<Self> for TilesetCategory {
 }
 
 impl Ord for TilesetCategory {
-    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+    fn cmp(&self, other: &Self) -> Ordering {
         self.get_label().cmp(&other.get_label())
     }
 }

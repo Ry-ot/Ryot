@@ -1,4 +1,5 @@
-use bevy::prelude::{Res, Time, Timer, TimerMode};
+use bevy_ecs::prelude::Res;
+use bevy_time::prelude::{Time, Timer, TimerMode};
 use leafwing_input_manager::action_state::ActionState;
 use leafwing_input_manager::Actionlike;
 use std::time::Duration;

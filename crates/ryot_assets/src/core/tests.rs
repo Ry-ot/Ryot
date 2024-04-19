@@ -1,4 +1,5 @@
-use super::*;
+use crate::prelude::{ContentType, SpriteLayout, SpriteSheetData, SpriteSheetDataSet};
+use glam::UVec2;
 use rstest::{fixture, rstest};
 use serde_json::{from_str, to_string};
 
@@ -113,26 +114,11 @@ fn sprite_sheet_set_fixture() -> SpriteSheetDataSet {
         }),
     ];
 
-    SpriteSheetDataSet::from_content(&vec)
+    (&*vec).into()
 }
 
 #[rstest]
-#[case(
-        ContentType::Appearances { file: "appearances.dat".to_string() },
-        r#"{"type":"appearances","file":"appearances.dat"}"#
-    )]
-#[case(
-        ContentType::StaticData { file: "staticdata.dat".to_string() },
-        r#"{"type":"staticdata","file":"staticdata.dat"}"#
-    )]
-#[case(
-        ContentType::StaticMapData { file: "staticmapdata.dat".to_string() },
-        r#"{"type":"staticmapdata","file":"staticmapdata.dat"}"#
-    )]
-#[case(
-        ContentType::Map { file: "map.otbm".to_string() },
-        r#"{"type":"map","file":"map.otbm"}"#
-    )]
+#[case(ContentType::Unknown, r#"{"type":"unknown"}"#)]
 #[case(
         ContentType::Sprite(SpriteSheetData {
             file: "spritesheet.png".to_string(),
@@ -149,21 +135,18 @@ fn test_serialize_content_type(#[case] content: ContentType, #[case] expected_js
 
 #[rstest]
 #[case(
-        r#"{"type":"appearances","file":"appearances.dat"}"#,
-        ContentType::Appearances { file: "appearances.dat".to_string() }
-    )]
+    r#"{"type":"appearances","file":"appearances.dat"}"#,
+    ContentType::Unknown
+)]
 #[case(
-        r#"{"type":"staticdata","file":"staticdata.dat"}"#,
-        ContentType::StaticData { file: "staticdata.dat".to_string() }
-    )]
+    r#"{"type":"staticdata","file":"staticdata.dat"}"#,
+    ContentType::Unknown
+)]
 #[case(
-        r#"{"type":"staticmapdata","file":"staticmapdata.dat"}"#,
-        ContentType::StaticMapData { file: "staticmapdata.dat".to_string() }
-    )]
-#[case(
-        r#"{"type":"map","file":"map.otbm"}"#,
-        ContentType::Map { file: "map.otbm".to_string() }
-    )]
+    r#"{"type":"staticmapdata","file":"staticmapdata.dat"}"#,
+    ContentType::Unknown
+)]
+#[case(r#"{"type":"map","file":"map.otbm"}"#, ContentType::Unknown)]
 #[case(
         r#"{"type":"sprite","file":"spritesheet.png","spritetype":0,"firstspriteid":100,"lastspriteid":200,"area":64}"#,
         ContentType::Sprite(SpriteSheetData {

@@ -1,7 +1,6 @@
 use crate::{gui_is_not_in_use, toggle_grid, CompassAction};
 use bevy::prelude::*;
 use leafwing_input_manager::common_conditions::*;
-use ryot::on_hold_every;
 use ryot::prelude::{drawing::*, *};
 use std::marker::PhantomData;
 
