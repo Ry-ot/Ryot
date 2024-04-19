@@ -4,6 +4,7 @@ use crate::bevy_ryot::{GameObjectId, InternalContentState};
 use crate::position::SpriteMovement;
 use bevy::prelude::*;
 use bevy::render::view::{check_visibility, VisibilitySystems, VisibleEntities};
+use ryot_assets::prelude::FrameGroup;
 use ryot_grid::prelude::*;
 
 mod brushes;
@@ -14,8 +15,6 @@ pub use commands::*;
 
 mod systems;
 pub use systems::*;
-
-use super::sprites::FrameGroupComponent;
 
 pub struct DrawingPlugin;
 
@@ -60,7 +59,7 @@ pub struct DrawingBundle {
     pub layer: Layer,
     pub tile_pos: TilePosition,
     pub object_id: GameObjectId,
-    pub frame_group: FrameGroupComponent,
+    pub frame_group: FrameGroup,
     pub visibility: Visibility,
     pub tile: TileComponent,
 }
@@ -83,7 +82,7 @@ impl DrawingBundle {
         layer: impl Into<Layer>,
         tile_pos: TilePosition,
         object_id: GameObjectId,
-        frame_group: FrameGroupComponent,
+        frame_group: FrameGroup,
     ) -> Self {
         Self {
             layer: layer.into(),
@@ -110,7 +109,7 @@ impl DrawingBundle {
         layer: impl Into<Layer>,
         tile_pos: TilePosition,
         id: u32,
-        frame_group: impl Into<FrameGroupComponent>,
+        frame_group: impl Into<FrameGroup>,
     ) -> Self {
         Self::new(
             layer,
@@ -153,7 +152,7 @@ impl DrawingBundle {
 pub struct MovementBundle {
     pub layer: Layer,
     pub object_id: GameObjectId,
-    pub frame_group: FrameGroupComponent,
+    pub frame_group: FrameGroup,
     pub movement: SpriteMovement,
     pub direction: Directional,
 }
@@ -162,7 +161,7 @@ impl MovementBundle {
     pub fn new(
         layer: Layer,
         object_id: GameObjectId,
-        frame_group: FrameGroupComponent,
+        frame_group: FrameGroup,
         start: Vec3,
         end: Vec3,
         duration: Duration,

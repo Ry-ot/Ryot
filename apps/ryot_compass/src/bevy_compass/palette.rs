@@ -7,7 +7,7 @@ use bevy::prelude::*;
 use bevy::utils::HashMap;
 use bevy_egui::EguiPlugin;
 use leafwing_input_manager::common_conditions::action_just_pressed;
-use ryot::bevy_ryot::sprites::{FrameGroupComponent, LoadAppearanceEvent, LoadedAppearances};
+use ryot::bevy_ryot::sprites::{LoadAppearanceEvent, LoadedAppearances};
 use ryot::prelude::*;
 use std::marker::PhantomData;
 
@@ -149,19 +149,18 @@ pub fn update_palette_items<C: ContentAssets>(
 
     let (loaded, to_load): (Vec<GameObjectId>, Vec<GameObjectId>) =
         object_ids.iter().partition(|&object_id| {
-            loaded_appearances.contains_key(&(*object_id, FrameGroupComponent::default()))
+            loaded_appearances.contains_key(&(*object_id, FrameGroup::default()))
         });
 
     to_load.iter().for_each(|object_id| {
         events.send(LoadAppearanceEvent {
             object_id: *object_id,
-            frame_group: FrameGroupComponent::default(),
+            frame_group: FrameGroup::default(),
         });
     });
 
     loaded.into_iter().for_each(|object_id| {
-        let Some(appearance) = loaded_appearances.get(&(object_id, FrameGroupComponent::default()))
-        else {
+        let Some(appearance) = loaded_appearances.get(&(object_id, FrameGroup::default())) else {
             return;
         };
         let Some(sprite) = appearance.sprites.first() else {

@@ -1,8 +1,9 @@
 //! This module provides a way to send events between systems asynchronously.
 //! It's useful to send events between threads that perform asynchronous tasks, such as loading
 //! content from disk or loading sprites from a sprite sheet before rendering.
-use bevy::app::App;
-use bevy::prelude::*;
+use bevy_app::prelude::*;
+use bevy_ecs::prelude::*;
+use derive_more::{Deref, DerefMut};
 use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::Mutex;
 

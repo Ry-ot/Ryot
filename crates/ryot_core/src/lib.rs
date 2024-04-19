@@ -1,15 +1,24 @@
 #[cfg(feature = "bevy")]
-pub mod cache;
-
+pub mod async_events;
 pub mod async_task;
+#[cfg(feature = "bevy")]
+pub mod cache;
 #[cfg(feature = "compression")]
 pub mod compression;
+
+#[cfg(feature = "bevy")]
+pub mod conditions;
 
 pub mod prelude {
     pub use crate::{async_task::execute, is_true, Flag};
 
     #[cfg(feature = "bevy")]
-    pub use crate::cache::{Cache, CacheSystems};
+    pub use crate::{
+        async_events::{AsyncEventApp, EventSender},
+        cache::{Cache, CacheSystems},
+        conditions::{on_hold_every, run_every, run_every_millis, run_every_secs, TimeArg},
+        on_hold_every,
+    };
 
     #[cfg(feature = "compression")]
     pub use crate::compression::{compress, decompress, Compression, Zstd};

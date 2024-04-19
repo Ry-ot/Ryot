@@ -23,19 +23,23 @@ default = ["bevy"]
 
 bevy = [
     "dep:bevy_ecs",
-    "dep:bevy_utils",
+    "dep:bevy_reflect",
 ]
+
+debug = []
 
 [dependencies.bevy_ecs]
 version = "0.13"
 features = ["bevy_reflect"]
 optional = true
 
-[dependencies.bevy_utils]
+[dependencies.bevy_reflect]
 version = "0.13"
+features = ["bevy"]
 optional = true
 
 [dependencies]
+ryot_core = { path = "../ryot_core", version = "0.2.0" }
 async-std = "1.12.0"
 derive_more.workspace = true
 glam.workspace = true
@@ -44,7 +48,6 @@ serde.workspace = true
 serde_json.workspace = true
 strum.workspace = true
 thiserror.workspace = true
-wasm-bindgen-futures = "0.4.42"
 
 [dev-dependencies]
 quickcheck.workspace = true

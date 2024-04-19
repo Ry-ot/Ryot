@@ -21,22 +21,14 @@ use bevy_asset_loader::prelude::*;
 use bevy_asset_loader::standard_dynamic_asset::StandardDynamicAssetArrayCollection;
 use bevy_common_assets::json::JsonAssetPlugin;
 use bevy_stroked_text::StrokedTextPlugin;
-use ryot_assets::prelude::*;
 use ryot_grid::prelude::*;
-use ryot_legacy_assets::prelude::*;
 use std::marker::PhantomData;
 use strum::IntoEnumIterator;
 
 mod appearances;
 pub use appearances::*;
 
-mod async_events;
-pub use async_events::*;
-
 pub mod camera;
-
-mod conditions;
-pub use conditions::*;
 
 mod game;
 pub use game::*;
@@ -183,10 +175,9 @@ impl<C: PreloadedContentAssets + Default> Plugin for VisualContentPlugin<C> {
         app.add_plugins(BaseContentPlugin::<C>::default())
             .configure_loading_state(
                 LoadingStateConfig::new(InternalContentState::LoadingContent)
-                    .register_dynamic_asset_collection::<StandardDynamicAssetArrayCollection>()
                     .with_dynamic_assets_file::<StandardDynamicAssetArrayCollection>(
-                        "dynamic.atlases.ron",
-                    ),
+                    "dynamic.atlases.ron",
+                ),
             )
             .init_resource::<SpriteMeshes>()
             .init_resource::<RectMeshes>()
@@ -267,7 +258,7 @@ fn prepare_content<C: PreloadedContentAssets>(
         .get(content_assets.catalog_content())
         .expect("No catalog loaded");
 
-    content_assets.set_sprite_sheets_data(SpriteSheetDataSet::from_content(&catalog.content));
+    content_assets.set_sprite_sheets_data((&*catalog.content).into());
     contents.remove(content_assets.catalog_content());
     for sprite_layout in SpriteLayout::iter() {
         sprite_meshes.insert(

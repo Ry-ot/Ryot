@@ -5,5 +5,5 @@ pub use ryot_grid::prelude::*;
 #[cfg(feature = "ryot_pathfinder")]
 pub use ryot_pathfinder::prelude::*;
 
-#[cfg(feature = "ryot_legacy_assets")]
-pub use ryot_legacy_assets::prelude::*;
+#[cfg(feature = "ryot_cip_assets")]
+pub use ryot_cip_assets::prelude as cip;

@@ -132,7 +132,7 @@ pub enum ItemAttribute {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Spawn {
+struct Spawn {
     pub uid: u16,
     pub radius: u8,
     pub spawn_time: u16,
@@ -140,13 +140,13 @@ pub struct Spawn {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub enum SpawnType {
+enum SpawnType {
     Monster(Monster),
     Npc(Npc),
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Monster {
+struct Monster {
     pub name: String,
     pub x: u8,
     pub y: u8,
@@ -154,7 +154,7 @@ pub struct Monster {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Npc {
+struct Npc {
     pub name: String,
     pub x: u8,
     pub y: u8,

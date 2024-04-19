@@ -9,13 +9,13 @@ use crate::{
 use crate::{ExportMap, LoadMap};
 #[cfg(not(target_arch = "wasm32"))]
 use bevy::app::AppExit;
-#[cfg(not(target_arch = "wasm32"))]
-use ryot::bevy_ryot::{AsyncEventApp, EventSender};
 
 use bevy::{prelude::*, render::camera::Viewport, winit::WinitWindows};
 use bevy_egui::{EguiContext, EguiContexts, EguiPlugin, EguiUserTextures};
 use egui::{load::SizedTexture, Slider, TextureId};
 use egui_dock::{DockArea, DockState, NodeIndex};
+#[cfg(not(target_arch = "wasm32"))]
+use ryot::prelude::*;
 use ryot::{
     bevy_ryot::{
         drawing::{Brushes, DrawingBundle},

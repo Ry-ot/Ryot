@@ -6,6 +6,7 @@ use bevy_reflect::prelude::*;
 #[cfg(all(feature = "bevy", feature = "debug"))]
 use bevy_render::color::*;
 
+use ryot_assets::prelude::Category;
 use serde::{Deserialize, Serialize};
 use std::{
     cmp::Ordering,
@@ -344,6 +345,17 @@ impl PartialOrd for BottomLayer {
 impl Ord for BottomLayer {
     fn cmp(&self, other: &Self) -> Ordering {
         self.z().partial_cmp(&other.z()).unwrap()
+    }
+}
+
+impl From<Category> for Layer {
+    fn from(category: Category) -> Self {
+        match category {
+            Category::Top => Layer::Top,
+            Category::Ground => Layer::Ground,
+            Category::Edges => Layer::Edge,
+            _ => Layer::Bottom(BottomLayer::new(0, RelativeLayer::Object)),
+        }
     }
 }
 
