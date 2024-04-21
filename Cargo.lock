@@ -5080,29 +5080,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ryot_cip_assets"
-version = "0.2.0"
-dependencies = [
- "derive_more",
- "glam",
- "prost",
- "prost-build",
- "prost-types",
- "quickcheck",
- "quickcheck_macros",
- "rand",
- "rstest",
- "ryot_assets",
- "serde",
- "serde_json",
- "serde_repr",
- "strum",
- "thiserror",
- "time-test",
- "wasm-bindgen-futures",
-]
-
-[[package]]
 name = "ryot_compass"
 version = "0.1.0"
 dependencies = [
@@ -5202,10 +5179,10 @@ name = "ryot_internal"
 version = "0.2.0"
 dependencies = [
  "ryot_assets",
- "ryot_cip_assets",
  "ryot_core",
  "ryot_grid",
  "ryot_pathfinder",
+ "ryot_tibia_assets",
 ]
 
 [[package]]
@@ -5224,6 +5201,29 @@ dependencies = [
  "ryot_core",
  "ryot_grid",
  "time-test",
+]
+
+[[package]]
+name = "ryot_tibia_assets"
+version = "0.2.0"
+dependencies = [
+ "derive_more",
+ "glam",
+ "prost",
+ "prost-build",
+ "prost-types",
+ "quickcheck",
+ "quickcheck_macros",
+ "rand",
+ "rstest",
+ "ryot_assets",
+ "serde",
+ "serde_json",
+ "serde_repr",
+ "strum",
+ "thiserror",
+ "time-test",
+ "wasm-bindgen-futures",
 ]
 
 [[package]]

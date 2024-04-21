@@ -1,21 +1,21 @@
-//! # Cipsoft Appearance Protocol Definitions
+//! # Tibia Appearance Protocol Definitions
 //!
-//! This crate encapsulates the protocol definitions for Cipsoft's appearance data, providing
-//! a structured interface to Cipsoft appearance assets. It primarily consists of automatically
+//! This crate encapsulates the protocol definitions for Tibia's appearance data, providing
+//! a structured interface to Tibia appearance assets. It primarily consists of automatically
 //! generated Rust code from protocol buffer definitions, ensuring type safety and easy integration
 //! with Rust codebases.
 //!
 //! ## Structure
-//! - **Protocol Definitions**: The core definitions are generated from Cipsoft's `.proto` files,
+//! - **Protocol Definitions**: The core definitions are generated from Tibia's `.proto` files,
 //!   providing Rust structs that match the protobuf specifications for appearances. This is done
 //!   at build time, and the generated code is included directly in the crate.
 //!
-//! - **Conversions Module**: Contains implementations for converting raw Cipsoft appearance data
+//! - **Conversions Module**: Contains implementations for converting raw Tibia appearance data
 //!   into more usable internal formats. This submodule bridges the gap between raw protocol data
 //!   and the application-specific data structures used within the Ryot system.
 //!
 //! ## Usage
-//! This crate is used internally to decode appearance data received in the Cipsoft-specific
+//! This crate is used internally to decode appearance data received in the Tibia-specific
 //! format. It allows the Ryot system to work directly with well-defined Rust structs instead of
 //! handling raw binary data, simplifying data manipulation and integration tasks.
 //!
@@ -24,16 +24,16 @@
 //!
 //!```rust
 //! use ryot_assets::prelude::VisualElements;
-//! use ryot_cip_assets as cip;
+//! use ryot_tibia_assets as tibia;
 //!
-//! // Vec::new() simulates raw bytes received from Cipsoft
-//! let visual_elements: VisualElements = cip::from_bytes(&Vec::new()).unwrap();
+//! // Vec::new() simulates raw bytes received from Tibia's appearance data
+//! let visual_elements: VisualElements = tibia::from_bytes(&Vec::new()).unwrap();
 //! ```
 //!
 //! ## Build
 //! The actual `.proto` definitions and the generation of Rust code from these definitions are
 //! handled in the crate build script, if the ci_assets feature is enabled. This ensures that the
-//! generated code is always up-to-date and in sync with the latest Cipsoft appearance definitions.
+//! generated code is always up-to-date and in sync with the latest Tibia appearance definitions.
 //!
 //! ## Catalog:
 //! Tibia assets are stored in a content-catalog.json file that lists the resources the client needs.
@@ -71,7 +71,7 @@
 use prost::{DecodeError, Message};
 use ryot_assets::prelude as ryot;
 
-include!(concat!(env!("OUT_DIR"), "/cip.rs"));
+include!(concat!(env!("OUT_DIR"), "/tibia.rs"));
 
 pub mod conversions;
 

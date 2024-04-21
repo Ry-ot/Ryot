@@ -9,7 +9,7 @@ use std::path::PathBuf;
 
 #[rstest]
 fn test_load_sprite_sheet_image_for_compressed_image(#[from(image_fixture)] expected: RgbaImage) {
-    let sheet_config = SpriteSheetConfig::cip_sheet();
+    let sheet_config = SpriteSheetConfig::tibia_sheet();
 
     let img = load_sprite_sheet_image(
         &PathBuf::from("tests/fixtures/1.bmp.lzma"),
@@ -43,7 +43,7 @@ fn test_load_sprite_sheet_image_for_uncompressed_image(#[from(image_fixture)] ex
 
 #[rstest]
 fn test_decompress_sprite_sheet(#[from(image_fixture)] expected: RgbaImage) {
-    let sheet_config = SpriteSheetConfig::cip_sheet();
+    let sheet_config = SpriteSheetConfig::tibia_sheet();
 
     decompress_sprite_sheet(
         "2.bmp.lzma",
@@ -66,7 +66,7 @@ fn test_decompress_sprite_sheets(#[from(image_fixture)] expected: RgbaImage) {
             source_path: PathBuf::from("tests/fixtures"),
             destination_path: PathBuf::from("tests/fixtures"),
         },
-        sprite_sheet: SpriteSheetConfig::cip_sheet(),
+        sprite_sheet: SpriteSheetConfig::tibia_sheet(),
     };
 
     decompress_sprite_sheets(

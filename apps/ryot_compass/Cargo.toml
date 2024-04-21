@@ -5,7 +5,7 @@ edition = "2021"
 exclude = ["dist", "build", "assets", "credits"]
 
 [dependencies]
-ryot = { version = "0.2.0", path = "../../crates/ryot", features = ["egui"] }
+ryot = { version = "0.2.0", path = "../../crates/ryot", features = ["egui", "tibia_assets"] }
 
 async-std = "1.12"
 egui_dock = "0.11"

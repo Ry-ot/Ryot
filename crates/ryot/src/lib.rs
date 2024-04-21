@@ -5,7 +5,7 @@
 //! It is currently in early development and is not yet ready for use.
 //!
 //! Ryot is design to integrate with OpenTibia concepts, facilitating the creation
-//! of games that intend to use CIP-like contents/assets formats, as well as some
+//! of games that intend to use Tibia-like contents/assets formats, as well as some
 //! game mechanics.
 //!
 //! It provides a major components:
@@ -21,10 +21,10 @@
 //! * [Compression](crate::compression) - A compression utility that can be used to compress
 //!   and decompress sprite sheets.
 //! * [ContentBuilder](crate::build::content) - A builder that can be used to build
-//!   content assets from the CIP client content folder, decompressing sprite sheets and
+//!   content assets from the Tibia client content folder, decompressing sprite sheets and
 //!   copying the necessary files to the assets folder.
 //! * [Sprite Utilities](crate::sprites) - Functions that can be used to decompress, manipulate
-//!   and load sprite sheets as game assets, taking into considerations CIP-like sprite sheets
+//!   and load sprite sheets as game assets, taking into considerations Tibia-like sprite sheets
 //!   structures.
 //! * [Content Utilities](crate::content) - A collection of structs that can be used to manipulate
 //!   contents, including configuring and loading them.

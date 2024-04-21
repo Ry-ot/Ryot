@@ -1,5 +1,5 @@
 [package]
-name = "ryot_cip_assets"
+name = "ryot_tibia_assets"
 version = "0.2.0"
 edition = "2021"
 authors = [
@@ -7,11 +7,11 @@ authors = [
     "Luan Santos <cargo@luan.sh>",
 ]
 license = "MIT OR Apache-2.0"
-description = "A compatibility layer between Ryot and CipSoft's assets."
+description = "A compatibility layer between Ryot and Tibia's assets."
 homepage = "https://github.com/opentibiabr/Ryot"
 repository = "https://github.com/opentibiabr/Ryot"
 documentation = "https://docs.rs/ryot/"
-keywords = ["gamedev", "ryot", "cip"]
+keywords = ["gamedev", "ryot", "tibia"]
 categories = ["game-development", "game-engines", "games"]
 
 [package.metadata.docs.rs]

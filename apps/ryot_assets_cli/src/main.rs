@@ -9,7 +9,7 @@ use std::{fs, result};
 
 static DEFAULT_CONTENT_CONFIG_PATH: &str = "config/assets-cli.toml";
 
-/// CLI to manage assets from Cipbia
+/// CLI to manage assets from Tibia
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct Cli {
