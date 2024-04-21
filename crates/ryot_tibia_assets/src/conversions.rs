@@ -1,18 +1,18 @@
-//! # Conversion Implementations from Cipsoft Assets to Ryot Visual Elements
+//! # Conversion Implementations from Tibia Assets to Ryot Visual Elements
 //!
-//! This module provides implementations of the `From` trait to convert types from the `cip` module,
-//! which represents assets and appearances from Cipsoft (an external dependency), into corresponding
+//! This module provides implementations of the `From` trait to convert types from the `tibia` proto,
+//! which represents assets and appearances from Tibia (an external dependency), into corresponding
 //! domain-specific types defined within the Ryot system. These conversions help abstract and adapt
-//! the external Cipsoft data formats to the internal representations used by the Ryot application,
+//! the external Tibia data formats to the internal representations used by the Ryot application,
 //! facilitating easier management and integration of visual elements.
 //!
 //! ## Overview
 //!
-//! Each implementation of the `From` trait here is designed to transform a specific `cip` type into a
+//! Each implementation of the `From` trait here is designed to transform a specific `tibia` type into a
 //! more functionally relevant type for the Ryot application. This includes:
 //! - Visual elements such as `VisualElement`, `FrameType`, `SpriteInfo`, and `Animation`.
-//! - Handling of nullable types and ensuring sensible defaults for optional data from `cip`.
-//! - Mapping complex flags and properties from `cip` types into simplified, application-specific flags
+//! - Handling of nullable types and ensuring sensible defaults for optional data from `tibia`.
+//! - Mapping complex flags and properties from `tibia` types into simplified, application-specific flags
 //!   and categories.
 //!
 //! These conversions play a crucial role in separating external data dependencies from the core logic
@@ -22,21 +22,21 @@
 //! ## Custom Traits and Macros
 //!
 //! The file also includes a macro `option_flag_to_element!` that generates default implementations for
-//! converting optional `cip::Flags` into domain-specific classes, providing a standardized approach to
+//! converting optional `tibia::Flags` into domain-specific classes, providing a standardized approach to
 //! handling optional data with defaults.
 //!
 //! ## Usage
 //!
 //! The `From` trait implementations are intended for use across the Ryot application wherever
-//! conversions from `cip` types to internal Ryot types are necessary. By centralizing these conversions
+//! conversions from `tibia` types to internal Ryot types are necessary. By centralizing these conversions
 //! in one module, we ensure consistent behavior and data transformations throughout the application,
 //! facilitating easier updates and maintenance when dealing with external asset changes.
-use crate as cip;
+use crate as tibia;
 use ryot_assets::prelude::*;
 
-impl From<cip::VisualElements> for VisualElements {
-    fn from(item: cip::VisualElements) -> Self {
-        let convert = |item: &cip::VisualElement| -> VisualElement { item.clone().into() };
+impl From<tibia::VisualElements> for VisualElements {
+    fn from(item: tibia::VisualElements) -> Self {
+        let convert = |item: &tibia::VisualElement| -> VisualElement { item.clone().into() };
 
         VisualElements {
             objects: item.objects.iter().map(convert).collect(),
@@ -47,9 +47,9 @@ impl From<cip::VisualElements> for VisualElements {
     }
 }
 
-impl From<cip::VisualElement> for VisualElement {
-    fn from(item: cip::VisualElement) -> Self {
-        fn from_flags<T: Clone + Default + From<cip::Flags>>(flags: &Option<cip::Flags>) -> T {
+impl From<tibia::VisualElement> for VisualElement {
+    fn from(item: tibia::VisualElement) -> Self {
+        fn from_flags<T: Clone + Default + From<tibia::Flags>>(flags: &Option<tibia::Flags>) -> T {
             match flags {
                 Some(flags) => flags.clone().into(),
                 None => T::default(),
@@ -83,18 +83,18 @@ impl From<cip::VisualElement> for VisualElement {
     }
 }
 
-impl From<cip::FrameType> for FrameGroup {
-    fn from(item: cip::FrameType) -> Self {
+impl From<tibia::FrameType> for FrameGroup {
+    fn from(item: tibia::FrameType) -> Self {
         match item {
-            cip::FrameType::OutfitIdle => FrameGroup::Idle,
-            cip::FrameType::OutfitMoving => FrameGroup::Moving,
-            cip::FrameType::ObjectInitial => FrameGroup::Initial,
+            tibia::FrameType::OutfitIdle => FrameGroup::Idle,
+            tibia::FrameType::OutfitMoving => FrameGroup::Moving,
+            tibia::FrameType::ObjectInitial => FrameGroup::Initial,
         }
     }
 }
 
-impl From<cip::SpriteInfo> for SpriteInfo {
-    fn from(item: cip::SpriteInfo) -> Self {
+impl From<tibia::SpriteInfo> for SpriteInfo {
+    fn from(item: tibia::SpriteInfo) -> Self {
         let ids = item.sprite_ids.clone();
         let layers = item.layers();
         let pattern_width = item.pattern_width();
@@ -113,8 +113,8 @@ impl From<cip::SpriteInfo> for SpriteInfo {
     }
 }
 
-impl From<cip::Animation> for Animation {
-    fn from(item: cip::Animation) -> Self {
+impl From<tibia::Animation> for Animation {
+    fn from(item: tibia::Animation) -> Self {
         let start_phase = item.start_phase();
         let synchronized = item.synchronized();
         let is_start_random = item.is_start_random();
@@ -129,8 +129,8 @@ impl From<cip::Animation> for Animation {
     }
 }
 
-impl From<cip::Flags> for Flags {
-    fn from(item: cip::Flags) -> Self {
+impl From<tibia::Flags> for Flags {
+    fn from(item: tibia::Flags) -> Self {
         Flags {
             is_walkable: !item.is_not_walkable(),
             blocks_sight: item.blocks_sight(),
@@ -138,8 +138,8 @@ impl From<cip::Flags> for Flags {
     }
 }
 
-impl From<cip::Flags> for Properties {
-    fn from(item: cip::Flags) -> Self {
+impl From<tibia::Flags> for Properties {
+    fn from(item: tibia::Flags) -> Self {
         Properties {
             ground_speed: item.ground.clone().unwrap_or_default().speed(),
             elevation: item.elevation.clone().unwrap_or_default().height(),
@@ -147,8 +147,8 @@ impl From<cip::Flags> for Properties {
     }
 }
 
-impl From<cip::Flags> for Category {
-    fn from(flags: cip::Flags) -> Self {
+impl From<tibia::Flags> for Category {
+    fn from(flags: tibia::Flags) -> Self {
         // Market has categories, so we can use it to determine the category of the item.
         // If the item has a market flag, it's category is prioritized over the other category.
         if let Some(market) = &flags.market_info {

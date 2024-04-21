@@ -48,7 +48,7 @@ pub fn load_sprite_sheet_image(
     create_image_from_data(decompressed, &sheet_config, sheet_size)
 }
 
-/// Creates a sprite sheet image from a given CIP decompressed bmp and saves it to the given output path.
+/// Creates a sprite sheet image from a given Tibia decompressed bmp and saves it to the given output path.
 /// The sprite sheet is expected to have 384x384 pixels and 4 channels (RGBA).
 /// The data is expected to be in the BGRA format.
 /// The data is expected to be flipped vertically.
@@ -83,7 +83,7 @@ pub fn create_image_from_data(
     Ok(background_img)
 }
 
-/// CIP's sprite sheets have a 32 byte header that contains the following information:
+/// Tibia's sprite sheets have a 32 byte header that contains the following information:
 ///  [0..X]    - Variable number of place holder NULL (0x00) bytes. X varies according to the sheet decompressed size.
 ///  [X..X+5]  - 5 bytes with the constant byte sequence [0x70 0x0A 0xFA 0x80 0x24].
 ///  [X+6..32] - LZMA file size encoded as a 7-bit integer, can occupy 2 or 3 bytes, depending on the number represented.
@@ -92,7 +92,7 @@ pub fn create_image_from_data(
 /// is always valid. Thus we don't care about this header at all, so we just skip the first 32 bytes and
 /// start decompressing from the 33rd byte.
 ///
-/// Also, CIP builds the wrong LZMA header, placing the compressed size instead of the decompressed size.
+/// Also, Tibia builds the wrong LZMA header, placing the compressed size instead of the decompressed size.
 /// Because of that, we have 2 options here:
 ///  1. Decompress always expecting the sheet size (384 * 384 * 4 + 122 = 591130 bytes)
 ///  2. Decompress without size defined and wait for the end-of-stream marker

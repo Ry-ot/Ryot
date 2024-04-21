@@ -1,6 +1,6 @@
 syntax = "proto2";
 
-package cip;
+package tibia;
 
 enum Action {
   ACTION_NONE = 0;

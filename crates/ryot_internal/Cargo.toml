@@ -39,6 +39,6 @@ tiled = ["ryot_pathfinder?/tiled"]
 ryot_assets = { path = "../ryot_assets", version = "0.2.0" }
 ryot_core = { path = "../ryot_core", version = "0.2.0" }
 ryot_grid = { path = "../ryot_grid", version = "0.2.0" }
-ryot_cip_assets = { path = "../ryot_cip_assets", version = "0.2.0", optional = true }
+ryot_tibia_assets = { path = "../ryot_tibia_assets", version = "0.2.0", optional = true }
 ryot_pathfinder = { path = "../ryot_pathfinder", version = "0.2.0", optional = true }
 

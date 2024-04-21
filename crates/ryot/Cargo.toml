@@ -19,7 +19,7 @@ serde_repr = "0.1"
 ryot_assets = { path = "../ryot_assets", version = "0.2.0" }
 ryot_core = { path = "../ryot_core", version = "0.2.0" }
 ryot_grid = { path = "../ryot_grid", version = "0.2.0" }
-ryot_internal = { path = "../ryot_internal", version = "0.2.0", features = ["ryot_cip_assets"] }
+ryot_internal = { path = "../ryot_internal", version = "0.2.0", features = ["ryot_tibia_assets"] }
 
 bevy = { workspace = true, optional = true }
 bevy_asset_loader = { workspace = true, optional = true }
@@ -67,7 +67,7 @@ bevy = [
     "ryot_internal/bevy"
 ]
 
-cip_assets = ["ryot_internal/ryot_cip_assets"]
+tibia_assets = ["ryot_internal/ryot_tibia_assets"]
 
 debug = ["dep:bevy_stroked_text", "ryot_internal/debug"]
 lmdb = ["dep:heed", "dep:postcard", "ryot_internal/lmdb"]

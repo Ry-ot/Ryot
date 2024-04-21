@@ -1,5 +1,5 @@
 use egui::WidgetText;
-use ryot::prelude::cip::StoreCategory;
+use ryot::prelude::tibia::StoreCategory;
 use ryot::prelude::*;
 use std::cmp::Ordering;
 use strum::{EnumCount, EnumIter};

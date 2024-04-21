@@ -33,9 +33,9 @@ jobs:
           path: tibia-client
       - name: Copy Tibia Client Assets
         run: |
-          cp -r tibia-client/assets apps/ryot_compass/assets/cip-catalog
+          cp -r tibia-client/assets apps/ryot_compass/assets/tibia-catalog
           cargo run --release --bin ryot_assets_cli extract
-          rm -rf apps/ryot_compass/assets/cip-catalog
+          rm -rf apps/ryot_compass/assets/tibia-catalog
       - name: Build Compass Release
         working-directory: ./apps/ryot_compass
         run: |

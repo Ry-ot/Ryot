@@ -1,5 +1,5 @@
 [directories]
-source_path = "apps/ryot_compass/assets/cip-catalog"
+source_path = "apps/ryot_compass/assets/tibia-catalog"
 destination_path = "apps/ryot_compass/assets"
 
 [sprite_sheet]

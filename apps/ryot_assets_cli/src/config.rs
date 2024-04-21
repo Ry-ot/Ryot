@@ -21,7 +21,7 @@ impl Default for SpriteSheetConfig {
 }
 
 impl SpriteSheetConfig {
-    pub fn cip_sheet() -> SpriteSheetConfig {
+    pub fn tibia_sheet() -> SpriteSheetConfig {
         SpriteSheetConfig {
             sheet_size: UVec2::new(384, 384),
             compression_config: Some(CompressionConfig {
