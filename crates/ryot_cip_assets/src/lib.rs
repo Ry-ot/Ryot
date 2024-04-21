@@ -27,7 +27,7 @@
 //! use ryot_cip_assets as cip;
 //!
 //! // Vec::new() simulates raw bytes received from Cipsoft
-//! let visual_elements: VisualElements = cip::from_bytes(Vec::new()).unwrap();
+//! let visual_elements: VisualElements = cip::from_bytes(&Vec::new()).unwrap();
 //! ```
 //!
 //! ## Build
@@ -75,8 +75,8 @@ include!(concat!(env!("OUT_DIR"), "/cip.rs"));
 
 pub mod conversions;
 
-pub fn from_bytes(bytes: Vec<u8>) -> Result<ryot::VisualElements, DecodeError> {
-    let visual_elements: VisualElements = VisualElements::decode(&*bytes)?;
+pub fn from_bytes(bytes: &[u8]) -> Result<ryot::VisualElements, DecodeError> {
+    let visual_elements: VisualElements = VisualElements::decode(bytes)?;
     Ok(visual_elements.into())
 }
 

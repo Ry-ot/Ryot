@@ -56,7 +56,7 @@ impl AssetLoader for AppearanceAssetLoader {
             let mut bytes = Vec::new();
             reader.read_to_end(&mut bytes).await?;
 
-            Ok(Appearance(cip::from_bytes(bytes)?))
+            Ok(Appearance(cip::from_bytes(&bytes)?))
         })
     }
 

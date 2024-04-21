@@ -258,7 +258,7 @@ fn prepare_content<C: PreloadedContentAssets>(
         .get(content_assets.catalog_content())
         .expect("No catalog loaded");
 
-    content_assets.set_sprite_sheets_data((&*catalog.content).into());
+    content_assets.set_sprite_sheets_data(catalog.content.clone().into());
     contents.remove(content_assets.catalog_content());
     for sprite_layout in SpriteLayout::iter() {
         sprite_meshes.insert(
