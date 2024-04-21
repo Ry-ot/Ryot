@@ -77,6 +77,15 @@ where
     }
 }
 
+impl<T> From<Vec<T>> for SpriteSheetDataSet
+where
+    T: Into<Option<SpriteSheetData>> + Clone,
+{
+    fn from(content: Vec<T>) -> Self {
+        content.as_slice().into()
+    }
+}
+
 impl SpriteSheetDataSet {
     /// Returns the sprite sheet that contains the given sprite id.
     /// Returns None if the sprite id is not in any of the sprite sheets.

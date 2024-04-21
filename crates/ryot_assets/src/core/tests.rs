@@ -114,7 +114,7 @@ fn sprite_sheet_set_fixture() -> SpriteSheetDataSet {
         }),
     ];
 
-    (&*vec).into()
+    vec.into()
 }
 
 #[rstest]
