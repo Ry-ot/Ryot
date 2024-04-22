@@ -84,10 +84,10 @@ pub fn apply_update(
             continue;
         }
 
-        let (pos, layer, visibility, appearance) = update.new;
+        let (pos, layer, visibility, id_and_group) = update.new;
 
-        // If no appearance is provided, update is ended and the deletion is triggered.
-        let Some(appearance) = appearance else {
+        // If no id and group are provided, update is ended and the deletion is triggered.
+        let Some(id_and_group) = id_and_group else {
             commands
                 .entity(entity)
                 .insert(Deletion::default())
@@ -98,7 +98,7 @@ pub fn apply_update(
 
         commands
             .entity(entity)
-            .insert((pos, layer, appearance, visibility, TileComponent))
+            .insert((pos, layer, id_and_group, visibility, TileComponent))
             .remove::<Deletion>();
 
         update.state.applied = true;
@@ -131,18 +131,18 @@ pub fn persist_update(
         let mut to_draw = vec![];
 
         for update in q_inserted.iter_mut() {
-            let (tile_pos, layer, _, appearance) = update.new;
+            let (tile_pos, layer, _, id_and_group) = update.new;
 
             if update.state.persisted {
                 continue;
             }
 
-            let Some(appearance) = appearance else {
+            let Some(id_and_group) = id_and_group else {
                 continue;
             };
 
             keys.push(tile_pos.get_binary_key());
-            to_draw.push((tile_pos, layer, appearance));
+            to_draw.push((tile_pos, layer, id_and_group));
         }
 
         let item_repository = ItemsFromHeedLmdb::new(lmdb_env.clone());

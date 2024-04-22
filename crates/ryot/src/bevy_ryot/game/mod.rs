@@ -4,29 +4,16 @@ use bevy::prelude::*;
 use core::fmt;
 use ryot_grid::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::marker::PhantomData;
 
 pub mod elevation;
 pub mod tile_flags;
 
-pub struct GamePlugin<C: AppearanceAssets>(PhantomData<C>);
+pub struct GamePlugin;
 
-impl<C: AppearanceAssets> GamePlugin<C> {
-    pub fn new() -> Self {
-        Self(PhantomData)
-    }
-}
-
-impl<C: AppearanceAssets> Default for GamePlugin<C> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<C: AppearanceAssets> Plugin for GamePlugin<C> {
+impl Plugin for GamePlugin {
     fn build(&self, app: &mut App) {
         app.add_event::<LoadObjects>()
-            .add_systems(Update, apply_elevation::<C>)
+            .add_systems(Update, apply_elevation)
             .add_systems(Last, track_position_changes);
     }
 }
@@ -60,17 +47,17 @@ impl GameObjectId {
         matches!(self, Self::None)
     }
 
-    pub fn as_group_and_id(&self) -> Option<(AppearanceGroup, u32)> {
+    pub fn as_group_and_id(&self) -> Option<(EntityType, u32)> {
         match self {
             GameObjectId::None => None,
-            GameObjectId::Object(id) => Some((AppearanceGroup::Object, *id)),
-            GameObjectId::Outfit(id) => Some((AppearanceGroup::Outfit, *id)),
-            GameObjectId::Effect(id) => Some((AppearanceGroup::Effect, *id)),
-            GameObjectId::Missile(id) => Some((AppearanceGroup::Missile, *id)),
+            GameObjectId::Object(id) => Some((EntityType::Object, *id)),
+            GameObjectId::Outfit(id) => Some((EntityType::Outfit, *id)),
+            GameObjectId::Effect(id) => Some((EntityType::Effect, *id)),
+            GameObjectId::Missile(id) => Some((EntityType::Missile, *id)),
         }
     }
 
-    pub fn group(&self) -> Option<AppearanceGroup> {
+    pub fn group(&self) -> Option<EntityType> {
         self.as_group_and_id().map(|(group, _)| group)
     }
 

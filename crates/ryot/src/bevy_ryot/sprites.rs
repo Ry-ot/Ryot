@@ -36,7 +36,7 @@ pub struct LoadedAppearances(pub HashMap<(GameObjectId, FrameGroup), LoadedAppea
 #[derive(Debug, Clone)]
 pub struct LoadedSprite {
     pub sprite_id: u32,
-    pub group: AppearanceGroup,
+    pub group: EntityType,
     pub sprite_sheet: SpriteSheetData,
     pub texture: Handle<Image>,
     pub material: Handle<SpriteMaterial>,
@@ -45,7 +45,7 @@ pub struct LoadedSprite {
 
 impl LoadedSprite {
     pub fn new(
-        group: AppearanceGroup,
+        group: EntityType,
         sprite_id: u32,
         sprite_sheets: &SpriteSheetDataSet,
         textures: &HashMap<String, Handle<Image>>,
@@ -72,7 +72,7 @@ impl LoadedSprite {
 }
 
 pub fn load_sprites<C: ContentAssets>(
-    group: AppearanceGroup,
+    group: EntityType,
     sprite_ids: Vec<u32>,
     content_assets: &Res<C>,
     layouts: &Res<Assets<TextureAtlasLayout>>,
@@ -165,8 +165,8 @@ pub(crate) fn load_sprite_texture<C: ContentAssets>(
     Some(texture)
 }
 
-/// A system that ensures that all entities with an AppearanceDescriptor have a SpriteMaterial mesh bundle.
-pub(crate) fn ensure_appearance_initialized(
+/// A system that ensures that all entities with an GameObjectId have a SpriteMaterial mesh bundle.
+pub(crate) fn initialize_sprite_material(
     mut commands: Commands,
     query: Query<(Entity, Has<Elevation>), (With<GameObjectId>, Without<Handle<SpriteMaterial>>)>,
     #[cfg(feature = "debug")] q_debug: Query<
@@ -179,6 +179,7 @@ pub(crate) fn ensure_appearance_initialized(
             MaterialMesh2dBundle::<SpriteMaterial>::default(),
             SpriteLayout::default(),
         ));
+
         if !has_elevation {
             commands.entity(entity).insert(Elevation::default());
         }
@@ -321,7 +322,7 @@ pub struct LoadAppearanceEvent {
 }
 
 pub(crate) fn process_load_events_system<C: ContentAssets>(
-    content_assets: Res<C>,
+    visual_elements: Res<VisualElements>,
     loaded_appearances: Res<LoadedAppearances>,
     mut events: EventReader<LoadAppearanceEvent>,
 ) -> Option<HashMap<(GameObjectId, FrameGroup), SpriteInfo>> {
@@ -353,9 +354,8 @@ pub(crate) fn process_load_events_system<C: ContentAssets>(
             .iter()
             .filter_map(|(object_id, frame_group)| {
                 let (group, id) = object_id.as_group_and_id()?;
-                let sprite_info = content_assets
-                    .prepared_appearances()
-                    .get_for_group(group, id)?
+                let sprite_info = visual_elements
+                    .get_for_group_and_id(group, id)?
                     .sprites_info
                     .get(*frame_group as usize)?;
 

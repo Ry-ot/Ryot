@@ -17,16 +17,12 @@ game mechanics.
 It provides a major component:
 
 - [ContentAssets](src/bevy_ryot/mod.rs) - A collection of content assets that
-  can be loaded into the game, including appearances.dat, catalog and configs.
+  can be loaded into the game, including catalog and configs.
 
 It also provides some utilities:
 
-- [Appearance](src/bevy_ryot/appearances.rs) - A collection of structs and utilities used to
-  manipulate protobuf based appearances, including [Prost](https://docs.rs/prost-build/latest/prost_build/) generated
-  structs
-  from the appearances.proto file.
 - [Bevy Helpers](src/bevy_ryot) - A collection of helpers that can be used to send async events,
-  load configurations, appearances, sprites and contents as BevyAssets.
+  load configurations, sprites and contents as BevyAssets.
 - [Compression](src/compression.rs) - A compression utility that can be used to compress
   and decompress sprite sheets.
 - [ContentBuilder](src/build/content.rs) - A builder that can be used to build

@@ -1,7 +1,8 @@
 use crate::bevy_ryot::sprites::SPRITE_BASE_SIZE;
-use crate::bevy_ryot::{AppearanceAssets, AppearanceGroup, GameObjectId};
+use crate::bevy_ryot::GameObjectId;
 use bevy::prelude::*;
 use itertools::Itertools;
+use ryot_assets::prelude::{EntityType, VisualElements};
 use ryot_grid::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
@@ -40,13 +41,12 @@ type ElevationFilter = (
     )>,
 );
 
-pub(crate) fn apply_elevation<C: AppearanceAssets>(
-    appearance_assets: Res<C>,
+pub(crate) fn apply_elevation(
+    visual_elements: Res<VisualElements>,
     q_tile: Query<(&TilePosition, &Layer), ElevationFilter>,
     mut q_entities: Query<(&mut Elevation, &GameObjectId, Option<&Visibility>)>,
     map_tiles: Res<MapTiles<Entity>>,
 ) {
-    let appearances = appearance_assets.prepared_appearances();
     for tile in q_tile
         .iter()
         .filter(|(_, layer)| matches!(layer, Layer::Bottom(_)))
@@ -67,8 +67,8 @@ pub(crate) fn apply_elevation<C: AppearanceAssets>(
 
                 let elevation_delta =
                     if visibility.cloned().unwrap_or_default() != Visibility::Hidden {
-                        appearances
-                            .get_for_group(group, id)
+                        visual_elements
+                            .get_for_group_and_id(group, id)
                             .cloned()
                             .map(|app| app.properties.elevation)
                             .unwrap_or(0) as f32
@@ -78,10 +78,10 @@ pub(crate) fn apply_elevation<C: AppearanceAssets>(
                     };
 
                 elevation.elevation = match group {
-                    AppearanceGroup::Object => tile_elevation,
-                    AppearanceGroup::Outfit => tile_elevation,
-                    AppearanceGroup::Effect => 0.,
-                    AppearanceGroup::Missile => 0.,
+                    EntityType::Object => tile_elevation,
+                    EntityType::Outfit => tile_elevation,
+                    EntityType::Effect => 0.,
+                    EntityType::Missile => 0.,
                 };
 
                 tile_elevation + elevation_delta

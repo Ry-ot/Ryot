@@ -203,10 +203,10 @@ fn update_cursor_preview(
         }
 
         match cursor.drawing_state.tool_mode {
-            Some(ToolMode::Draw(appearance)) => {
+            Some(ToolMode::Draw(object_id)) => {
                 commands
                     .entity(entity)
-                    .insert(appearance)
+                    .insert(object_id)
                     .remove::<Handle<ColorMaterial>>();
             }
             Some(ToolMode::Erase) => {
@@ -318,7 +318,7 @@ type CursorBrushPreviewFilter = (With<BrushPreviewTile>, Without<Cursor>);
 /// We never remove the tiles once added, as the cost of keeping them hidden is good enough and
 /// deleting/spawning components can be expensive.
 ///
-/// We always update the preview tiles position, appearance, visibility and sprite color, the
+/// We always update the preview tiles position, object_id, visibility and sprite color, the
 /// first three according to the main cursor definition and the color is always CURSOR_COLOR.
 fn update_cursor_brush_preview(
     brushes: Res<Brushes<DrawingBundle>>,
@@ -332,7 +332,7 @@ fn update_cursor_brush_preview(
         CursorBrushPreviewFilter,
     >,
 ) {
-    let Ok((cursor, cursor_pos, cursor_appearance, cursor_visibility)) = cursor.get_single() else {
+    let Ok((cursor, cursor_pos, cursor_object_id, cursor_visibility)) = cursor.get_single() else {
         return;
     };
 
@@ -349,7 +349,7 @@ fn update_cursor_brush_preview(
     // We first iterate over all the existing brush preview tiles and update them according to
     // the cursor state and the brush preview positions. We do that to avoid spawning new tiles
     // unnecessarily.
-    for (mut tile_pos, mut appearance, mut visibility) in brush_preview_tiles.iter_mut() {
+    for (mut tile_pos, mut object_id, mut visibility) in brush_preview_tiles.iter_mut() {
         // If the drawing_state is disable we are probably interacting with the UI, so we hide the preview.
         if cursor.drawing_state.tool_mode.is_none() {
             *visibility = Visibility::Hidden;
@@ -371,10 +371,10 @@ fn update_cursor_brush_preview(
             continue;
         }
 
-        // Here we update the existing preview tile with the new position, appearance and visibility.
+        // Here we update the existing preview tile with the new position, object id and visibility.
         *visibility = *cursor_visibility;
         *tile_pos = new_pos;
-        *appearance = *cursor_appearance;
+        *object_id = *cursor_object_id;
     }
 
     // We never proceed if the drawing state is disabled, since we don't want to spawn new tiles
@@ -398,7 +398,7 @@ fn update_cursor_brush_preview(
         commands.spawn((
             BrushPreviewTile,
             new_pos,
-            *cursor_appearance,
+            *cursor_object_id,
             *cursor_visibility,
             Layer::from(HudLayers::BrushPreview),
         ));

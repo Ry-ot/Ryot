@@ -34,16 +34,39 @@
 use crate as tibia;
 use ryot_assets::prelude::*;
 
+#[cfg(feature = "bevy")]
+use bevy_utils::HashMap;
+
+#[cfg(not(feature = "bevy"))]
+use std::collections::HashMap;
+
 impl From<tibia::VisualElements> for VisualElements {
     fn from(item: tibia::VisualElements) -> Self {
-        let convert = |item: &tibia::VisualElement| -> VisualElement { item.clone().into() };
-
-        VisualElements {
-            objects: item.objects.iter().map(convert).collect(),
-            outfits: item.outfits.iter().map(convert).collect(),
-            effects: item.effects.iter().map(convert).collect(),
-            missiles: item.missiles.iter().map(convert).collect(),
+        fn process_items(
+            items: &[tibia::VisualElement],
+            entity_type: EntityType,
+            visual_elements: &mut VisualElements,
+        ) {
+            for item in items.iter() {
+                let visual_element: VisualElement = item.clone().into();
+                if visual_element.id == 0 || visual_element.sprites_info.is_empty() {
+                    continue;
+                }
+                visual_elements
+                    .entry(entity_type)
+                    .or_insert(HashMap::<u32, VisualElement>::new())
+                    .insert(visual_element.id, visual_element);
+            }
         }
+
+        let mut visual_elements = VisualElements::default();
+
+        process_items(&item.objects, EntityType::Object, &mut visual_elements);
+        process_items(&item.outfits, EntityType::Outfit, &mut visual_elements);
+        process_items(&item.effects, EntityType::Effect, &mut visual_elements);
+        process_items(&item.missiles, EntityType::Missile, &mut visual_elements);
+
+        visual_elements
     }
 }
 

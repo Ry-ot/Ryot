@@ -5,8 +5,8 @@ pub mod prelude {
     pub use crate::{
         core::{
             visual_elements::{
-                Animation, Category, Flags, FrameGroup, Properties, SpriteInfo, VisualElement,
-                VisualElements,
+                Animation, Category, EntityType, Flags, FrameGroup, Properties, SpriteInfo,
+                VisualElement, VisualElements,
             },
             ContentType,
         },

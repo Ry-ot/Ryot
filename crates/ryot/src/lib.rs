@@ -10,14 +10,11 @@
 //!
 //! It provides a major components:
 //! * [Content](crate::bevy_ryot::ContentAssets) - A collection of content assets that
-//!   can be loaded into the game, including appearances.dat, catalog, sprites and configs.
+//!   can be loaded into the game, including catalog, sprites and configs.
 //!
 //! It also provides some utilities:
-//! * [Appearance](crate::bevy_ryot::Appearance) - A collection of structs and utilities used to
-//!   manipulate protobuf based appearances, including [Prost](https://docs.rs/prost-build/latest/prost_build/) generated structs
-//!   from the appearances.proto file.
 //! * [Bevy Helpers](crate::bevy_ryot) - A collection of helpers that can be used to send async events,
-//!   load configurations, appearances, sprites and contents as BevyAssets.
+//!   load configurations, sprites and contents as BevyAssets.
 //! * [Compression](crate::compression) - A compression utility that can be used to compress
 //!   and decompress sprite sheets.
 //! * [ContentBuilder](crate::build::content) - A builder that can be used to build

@@ -9,18 +9,12 @@ use crate::bevy_ryot::*;
 /// within the game world. It ensures that the flag cache is up-to-date and reflects the latest
 /// flag state of the whole tile, per position. This avoids the need to iterate over each entity
 /// within a tile to check its properties.
-pub struct TileFlagPlugin<C: AppearanceAssets>(PhantomData<C>);
+pub struct TileFlagPlugin;
 
-impl<C: AppearanceAssets> Default for TileFlagPlugin<C> {
-    fn default() -> Self {
-        Self(PhantomData)
-    }
-}
-
-impl<C: AppearanceAssets> Plugin for TileFlagPlugin<C> {
+impl Plugin for TileFlagPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<Cache<TilePosition, TileFlags>>()
-            .add_systems(PostUpdate, update_tile_flag_cache::<C>);
+            .add_systems(PostUpdate, update_tile_flag_cache);
     }
 }
 
@@ -60,7 +54,7 @@ impl TileFlags {
         }
     }
 
-    /// Updates the flags based on the appearance attributes of the tile.
+    /// Updates the flags based on the flags attribute of the asset.
     /// This allows dynamic modification of tile properties based on in-game events or conditions.
     pub fn for_assets_flag(self, flags: Flags) -> Self {
         self.append(TileFlags {
@@ -89,7 +83,7 @@ impl Flag for TileFlags {
 /// Synchronizes the `TileFlags` cache with current game state changes related to visibility and object attributes.
 ///
 /// This system plays a critical role in gameplay mechanics by dynamically updating tile properties based on
-/// visibility changes and appearance attributes defined in game objects. It directly affects how entities interact
+/// visibility changes and flags attributes defined in game objects. It directly affects how entities interact
 /// with the game world, particularly in terms of navigation and line-of-sight calculations.
 ///
 /// The function leverages a cache to store `TileFlags` for each tile position, significantly optimizing
@@ -100,8 +94,8 @@ impl Flag for TileFlags {
 /// and mechanics, enhancing the overall gameplay experience.
 ///
 /// Run as part of [`CacheSystems::UpdateCache`].
-pub fn update_tile_flag_cache<C: AppearanceAssets>(
-    appearance_assets: Res<C>,
+pub fn update_tile_flag_cache(
+    visual_elements: Res<VisualElements>,
     map_tiles: Res<MapTiles<Entity>>,
     mut cache: ResMut<Cache<TilePosition, TileFlags>>,
     q_updated_entities: Query<
@@ -114,8 +108,6 @@ pub fn update_tile_flag_cache<C: AppearanceAssets>(
     >,
     q_object_and_visibility: Query<(&GameObjectId, Option<&Visibility>, Option<&TileFlags>)>,
 ) {
-    let appearances = appearance_assets.prepared_appearances();
-
     for (previous_pos, new_pos) in q_updated_entities.iter() {
         let previous_pos = match previous_pos {
             Some(previous_pos) => *previous_pos,
@@ -154,13 +146,10 @@ pub fn update_tile_flag_cache<C: AppearanceAssets>(
 
                         flags = object_id
                             .as_group_and_id()
-                            .and_then(|(group, id)| appearances.get_for_group(group, id))
-                            .map(|appearance| appearance.flags)
+                            .and_then(|(group, id)| visual_elements.get_for_group_and_id(group, id))
+                            .map(|visual_element| visual_element.flags)
                             .filter(|&flags| flags != Flags::default())
-                            .map_or_else(
-                                || flags,
-                                |appearance_flags| flags.for_assets_flag(appearance_flags),
-                            );
+                            .map_or_else(|| flags, |a_flags| flags.for_assets_flag(a_flags));
 
                         flags
                     }),

@@ -19,7 +19,25 @@ rustdoc-args = ["-Zunstable-options", "--cfg", "docsrs"]
 all-features = true
 
 [features]
-default = []
+default = ["bevy"]
+
+bevy = [
+    "dep:bevy_app",
+    "dep:bevy_asset",
+    "bevy_utils",
+]
+
+[dependencies.bevy_app]
+version = "0.13"
+optional = true
+
+[dependencies.bevy_asset]
+version = "0.13"
+optional = true
+
+[dependencies.bevy_utils]
+version = "0.13"
+optional = true
 
 [dependencies]
 ryot_assets = { path = "../ryot_assets", version = "0.2.0" }
