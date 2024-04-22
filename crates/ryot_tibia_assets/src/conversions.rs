@@ -34,12 +34,6 @@
 use crate as tibia;
 use ryot_assets::prelude::*;
 
-#[cfg(feature = "bevy")]
-use bevy_utils::HashMap;
-
-#[cfg(not(feature = "bevy"))]
-use std::collections::HashMap;
-
 impl From<tibia::VisualElements> for VisualElements {
     fn from(item: tibia::VisualElements) -> Self {
         fn process_items(

@@ -3,7 +3,7 @@ use crate::bevy_ryot::GameObjectId;
 use bevy::prelude::*;
 use itertools::Itertools;
 use ryot_assets::prelude::{EntityType, VisualElements};
-use ryot_grid::prelude::*;
+use ryot_tiled::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
 

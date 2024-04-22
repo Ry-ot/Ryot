@@ -1,6 +1,5 @@
-use crate::layer::*;
-use crate::position::*;
-use glam::Vec2;
+use crate::prelude::*;
+use glam::{Vec2, Vec3};
 
 #[cfg(feature = "bevy")]
 use bevy_math::bounding::{Aabb3d, BoundingSphere};

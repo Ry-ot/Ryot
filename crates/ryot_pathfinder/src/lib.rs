@@ -8,7 +8,7 @@ use std::time::Duration;
 pub mod components;
 pub mod systems;
 
-#[cfg(feature = "tiled")]
+#[cfg(feature = "ryot_tiled")]
 pub mod tiled;
 
 pub mod prelude {
@@ -60,4 +60,5 @@ impl PathableApp for App {
 }
 
 #[cfg(test)]
+#[cfg(feature = "ryot_tiled")]
 mod bench;

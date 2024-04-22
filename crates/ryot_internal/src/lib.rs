@@ -9,8 +9,8 @@ pub mod core {
     pub use ryot_core::*;
 }
 
-pub mod grid {
-    pub use ryot_grid::*;
+pub mod tiled {
+    pub use ryot_tiled::*;
 }
 
 #[cfg(feature = "ryot_pathfinder")]

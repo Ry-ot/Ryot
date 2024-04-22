@@ -5,7 +5,7 @@ use crate::position::SpriteMovement;
 use bevy::prelude::*;
 use bevy::render::view::{check_visibility, VisibilitySystems, VisibleEntities};
 use ryot_assets::prelude::FrameGroup;
-use ryot_grid::prelude::*;
+use ryot_tiled::prelude::*;
 
 mod brushes;
 pub use brushes::*;

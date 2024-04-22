@@ -1,5 +1,4 @@
-use crate::layer::*;
-use crate::position::TilePosition;
+use crate::prelude::*;
 
 #[cfg(feature = "bevy")]
 use bevy_ecs::prelude::*;

@@ -4,7 +4,7 @@ use bevy::window::PrimaryWindow;
 use bevy_stroked_text::StrokedText;
 use color_eyre::eyre::eyre;
 use glam::Vec2;
-use ryot_grid::prelude::*;
+use ryot_tiled::prelude::*;
 
 pub fn update_cursor_pos<C: Component>(
     In(camera_info): In<Option<(Entity, Vec2)>>,

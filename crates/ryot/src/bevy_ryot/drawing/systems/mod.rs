@@ -5,7 +5,7 @@
 use crate::prelude::drawing::TileComponent;
 use crate::prelude::{drawing::*, *};
 use bevy::prelude::*;
-use ryot_grid::prelude::*;
+use ryot_tiled::prelude::*;
 
 mod deletion;
 pub use deletion::*;

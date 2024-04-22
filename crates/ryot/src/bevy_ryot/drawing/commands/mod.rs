@@ -15,7 +15,7 @@ use crate::bevy_ryot::drawing::DrawingBundle;
 use crate::bevy_ryot::{GameObjectBundle, GameObjectId};
 use bevy::prelude::*;
 use ryot_assets::prelude::FrameGroup;
-use ryot_grid::prelude::*;
+use ryot_tiled::prelude::*;
 
 mod update;
 pub use update::*;

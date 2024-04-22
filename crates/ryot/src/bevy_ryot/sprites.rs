@@ -11,7 +11,7 @@ use bevy::render::render_resource::{AsBindGroup, ShaderRef};
 use bevy::sprite::{Material2d, MaterialMesh2dBundle, Mesh2dHandle};
 use bevy::utils::{HashMap, HashSet};
 use itertools::Itertools;
-use ryot_grid::prelude::*;
+use ryot_tiled::prelude::*;
 use std::path::PathBuf;
 
 #[cfg(feature = "debug")]

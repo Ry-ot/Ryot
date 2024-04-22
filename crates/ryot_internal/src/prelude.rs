@@ -1,6 +1,6 @@
 pub use ryot_assets::prelude::*;
 pub use ryot_core::prelude::*;
-pub use ryot_grid::prelude::*;
+pub use ryot_tiled::prelude::*;
 
 #[cfg(feature = "ryot_pathfinder")]
 pub use ryot_pathfinder::prelude::*;

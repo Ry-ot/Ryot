@@ -3,7 +3,7 @@ use crate::prelude::*;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use rand::Rng;
-use ryot_grid::prelude::*;
+use ryot_tiled::prelude::*;
 use std::time::Duration;
 
 use self::sprites::{

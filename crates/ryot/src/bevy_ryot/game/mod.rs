@@ -2,7 +2,7 @@ use self::elevation::{apply_elevation, Elevation};
 use crate::prelude::*;
 use bevy::prelude::*;
 use core::fmt;
-use ryot_grid::prelude::*;
+use ryot_tiled::prelude::*;
 use serde::{Deserialize, Serialize};
 
 pub mod elevation;

@@ -1,10 +1,8 @@
 use derive_more::{Add, Sub};
-use glam::{IVec3, Vec2, Vec3};
+use glam::{IVec3, Vec2};
 use std::fmt;
 use std::fmt::Formatter;
 use std::ops::{Deref, DerefMut};
-
-use crate::tile_size;
 
 #[cfg(feature = "bevy")]
 use bevy_ecs::prelude::*;

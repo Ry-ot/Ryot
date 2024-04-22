@@ -4,7 +4,7 @@ use crate::bevy_ryot::sprites::SpriteMaterial;
 #[cfg(feature = "bevy")]
 use bevy::prelude::*;
 use glam::Vec2;
-use ryot_grid::prelude::*;
+use ryot_tiled::prelude::*;
 
 use ryot_assets::prelude::SpriteLayout;
 
