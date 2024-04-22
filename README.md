@@ -14,22 +14,11 @@ Ryot is design to integrate with OpenTibia concepts, facilitating the creation
 of games that intend to use Tibia-like contents/assets formats, as well as some
 game mechanics.
 
-It provides a major component:
-
-- [ContentAssets](https://github.com/opentibiabr/Ryot/blob/main/ryot/src/bevy_ryot/mod.rs) - A collection of content
-  assets that
-  can be loaded into the game, including appearances.dat, catalog and configs.
-
 It also provides some utilities:
 
-- [Appearance](https://github.com/opentibiabr/Ryot/blob/main/ryot/src/bevy_ryot/appearances.rs) - A collection of
-  structs and utilities used to
-  manipulate protobuf based appearances, including [Prost](https://docs.rs/prost-build/latest/prost_build/) generated
-  structs
-  from the appearances.proto file.
 - [Bevy Helpers](https://github.com/opentibiabr/Ryot/tree/main/ryot/src/bevy_ryot) - A collection of helpers that can be
   used to send async events,
-  load configurations, appearances, sprites and contents as BevyAssets.
+  load configurations, sprites and contents as BevyAssets.
 - [Compression](https://github.com/opentibiabr/Ryot/blob/main/ryot/src/compression.rs) - A compression utility that can
   be used to compress
   and decompress sprite sheets.

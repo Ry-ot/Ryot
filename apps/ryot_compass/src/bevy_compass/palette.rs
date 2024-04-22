@@ -78,12 +78,12 @@ impl Palette {
     }
 }
 
-fn setup_categories<C: ContentAssets>(content_assets: Res<C>, mut palettes: ResMut<Palette>) {
-    let Some(objects) = content_assets
-        .prepared_appearances()
-        .get_group(AppearanceGroup::Object)
-    else {
-        warn!("Appearances were not properly prepared");
+fn setup_categories<C: ContentAssets>(
+    visual_elements: Res<VisualElements>,
+    mut palettes: ResMut<Palette>,
+) {
+    let Some(objects) = visual_elements.get_all_for_group(EntityType::Object) else {
+        warn!("Visual elements were not properly prepared");
         return;
     };
 

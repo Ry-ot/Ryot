@@ -22,11 +22,17 @@ all-features = true
 default = ["bevy"]
 
 bevy = [
+    "dep:bevy_asset",
     "dep:bevy_ecs",
     "dep:bevy_reflect",
+    "dep:bevy_utils",
 ]
 
 debug = []
+
+[dependencies.bevy_asset]
+version = "0.13"
+optional = true
 
 [dependencies.bevy_ecs]
 version = "0.13"
@@ -36,6 +42,10 @@ optional = true
 [dependencies.bevy_reflect]
 version = "0.13"
 features = ["bevy"]
+optional = true
+
+[dependencies.bevy_utils]
+version = "0.13"
 optional = true
 
 [dependencies]

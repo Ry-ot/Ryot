@@ -52,9 +52,9 @@ impl CommandState {
 /// drawing entities. Differently from DrawingBundle, this type is not a bundle, so it doesn't
 /// get added to the ECS directly.
 ///
-/// It has an optional AppearanceDescriptor, so that it can be used to represent the old state
-/// of the entity, when reverting a command. An empty appearance means that the entity is freshly
-/// created or should be deleted, depending on the context used.
+/// It has an optional FrameGroup, so that it can be used to represent the old state
+/// of the entity, when reverting a command. An empty (objectId, group) means that the entity
+/// is freshly created or should be deleted, depending on the context used.
 pub type DrawingInfo = (
     TilePosition,
     Layer,

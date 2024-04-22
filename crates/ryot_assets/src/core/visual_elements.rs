@@ -1,9 +1,37 @@
-#[derive(Clone, PartialEq, Default, Debug)]
-pub struct VisualElements {
-    pub objects: Vec<VisualElement>,
-    pub outfits: Vec<VisualElement>,
-    pub effects: Vec<VisualElement>,
-    pub missiles: Vec<VisualElement>,
+use derive_more::{Deref, DerefMut};
+
+#[cfg(feature = "bevy")]
+use bevy_utils::HashMap;
+
+#[cfg(not(feature = "bevy"))]
+use std::collections::HashMap;
+
+#[derive(Hash, Eq, Default, PartialEq, Debug, Copy, Clone)]
+#[cfg_attr(feature = "bevy", derive(bevy_reflect::Reflect))]
+#[repr(usize)]
+pub enum EntityType {
+    #[default]
+    Object,
+    Outfit,
+    Effect,
+    Missile,
+}
+
+#[derive(Clone, PartialEq, Default, Debug, Deref, DerefMut)]
+#[cfg_attr(
+    feature = "bevy",
+    derive(bevy_ecs::prelude::Resource, bevy_reflect::TypePath, bevy_asset::Asset)
+)]
+pub struct VisualElements(HashMap<EntityType, HashMap<u32, VisualElement>>);
+
+impl VisualElements {
+    pub fn get_all_for_group(&self, group: EntityType) -> Option<&HashMap<u32, VisualElement>> {
+        self.get(&group)
+    }
+
+    pub fn get_for_group_and_id(&self, group: EntityType, id: u32) -> Option<&VisualElement> {
+        self.get(&group)?.get(&id)
+    }
 }
 
 #[derive(Clone, PartialEq, Default, Debug)]

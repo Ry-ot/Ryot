@@ -1,7 +1,7 @@
 //! Bevy plugins and utilities for RyOT games.
 //!
 //! This module is intended to be used as a library dependency for RyOT games.
-//! It provides common ways of dealing with OT content, such as loading sprites and appearances,
+//! It provides common ways of dealing with OT content, such as loading sprites,
 //! configuring the game, and handling asynchronous events.
 use self::sprites::SpriteMaterial;
 #[cfg(feature = "debug")]
@@ -25,8 +25,8 @@ use ryot_grid::prelude::*;
 use std::marker::PhantomData;
 use strum::IntoEnumIterator;
 
-mod appearances;
-pub use appearances::*;
+mod visual_elements;
+use visual_elements::prepare_visual_elements;
 
 pub mod camera;
 
@@ -44,6 +44,7 @@ pub mod perspective;
 
 pub(crate) mod sprite_animations;
 
+use crate::prelude::tibia::asset_loader::TibiaAssetsPlugin;
 use crate::prelude::*;
 pub use sprite_animations::{toggle_sprite_animation, AnimationDuration};
 
@@ -84,25 +85,17 @@ pub trait PreloadedContentAssets: PreloadedAssets + ContentAssets {}
 
 /// A trait that represents assets that are preloaded within ryot.
 /// It contains preloaded assets and mutable preparation methods for the ContentAssets.
-pub trait PreloadedAssets:
-    Resource + AppearanceAssets + AssetCollection + Send + Sync + 'static
-{
+pub trait PreloadedAssets: Resource + AssetCollection + Send + Sync + 'static {
     fn catalog_content(&self) -> Handle<Catalog>;
     fn set_sprite_sheets_data(&mut self, sprite_sheet_set: SpriteSheetDataSet);
 }
 
 /// The main ContentAssets of a Ryot game, is prepared by preparer systems
 /// during the loading process and is used by the game to access the content.
-pub trait ContentAssets: Resource + AppearanceAssets + Send + Sync + 'static {
+pub trait ContentAssets: Resource + Send + Sync + 'static {
     fn sprite_sheet_data_set(&self) -> Option<&SpriteSheetDataSet>;
     fn get_texture(&self, file: &str) -> Option<Handle<Image>>;
     fn get_atlas_layout(&self, layout: SpriteLayout) -> Option<Handle<TextureAtlasLayout>>;
-}
-
-pub trait AppearanceAssets: Resource + AssetCollection + Send + Sync + 'static {
-    fn appearances(&self) -> Handle<Appearance>;
-    fn prepared_appearances_mut(&mut self) -> &mut PreparedAppearances;
-    fn prepared_appearances(&self) -> &PreparedAppearances;
 }
 
 /// A plugin that registers implementations of ContentAssets and loads them.
@@ -123,14 +116,15 @@ macro_rules! content_plugin {
     };
 }
 
-content_plugin!(BaseContentPlugin, AppearanceAssets);
+content_plugin!(BaseContentPlugin, AssetCollection);
 
-impl<C: AppearanceAssets + Default> Plugin for BaseContentPlugin<C> {
+impl<C: AssetCollection + Default> Plugin for BaseContentPlugin<C> {
     fn build(&self, app: &mut App) {
         app.init_state::<InternalContentState>()
             .init_resource::<C>()
+            .init_resource::<VisualElements>()
             .register_type::<TilePosition>()
-            .add_plugins(AppearanceAssetPlugin)
+            .add_plugins(TibiaAssetsPlugin)
             .add_loading_state(
                 LoadingState::new(InternalContentState::LoadingContent)
                     .continue_to_state(InternalContentState::PreparingContent)
@@ -138,19 +132,19 @@ impl<C: AppearanceAssets + Default> Plugin for BaseContentPlugin<C> {
             )
             .add_systems(
                 OnEnter(InternalContentState::PreparingContent),
-                prepare_appearances::<C>,
+                prepare_visual_elements,
             );
     }
 }
 
-content_plugin!(MetaContentPlugin, AppearanceAssets);
+content_plugin!(MetaContentPlugin, AssetCollection);
 
-impl<C: AppearanceAssets + Default> Plugin for MetaContentPlugin<C> {
+impl<C: AssetCollection + Default> Plugin for MetaContentPlugin<C> {
     fn build(&self, app: &mut App) {
         app.add_plugins(BaseContentPlugin::<C>::default())
             .add_systems(
                 OnEnter(InternalContentState::PreparingContent),
-                transition_to_ready.after(prepare_appearances::<C>),
+                transition_to_ready.after(prepare_visual_elements),
             );
     }
 }
@@ -188,7 +182,7 @@ impl<C: PreloadedContentAssets + Default> Plugin for VisualContentPlugin<C> {
                 OnEnter(InternalContentState::PreparingContent),
                 (prepare_content::<C>, transition_to_ready)
                     .chain()
-                    .after(prepare_appearances::<C>),
+                    .after(prepare_visual_elements),
             )
             .init_resource::<sprite_animations::SpriteAnimationEnabled>()
             .init_resource::<sprite_animations::SynchronizedAnimationTimers>()
@@ -205,7 +199,7 @@ impl<C: PreloadedContentAssets + Default> Plugin for VisualContentPlugin<C> {
                         .pipe(sprites::store_loaded_appearances_system)
                         .run_if(on_event::<sprites::LoadAppearanceEvent>())
                         .in_set(SpriteSystems::Load),
-                    sprites::ensure_appearance_initialized.in_set(SpriteSystems::Initialize),
+                    sprites::initialize_sprite_material.in_set(SpriteSystems::Initialize),
                     sprites::update_sprite_system.in_set(SpriteSystems::Update),
                     sprite_animations::initialize_animation_sprite_system
                         .in_set(AnimationSystems::Initialize),

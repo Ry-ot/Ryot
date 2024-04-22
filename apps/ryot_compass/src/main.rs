@@ -60,7 +60,7 @@ fn main() {
     let mut app = App::new();
 
     app.add_plugins((
-        GamePlugin::<CompassContentAssets>::default(),
+        GamePlugin,
         InputPlugin,
         AppPlugin,
         UiPlugin::<CompassContentAssets>::default(),

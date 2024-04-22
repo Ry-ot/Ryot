@@ -73,6 +73,8 @@ use ryot_assets::prelude as ryot;
 
 include!(concat!(env!("OUT_DIR"), "/tibia.rs"));
 
+#[cfg(feature = "bevy")]
+pub mod asset_loader;
 pub mod conversions;
 
 pub fn from_bytes(bytes: &[u8]) -> Result<ryot::VisualElements, DecodeError> {

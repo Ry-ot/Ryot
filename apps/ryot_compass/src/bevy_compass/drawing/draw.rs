@@ -16,7 +16,7 @@ pub fn handle_drawing_input<C: ContentAssets>(
     mut commands: Commands,
     mut tiles: ResMut<MapTiles<Entity>>,
     mut command_history: ResMut<CommandHistory>,
-    content_assets: Res<C>,
+    visual_elements: Res<VisualElements>,
     brushes: Res<Brushes<DrawingBundle>>,
     q_current: Query<
         (&Visibility, &GameObjectId, Option<&FrameGroup>),
@@ -25,7 +25,7 @@ pub fn handle_drawing_input<C: ContentAssets>(
     cursor_query: Query<(Option<&GameObjectId>, &TilePosition, &Cursor)>,
 ) {
     get_cursor_inputs(
-        &content_assets,
+        &visual_elements,
         &brushes,
         &cursor_query,
         |cursor: &Cursor, bundles: Vec<DrawingBundle>| match cursor.drawing_state.tool_mode {
@@ -50,13 +50,13 @@ pub fn handle_drawing_input<C: ContentAssets>(
     );
 }
 
-fn get_cursor_inputs<C: ContentAssets, F: QueryFilter>(
-    content_assets: &Res<C>,
+fn get_cursor_inputs<F: QueryFilter>(
+    visual_elements: &Res<VisualElements>,
     brushes: &Res<Brushes<DrawingBundle>>,
     cursor_query: &Query<(Option<&GameObjectId>, &TilePosition, &Cursor), F>,
     mut callback: impl FnMut(&Cursor, Vec<DrawingBundle>),
 ) {
-    if content_assets.sprite_sheet_data_set().is_none() {
+    if visual_elements.is_empty() {
         warn!("Trying to draw a sprite without any loaded content");
         return;
     };
@@ -68,14 +68,11 @@ fn get_cursor_inputs<C: ContentAssets, F: QueryFilter>(
                 let Some((group, id)) = object_id.as_group_and_id() else {
                     continue;
                 };
-                let Some(prepared_appearance) = content_assets
-                    .prepared_appearances()
-                    .get_for_group(group, id)
-                else {
+                let Some(visual_element) = visual_elements.get_for_group_and_id(group, id) else {
                     continue;
                 };
 
-                (*object_id, Layer::from(prepared_appearance.category))
+                (*object_id, Layer::from(visual_element.category))
             }
         };
 

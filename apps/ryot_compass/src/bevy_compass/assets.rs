@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use bevy_asset_loader::asset_collection::AssetCollection;
-use ryot::bevy_ryot::{Appearance, Catalog, ContentAssets, PreparedAppearances};
+use ryot::bevy_ryot::Catalog;
 use ryot::prelude::*;
 
 #[derive(AssetCollection, Resource, Default)]
@@ -13,10 +13,9 @@ pub struct CompassContentAssets {
 
     // Config related handles
     #[asset(path = "appearances.dat")]
-    appearances: Handle<Appearance>,
+    _appearances: Handle<VisualElements>,
     #[asset(path = "catalog-content.json")]
     catalog_content: Handle<Catalog>,
-    prepared_appearances: PreparedAppearances,
 
     // Image related handles
     #[asset(path = "ryot_mascot.png")]
@@ -47,20 +46,6 @@ impl ContentAssets for CompassContentAssets {
 
     fn get_atlas_layout(&self, layout: SpriteLayout) -> Option<Handle<TextureAtlasLayout>> {
         self.atlas_layout.get(layout as usize).cloned()
-    }
-}
-
-impl AppearanceAssets for CompassContentAssets {
-    fn appearances(&self) -> Handle<Appearance> {
-        self.appearances.clone_weak()
-    }
-
-    fn prepared_appearances_mut(&mut self) -> &mut PreparedAppearances {
-        &mut self.prepared_appearances
-    }
-
-    fn prepared_appearances(&self) -> &PreparedAppearances {
-        &self.prepared_appearances
     }
 }
 

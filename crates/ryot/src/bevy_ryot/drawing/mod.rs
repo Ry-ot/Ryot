@@ -48,7 +48,7 @@ pub struct TileComponent;
 
 /// A bundle that represents an entity drawn to a location (Layer + TilePosition) in the map.
 /// The DrawingBundle is used to create and update the entities that are drawn on the map.
-/// It holds the layer, the tile position, the appearance descriptor and the visibility of the entity.
+/// It holds the layer, the tile position, the object id, the frame group and the visibility of the entity.
 ///
 /// Visibility is mainly a sprite component, however, for performance reasons, we use the sprite
 /// visibility to control the visibility of the tile content. This way, we can reduce the amount of
