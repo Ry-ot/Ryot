@@ -2,7 +2,6 @@ use crate::{gui_is_not_in_use, toggle_grid, CompassAction};
 use bevy::prelude::*;
 use leafwing_input_manager::common_conditions::*;
 use ryot::prelude::{drawing::*, *};
-use std::marker::PhantomData;
 
 mod commands;
 pub use commands::*;
@@ -23,21 +22,9 @@ pub use brush::*;
 /// It is also responsible for keeping track of a command history, used to perform undo/redo actions.
 /// The plugin also registers the MapTiles resource, that keeps a map between position and layer in the
 /// map and the entity that represents it.
-pub struct DrawingPlugin<C: ContentAssets>(PhantomData<C>);
+pub struct DrawingPlugin;
 
-impl<C: ContentAssets> DrawingPlugin<C> {
-    pub fn new() -> Self {
-        Self(PhantomData)
-    }
-}
-
-impl<C: ContentAssets> Default for DrawingPlugin<C> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
+impl Plugin for DrawingPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<CommandHistory>()
             .init_resource::<MapTiles<Entity>>()
@@ -48,7 +35,7 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
                 (
                     on_hold_every!(undo.map(drop), CompassAction::Undo, 100),
                     on_hold_every!(redo.map(drop), CompassAction::Redo, 100),
-                    on_hold_every!(handle_drawing_input::<C>, CompassAction::Draw, 100),
+                    on_hold_every!(handle_drawing_input, CompassAction::Draw, 100),
                     on_hold_every!(toggle_grid, CompassAction::ToggleGrid, 750),
                     on_hold_every!(toggle_deletion, CompassAction::ToggleDeletion, 750),
                     on_hold_every!(change_brush_shape, CompassAction::ChangeBrush, 250),
@@ -68,7 +55,7 @@ impl<C: ContentAssets> Plugin for DrawingPlugin<C> {
             )
             .add_systems(
                 OnEnter(InternalContentState::Ready),
-                spawn_grid::<C>(Color::WHITE),
+                spawn_grid(Color::WHITE),
             );
     }
 }

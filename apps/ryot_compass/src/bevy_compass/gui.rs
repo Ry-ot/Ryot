@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use crate::{
     draw_palette_bottom_panel, draw_palette_items, draw_palette_picker, toggle_grid, CompassAction,
     Cursor, CursorCommand, InputType, OptionalPlugin, Palette, PaletteState, ToolMode,
@@ -19,7 +17,7 @@ use ryot::prelude::*;
 use ryot::{
     bevy_ryot::{
         drawing::{Brushes, DrawingBundle},
-        ContentAssets, GridView, InternalContentState,
+        GridView, InternalContentState,
     },
     include_svg,
 };
@@ -42,15 +40,9 @@ const GRID_ICON: egui::ImageSource = include_svg!(
     "##
 );
 
-pub struct UiPlugin<C: ContentAssets>(PhantomData<C>);
+pub struct UiPlugin;
 
-impl<C: ContentAssets> Default for UiPlugin<C> {
-    fn default() -> Self {
-        Self(PhantomData)
-    }
-}
-
-impl<C: ContentAssets> Plugin for UiPlugin<C> {
+impl Plugin for UiPlugin {
     fn build(&self, app: &mut App) {
         app.add_optional_plugin(EguiPlugin)
             .init_resource::<UiState>()
@@ -59,7 +51,7 @@ impl<C: ContentAssets> Plugin for UiPlugin<C> {
             .add_systems(
                 Update,
                 (
-                    ui_menu_system::<C>,
+                    ui_menu_system,
                     ui_dock_system,
                     resize_camera_viewport_system.map(drop),
                 )
@@ -73,13 +65,13 @@ impl<C: ContentAssets> Plugin for UiPlugin<C> {
 }
 
 #[allow(clippy::too_many_arguments)]
-fn ui_menu_system<C: ContentAssets>(
+fn ui_menu_system(
     mut contexts: Query<&mut EguiContext>,
     brushes: Res<Brushes<DrawingBundle>>,
     q_grid: Query<&mut Visibility, With<GridView>>,
     cursor_query: Query<&Cursor>,
     mut cursor_events_writer: EventWriter<CursorCommand>,
-    #[cfg(not(target_arch = "wasm32"))] content_assets: Res<C>,
+    #[cfg(not(target_arch = "wasm32"))] sprite_sheets: Res<SpriteSheetDataSet>,
     #[cfg(not(target_arch = "wasm32"))] mut exit: EventWriter<AppExit>,
     #[cfg(not(target_arch = "wasm32"))] mut map_export_sender: EventWriter<ExportMap>,
     #[cfg(not(target_arch = "wasm32"))] load_map_sender: Res<EventSender<LoadMap>>,
@@ -104,7 +96,7 @@ fn ui_menu_system<C: ContentAssets>(
                 // Temporarily apply the style
                 ui.set_style(style);
 
-                let is_content_loaded = content_assets.sprite_sheet_data_set().is_some();
+                let is_content_loaded = !sprite_sheets.is_empty();
 
                 egui::menu::menu_button(ui, "File", |ui| {
                     if ui

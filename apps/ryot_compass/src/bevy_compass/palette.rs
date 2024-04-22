@@ -1,7 +1,6 @@
 use crate::{
     get_egui_parameters_for_texture, CompassAction, CursorCommand, PaletteState, TilesetCategory,
 };
-use bevy::asset::Assets;
 use bevy::log::warn;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
@@ -9,33 +8,20 @@ use bevy_egui::EguiPlugin;
 use leafwing_input_manager::common_conditions::action_just_pressed;
 use ryot::bevy_ryot::sprites::{LoadAppearanceEvent, LoadedAppearances};
 use ryot::prelude::*;
-use std::marker::PhantomData;
 
-pub struct PalettePlugin<C: ContentAssets>(PhantomData<C>);
+pub struct PalettePlugin;
 
-impl<C: ContentAssets> PalettePlugin<C> {
-    pub fn new() -> Self {
-        Self(PhantomData)
-    }
-}
-
-impl<C: ContentAssets> Default for PalettePlugin<C> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<C: ContentAssets> Plugin for PalettePlugin<C> {
+impl Plugin for PalettePlugin {
     fn build(&self, app: &mut App) {
         app.add_optional_plugin(EguiPlugin)
             .init_resource::<Palette>()
             .init_resource::<PaletteState>()
-            .add_systems(OnEnter(InternalContentState::Ready), setup_categories::<C>)
+            .add_systems(OnEnter(InternalContentState::Ready), setup_categories)
             .add_systems(
                 Update,
                 (
                     clear_selection.run_if(action_just_pressed(CompassAction::ClearSelection)),
-                    (update_palette_category::<C>, update_palette_items::<C>).chain(),
+                    (update_palette_category, update_palette_items).chain(),
                 )
                     .run_if(in_state(InternalContentState::Ready)),
             );
@@ -78,10 +64,7 @@ impl Palette {
     }
 }
 
-fn setup_categories<C: ContentAssets>(
-    visual_elements: Res<VisualElements>,
-    mut palettes: ResMut<Palette>,
-) {
+fn setup_categories(visual_elements: Res<VisualElements>, mut palettes: ResMut<Palette>) {
     let Some(objects) = visual_elements.get_all_for_group(EntityType::Object) else {
         warn!("Visual elements were not properly prepared");
         return;
@@ -92,10 +75,7 @@ fn setup_categories<C: ContentAssets>(
     });
 }
 
-pub fn update_palette_category<C: ContentAssets>(
-    palettes: Res<Palette>,
-    mut palette_state: ResMut<PaletteState>,
-) {
+pub fn update_palette_category(palettes: Res<Palette>, mut palette_state: ResMut<PaletteState>) {
     if palettes.is_empty() {
         warn!("Cannot set category: palette is still empty");
         return;
@@ -114,10 +94,9 @@ pub fn update_palette_category<C: ContentAssets>(
     );
 }
 
-pub fn update_palette_items<C: ContentAssets>(
+pub fn update_palette_items(
     palettes: Res<Palette>,
-    content_assets: Res<C>,
-    texture_atlases: Res<Assets<TextureAtlasLayout>>,
+    texture_atlases: Res<TextureAtlasLayouts>,
     loaded_appearances: Res<LoadedAppearances>,
     mut palette_state: ResMut<PaletteState>,
     mut events: EventWriter<LoadAppearanceEvent>,
@@ -166,8 +145,7 @@ pub fn update_palette_items<C: ContentAssets>(
         let Some(sprite) = appearance.sprites.first() else {
             return;
         };
-        let Some((rect_vec2, uv)) =
-            get_egui_parameters_for_texture::<C>(sprite, &content_assets, &texture_atlases)
+        let Some((rect_vec2, uv)) = get_egui_parameters_for_texture(sprite, &texture_atlases)
         else {
             return;
         };

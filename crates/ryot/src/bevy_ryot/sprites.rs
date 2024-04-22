@@ -71,21 +71,21 @@ impl LoadedSprite {
     }
 }
 
-pub fn load_sprites<C: ContentAssets>(
+pub fn load_sprites(
     group: EntityType,
     sprite_ids: Vec<u32>,
-    content_assets: &Res<C>,
-    layouts: &Res<Assets<TextureAtlasLayout>>,
+    sprite_sheets: &Res<SpriteSheetDataSet>,
+    layouts: &Res<TextureAtlasLayouts>,
     sprite_meshes: &Res<SpriteMeshes>,
     materials: &mut ResMut<Assets<SpriteMaterial>>,
     asset_server: &Res<AssetServer>,
 ) -> Vec<LoadedSprite> {
-    let Some(sprite_sheets) = content_assets.sprite_sheet_data_set() else {
+    if sprite_sheets.is_empty() {
         warn!("No sprite sheets loaded");
         return vec![];
     };
 
-    load_sprite_textures(sprite_ids, content_assets, asset_server, sprite_sheets)
+    load_sprite_textures(sprite_ids, asset_server, sprite_sheets)
         .iter()
         .filter_map(|(sprite_id, texture)| {
             let Some(sprite_sheet) = sprite_sheets.get_by_sprite_id(*sprite_id) else {
@@ -93,12 +93,9 @@ pub fn load_sprites<C: ContentAssets>(
                 return None;
             };
 
-            let layout = content_assets
-                .get_atlas_layout(sprite_sheet.layout)
-                .unwrap_or_default();
             let layout = layouts
-                .get(&layout)
-                .unwrap_or_else(|| panic!("Layout not found: {:?}", layout));
+                .get(sprite_sheet.layout as usize)
+                .unwrap_or_else(|| panic!("Layout not found: {:?}", sprite_sheet.layout));
             let Some(mesh_handle) = sprite_meshes.get(&sprite_sheet.layout) else {
                 panic!("Mesh for sprite layout {:?} not found", sprite_sheet.layout);
             };
@@ -125,24 +122,22 @@ pub fn load_sprites<C: ContentAssets>(
         .collect()
 }
 
-pub(crate) fn load_sprite_textures<C: ContentAssets>(
+pub(crate) fn load_sprite_textures(
     sprite_ids: Vec<u32>,
-    content_assets: &Res<C>,
     asset_server: &Res<AssetServer>,
     sprite_sheets: &SpriteSheetDataSet,
 ) -> Vec<(u32, Handle<Image>)> {
     sprite_ids
         .iter()
         .filter_map(|sprite_id| {
-            load_sprite_texture(*sprite_id, content_assets, asset_server, sprite_sheets)
+            load_sprite_texture(*sprite_id, asset_server, sprite_sheets)
                 .map(|texture| (*sprite_id, texture))
         })
         .collect()
 }
 
-pub(crate) fn load_sprite_texture<C: ContentAssets>(
+pub(crate) fn load_sprite_texture(
     sprite_id: u32,
-    content_assets: &Res<C>,
     asset_server: &Res<AssetServer>,
     sprite_sheets: &SpriteSheetDataSet,
 ) -> Option<Handle<Image>> {
@@ -150,13 +145,6 @@ pub(crate) fn load_sprite_texture<C: ContentAssets>(
         warn!("Sprite {} not found in sprite sheets", sprite_id);
         return None;
     };
-
-    if content_assets
-        .get_texture(sprite_sheet.file.as_str())
-        .is_some()
-    {
-        return None;
-    }
 
     let texture: Handle<Image> = asset_server.load(
         PathBuf::from(SPRITE_SHEET_FOLDER).join(get_decompressed_file_name(&sprite_sheet.file)),
@@ -321,7 +309,7 @@ pub struct LoadAppearanceEvent {
     pub frame_group: FrameGroup,
 }
 
-pub(crate) fn process_load_events_system<C: ContentAssets>(
+pub(crate) fn process_load_events_system(
     visual_elements: Res<VisualElements>,
     loaded_appearances: Res<LoadedAppearances>,
     mut events: EventReader<LoadAppearanceEvent>,
@@ -365,10 +353,10 @@ pub(crate) fn process_load_events_system<C: ContentAssets>(
     )
 }
 
-pub(crate) fn load_sprite_system<C: ContentAssets>(
+pub(crate) fn load_sprite_system(
     In(inputs): In<Option<HashMap<(GameObjectId, FrameGroup), SpriteInfo>>>,
-    content_assets: Res<C>,
-    layouts: Res<Assets<TextureAtlasLayout>>,
+    sprite_sheets: Res<SpriteSheetDataSet>,
+    layouts: Res<TextureAtlasLayouts>,
     sprite_meshes: Res<SpriteMeshes>,
     mut materials: ResMut<Assets<SpriteMaterial>>,
     asset_server: Res<AssetServer>,
@@ -396,7 +384,7 @@ pub(crate) fn load_sprite_system<C: ContentAssets>(
                     load_sprites(
                         group,
                         sprite_ids,
-                        &content_assets,
+                        &sprite_sheets,
                         &layouts,
                         &sprite_meshes,
                         &mut materials,

@@ -1,4 +1,3 @@
-use crate::bevy_compass::CompassAssets;
 use crate::pancam::*;
 use crate::{gui_is_not_in_use, CompassAction, CompassContentAssets, HudLayers, UiState};
 use bevy::math::{Vec2, Vec3};
@@ -15,29 +14,16 @@ use ryot::bevy_ryot::elevation::Elevation;
 use ryot::bevy_ryot::sprites::SpriteMaterial;
 use ryot::prelude::drawing::{BrushItem, BrushParams, Brushes};
 use ryot::prelude::*;
-use std::marker::PhantomData;
 
-pub struct CameraPlugin<C: CompassAssets>(PhantomData<C>);
+pub struct CameraPlugin;
 
-impl<C: CompassAssets> CameraPlugin<C> {
-    pub fn new() -> Self {
-        Self(PhantomData)
-    }
-}
-
-impl<C: CompassAssets> Default for CameraPlugin<C> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<C: CompassAssets> Plugin for CameraPlugin<C> {
+impl Plugin for CameraPlugin {
     fn build(&self, app: &mut App) {
         app.insert_resource(Msaa::Off)
             .init_resource::<ToggleActions<PanCamAction>>()
             .add_plugins(PanCamPlugin)
             .add_systems(
-                OnExit(InternalContentState::LoadingContent),
+                OnExit(InternalContentState::PreparingContent),
                 (spawn_camera, spawn_cursor).chain(),
             )
             .insert_resource(CompassAction::get_default_input_map())
@@ -121,15 +107,14 @@ fn spawn_cursor(mut commands: Commands) {
 pub static MAP_GRAB_INPUTS: MouseButton = MouseButton::Right;
 
 fn spawn_camera(
-    content: Res<CompassContentAssets>,
     mut commands: Commands,
-    atlas_layouts: Res<Assets<TextureAtlasLayout>>,
+    content: Res<CompassContentAssets>,
+    atlas_layouts: Res<TextureAtlasLayouts>,
 ) {
-    let layout = content
-        .get_atlas_layout(SpriteLayout::OneByOne)
-        .expect("Must have atlas layout");
+    let atlas_layout = atlas_layouts
+        .get(SpriteLayout::OneByOne as usize)
+        .expect("No atlas layout found");
 
-    let atlas_layout = atlas_layouts.get(layout).expect("No atlas layout");
     let zoom_factor = atlas_layout.size.x / 384.;
 
     #[cfg(not(target_arch = "wasm32"))]
@@ -159,7 +144,7 @@ fn spawn_camera(
     ));
 
     commands.spawn(SpriteBundle {
-        texture: content.mascot().clone(),
+        texture: content.mascot.clone(),
         transform: Transform::from_translation(Vec2::ZERO.extend(-100.))
             .with_scale(Vec3::splat(0.5)),
         ..Default::default()

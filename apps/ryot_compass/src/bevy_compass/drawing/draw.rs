@@ -12,7 +12,7 @@ use ryot::prelude::{drawing::*, *};
 /// such as drawing, erasing, selecting, etc. In our context, we are only handling drawing and erasing,
 /// keeping the possibility of adding more tools in the future (e.g. if we want special tools for marking
 /// some protection zone in the map, for drawing paths, creating areas/cities, etc).
-pub fn handle_drawing_input<C: ContentAssets>(
+pub fn handle_drawing_input(
     mut commands: Commands,
     mut tiles: ResMut<MapTiles<Entity>>,
     mut command_history: ResMut<CommandHistory>,
