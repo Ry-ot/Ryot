@@ -1,7 +1,7 @@
 use crate::prelude::SpriteLayout;
+use derive_more::{Deref, DerefMut};
 use glam::UVec2;
 use serde::{Deserialize, Serialize};
-use std::ops::Deref;
 
 /// This is the content of the Sprite ContentType. It contains the information needed
 /// to load the sprite sheet and individual sprites from it.
@@ -52,16 +52,9 @@ impl SpriteSheetData {
 /// It contains the sprite sheets and the sprite sheet config.
 /// The sprite sheet config is used to calculate the position and size of a sprite in the sprite
 /// sheet.
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Deref, DerefMut)]
+#[cfg_attr(feature = "bevy", derive(bevy_ecs::prelude::Resource))]
 pub struct SpriteSheetDataSet(Vec<SpriteSheetData>);
-
-impl Deref for SpriteSheetDataSet {
-    type Target = Vec<SpriteSheetData>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
 
 impl<T> From<&[T]> for SpriteSheetDataSet
 where

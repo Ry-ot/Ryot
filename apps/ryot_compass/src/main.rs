@@ -63,11 +63,11 @@ fn main() {
         GamePlugin,
         InputPlugin,
         AppPlugin,
-        UiPlugin::<CompassContentAssets>::default(),
-        CameraPlugin::<CompassContentAssets>::default(),
+        UiPlugin,
+        CameraPlugin,
         CursorPlugin,
-        PalettePlugin::<CompassContentAssets>::default(),
-        DrawingPlugin::<CompassContentAssets>::default(),
+        PalettePlugin,
+        DrawingPlugin,
         ErrorPlugin,
     ))
     .add_systems(Startup, set_window_icon)

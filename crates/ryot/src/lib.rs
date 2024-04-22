@@ -8,10 +8,6 @@
 //! of games that intend to use Tibia-like contents/assets formats, as well as some
 //! game mechanics.
 //!
-//! It provides a major components:
-//! * [Content](crate::bevy_ryot::ContentAssets) - A collection of content assets that
-//!   can be loaded into the game, including catalog, sprites and configs.
-//!
 //! It also provides some utilities:
 //! * [Bevy Helpers](crate::bevy_ryot) - A collection of helpers that can be used to send async events,
 //!   load configurations, sprites and contents as BevyAssets.

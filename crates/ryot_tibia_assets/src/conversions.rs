@@ -54,7 +54,7 @@ impl From<tibia::VisualElements> for VisualElements {
                 }
                 visual_elements
                     .entry(entity_type)
-                    .or_insert(HashMap::<u32, VisualElement>::new())
+                    .or_default()
                     .insert(visual_element.id, visual_element);
             }
         }

@@ -6,6 +6,8 @@
 use self::sprites::SpriteMaterial;
 #[cfg(feature = "debug")]
 use crate::position::debug_sprite_position;
+use crate::prelude::tibia::asset_loader::TibiaAssetsPlugin;
+use crate::prelude::*;
 use bevy::app::{App, Plugin, Update};
 use bevy::asset::embedded_asset;
 use bevy::asset::{Asset, Assets, Handle};
@@ -43,9 +45,6 @@ pub mod sprites;
 pub mod perspective;
 
 pub(crate) mod sprite_animations;
-
-use crate::prelude::tibia::asset_loader::TibiaAssetsPlugin;
-use crate::prelude::*;
 pub use sprite_animations::{toggle_sprite_animation, AnimationDuration};
 
 pub static RYOT_ANCHOR: Anchor = Anchor::BottomRight;
@@ -77,26 +76,16 @@ pub struct SpriteMeshes(pub HashMap<SpriteLayout, Handle<Mesh>>);
 #[derive(Resource, Debug, Clone, Default, Deref, DerefMut)]
 pub struct RectMeshes(pub HashMap<SpriteLayout, Handle<Mesh>>);
 
-/// A trait that represents Preloaded and Content assets.
-/// Most of the PreloadedAssets are not directly available to the game.
-/// They are only used to prepare the ContentAssets and then discarded.
-/// That's why there is a separation between PreloadedAssets and ContentAssets.
-pub trait PreloadedContentAssets: PreloadedAssets + ContentAssets {}
-
 /// A trait that represents assets that are preloaded within ryot.
 /// It contains preloaded assets and mutable preparation methods for the ContentAssets.
-pub trait PreloadedAssets: Resource + AssetCollection + Send + Sync + 'static {
+pub trait PreloadedContentAssets: Resource + AssetCollection + Send + Sync + 'static {
     fn catalog_content(&self) -> Handle<Catalog>;
-    fn set_sprite_sheets_data(&mut self, sprite_sheet_set: SpriteSheetDataSet);
-}
-
-/// The main ContentAssets of a Ryot game, is prepared by preparer systems
-/// during the loading process and is used by the game to access the content.
-pub trait ContentAssets: Resource + Send + Sync + 'static {
-    fn sprite_sheet_data_set(&self) -> Option<&SpriteSheetDataSet>;
-    fn get_texture(&self, file: &str) -> Option<Handle<Image>>;
     fn get_atlas_layout(&self, layout: SpriteLayout) -> Option<Handle<TextureAtlasLayout>>;
 }
+
+#[derive(Debug, Default, Clone, derive_more::Deref, derive_more::DerefMut)]
+#[cfg_attr(feature = "bevy", derive(bevy::prelude::Resource))]
+pub struct TextureAtlasLayouts(Vec<TextureAtlasLayout>);
 
 /// A plugin that registers implementations of ContentAssets and loads them.
 /// It inits the necessary resources and adds the necessary systems and plugins to load
@@ -173,14 +162,21 @@ impl<C: PreloadedContentAssets + Default> Plugin for VisualContentPlugin<C> {
                     "dynamic.atlases.ron",
                 ),
             )
-            .init_resource::<SpriteMeshes>()
             .init_resource::<RectMeshes>()
+            .init_resource::<SpriteMeshes>()
+            .init_resource::<SpriteSheetDataSet>()
+            .init_resource::<TextureAtlasLayouts>()
             .add_plugins(JsonAssetPlugin::<Catalog>::new(&["json"]))
             .add_optional_plugin(StrokedTextPlugin)
             .add_plugins(Material2dPlugin::<SpriteMaterial>::default())
             .add_systems(
                 OnEnter(InternalContentState::PreparingContent),
-                (prepare_content::<C>, transition_to_ready)
+                (
+                    prepare_sprite_layouts::<C>,
+                    prepare_sprite_sheets::<C>,
+                    prepare_sprite_meshes,
+                    transition_to_ready,
+                )
                     .chain()
                     .after(prepare_visual_elements),
             )
@@ -194,8 +190,8 @@ impl<C: PreloadedContentAssets + Default> Plugin for VisualContentPlugin<C> {
                     #[cfg(feature = "debug")]
                     debug_sprite_position,
                     sprites::load_from_entities_system.in_set(SpriteSystems::Load),
-                    sprites::process_load_events_system::<C>
-                        .pipe(sprites::load_sprite_system::<C>)
+                    sprites::process_load_events_system
+                        .pipe(sprites::load_sprite_system)
                         .pipe(sprites::store_loaded_appearances_system)
                         .run_if(on_event::<sprites::LoadAppearanceEvent>())
                         .in_set(SpriteSystems::Load),
@@ -229,31 +225,61 @@ impl<C: PreloadedContentAssets + Default> Plugin for VisualContentPlugin<C> {
 /// a way that the game can use them.
 ///
 /// This is the last step of the content loading process, triggering the sprite loading process.
-fn prepare_content<C: PreloadedContentAssets>(
-    mut contents: ResMut<Assets<Catalog>>,
-    mut content_assets: ResMut<C>,
-    mut meshes: ResMut<Assets<Mesh>>,
-    mut sprite_meshes: ResMut<SpriteMeshes>,
-    mut rect_meshes: ResMut<RectMeshes>,
-    atlas_layouts: Res<Assets<TextureAtlasLayout>>,
+fn prepare_sprite_layouts<C: PreloadedContentAssets>(
+    content_assets: Res<C>,
+    mut atlas_layouts: ResMut<TextureAtlasLayouts>,
+    mut atlas_layouts_assets: ResMut<Assets<TextureAtlasLayout>>,
 ) {
-    debug!("Preparing content");
-    let layout = content_assets
-        .get_atlas_layout(SpriteLayout::OneByOne)
-        .expect("OneByOne layout not found");
+    debug!("Preparing sprite layouts");
 
-    let atlas_layout = atlas_layouts.get(layout).expect("No atlas layout");
+    for sprite_layout in SpriteLayout::iter() {
+        let layout_handle = content_assets
+            .get_atlas_layout(sprite_layout)
+            .expect("OneByOne layout not found");
 
-    TILE_SIZE
-        .set(atlas_layout.textures[0].size().as_uvec2())
-        .expect("Failed to initialize tile size");
+        let layout = atlas_layouts_assets
+            .get(layout_handle.clone())
+            .expect("No atlas layout");
 
-    let catalog = contents
+        if sprite_layout == SpriteLayout::OneByOne {
+            TILE_SIZE
+                .set(layout.textures[0].size().as_uvec2())
+                .expect("Failed to initialize tile size");
+        }
+
+        atlas_layouts.push(layout.clone());
+        atlas_layouts_assets.remove(layout_handle);
+    }
+
+    debug!("Finished preparing sprite layouts");
+}
+
+fn prepare_sprite_sheets<C: PreloadedContentAssets>(
+    content_assets: Res<C>,
+    mut contents: ResMut<Assets<Catalog>>,
+    mut sprite_sheets: ResMut<SpriteSheetDataSet>,
+) {
+    debug!("Preparing sprite sheets");
+
+    *sprite_sheets = contents
         .get(content_assets.catalog_content())
-        .expect("No catalog loaded");
+        .expect("No catalog loaded")
+        .content
+        .clone()
+        .into();
 
-    content_assets.set_sprite_sheets_data(catalog.content.clone().into());
     contents.remove(content_assets.catalog_content());
+
+    debug!("Finished preparing sprite sheets");
+}
+
+fn prepare_sprite_meshes(
+    mut meshes: ResMut<Assets<Mesh>>,
+    mut rect_meshes: ResMut<RectMeshes>,
+    mut sprite_meshes: ResMut<SpriteMeshes>,
+) {
+    debug!("Preparing sprite meshes");
+
     for sprite_layout in SpriteLayout::iter() {
         sprite_meshes.insert(
             sprite_layout,
@@ -261,6 +287,7 @@ fn prepare_content<C: PreloadedContentAssets>(
                 sprite_layout.get_size(&tile_size()).as_vec2() * 2.,
             )),
         );
+
         rect_meshes.insert(
             sprite_layout,
             meshes.add(Rectangle::from_size(
@@ -269,7 +296,7 @@ fn prepare_content<C: PreloadedContentAssets>(
         );
     }
 
-    debug!("Finished preparing content");
+    debug!("Finished preparing sprite meshes");
 }
 
 fn transition_to_ready(mut state: ResMut<NextState<InternalContentState>>) {
@@ -352,18 +379,12 @@ impl OptionalPlugin for App {
 pub struct GridView;
 
 /// A system to spawn a grid of lines to represent the tiles in the game using a custom color.
-pub fn spawn_grid<C: ContentAssets>(
+pub fn spawn_grid(
     color: Color,
-) -> impl FnMut(
-    Commands,
-    Res<Assets<TextureAtlasLayout>>,
-    Res<C>,
-    ResMut<Assets<Mesh>>,
-    ResMut<Assets<ColorMaterial>>,
-) {
+) -> impl FnMut(Commands, Res<TextureAtlasLayouts>, ResMut<Assets<Mesh>>, ResMut<Assets<ColorMaterial>>)
+{
     move |mut commands: Commands,
-          atlas_layouts: Res<Assets<TextureAtlasLayout>>,
-          content_assets: Res<C>,
+          atlas_layouts: Res<TextureAtlasLayouts>,
           mut meshes: ResMut<Assets<Mesh>>,
           mut materials: ResMut<Assets<ColorMaterial>>| {
         let mut positions = Vec::new();
@@ -374,12 +395,8 @@ pub fn spawn_grid<C: ContentAssets>(
         let (bottom_left_tile, top_right_tile) = (TilePosition::MIN, TilePosition::MAX);
         let (bottom_left, top_right) = (Vec2::from(bottom_left_tile), Vec2::from(top_right_tile));
 
-        let layout = content_assets
-            .get_atlas_layout(SpriteLayout::OneByOne)
-            .expect("OneByOne layout not found");
-
         let tile_size = atlas_layouts
-            .get(layout)
+            .get(SpriteLayout::OneByOne as usize)
             .expect("No atlas layout found")
             .textures[0]
             .size();
