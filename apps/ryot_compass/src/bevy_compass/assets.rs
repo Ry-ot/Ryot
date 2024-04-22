@@ -7,23 +7,28 @@ use ryot::prelude::*;
 pub struct CompassContentAssets {
     #[asset(key = "layouts", collection(typed))]
     atlas_layout: Vec<Handle<TextureAtlasLayout>>,
-
-    // Config related handles
     #[asset(path = "appearances.dat")]
-    _appearances: Handle<VisualElements>,
+    visual_elements: Handle<VisualElements>,
     #[asset(path = "catalog-content.json")]
     catalog_content: Handle<Catalog>,
-
-    // Image related handles
     #[asset(path = "ryot_mascot.png")]
     pub mascot: Handle<Image>,
 }
 
-impl PreloadedContentAssets for CompassContentAssets {
-    fn catalog_content(&self) -> Handle<Catalog> {
-        self.catalog_content.clone_weak()
+impl CatalogAsset for CompassContentAssets {
+    fn catalog_content(&self) -> &Handle<Catalog> {
+        &self.catalog_content
     }
-    fn get_atlas_layout(&self, layout: SpriteLayout) -> Option<Handle<TextureAtlasLayout>> {
-        self.atlas_layout.get(layout as usize).cloned()
+}
+
+impl VisualElementsAsset for CompassContentAssets {
+    fn visual_elements(&self) -> &Handle<VisualElements> {
+        &self.visual_elements
+    }
+}
+
+impl AtlasLayoutsAsset for CompassContentAssets {
+    fn atlas_layouts(&self) -> &Vec<Handle<TextureAtlasLayout>> {
+        &self.atlas_layout
     }
 }

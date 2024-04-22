@@ -27,9 +27,6 @@ use ryot_tiled::prelude::*;
 use std::marker::PhantomData;
 use strum::IntoEnumIterator;
 
-mod visual_elements;
-use visual_elements::prepare_visual_elements;
-
 pub mod camera;
 
 mod game;
@@ -76,11 +73,16 @@ pub struct SpriteMeshes(pub HashMap<SpriteLayout, Handle<Mesh>>);
 #[derive(Resource, Debug, Clone, Default, Deref, DerefMut)]
 pub struct RectMeshes(pub HashMap<SpriteLayout, Handle<Mesh>>);
 
-/// A trait that represents assets that are preloaded within ryot.
-/// It contains preloaded assets and mutable preparation methods for the ContentAssets.
-pub trait PreloadedContentAssets: Resource + AssetCollection + Send + Sync + 'static {
-    fn catalog_content(&self) -> Handle<Catalog>;
-    fn get_atlas_layout(&self, layout: SpriteLayout) -> Option<Handle<TextureAtlasLayout>>;
+pub trait VisualElementsAsset: Resource + AssetCollection + Send + Sync + 'static {
+    fn visual_elements(&self) -> &Handle<VisualElements>;
+}
+
+pub trait CatalogAsset: Resource + AssetCollection + Send + Sync + 'static {
+    fn catalog_content(&self) -> &Handle<Catalog>;
+}
+
+pub trait AtlasLayoutsAsset: Resource + AssetCollection + Send + Sync + 'static {
+    fn atlas_layouts(&self) -> &Vec<Handle<TextureAtlasLayout>>;
 }
 
 #[derive(Debug, Default, Clone, derive_more::Deref, derive_more::DerefMut)]
@@ -105,9 +107,9 @@ macro_rules! content_plugin {
     };
 }
 
-content_plugin!(BaseContentPlugin, AssetCollection);
+content_plugin!(BaseContentPlugin, VisualElementsAsset);
 
-impl<C: AssetCollection + Default> Plugin for BaseContentPlugin<C> {
+impl<C: VisualElementsAsset + Default> Plugin for BaseContentPlugin<C> {
     fn build(&self, app: &mut App) {
         app.init_state::<InternalContentState>()
             .init_resource::<C>()
@@ -121,24 +123,24 @@ impl<C: AssetCollection + Default> Plugin for BaseContentPlugin<C> {
             )
             .add_systems(
                 OnEnter(InternalContentState::PreparingContent),
-                prepare_visual_elements,
+                prepare_visual_elements::<C>,
             );
     }
 }
 
-content_plugin!(MetaContentPlugin, AssetCollection);
+content_plugin!(MetaContentPlugin, VisualElementsAsset);
 
-impl<C: AssetCollection + Default> Plugin for MetaContentPlugin<C> {
+impl<C: VisualElementsAsset + Default> Plugin for MetaContentPlugin<C> {
     fn build(&self, app: &mut App) {
         app.add_plugins(BaseContentPlugin::<C>::default())
             .add_systems(
                 OnEnter(InternalContentState::PreparingContent),
-                transition_to_ready.after(prepare_visual_elements),
+                transition_to_ready.after(prepare_visual_elements::<C>),
             );
     }
 }
 
-content_plugin!(VisualContentPlugin, PreloadedContentAssets);
+content_plugin!(VisualContentPlugin, VisualElementsAsset);
 
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
 pub enum SpriteSystems {
@@ -153,7 +155,10 @@ pub enum AnimationSystems {
     Update,
 }
 
-impl<C: PreloadedContentAssets + Default> Plugin for VisualContentPlugin<C> {
+impl<C> Plugin for VisualContentPlugin<C>
+where
+    C: VisualElementsAsset + CatalogAsset + AtlasLayoutsAsset + Default,
+{
     fn build(&self, app: &mut App) {
         app.add_plugins(BaseContentPlugin::<C>::default())
             .configure_loading_state(
@@ -178,7 +183,7 @@ impl<C: PreloadedContentAssets + Default> Plugin for VisualContentPlugin<C> {
                     transition_to_ready,
                 )
                     .chain()
-                    .after(prepare_visual_elements),
+                    .after(prepare_visual_elements::<C>),
             )
             .init_resource::<sprite_animations::SpriteAnimationEnabled>()
             .init_resource::<sprite_animations::SynchronizedAnimationTimers>()
@@ -220,28 +225,46 @@ impl<C: PreloadedContentAssets + Default> Plugin for VisualContentPlugin<C> {
     }
 }
 
+/// Reads the VisualElements and stores it in the VisualElements resource, removing the asset.
+/// Since VisualElements is a single resource, there is no need to keep the asset handle around,
+/// allowing direct access to the VisualElements resource.
+fn prepare_visual_elements<C: VisualElementsAsset>(
+    content_assets: Res<C>,
+    mut visual_elements_res: ResMut<VisualElements>,
+    mut visual_elements_assets: ResMut<Assets<VisualElements>>,
+) {
+    debug!("Preparing visual elements");
+
+    let key = content_assets.visual_elements();
+
+    let Some(visual_elements) = visual_elements_assets.get(key) else {
+        panic!("No visual elements found")
+    };
+
+    *visual_elements_res = visual_elements.clone();
+    visual_elements_assets.remove(key);
+
+    debug!("Visual elements prepared");
+}
+
 /// A system that prepares the content assets for use in the game.
 /// It transforms the raw content configs into sprite sheet sets and stores them in
 /// a way that the game can use them.
 ///
 /// This is the last step of the content loading process, triggering the sprite loading process.
-fn prepare_sprite_layouts<C: PreloadedContentAssets>(
+fn prepare_sprite_layouts<C: AtlasLayoutsAsset>(
     content_assets: Res<C>,
     mut atlas_layouts: ResMut<TextureAtlasLayouts>,
     mut atlas_layouts_assets: ResMut<Assets<TextureAtlasLayout>>,
 ) {
     debug!("Preparing sprite layouts");
 
-    for sprite_layout in SpriteLayout::iter() {
-        let layout_handle = content_assets
-            .get_atlas_layout(sprite_layout)
-            .expect("OneByOne layout not found");
-
+    for (index, layout_handle) in content_assets.atlas_layouts().iter().enumerate() {
         let layout = atlas_layouts_assets
-            .get(layout_handle.clone())
+            .get(layout_handle)
             .expect("No atlas layout");
 
-        if sprite_layout == SpriteLayout::OneByOne {
+        if index == 0 {
             TILE_SIZE
                 .set(layout.textures[0].size().as_uvec2())
                 .expect("Failed to initialize tile size");
@@ -254,7 +277,7 @@ fn prepare_sprite_layouts<C: PreloadedContentAssets>(
     debug!("Finished preparing sprite layouts");
 }
 
-fn prepare_sprite_sheets<C: PreloadedContentAssets>(
+fn prepare_sprite_sheets<C: CatalogAsset>(
     content_assets: Res<C>,
     mut contents: ResMut<Assets<Catalog>>,
     mut sprite_sheets: ResMut<SpriteSheetDataSet>,
