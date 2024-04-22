@@ -1,9 +1,8 @@
 use crate::prelude::*;
-use ryot_grid::prelude::*;
+use ryot_tiled::prelude::*;
 
 #[test]
 #[ignore]
-#[cfg(feature = "tiled")]
 fn stress_test_path_finding() {
     use time_test::time_test;
 

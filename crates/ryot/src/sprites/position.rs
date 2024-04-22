@@ -12,7 +12,7 @@ use crate::bevy_ryot::elevation::Elevation;
 use crate::sprites::elevate_position;
 #[cfg(feature = "bevy")]
 use ryot_assets::prelude::SpriteLayout;
-use ryot_grid::prelude::*;
+use ryot_tiled::prelude::*;
 
 #[cfg(feature = "debug")]
 #[derive(Component)]

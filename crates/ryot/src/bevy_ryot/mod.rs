@@ -23,7 +23,7 @@ use bevy_asset_loader::prelude::*;
 use bevy_asset_loader::standard_dynamic_asset::StandardDynamicAssetArrayCollection;
 use bevy_common_assets::json::JsonAssetPlugin;
 use bevy_stroked_text::StrokedTextPlugin;
-use ryot_grid::prelude::*;
+use ryot_tiled::prelude::*;
 use std::marker::PhantomData;
 use strum::IntoEnumIterator;
 

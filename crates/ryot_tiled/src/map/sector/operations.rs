@@ -1,5 +1,4 @@
-use crate::prelude::TilePosition;
-use crate::sector::Sector;
+use crate::prelude::*;
 use std::ops::{Div, DivAssign, Mul, MulAssign, Sub};
 
 impl Sub<Sector> for Sector {

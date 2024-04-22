@@ -1,29 +1,25 @@
 use glam::{UVec2, Vec2};
 use std::sync::OnceLock;
 
-pub mod directional;
-pub mod layer;
 #[cfg(feature = "lmdb")]
 pub mod lmdb;
 pub mod map;
-pub mod position;
-pub mod sector;
 
 pub mod prelude {
     pub use crate::{
-        directional::{CardinalDirection, Directional, OrdinalDirection},
-        layer::{
+        map::directional::{CardinalDirection, Directional, OrdinalDirection},
+        map::layer::{
             compute_z_transform, BottomLayer, Layer, LayerIter, Order, RelativeLayer,
             RelativeLayerIter,
         },
-        map::{MapTile, MapTileIter, MapTiles},
-        position::{PreviousPosition, TilePosition},
-        sector::Sector,
+        map::map_tile::{MapTile, MapTileIter, MapTiles},
+        map::position::{PreviousPosition, TilePosition},
+        map::sector::Sector,
         tile_offset, tile_size, TILE_SIZE,
     };
 
     #[cfg(feature = "bevy")]
-    pub use crate::position::track_position_changes;
+    pub use crate::map::position::track_position_changes;
 
     #[cfg(feature = "lmdb")]
     pub use crate::lmdb::*;

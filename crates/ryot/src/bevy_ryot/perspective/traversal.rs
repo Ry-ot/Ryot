@@ -7,7 +7,7 @@ use bevy::prelude::Component;
 use glam::Vec3;
 
 use crate::prelude::perspective::Perspective;
-use ryot_grid::prelude::*;
+use ryot_tiled::prelude::*;
 
 /// Represents an area that can be traversable by a ray cast. This struct is pivotal for
 /// calculating which areas of the game world are reachable from a certain position, using ray

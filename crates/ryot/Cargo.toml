@@ -18,7 +18,7 @@ derive_more = "0.99.17"
 serde_repr = "0.1"
 ryot_assets = { path = "../ryot_assets", version = "0.2.0" }
 ryot_core = { path = "../ryot_core", version = "0.2.0" }
-ryot_grid = { path = "../ryot_grid", version = "0.2.0" }
+ryot_tiled = { path = "../ryot_tiled", version = "0.2.0" }
 ryot_internal = { path = "../ryot_internal", version = "0.2.0", features = ["ryot_tibia_assets"] }
 
 bevy = { workspace = true, optional = true }

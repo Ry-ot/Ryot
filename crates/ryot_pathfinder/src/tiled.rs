@@ -1,6 +1,6 @@
 use crate::Pathable;
 use pathfinding::prelude::astar;
-use ryot_grid::position::TilePosition;
+use ryot_tiled::prelude::*;
 use std::time::{Duration, Instant};
 
 impl Pathable for TilePosition {
