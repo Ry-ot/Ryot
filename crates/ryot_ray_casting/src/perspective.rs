@@ -1,19 +1,9 @@
-//! This module provides functionality for managing and processing perspectives and visibility
+//! This crate provides functionality for managing and processing perspectives and visibility
 //! of entities in a game environment. Perspectives are defined by sets of view points that
 //! determine what an entity can see, based on tile positions and other spatial considerations.
+use crate::prelude::*;
+use bevy_math::bounding::Aabb3d;
 use ryot_tiled::prelude::*;
-use std::marker::PhantomData;
-
-use bevy::math::bounding::Aabb3d;
-
-mod trajectory;
-pub use trajectory::*;
-
-mod traversal;
-pub use traversal::*;
-
-mod systems;
-pub use systems::*;
 
 /// A group of multiple traversals representing all the possible trajectories from a single point,
 /// determining what can be reached from that point. Reachable is an abstract concept that depends
@@ -55,6 +45,3 @@ impl<T: Copy + Into<RadialArea>> From<&T> for RadialArea {
         (*element).into()
     }
 }
-
-#[cfg(test)]
-mod tests;

@@ -37,8 +37,6 @@ pub mod drawing;
 
 pub mod sprites;
 
-pub mod perspective;
-
 pub(crate) mod sprite_animations;
 pub use sprite_animations::{toggle_sprite_animation, AnimationDuration};
 

@@ -1,13 +1,13 @@
 //! This module introduces the concepts of `Trajectory` and `RadialArea` for calculating
 //! and representing the visible area or perspective from a given position. It utilizes ray casting
 //! and angle-based calculations to determine visible tiles in a game world.
-use bevy::math::bounding::{Aabb3d, RayCast3d};
-use bevy::math::Ray3d;
-use bevy::prelude::Component;
+use bevy_ecs::prelude::Component;
+use bevy_math::bounding::{Aabb3d, RayCast3d};
+use bevy_math::Ray3d;
 use glam::Vec3;
+use ryot_tiled::prelude::TilePosition;
 
-use crate::prelude::perspective::Perspective;
-use ryot_tiled::prelude::*;
+use crate::prelude::*;
 
 /// Represents an area that can be traversable by a ray cast. This struct is pivotal for
 /// calculating which areas of the game world are reachable from a certain position, using ray

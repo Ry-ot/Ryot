@@ -1,24 +1,26 @@
-use crate::bevy_ryot::perspective::*;
-use crate::bevy_ryot::tile_flags::TileFlags;
-use bevy::app::{App, Update};
-use bevy::prelude::*;
-use bevy::utils::HashSet;
+use crate::prelude::*;
+use bevy_app::{App, Update};
+use bevy_ecs::prelude::*;
+use bevy_reflect::Reflect;
+use bevy_utils::HashSet;
 use ryot_core::prelude::*;
+use ryot_tiled::prelude::TilePosition;
+use std::marker::PhantomData;
 
 /// Represents an App that can add one or more `Trajectory` to its systems.
 /// Requires the `Cache<RadialArea, Vec<Vec<TilePosition>>>` resource to be initialized.
 pub trait TrajectoryApp {
-    fn add_trajectory<T: Trajectory>(&mut self) -> &mut Self;
+    fn add_trajectory<T: Trajectory, F: Flag>(&mut self) -> &mut Self;
 }
 
 impl TrajectoryApp for App {
-    fn add_trajectory<T: Trajectory>(&mut self) -> &mut Self {
+    fn add_trajectory<T: Trajectory, F: Flag>(&mut self) -> &mut Self {
         self.init_resource::<Cache<RadialArea, Vec<Vec<TilePosition>>>>()
             .add_systems(
                 Update,
                 (
                     update_intersection_cache::<T>.in_set(CacheSystems::UpdateCache),
-                    process_perspectives::<T>
+                    process_perspectives::<T, F>
                         .in_set(PerspectiveSystems::CalculatePerspectives)
                         .after(CacheSystems::UpdateCache),
                 )
@@ -44,8 +46,8 @@ pub trait Trajectory: Component + Send + Sync + 'static {
     /// Evaluates if specific conditions are met based on the provided tile flags and position.
     ///
     /// This method should be used to check conditions related to the entity's interaction with the
-    /// environment, such as obstructions, visibility, or other criteria defined by `TileFlags`.
-    fn meets_condition(&self, flags: &TileFlags, _: &TilePosition) -> bool {
+    /// environment, such as obstructions, visibility, or other criteria defined by `Flag`.
+    fn meets_condition(&self, flags: &impl Flag, _: &TilePosition) -> bool {
         flags.is_walkable()
     }
 }
@@ -106,7 +108,7 @@ impl<T: Copy + Send + Sync + 'static> Trajectory for VisibleTrajectory<T> {
         (*self).into()
     }
 
-    fn meets_condition(&self, flags: &TileFlags, _: &TilePosition) -> bool {
+    fn meets_condition(&self, flags: &impl Flag, _: &TilePosition) -> bool {
         !flags.blocks_sight()
     }
 }
