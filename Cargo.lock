@@ -5155,6 +5155,7 @@ dependencies = [
  "ryot_assets",
  "ryot_core",
  "ryot_pathfinder",
+ "ryot_ray_casting",
  "ryot_tibia_assets",
  "ryot_tiled",
 ]
@@ -5168,6 +5169,27 @@ dependencies = [
  "bevy_tasks",
  "derive_more",
  "pathfinding",
+ "quickcheck",
+ "quickcheck_macros",
+ "rand",
+ "rstest",
+ "ryot_core",
+ "ryot_tiled",
+ "time-test",
+]
+
+[[package]]
+name = "ryot_ray_casting"
+version = "0.2.0"
+dependencies = [
+ "bevy_app",
+ "bevy_ecs",
+ "bevy_math",
+ "bevy_reflect",
+ "bevy_utils",
+ "derive_more",
+ "glam",
+ "itertools 0.12.1",
  "quickcheck",
  "quickcheck_macros",
  "rand",

@@ -1,6 +1,8 @@
-use crate::bevy_ryot::perspective::*;
+use crate::prelude::*;
+use crate::tests;
 use quickcheck_macros::quickcheck;
 use rstest::rstest;
+use ryot_tiled::prelude::TilePosition;
 use time_test::time_test;
 
 #[cfg(not(target_os = "windows"))]

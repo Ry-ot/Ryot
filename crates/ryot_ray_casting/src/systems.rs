@@ -2,13 +2,12 @@
 //! for entities based on their positions and visibility conditions.
 //! It leverages RadialAreas to calculate potential intersections and updates
 //! entities' visible positions accordingly.
-use std::sync::mpsc;
-
-use bevy::prelude::*;
+use crate::prelude::*;
+use bevy_ecs::prelude::*;
 use itertools::Itertools;
 use ryot_core::prelude::*;
-
-use crate::prelude::{perspective::*, tile_flags::TileFlags};
+use ryot_tiled::prelude::*;
+use std::sync::mpsc;
 
 /// Defines system sets for managing perspective calculation systems.
 /// This enum categorizes systems related to perspective calculations, facilitating the organization
@@ -41,8 +40,8 @@ pub fn update_intersection_cache<T: Trajectory>(
 /// conditions (e.g., obstructions, visibility flags) and updates each entity's InterestPositions.
 ///
 /// Run as part of [`PerspectiveSystems::CalculatePerspectives`].
-pub fn process_perspectives<T: Trajectory>(
-    tile_flags_cache: Res<Cache<TilePosition, TileFlags>>,
+pub fn process_perspectives<T: Trajectory, F: Flag>(
+    tile_flags_cache: Res<Cache<TilePosition, F>>,
     intersection_cache: Res<Cache<RadialArea, Vec<Vec<TilePosition>>>>,
     mut q_radial_areas: Query<(Entity, &T, &mut InterestPositions<T>)>,
 ) {
