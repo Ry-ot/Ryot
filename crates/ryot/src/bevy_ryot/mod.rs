@@ -27,8 +27,6 @@ use ryot_tiled::prelude::*;
 use std::marker::PhantomData;
 use strum::IntoEnumIterator;
 
-pub mod camera;
-
 mod game;
 pub use game::*;
 

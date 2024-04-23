@@ -1,6 +1,8 @@
 use glam::{UVec2, Vec2};
 use std::sync::OnceLock;
 
+#[cfg(feature = "bevy")]
+pub mod camera;
 #[cfg(feature = "lmdb")]
 pub mod lmdb;
 pub mod map;
@@ -19,7 +21,15 @@ pub mod prelude {
     };
 
     #[cfg(feature = "bevy")]
-    pub use crate::map::position::track_position_changes;
+    pub use crate::{
+        camera::{
+            cursor::{
+                cursor_sliding_camera, draw_cursor_system, move_to_cursor, update_cursor_pos,
+            },
+            sector::update_camera_visible_sector,
+        },
+        map::position::track_position_changes,
+    };
 
     #[cfg(feature = "lmdb")]
     pub use crate::lmdb::*;

@@ -27,6 +27,7 @@ features = ["bevy_reflect"]
 
 [dependencies.bevy_tasks]
 version = "0.13"
+features = ["multi-threaded"]
 
 [dependencies.pathfinding]
 version = "4.9.1"

@@ -8,7 +8,6 @@ use bevy_egui::{EguiContext, EguiContexts};
 
 use leafwing_input_manager::common_conditions::action_just_pressed;
 use leafwing_input_manager::prelude::*;
-use ryot::bevy_ryot::camera::*;
 use ryot::bevy_ryot::drawing::{Deletion, DrawingBundle};
 use ryot::bevy_ryot::elevation::Elevation;
 use ryot::bevy_ryot::sprites::SpriteMaterial;

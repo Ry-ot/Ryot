@@ -1,5 +1,7 @@
-use bevy::prelude::*;
-use ryot_tiled::prelude::*;
+use crate::prelude::Sector;
+use bevy_ecs::prelude::*;
+use bevy_render::prelude::*;
+use bevy_transform::prelude::Transform;
 
 pub fn update_camera_visible_sector(
     mut camera_query: Query<(&mut Sector, &Transform, &OrthographicProjection), With<Camera>>,
