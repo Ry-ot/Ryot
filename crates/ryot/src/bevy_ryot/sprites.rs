@@ -7,8 +7,7 @@ use self::sprite_animations::{
     AnimationDescriptor, AnimationKey, AnimationSprite, SpriteAnimationExt,
 };
 use bevy::prelude::*;
-use bevy::render::render_resource::{AsBindGroup, ShaderRef};
-use bevy::sprite::{Material2d, MaterialMesh2dBundle, Mesh2dHandle};
+use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
 use bevy::utils::{HashMap, HashSet};
 use itertools::Itertools;
 use ryot_tiled::prelude::*;
@@ -442,29 +441,4 @@ pub(crate) fn store_loaded_appearances_system(
 
             loaded_appearances.insert((*object_id, *frame_group), loaded_appearance);
         });
-}
-
-#[derive(AsBindGroup, TypePath, Asset, Debug, Clone, Default, PartialEq)]
-pub struct SpriteMaterial {
-    #[uniform(0)]
-    pub index: u32,
-    #[uniform(0)]
-    pub counts: Vec2,
-    #[uniform(0)]
-    pub outline_thickness: f32,
-    #[uniform(0)]
-    pub outline_color: Color,
-    #[uniform(0)]
-    pub tint: Color,
-    #[uniform(0)]
-    pub alpha: f32,
-    #[texture(1)]
-    #[sampler(2)]
-    pub texture: Handle<Image>,
-}
-
-impl Material2d for SpriteMaterial {
-    fn fragment_shader() -> ShaderRef {
-        "embedded://ryot/bevy_ryot/shaders/sprite.wgsl".into()
-    }
 }

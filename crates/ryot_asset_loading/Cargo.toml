@@ -61,6 +61,7 @@ serde.workspace = true
 serde_json.workspace = true
 strum.workspace = true
 thiserror.workspace = true
+bevy_common_assets.workspace = true
 
 [dev-dependencies]
 quickcheck.workspace = true

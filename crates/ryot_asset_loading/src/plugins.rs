@@ -1,9 +1,14 @@
 use crate::prelude::*;
 use bevy_app::{App, Plugin};
 use bevy_asset_loader::loading_state::LoadingState;
-use bevy_asset_loader::prelude::{ConfigureLoadingState, LoadingStateAppExt};
+use bevy_asset_loader::prelude::{
+    ConfigureLoadingState, LoadingStateAppExt, LoadingStateConfig,
+    StandardDynamicAssetArrayCollection,
+};
+use bevy_common_assets::json::JsonAssetPlugin;
 use bevy_ecs::prelude::{IntoSystemConfigs, OnEnter};
-use ryot_content::prelude::{transition_to_ready, RyotContentState, VisualElements};
+use ryot_content::prelude::*;
+use ryot_sprites::atlas::AtlasLayoutsAsset;
 use ryot_tiled::prelude::TilePosition;
 use std::marker::PhantomData;
 
@@ -57,6 +62,36 @@ impl<C: VisualElementsAsset + Default> Plugin for MetaContentPlugin<C> {
             .add_systems(
                 OnEnter(RyotContentState::PreparingContent),
                 transition_to_ready.after(prepare_visual_elements::<C>),
+            );
+    }
+}
+
+content_plugin!(VisualContentPlugin, VisualElementsAsset);
+
+impl<C> Plugin for VisualContentPlugin<C>
+where
+    C: VisualElementsAsset + CatalogAsset + AtlasLayoutsAsset + Default,
+{
+    fn build(&self, app: &mut App) {
+        app.add_plugins(BaseContentPlugin::<C>::default())
+            .configure_loading_state(
+                LoadingStateConfig::new(RyotContentState::LoadingContent)
+                    .with_dynamic_assets_file::<StandardDynamicAssetArrayCollection>(
+                    "dynamic.atlases.ron",
+                ),
+            )
+            .init_resource::<SpriteSheetDataSet>()
+            .add_plugins(JsonAssetPlugin::<Catalog>::new(&["json"]))
+            .add_systems(
+                OnEnter(RyotContentState::PreparingContent),
+                (
+                    prepare_sprite_layouts::<C>,
+                    prepare_sprite_sheets::<C>,
+                    prepare_sprite_meshes,
+                    transition_to_ready,
+                )
+                    .chain()
+                    .after(prepare_visual_elements::<C>),
             );
     }
 }

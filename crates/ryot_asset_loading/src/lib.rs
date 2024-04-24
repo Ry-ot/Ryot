@@ -8,7 +8,7 @@ pub mod prelude {
     pub use crate::{
         catalog::{prepare_sprite_sheets, Catalog, CatalogAsset},
         content_plugin,
-        plugins::{BaseContentPlugin, MetaContentPlugin},
+        plugins::{BaseContentPlugin, MetaContentPlugin, VisualContentPlugin},
         sprites::{prepare_sprite_layouts, prepare_sprite_meshes},
         visual_elements::{prepare_visual_elements, VisualElementsAsset},
     };

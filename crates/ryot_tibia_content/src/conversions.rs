@@ -33,7 +33,6 @@
 //! facilitating easier updates and maintenance when dealing with external asset changes.
 use crate as tibia;
 use ryot_content::prelude::*;
-use ryot_sprites::prelude::*;
 
 impl From<tibia::VisualElements> for VisualElements {
     fn from(item: tibia::VisualElements) -> Self {

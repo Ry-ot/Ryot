@@ -22,6 +22,7 @@ all-features = true
 default = ["bevy"]
 
 bevy = [
+    "dep:bevy_app",
     "dep:bevy_asset",
     "dep:bevy_ecs",
     "dep:bevy_reflect",
@@ -30,6 +31,10 @@ bevy = [
     "dep:bevy_utils",
     "dep:bevy_asset_loader",
 ]
+
+[dependencies.bevy_app]
+version = "0.13"
+optional = true
 
 [dependencies.bevy_asset]
 version = "0.13"
@@ -63,6 +68,7 @@ optional = true
 
 [dependencies]
 ryot_core = { path = "../ryot_core", version = "0.2.0" }
+ryot_content = { path = "../ryot_content", version = "0.2.0" }
 async-std = "1.12.0"
 derive_more.workspace = true
 glam.workspace = true

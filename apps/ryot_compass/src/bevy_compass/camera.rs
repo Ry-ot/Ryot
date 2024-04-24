@@ -10,7 +10,6 @@ use leafwing_input_manager::common_conditions::action_just_pressed;
 use leafwing_input_manager::prelude::*;
 use ryot::bevy_ryot::drawing::{Deletion, DrawingBundle};
 use ryot::bevy_ryot::elevation::Elevation;
-use ryot::bevy_ryot::sprites::SpriteMaterial;
 use ryot::prelude::drawing::{BrushItem, BrushParams, Brushes};
 use ryot::prelude::*;
 
