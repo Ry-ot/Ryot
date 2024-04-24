@@ -2,6 +2,9 @@ use heed::{CompactionOption, Env, EnvOpenOptions, RoTxn, RwTxn};
 use std::fs;
 use std::path::{Path, PathBuf};
 
+#[cfg(feature = "bevy")]
+pub mod systems;
+
 pub mod error;
 
 mod serde;

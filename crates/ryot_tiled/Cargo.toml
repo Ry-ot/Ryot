@@ -21,6 +21,8 @@ all-features = true
 [features]
 default = ["bevy"]
 
+egui = ["dep:egui"]
+
 bevy = [
     "dep:bevy_app",
     "dep:bevy_asset",
@@ -109,6 +111,7 @@ rayon.workspace = true
 color-eyre.workspace = true
 postcard.workspace = true
 thiserror.workspace = true
+egui = { workspace = true, optional = true }
 ryot_core = { path = "../ryot_core", version = "0.2.0" }
 ryot_content = { path = "../ryot_content", version = "0.2.0" }
 ryot_sprites = { path = "../ryot_sprites", version = "0.2.0" }

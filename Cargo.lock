@@ -5317,6 +5317,7 @@ dependencies = [
  "bevy_window",
  "color-eyre",
  "derive_more",
+ "egui",
  "glam",
  "heed",
  "itertools 0.12.1",

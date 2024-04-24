@@ -1,6 +1,6 @@
 use bevy::ecs::system::Command;
 use bevy::prelude::Resource;
-use ryot::bevy_ryot::drawing::UpdateTileContent;
+use ryot::prelude::UpdateTileContent;
 
 #[derive(Clone, Debug)]
 pub enum DrawingCommand {

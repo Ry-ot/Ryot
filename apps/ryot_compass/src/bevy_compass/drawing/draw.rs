@@ -5,7 +5,7 @@ use crate::{
 use bevy::ecs::query::QueryFilter;
 use bevy::prelude::*;
 use leafwing_input_manager::action_state::ActionState;
-use ryot::prelude::{drawing::*, *};
+use ryot::prelude::*;
 
 /// System responsible for handling the drawing inputs. Drawing inputs can be a multitude of things,
 /// such as drawing, erasing, selecting, etc. In our context, we are only handling drawing and erasing,

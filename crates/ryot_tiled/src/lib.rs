@@ -1,20 +1,21 @@
+#![feature(fn_traits)]
+#![feature(unboxed_closures)]
 use glam::{UVec2, Vec2};
 use std::sync::OnceLock;
 
 #[cfg(feature = "bevy")]
 pub mod camera;
 #[cfg(feature = "bevy")]
-pub mod elevation;
-pub mod grid;
-#[cfg(feature = "lmdb")]
-pub mod lmdb;
+pub mod drawing;
 pub mod map;
+pub mod movement;
+#[cfg(feature = "bevy")]
+pub mod object;
 
 pub mod prelude {
     pub use crate::{
-        elevation::{elevate_position, ElevationPlugin},
-        grid::GRID_LAYER,
         map::directional::{CardinalDirection, Directional, OrdinalDirection},
+        map::grid::GRID_LAYER,
         map::layer::{
             compute_z_transform, BottomLayer, Layer, LayerIter, Order, RelativeLayer,
             RelativeLayerIter,
@@ -22,6 +23,7 @@ pub mod prelude {
         map::map_tile::{MapTile, MapTileIter, MapTiles},
         map::position::{PreviousPosition, TilePosition},
         map::sector::Sector,
+        movement::SpriteMovement,
         tile_offset, tile_size, TILE_SIZE,
     };
 
@@ -33,11 +35,23 @@ pub mod prelude {
             },
             sector::update_camera_visible_sector,
         },
-        grid::{spawn_grid, GridView},
+        drawing::*,
+        map::elevation::{elevate_position, ElevationPlugin},
+        map::grid::{spawn_grid, GridView},
+        object::{GameObjectBundle, LoadObjects},
     };
 
     #[cfg(feature = "lmdb")]
-    pub use crate::lmdb::*;
+    pub use crate::map::lmdb::{
+        systems::{
+            compact_map, load_area, read_area, reload_visible_area, LmdbCompactor, LmdbEnv,
+            LmdbPlugin,
+        },
+        *,
+    };
+
+    #[cfg(feature = "egui")]
+    pub use crate::include_svg;
 }
 
 pub static TILE_SIZE: OnceLock<UVec2> = OnceLock::new();

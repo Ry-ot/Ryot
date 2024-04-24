@@ -1,7 +1,7 @@
 use crate::{gui_is_not_in_use, toggle_grid, CompassAction};
 use bevy::prelude::*;
 use leafwing_input_manager::common_conditions::*;
-use ryot::prelude::{drawing::*, *};
+use ryot::prelude::*;
 
 mod commands;
 pub use commands::*;
@@ -27,9 +27,8 @@ pub struct DrawingPlugin;
 impl Plugin for DrawingPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<CommandHistory>()
-            .init_resource::<MapTiles<Entity>>()
             .init_resource::<Brushes<DrawingBundle>>()
-            .add_plugins(drawing::DrawingPlugin)
+            .add_plugins(RyotDrawingPlugin)
             .add_systems(
                 Update,
                 (

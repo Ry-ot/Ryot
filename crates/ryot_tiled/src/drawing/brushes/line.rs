@@ -1,4 +1,5 @@
-use crate::bevy_ryot::drawing::brushes::*;
+use crate::prelude::*;
+
 #[cfg(feature = "egui")]
 use crate::include_svg;
 use glam::IVec2;

@@ -2,10 +2,10 @@
 //! The systems are used to draw the map and the entities that are on it.
 //! The systems manipulate basic drawing entities that are added by the drawing commands.
 //! Those entities are the trigger for the drawing systems within the ECS.
-use crate::prelude::drawing::TileComponent;
-use crate::prelude::{drawing::*, *};
-use bevy::prelude::*;
-use ryot_tiled::prelude::*;
+use crate::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_render::prelude::*;
+use ryot_content::prelude::*;
 
 mod deletion;
 pub use deletion::*;
