@@ -1,7 +1,7 @@
 use crate::bevy_ryot::sprites::SPRITE_BASE_SIZE;
 use bevy::prelude::*;
 use itertools::Itertools;
-use ryot_content::prelude::{EntityType, GameObjectId, VisualElements};
+use ryot_content::prelude::{EntityType, GameObjectId, SpriteLayout, VisualElements};
 use ryot_tiled::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;
@@ -86,4 +86,19 @@ pub(crate) fn apply_elevation(
                 tile_elevation + elevation_delta
             });
     }
+}
+
+pub fn elevate_position(
+    position: &TilePosition,
+    layout: SpriteLayout,
+    layer: Layer,
+    elevation: Elevation,
+) -> Vec3 {
+    let anchor = Vec2::new(
+        elevation.elevation.clamp(0.0, 1.0),
+        (-elevation.elevation).clamp(-1.0, 0.0),
+    );
+    position.to_vec3(&layer)
+        - (SpriteLayout::OneByOne.get_size(&tile_size()).as_vec2() * anchor).extend(0.)
+        - (layout.get_size(&tile_size()).as_vec2() * Vec2::new(0.5, -0.5)).extend(0.)
 }

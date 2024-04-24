@@ -1,33 +1,21 @@
-use crate::bevy_ryot::elevation::Elevation;
-#[cfg(feature = "bevy")]
-use bevy::prelude::*;
-use glam::Vec2;
-#[cfg(feature = "bevy")]
-use ryot_sprites::prelude::*;
-use ryot_tiled::prelude::*;
-
-use ryot_content::prelude::SpriteLayout;
-
-pub mod position;
+use crate::material::SpriteMaterial;
+use bevy_ecs::component::Component;
+use bevy_render::color::Color;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct SpriteOutline {
-    #[cfg(feature = "bevy")]
     color: Color,
     thickness: f32,
 }
 
-#[derive(Debug, Clone, PartialEq, Default)]
-#[cfg_attr(feature = "bevy", derive(Component))]
+#[derive(Debug, Clone, PartialEq, Default, Component)]
 pub struct SpriteParams {
     pub alpha: Option<f32>,
     pub outline: Option<SpriteOutline>,
-    #[cfg(feature = "bevy")]
     pub tint: Option<Color>,
 }
 
 impl SpriteParams {
-    #[cfg(feature = "bevy")]
     pub fn with_outline(self, color: Color, thickness: f32) -> Self {
         Self {
             outline: Some(SpriteOutline { color, thickness }),
@@ -35,15 +23,6 @@ impl SpriteParams {
         }
     }
 
-    #[cfg(not(feature = "bevy"))]
-    pub fn with_outline(self, thickness: f32) -> Self {
-        Self {
-            outline: Some(SpriteOutline { thickness }),
-            ..self
-        }
-    }
-
-    #[cfg(feature = "bevy")]
     pub fn with_tint(self, color: Color) -> Self {
         Self {
             tint: Some(color),
@@ -58,17 +37,10 @@ impl SpriteParams {
         }
     }
 
-    #[cfg(feature = "bevy")]
     pub fn has_any(&self) -> bool {
         self.outline.is_some() || self.tint.is_some() || self.alpha.is_some()
     }
 
-    #[cfg(not(feature = "bevy"))]
-    pub fn has_any(&self) -> bool {
-        self.outline.is_some() || self.alpha.is_some()
-    }
-
-    #[cfg(feature = "bevy")]
     pub fn to_material(&self, base: SpriteMaterial) -> SpriteMaterial {
         let mut material = base;
 
@@ -90,7 +62,6 @@ impl SpriteParams {
     }
 }
 
-#[cfg(feature = "bevy")]
 impl From<&SpriteMaterial> for SpriteParams {
     fn from(material: &SpriteMaterial) -> Self {
         Self {
@@ -102,19 +73,4 @@ impl From<&SpriteMaterial> for SpriteParams {
             alpha: Some(material.alpha),
         }
     }
-}
-
-pub fn elevate_position(
-    position: &TilePosition,
-    layout: SpriteLayout,
-    layer: Layer,
-    elevation: Elevation,
-) -> Vec3 {
-    let anchor = Vec2::new(
-        elevation.elevation.clamp(0.0, 1.0),
-        (-elevation.elevation).clamp(-1.0, 0.0),
-    );
-    position.to_vec3(&layer)
-        - (SpriteLayout::OneByOne.get_size(&tile_size()).as_vec2() * anchor).extend(0.)
-        - (layout.get_size(&tile_size()).as_vec2() * Vec2::new(0.5, -0.5)).extend(0.)
 }

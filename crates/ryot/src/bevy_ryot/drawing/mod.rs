@@ -1,7 +1,6 @@
 use std::time::Duration;
 
 use crate::bevy_ryot::{GameObjectId, RyotContentState};
-use crate::position::SpriteMovement;
 use bevy::prelude::*;
 use bevy::render::view::{check_visibility, VisibilitySystems, VisibleEntities};
 use ryot_content::prelude::FrameGroup;
@@ -14,6 +13,7 @@ mod commands;
 pub use commands::*;
 
 mod systems;
+use crate::prelude::SpriteMovement;
 pub use systems::*;
 
 pub struct DrawingPlugin;

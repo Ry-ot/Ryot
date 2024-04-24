@@ -1,3 +1,4 @@
+use crate::prelude::AtlasLayoutsAsset;
 use bevy_asset::Assets;
 use bevy_ecs::change_detection::{Res, ResMut};
 use bevy_math::prelude::Rectangle;

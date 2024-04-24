@@ -7,7 +7,7 @@ use self::sprite_animations::{
     AnimationDescriptor, AnimationKey, AnimationSprite, SpriteAnimationExt,
 };
 use bevy::prelude::*;
-use bevy::sprite::{MaterialMesh2dBundle, Mesh2dHandle};
+use bevy::sprite::Mesh2dHandle;
 use bevy::utils::{HashMap, HashSet};
 use itertools::Itertools;
 use ryot_tiled::prelude::*;
@@ -152,27 +152,21 @@ pub(crate) fn load_sprite_texture(
     Some(texture)
 }
 
-/// A system that ensures that all entities with an GameObjectId have a SpriteMaterial mesh bundle.
-pub(crate) fn initialize_sprite_material(
+pub(crate) fn initialize_elevation(
     mut commands: Commands,
-    query: Query<(Entity, Has<Elevation>), (With<GameObjectId>, Without<Handle<SpriteMaterial>>)>,
-    #[cfg(feature = "debug")] q_debug: Query<
-        (Entity, &Layer),
-        (With<GameObjectId>, Without<Handle<SpriteMaterial>>),
-    >,
+    query: Query<Entity, (With<GameObjectId>, Without<Elevation>)>,
 ) {
-    query.iter().for_each(|(entity, has_elevation)| {
-        commands.entity(entity).insert((
-            MaterialMesh2dBundle::<SpriteMaterial>::default(),
-            SpriteLayout::default(),
-        ));
-
-        if !has_elevation {
-            commands.entity(entity).insert(Elevation::default());
-        }
+    query.iter().for_each(|entity| {
+        commands.entity(entity).insert(Elevation::default());
     });
+}
 
-    #[cfg(feature = "debug")]
+/// A system that ensures that all entities with an GameObjectId have a SpriteMaterial mesh bundle.
+#[cfg(feature = "debug")]
+pub(crate) fn debug_sprites(
+    mut commands: Commands,
+    q_debug: Query<(Entity, &Layer), (With<GameObjectId>, Without<Handle<SpriteMaterial>>)>,
+) {
     q_debug.iter().for_each(|(entity, layer)| {
         commands.entity(entity).with_children(|builder| {
             builder.spawn((
