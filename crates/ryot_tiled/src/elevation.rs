@@ -1,46 +1,60 @@
-use crate::bevy_ryot::sprites::SPRITE_BASE_SIZE;
-use bevy::prelude::*;
+use bevy_app::{App, Last, Plugin, Update};
+use bevy_ecs::change_detection::Res;
+use bevy_ecs::entity::Entity;
+use bevy_ecs::prelude::*;
+use bevy_render::prelude::Visibility;
+use glam::{UVec2, Vec2, Vec3};
 use itertools::Itertools;
-use ryot_content::prelude::{EntityType, GameObjectId, SpriteLayout, VisualElements};
-use ryot_tiled::prelude::*;
-use serde::{Deserialize, Serialize};
-use std::fmt::Display;
 
-#[derive(Debug, Clone, Component, Copy, PartialEq, Serialize, Deserialize)]
-pub struct Elevation {
-    pub elevation: f32,
-}
+use ryot_content::prelude::{Elevation, EntityType, GameObjectId, SpriteLayout, VisualElements};
+use ryot_sprites::SpriteSystems;
 
-impl Default for Elevation {
-    fn default() -> Self {
-        Elevation { elevation: 0.0 }
+use crate::map::position::track_position_changes;
+use crate::prelude::{Layer, MapTiles, TilePosition};
+use crate::tile_size;
+
+const SPRITE_BASE_SIZE: UVec2 = UVec2::new(32, 32);
+
+pub struct ElevationPlugin;
+
+impl Plugin for ElevationPlugin {
+    fn build(&self, app: &mut App) {
+        app.add_systems(
+            Update,
+            (
+                initialize_elevation.in_set(SpriteSystems::Initialize),
+                apply_elevation,
+            ),
+        )
+        .add_systems(Last, track_position_changes);
     }
 }
 
-impl Display for Elevation {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "E:{}", self.elevation)
-    }
+fn initialize_elevation(
+    mut commands: Commands,
+    query: Query<Entity, (With<GameObjectId>, Without<Elevation>)>,
+) {
+    query.iter().for_each(|entity| {
+        commands.entity(entity).insert(Elevation::default());
+    });
 }
 
-impl Elevation {
-    pub fn lerp(&self, other: &Elevation, fraction: f32) -> Elevation {
-        Elevation {
-            elevation: self.elevation.lerp(other.elevation, fraction),
-        }
-    }
+pub fn elevate_position(
+    position: &TilePosition,
+    layout: SpriteLayout,
+    layer: Layer,
+    elevation: Elevation,
+) -> Vec3 {
+    let anchor = Vec2::new(
+        elevation.elevation.clamp(0.0, 1.0),
+        (-elevation.elevation).clamp(-1.0, 0.0),
+    );
+    position.to_vec3(&layer)
+        - (SpriteLayout::OneByOne.get_size(&tile_size()).as_vec2() * anchor).extend(0.)
+        - (layout.get_size(&tile_size()).as_vec2() * Vec2::new(0.5, -0.5)).extend(0.)
 }
 
-type ElevationFilter = (
-    With<GameObjectId>,
-    Or<(
-        Changed<GameObjectId>,
-        Changed<Visibility>,
-        Changed<TilePosition>,
-    )>,
-);
-
-pub(crate) fn apply_elevation(
+fn apply_elevation(
     visual_elements: Res<VisualElements>,
     q_tile: Query<(&TilePosition, &Layer), ElevationFilter>,
     mut q_entities: Query<(&mut Elevation, &GameObjectId, Option<&Visibility>)>,
@@ -88,17 +102,11 @@ pub(crate) fn apply_elevation(
     }
 }
 
-pub fn elevate_position(
-    position: &TilePosition,
-    layout: SpriteLayout,
-    layer: Layer,
-    elevation: Elevation,
-) -> Vec3 {
-    let anchor = Vec2::new(
-        elevation.elevation.clamp(0.0, 1.0),
-        (-elevation.elevation).clamp(-1.0, 0.0),
-    );
-    position.to_vec3(&layer)
-        - (SpriteLayout::OneByOne.get_size(&tile_size()).as_vec2() * anchor).extend(0.)
-        - (layout.get_size(&tile_size()).as_vec2() * Vec2::new(0.5, -0.5)).extend(0.)
-}
+type ElevationFilter = (
+    With<GameObjectId>,
+    Or<(
+        Changed<GameObjectId>,
+        Changed<Visibility>,
+        Changed<TilePosition>,
+    )>,
+);

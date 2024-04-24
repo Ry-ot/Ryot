@@ -3,6 +3,8 @@ use std::sync::OnceLock;
 
 #[cfg(feature = "bevy")]
 pub mod camera;
+#[cfg(feature = "bevy")]
+pub mod elevation;
 pub mod grid;
 #[cfg(feature = "lmdb")]
 pub mod lmdb;
@@ -10,6 +12,7 @@ pub mod map;
 
 pub mod prelude {
     pub use crate::{
+        elevation::{elevate_position, ElevationPlugin},
         grid::GRID_LAYER,
         map::directional::{CardinalDirection, Directional, OrdinalDirection},
         map::layer::{
@@ -17,7 +20,7 @@ pub mod prelude {
             RelativeLayerIter,
         },
         map::map_tile::{MapTile, MapTileIter, MapTiles},
-        map::position::{track_position_changes, PreviousPosition, TilePosition},
+        map::position::{PreviousPosition, TilePosition},
         map::sector::Sector,
         tile_offset, tile_size, TILE_SIZE,
     };

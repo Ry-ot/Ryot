@@ -6,11 +6,8 @@ use bevy::prelude::*;
 #[cfg(all(feature = "bevy", feature = "debug"))]
 use bevy_stroked_text::StrokedText;
 use glam::Vec3;
+use ryot_content::prelude::Elevation;
 
-#[cfg(feature = "bevy")]
-use crate::bevy_ryot::elevation::Elevation;
-#[cfg(feature = "bevy")]
-use crate::prelude::elevation::elevate_position;
 #[cfg(feature = "bevy")]
 use ryot_content::prelude::SpriteLayout;
 use ryot_tiled::prelude::*;

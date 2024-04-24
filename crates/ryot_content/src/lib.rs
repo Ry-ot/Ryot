@@ -15,7 +15,7 @@ pub mod prelude {
     pub use crate::{
         content_type::ContentType,
         frame_group::FrameGroup,
-        game::game_object::GameObjectId,
+        game::{elevation::Elevation, game_object::GameObjectId},
         properties::{Category, EntityType, Flags, Properties},
         sprite::{
             layout::{SpriteLayout, SpriteLayoutIter},

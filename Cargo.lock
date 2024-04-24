@@ -5302,6 +5302,7 @@ dependencies = [
 name = "ryot_tiled"
 version = "0.2.0"
 dependencies = [
+ "bevy_app",
  "bevy_asset",
  "bevy_ecs",
  "bevy_hierarchy",
@@ -5310,6 +5311,7 @@ dependencies = [
  "bevy_render",
  "bevy_sprite",
  "bevy_stroked_text",
+ "bevy_time",
  "bevy_transform",
  "bevy_utils",
  "bevy_window",
@@ -5317,6 +5319,7 @@ dependencies = [
  "derive_more",
  "glam",
  "heed",
+ "itertools 0.12.1",
  "postcard",
  "quickcheck",
  "quickcheck_macros",
