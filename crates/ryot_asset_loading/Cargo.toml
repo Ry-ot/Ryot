@@ -1,0 +1,70 @@
+[package]
+name = "ryot_asset_loading"
+version = "0.2.0"
+edition = "2021"
+authors = [
+    "Lucas Grossi <lucas.ggrosis@gmail.com>",
+    "Luan Santos <cargo@luan.sh>",
+]
+license = "MIT OR Apache-2.0"
+description = "A game engine core for Ryot, a MMORPG game, with generic features and systems."
+homepage = "https://github.com/opentibiabr/Ryot"
+repository = "https://github.com/opentibiabr/Ryot"
+documentation = "https://docs.rs/ryot/"
+keywords = ["gamedev", "ryot", "core", "bevy"]
+categories = ["game-development", "game-engines", "games"]
+
+[package.metadata.docs.rs]
+rustdoc-args = ["-Zunstable-options", "--cfg", "docsrs"]
+all-features = true
+
+[dependencies.bevy_app]
+version = "0.13"
+
+[dependencies.bevy_asset]
+version = "0.13"
+
+[dependencies.bevy_ecs]
+version = "0.13"
+features = ["bevy_reflect"]
+
+[dependencies.bevy_math]
+version = "0.13"
+
+[dependencies.bevy_reflect]
+version = "0.13"
+features = ["bevy"]
+
+[dependencies.bevy_render]
+version = "0.13"
+
+[dependencies.bevy_sprite]
+version = "0.13"
+
+[dependencies.bevy_utils]
+version = "0.13"
+
+[dependencies.bevy_asset_loader]
+version = "0.20.1"
+
+[dependencies]
+ryot_core = { path = "../ryot_core", version = "0.2.0" }
+ryot_content = { path = "../ryot_content", version = "0.2.0" }
+ryot_sprites = { path = "../ryot_sprites", version = "0.2.0" }
+ryot_tiled = { path = "../ryot_tiled", version = "0.2.0" }
+ryot_tibia_content = { path = "../ryot_tibia_content", version = "0.2.0", optional = true }
+async-std = "1.12.0"
+derive_more.workspace = true
+glam.workspace = true
+serde_repr = "0.1"
+serde.workspace = true
+serde_json.workspace = true
+strum.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+quickcheck.workspace = true
+quickcheck_macros.workspace = true
+rstest.workspace = true
+time-test.workspace = true
+rand.workspace = true

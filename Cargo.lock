@@ -5023,9 +5023,11 @@ dependencies = [
  "rand",
  "rayon",
  "rstest",
- "ryot_assets",
+ "ryot_asset_loading",
+ "ryot_content",
  "ryot_core",
  "ryot_internal",
+ "ryot_sprites",
  "ryot_tiled",
  "serde",
  "serde_json",
@@ -5038,10 +5040,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "ryot_assets"
+name = "ryot_asset_loading"
 version = "0.2.0"
 dependencies = [
  "async-std",
+ "bevy_app",
  "bevy_asset",
  "bevy_asset_loader",
  "bevy_ecs",
@@ -5056,7 +5059,11 @@ dependencies = [
  "quickcheck_macros",
  "rand",
  "rstest",
+ "ryot_content",
  "ryot_core",
+ "ryot_sprites",
+ "ryot_tibia_content",
+ "ryot_tiled",
  "serde",
  "serde_json",
  "serde_repr",
@@ -5128,6 +5135,35 @@ dependencies = [
 ]
 
 [[package]]
+name = "ryot_content"
+version = "0.2.0"
+dependencies = [
+ "async-std",
+ "bevy_asset",
+ "bevy_asset_loader",
+ "bevy_ecs",
+ "bevy_math",
+ "bevy_reflect",
+ "bevy_render",
+ "bevy_sprite",
+ "bevy_utils",
+ "derive_more",
+ "glam",
+ "quickcheck",
+ "quickcheck_macros",
+ "rand",
+ "rstest",
+ "ryot_core",
+ "ryot_sprites",
+ "serde",
+ "serde_json",
+ "serde_repr",
+ "strum",
+ "thiserror",
+ "time-test",
+]
+
+[[package]]
 name = "ryot_core"
 version = "0.2.0"
 dependencies = [
@@ -5157,11 +5193,13 @@ dependencies = [
 name = "ryot_internal"
 version = "0.2.0"
 dependencies = [
- "ryot_assets",
+ "ryot_asset_loading",
+ "ryot_content",
  "ryot_core",
  "ryot_pathfinder",
  "ryot_ray_casting",
- "ryot_tibia_assets",
+ "ryot_sprites",
+ "ryot_tibia_content",
  "ryot_tiled",
 ]
 
@@ -5205,7 +5243,33 @@ dependencies = [
 ]
 
 [[package]]
-name = "ryot_tibia_assets"
+name = "ryot_sprites"
+version = "0.2.0"
+dependencies = [
+ "async-std",
+ "bevy_asset",
+ "bevy_asset_loader",
+ "bevy_ecs",
+ "bevy_render",
+ "bevy_sprite",
+ "bevy_utils",
+ "derive_more",
+ "glam",
+ "quickcheck",
+ "quickcheck_macros",
+ "rand",
+ "rstest",
+ "ryot_core",
+ "serde",
+ "serde_json",
+ "serde_repr",
+ "strum",
+ "thiserror",
+ "time-test",
+]
+
+[[package]]
+name = "ryot_tibia_content"
 version = "0.2.0"
 dependencies = [
  "bevy_app",
@@ -5220,7 +5284,8 @@ dependencies = [
  "quickcheck_macros",
  "rand",
  "rstest",
- "ryot_assets",
+ "ryot_content",
+ "ryot_sprites",
  "serde",
  "serde_json",
  "serde_repr",
@@ -5255,8 +5320,9 @@ dependencies = [
  "rand",
  "rayon",
  "rstest",
- "ryot_assets",
+ "ryot_content",
  "ryot_core",
+ "ryot_sprites",
  "serde",
  "strum",
  "thiserror",

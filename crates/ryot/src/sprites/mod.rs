@@ -6,7 +6,7 @@ use bevy::prelude::*;
 use glam::Vec2;
 use ryot_tiled::prelude::*;
 
-use ryot_assets::prelude::SpriteLayout;
+use ryot_sprites::prelude::SpriteLayout;
 
 pub mod position;
 

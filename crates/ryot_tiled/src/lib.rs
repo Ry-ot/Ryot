@@ -6,8 +6,6 @@ pub mod camera;
 pub mod grid;
 #[cfg(feature = "lmdb")]
 pub mod lmdb;
-#[cfg(feature = "bevy")]
-pub mod load;
 pub mod map;
 
 pub mod prelude {
@@ -33,7 +31,6 @@ pub mod prelude {
             sector::update_camera_visible_sector,
         },
         grid::{spawn_grid, GridView},
-        load::{prepare_sprite_layouts, prepare_sprite_meshes},
     };
 
     #[cfg(feature = "lmdb")]

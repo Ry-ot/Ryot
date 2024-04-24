@@ -1,7 +1,4 @@
-#[cfg(feature = "bevy")]
-pub mod load;
-
-use crate::prelude::SpriteSheetData;
+use ryot_sprites::prelude::SpriteSheetData;
 use serde::{Deserialize, Serialize};
 
 /// Ryot expects the sprite sheets to be cataloged in a JSON file. This file contains a list of

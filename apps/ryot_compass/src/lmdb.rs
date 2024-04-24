@@ -37,7 +37,7 @@ impl Plugin for LmdbPlugin {
                     load_tile_content.run_if(on_event::<LoadObjects>()),
                 )
                     .chain()
-                    .run_if(in_state(InternalContentState::Ready)),
+                    .run_if(in_state(RyotContentState::Ready)),
             );
     }
 }

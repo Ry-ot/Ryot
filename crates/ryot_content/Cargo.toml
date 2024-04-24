@@ -1,5 +1,5 @@
 [package]
-name = "ryot_assets"
+name = "ryot_content"
 version = "0.2.0"
 edition = "2021"
 authors = [
@@ -31,8 +31,6 @@ bevy = [
     "dep:bevy_utils",
     "dep:bevy_asset_loader",
 ]
-
-debug = []
 
 [dependencies.bevy_asset]
 version = "0.13"
@@ -70,6 +68,7 @@ optional = true
 
 [dependencies]
 ryot_core = { path = "../ryot_core", version = "0.2.0" }
+ryot_sprites = { path = "../ryot_sprites", version = "0.2.0" }
 async-std = "1.12.0"
 derive_more.workspace = true
 glam.workspace = true

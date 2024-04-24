@@ -1,6 +1,6 @@
 //! Sprite loading and drawing.
 use crate::prelude::*;
-use ryot_assets::prelude::{FrameGroup, SpriteInfo, SpriteSheetData, SpriteSheetDataSet};
+use ryot_sprites::prelude::*;
 
 use self::elevation::Elevation;
 use self::sprite_animations::{

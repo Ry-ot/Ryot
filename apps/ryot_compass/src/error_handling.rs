@@ -1,4 +1,4 @@
-use crate::InternalContentState;
+use crate::RyotContentState;
 use bevy::app::AppExit;
 use bevy::prelude::*;
 use bevy_egui::EguiContext;
@@ -9,7 +9,7 @@ impl Plugin for ErrorPlugin {
     fn build(&self, app: &mut App) {
         app.init_resource::<ErrorState>().add_systems(
             Update,
-            (display_error_window, check_for_exit).run_if(in_state(InternalContentState::Ready)),
+            (display_error_window, check_for_exit).run_if(in_state(RyotContentState::Ready)),
         );
     }
 }

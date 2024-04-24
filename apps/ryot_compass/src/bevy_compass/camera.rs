@@ -22,7 +22,7 @@ impl Plugin for CameraPlugin {
             .init_resource::<ToggleActions<PanCamAction>>()
             .add_plugins(PanCamPlugin)
             .add_systems(
-                OnExit(InternalContentState::PreparingContent),
+                OnExit(RyotContentState::PreparingContent),
                 (spawn_camera, spawn_cursor).chain(),
             )
             .insert_resource(CompassAction::get_default_input_map())
@@ -43,7 +43,7 @@ impl Plugin for CameraPlugin {
                         .chain(),
                     update_pan_cam_actions.run_if(resource_changed::<UiState>),
                 )
-                    .run_if(in_state(InternalContentState::Ready)),
+                    .run_if(in_state(RyotContentState::Ready)),
             );
     }
 }

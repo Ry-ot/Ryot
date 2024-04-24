@@ -2,12 +2,15 @@ use crate as tibia;
 use bevy_asset::io::Reader;
 use bevy_asset::{AssetApp, AssetLoader, AsyncReadExt, LoadContext};
 use bevy_utils::BoxedFuture;
-use ryot_assets::prelude::VisualElements;
+use ryot_content::prelude::VisualElements;
 use thiserror::Error;
+
+#[derive(Default)]
+struct TibiaAssetLoader;
 
 #[non_exhaustive]
 #[derive(Debug, Error)]
-pub enum TibiaAssetsLoaderError {
+enum TibiaAssetsLoaderError {
     /// An [IO Error](std::io::Error)
     #[error("Could not read the file: {0}")]
     Io(#[from] std::io::Error),
@@ -15,9 +18,6 @@ pub enum TibiaAssetsLoaderError {
     #[error("Could not decode from protobuf: {0}")]
     DecodeError(#[from] prost::DecodeError),
 }
-
-#[derive(Default)]
-pub struct TibiaAssetLoader;
 
 pub struct TibiaAssetsPlugin;
 

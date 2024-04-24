@@ -23,8 +23,8 @@
 //! Here is an example of how you might use this crate to decode appearance data:
 //!
 //!```rust
-//! use ryot_assets::prelude::VisualElements;
-//! use ryot_tibia_assets as tibia;
+//! use ryot_content::prelude::VisualElements;
+//! use ryot_tibia_content as tibia;
 //!
 //! // Vec::new() simulates raw bytes received from Tibia's appearance data
 //! let visual_elements: VisualElements = tibia::from_bytes(&Vec::new()).unwrap();
@@ -69,7 +69,7 @@
 //! ]
 //! ```
 use prost::{DecodeError, Message};
-use ryot_assets::prelude as ryot;
+use ryot_content::prelude as ryot;
 
 include!(concat!(env!("OUT_DIR"), "/tibia.rs"));
 
@@ -83,5 +83,5 @@ pub fn from_bytes(bytes: &[u8]) -> Result<ryot::VisualElements, DecodeError> {
 }
 
 pub mod prelude {
-    pub use crate::{conversions, *};
+    pub use crate::{asset_loader::TibiaAssetsPlugin, conversions, *};
 }

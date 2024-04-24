@@ -1,10 +1,10 @@
 use std::time::Duration;
 
-use crate::bevy_ryot::{GameObjectId, InternalContentState};
+use crate::bevy_ryot::{GameObjectId, RyotContentState};
 use crate::position::SpriteMovement;
 use bevy::prelude::*;
 use bevy::render::view::{check_visibility, VisibilitySystems, VisibleEntities};
-use ryot_assets::prelude::FrameGroup;
+use ryot_content::prelude::FrameGroup;
 use ryot_tiled::prelude::*;
 
 mod brushes;
@@ -26,7 +26,7 @@ impl Plugin for DrawingPlugin {
                 apply_detail_level_to_visibility
                     .in_set(VisibilitySystems::CheckVisibility)
                     .after(check_visibility)
-                    .run_if(in_state(InternalContentState::Ready)),
+                    .run_if(in_state(RyotContentState::Ready)),
             )
             .add_systems(
                 PostUpdate,

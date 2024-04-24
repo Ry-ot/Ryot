@@ -6,7 +6,7 @@ use bevy_reflect::prelude::*;
 #[cfg(all(feature = "bevy", feature = "debug"))]
 use bevy_render::color::*;
 
-use ryot_assets::prelude::Category;
+use ryot_content::prelude::Category;
 use serde::{Deserialize, Serialize};
 use std::{
     cmp::Ordering,
