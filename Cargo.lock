@@ -5023,7 +5023,7 @@ dependencies = [
  "rand",
  "rayon",
  "rstest",
- "ryot_asset_loading",
+ "ryot_assets",
  "ryot_content",
  "ryot_core",
  "ryot_internal",
@@ -5040,7 +5040,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ryot_asset_loading"
+name = "ryot_assets"
 version = "0.2.0"
 dependencies = [
  "async-std",
@@ -5063,7 +5063,7 @@ dependencies = [
  "ryot_content",
  "ryot_core",
  "ryot_sprites",
- "ryot_tibia_content",
+ "ryot_tibia",
  "ryot_tiled",
  "serde",
  "serde_json",
@@ -5193,13 +5193,13 @@ dependencies = [
 name = "ryot_internal"
 version = "0.2.0"
 dependencies = [
- "ryot_asset_loading",
+ "ryot_assets",
  "ryot_content",
  "ryot_core",
  "ryot_pathfinder",
  "ryot_ray_casting",
  "ryot_sprites",
- "ryot_tibia_content",
+ "ryot_tibia",
  "ryot_tiled",
 ]
 
@@ -5272,7 +5272,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ryot_tibia_content"
+name = "ryot_tibia"
 version = "0.2.0"
 dependencies = [
  "bevy_app",

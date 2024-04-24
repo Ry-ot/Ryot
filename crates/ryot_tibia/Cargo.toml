@@ -1,5 +1,5 @@
 [package]
-name = "ryot_tibia_content"
+name = "ryot_tibia"
 version = "0.2.0"
 edition = "2021"
 authors = [

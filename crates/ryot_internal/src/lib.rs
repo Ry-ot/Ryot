@@ -2,7 +2,7 @@
 pub mod prelude;
 
 pub mod assets {
-    pub use ryot_asset_loading::*;
+    pub use ryot_assets::*;
 }
 
 pub mod content {
@@ -26,9 +26,9 @@ pub mod pathfinder {
     pub use ryot_pathfinder::*;
 }
 
-#[cfg(feature = "ryot_tibia_content")]
+#[cfg(feature = "ryot_tibia")]
 pub mod tibia {
-    pub use ryot_tibia_content::*;
+    pub use ryot_tibia::*;
 }
 
 #[cfg(feature = "ryot_ray_casting")]
