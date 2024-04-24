@@ -24,6 +24,7 @@ default = ["bevy"]
 bevy = [
     "dep:bevy_asset",
     "dep:bevy_ecs",
+    "dep:bevy_reflect",
     "dep:bevy_render",
     "dep:bevy_sprite",
     "dep:bevy_utils",
@@ -37,6 +38,11 @@ optional = true
 [dependencies.bevy_ecs]
 version = "0.13"
 features = ["bevy_reflect"]
+optional = true
+
+[dependencies.bevy_reflect]
+version = "0.13"
+features = ["bevy"]
 optional = true
 
 [dependencies.bevy_render]
