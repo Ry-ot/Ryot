@@ -15,10 +15,7 @@ use egui_dock::{DockArea, DockState, NodeIndex};
 #[cfg(not(target_arch = "wasm32"))]
 use ryot::prelude::*;
 use ryot::{
-    bevy_ryot::{
-        drawing::{Brushes, DrawingBundle},
-        GridView, InternalContentState,
-    },
+    bevy_ryot::drawing::{Brushes, DrawingBundle},
     include_svg,
 };
 

@@ -1,6 +1,3 @@
-#[cfg(feature = "bevy")]
-use bevy_ecs::component::Component;
-
 use glam::{UVec2, Vec2};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use strum::EnumIter;
@@ -8,7 +5,7 @@ use strum::EnumIter;
 #[derive(
     Serialize_repr, Deserialize_repr, Default, Eq, PartialEq, Debug, Copy, Clone, EnumIter, Hash,
 )]
-#[cfg_attr(feature = "bevy", derive(Component))]
+#[cfg_attr(feature = "bevy", derive(bevy_ecs::component::Component))]
 #[repr(u32)]
 pub enum SpriteLayout {
     #[default]

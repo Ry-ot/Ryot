@@ -26,6 +26,7 @@ bevy = [
     "dep:bevy_ecs",
     "dep:bevy_time",
     "dep:bevy_utils",
+    "dep:bevy_window",
     "dep:leafwing-input-manager",
 ]
 
@@ -45,6 +46,10 @@ version = "0.13"
 optional = true
 
 [dependencies.bevy_utils]
+version = "0.13"
+optional = true
+
+[dependencies.bevy_window]
 version = "0.13"
 optional = true
 

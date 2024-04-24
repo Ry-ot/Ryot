@@ -1,7 +1,6 @@
 //! Systems responsible for deleting visual entities from the map using the ECS API.
 //! The systems are set to run after the update systems, so that the entities are updated before
 //! they are deleted. Their interaction is controlled by the state of Deletion component.
-
 use crate::bevy_ryot::drawing::*;
 
 #[cfg(feature = "lmdb")]
