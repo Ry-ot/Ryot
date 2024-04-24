@@ -1,4 +1,4 @@
-use crate::prelude::*;
+use crate::prelude::SpriteLayout;
 use glam::UVec2;
 use rstest::rstest;
 use serde_json::to_string;

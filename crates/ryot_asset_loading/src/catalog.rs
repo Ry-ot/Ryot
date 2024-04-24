@@ -1,12 +1,11 @@
 use bevy_asset::{Asset, Assets, Handle};
-use bevy_asset_loader::asset_collection::AssetCollection;
 use bevy_ecs::change_detection::ResMut;
-use bevy_ecs::prelude::{Res, Resource};
+use bevy_ecs::prelude::Res;
 use bevy_reflect::TypePath;
 use bevy_utils::tracing::debug;
 use ryot_content::prelude::SpriteSheetDataSet;
 
-pub trait CatalogAsset: Resource + AssetCollection + Send + Sync + 'static {
+pub trait CatalogAsset: crate::RyotAsset {
     fn catalog_content(&self) -> &Handle<Catalog>;
 }
 

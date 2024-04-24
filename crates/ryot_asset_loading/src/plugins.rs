@@ -8,7 +8,6 @@ use bevy_asset_loader::prelude::{
 use bevy_common_assets::json::JsonAssetPlugin;
 use bevy_ecs::prelude::{IntoSystemConfigs, OnEnter};
 use ryot_content::prelude::*;
-use ryot_sprites::atlas::AtlasLayoutsAsset;
 use ryot_tiled::prelude::TilePosition;
 use std::marker::PhantomData;
 

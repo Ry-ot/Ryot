@@ -3,8 +3,6 @@
 //! This module is intended to be used as a library dependency for RyOT games.
 //! It provides common ways of dealing with OT content, such as loading sprites,
 //! configuring the game, and handling asynchronous events.
-#[cfg(feature = "debug")]
-use crate::position::debug_sprite_position;
 use crate::prelude::*;
 use bevy::app::{App, Plugin, Update};
 use bevy::prelude::*;
@@ -20,14 +18,16 @@ pub mod drawing;
 
 pub mod sprites;
 
+pub mod position;
 pub(crate) mod sprite_animations;
+
 pub use sprite_animations::{toggle_sprite_animation, AnimationDuration};
 
 pub struct RyotLegacySpritePlugin;
 
 impl Plugin for RyotLegacySpritePlugin {
     fn build(&self, app: &mut App) {
-        app.add_plugins(ryot_sprites::prelude::RyotSpritePlugin);
+        app.add_plugins(RyotSpritePlugin);
 
         app.add_optional_plugin(StrokedTextPlugin)
             .init_resource::<sprite_animations::SpriteAnimationEnabled>()
@@ -45,7 +45,12 @@ impl Plugin for RyotLegacySpritePlugin {
                         .pipe(sprites::store_loaded_appearances_system)
                         .run_if(on_event::<sprites::LoadAppearanceEvent>())
                         .in_set(SpriteSystems::Load),
-                    sprites::initialize_sprite_material.in_set(SpriteSystems::Initialize),
+                    (
+                        #[cfg(feature = "debug")]
+                        sprites::debug_sprites,
+                        sprites::initialize_elevation,
+                    )
+                        .in_set(SpriteSystems::Initialize),
                     sprites::update_sprite_system.in_set(SpriteSystems::Update),
                     sprite_animations::initialize_animation_sprite_system
                         .in_set(AnimationSystems::Initialize),
