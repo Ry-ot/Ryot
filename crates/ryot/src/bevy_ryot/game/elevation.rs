@@ -1,8 +1,7 @@
 use crate::bevy_ryot::sprites::SPRITE_BASE_SIZE;
-use crate::bevy_ryot::GameObjectId;
 use bevy::prelude::*;
 use itertools::Itertools;
-use ryot_content::prelude::{EntityType, VisualElements};
+use ryot_content::prelude::{EntityType, GameObjectId, VisualElements};
 use ryot_tiled::prelude::*;
 use serde::{Deserialize, Serialize};
 use std::fmt::Display;

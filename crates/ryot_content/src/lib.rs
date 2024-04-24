@@ -1,6 +1,7 @@
 #![feature(trait_alias)]
 pub mod content_type;
 pub mod frame_group;
+pub mod game;
 pub mod properties;
 #[cfg(feature = "bevy")]
 pub mod state;
@@ -13,6 +14,7 @@ pub mod prelude {
     pub use crate::{
         content_type::ContentType,
         frame_group::FrameGroup,
+        game::game_object::GameObjectId,
         properties::{Category, EntityType, Flags, Properties},
         visual_element::{VisualElement, VisualElements},
     };

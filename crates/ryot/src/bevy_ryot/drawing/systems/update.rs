@@ -6,9 +6,9 @@ use bevy::prelude::*;
 #[cfg(feature = "lmdb")]
 use crate::bevy_ryot::lmdb::LmdbEnv;
 #[cfg(feature = "lmdb")]
-use crate::bevy_ryot::GameObjectId;
-#[cfg(feature = "lmdb")]
 use bevy::log::error;
+#[cfg(feature = "lmdb")]
+use ryot_content::prelude::GameObjectId;
 #[cfg(feature = "lmdb")]
 use std::collections::HashMap;
 
