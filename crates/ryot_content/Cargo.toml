@@ -68,7 +68,6 @@ optional = true
 
 [dependencies]
 ryot_core = { path = "../ryot_core", version = "0.2.0" }
-ryot_sprites = { path = "../ryot_sprites", version = "0.2.0" }
 async-std = "1.12.0"
 derive_more.workspace = true
 glam.workspace = true

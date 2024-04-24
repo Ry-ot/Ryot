@@ -3,12 +3,12 @@ use crate::prelude::*;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use rand::Rng;
+use ryot_sprites::prelude::*;
 use ryot_tiled::prelude::*;
 use std::time::Duration;
 
 use self::sprites::{
     sprite_material_from_params, ChangingAppearanceFilter, LoadedAppearances, LoadedSprite,
-    SpriteMaterial,
 };
 
 /// A resource to enable/disable sprite animation globally.

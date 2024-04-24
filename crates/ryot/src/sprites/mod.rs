@@ -1,12 +1,12 @@
 use crate::bevy_ryot::elevation::Elevation;
 #[cfg(feature = "bevy")]
-use crate::bevy_ryot::sprites::SpriteMaterial;
-#[cfg(feature = "bevy")]
 use bevy::prelude::*;
 use glam::Vec2;
+#[cfg(feature = "bevy")]
+use ryot_sprites::prelude::*;
 use ryot_tiled::prelude::*;
 
-use ryot_sprites::prelude::SpriteLayout;
+use ryot_content::prelude::SpriteLayout;
 
 pub mod position;
 

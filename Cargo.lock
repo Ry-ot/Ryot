@@ -5047,6 +5047,7 @@ dependencies = [
  "bevy_app",
  "bevy_asset",
  "bevy_asset_loader",
+ "bevy_common_assets",
  "bevy_ecs",
  "bevy_math",
  "bevy_reflect",
@@ -5154,7 +5155,6 @@ dependencies = [
  "rand",
  "rstest",
  "ryot_core",
- "ryot_sprites",
  "serde",
  "serde_json",
  "serde_repr",
@@ -5247,6 +5247,7 @@ name = "ryot_sprites"
 version = "0.2.0"
 dependencies = [
  "async-std",
+ "bevy_app",
  "bevy_asset",
  "bevy_asset_loader",
  "bevy_ecs",
@@ -5260,6 +5261,7 @@ dependencies = [
  "quickcheck_macros",
  "rand",
  "rstest",
+ "ryot_content",
  "ryot_core",
  "serde",
  "serde_json",

@@ -1,4 +1,4 @@
-use ryot_sprites::prelude::SpriteSheetData;
+use crate::prelude::*;
 use serde::{Deserialize, Serialize};
 
 /// Ryot expects the sprite sheets to be cataloged in a JSON file. This file contains a list of

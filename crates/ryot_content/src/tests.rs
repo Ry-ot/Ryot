@@ -1,7 +1,7 @@
 use crate::prelude::ContentType;
+use crate::prelude::*;
 use glam::UVec2;
 use rstest::{fixture, rstest};
-use ryot_sprites::prelude::*;
 use serde_json::{from_str, to_string};
 
 #[rstest]

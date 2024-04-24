@@ -3,6 +3,7 @@ pub mod content_type;
 pub mod frame_group;
 pub mod game;
 pub mod properties;
+pub mod sprite;
 #[cfg(feature = "bevy")]
 pub mod state;
 pub mod visual_element;
@@ -16,6 +17,11 @@ pub mod prelude {
         frame_group::FrameGroup,
         game::game_object::GameObjectId,
         properties::{Category, EntityType, Flags, Properties},
+        sprite::{
+            layout::{SpriteLayout, SpriteLayoutIter},
+            sprite_sheet_data::{SpriteSheetData, SpriteSheetDataSet},
+            Animation, SpriteInfo,
+        },
         visual_element::{VisualElement, VisualElements},
     };
 

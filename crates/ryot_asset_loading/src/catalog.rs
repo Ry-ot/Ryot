@@ -4,7 +4,7 @@ use bevy_ecs::change_detection::ResMut;
 use bevy_ecs::prelude::{Res, Resource};
 use bevy_reflect::TypePath;
 use bevy_utils::tracing::debug;
-use ryot_sprites::prelude::SpriteSheetDataSet;
+use ryot_content::prelude::SpriteSheetDataSet;
 
 pub trait CatalogAsset: Resource + AssetCollection + Send + Sync + 'static {
     fn catalog_content(&self) -> &Handle<Catalog>;

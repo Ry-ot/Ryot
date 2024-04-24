@@ -1,7 +1,7 @@
 use derive_more::{Deref, DerefMut};
 
+use crate::prelude::SpriteInfo;
 use crate::properties::*;
-use ryot_sprites::prelude::SpriteInfo;
 
 #[cfg(feature = "bevy")]
 use bevy_utils::HashMap;

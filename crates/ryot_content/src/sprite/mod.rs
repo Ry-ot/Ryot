@@ -1,3 +1,6 @@
+pub mod layout;
+pub mod sprite_sheet_data;
+
 #[derive(Clone, PartialEq, Default, Debug)]
 pub struct SpriteInfo {
     pub ids: Vec<u32>,
