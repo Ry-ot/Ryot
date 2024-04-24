@@ -24,7 +24,7 @@ debug = [
 ]
 
 bevy = [
-    "ryot_asset_loading",
+    "ryot_assets",
     "ryot_core/bevy",
     "ryot_tiled/bevy",
 ]
@@ -40,8 +40,8 @@ ryot_core = { path = "../ryot_core", version = "0.2.0" }
 ryot_content = { path = "../ryot_content", version = "0.2.0" }
 ryot_sprites = { path = "../ryot_sprites", version = "0.2.0" }
 ryot_tiled = { path = "../ryot_tiled", version = "0.2.0" }
-ryot_asset_loading = { path = "../ryot_asset_loading", version = "0.2.0", optional = true }
-ryot_tibia_content = { path = "../ryot_tibia_content", version = "0.2.0", optional = true }
+ryot_assets = { path = "../ryot_assets", version = "0.2.0", optional = true }
+ryot_tibia = { path = "../ryot_tibia", version = "0.2.0", optional = true }
 ryot_pathfinder = { path = "../ryot_pathfinder", version = "0.2.0", optional = true }
 ryot_ray_casting = { path = "../ryot_ray_casting", version = "0.2.0", optional = true }
 

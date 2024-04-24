@@ -24,7 +24,7 @@
 //!
 //!```rust
 //! use ryot_content::prelude::VisualElements;
-//! use ryot_tibia_content as tibia;
+//! use ryot_tibia as tibia;
 //!
 //! // Vec::new() simulates raw bytes received from Tibia's appearance data
 //! let visual_elements: VisualElements = tibia::from_bytes(&Vec::new()).unwrap();

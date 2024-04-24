@@ -48,8 +48,8 @@ impl<C: VisualElementsAsset + Default> Plugin for BaseContentPlugin<C> {
                 prepare_visual_elements::<C>,
             );
 
-        #[cfg(feature = "ryot_tibia_content")]
-        app.add_plugins(ryot_tibia_content::prelude::TibiaAssetsPlugin);
+        #[cfg(feature = "ryot_tibia")]
+        app.add_plugins(ryot_tibia::prelude::TibiaAssetsPlugin);
     }
 }
 
