@@ -1,5 +1,6 @@
-use crate::bevy_ryot::drawing::*;
-use bevy::ecs::system::Command;
+use crate::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_ecs::system::Command;
 
 /// The main command for manipulating the content of a tile. It is used to update the content of a
 /// tile, by adding, removing or updating the entities that are drawn on the tile. It is also used

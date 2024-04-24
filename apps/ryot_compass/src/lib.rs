@@ -12,8 +12,6 @@ use ryot::prelude::*;
 
 #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
 pub mod lmdb;
-#[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]
-pub use lmdb::*;
 
 mod error_handling;
 pub use error_handling::*;

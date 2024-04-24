@@ -1,5 +1,3 @@
-use crate::lmdb;
-use crate::lmdb::*;
 use crate::prelude::*;
 use heed::types::Bytes;
 use rayon::prelude::*;
@@ -57,7 +55,7 @@ impl ItemRepository for ItemsFromHeedLmdb {
         let mut tiles = vec![];
 
         let (rtxn, rodb) =
-            lmdb::ro::<Bytes, SerdePostcard<HashMap<Layer, Item>>>(&self.env, DatabaseName::Tiles)?;
+            ro::<Bytes, SerdePostcard<HashMap<Layer, Item>>>(&self.env, DatabaseName::Tiles)?;
 
         for key in keys {
             let tile: Option<HashMap<Layer, Item>> = rodb.get(&rtxn, &key)?;
@@ -73,7 +71,7 @@ impl ItemRepository for ItemsFromHeedLmdb {
 
     fn save_from_tiles(&self, tiles: Vec<Tile>) -> error::Result<()> {
         let (mut wtxn, db) =
-            lmdb::rw::<Bytes, SerdePostcard<HashMap<Layer, Item>>>(&self.env, DatabaseName::Tiles)?;
+            rw::<Bytes, SerdePostcard<HashMap<Layer, Item>>>(&self.env, DatabaseName::Tiles)?;
 
         for tile in tiles {
             let item = tile.items;
@@ -90,7 +88,7 @@ impl ItemRepository for ItemsFromHeedLmdb {
 
     fn delete(&self, key: Vec<u8>) -> error::Result<()> {
         let (mut wtxn, db) =
-            lmdb::rw::<Bytes, SerdePostcard<HashMap<Layer, Item>>>(&self.env, DatabaseName::Tiles)?;
+            rw::<Bytes, SerdePostcard<HashMap<Layer, Item>>>(&self.env, DatabaseName::Tiles)?;
 
         db.delete(&mut wtxn, &key)?;
 
@@ -101,7 +99,7 @@ impl ItemRepository for ItemsFromHeedLmdb {
 
     fn delete_multiple(&self, keys: Vec<Vec<u8>>) -> error::Result<()> {
         let (mut wtxn, db) =
-            lmdb::rw::<Bytes, SerdePostcard<HashMap<Layer, Item>>>(&self.env, DatabaseName::Tiles)?;
+            rw::<Bytes, SerdePostcard<HashMap<Layer, Item>>>(&self.env, DatabaseName::Tiles)?;
 
         for key in keys {
             db.delete(&mut wtxn, &key)?;

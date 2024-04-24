@@ -1,11 +1,7 @@
-#[cfg(feature = "bevy")]
-use std::time::Duration;
-
-#[cfg(feature = "bevy")]
 use bevy::prelude::*;
+
 #[cfg(all(feature = "bevy", feature = "debug"))]
 use bevy_stroked_text::StrokedText;
-use glam::Vec3;
 use ryot_content::prelude::Elevation;
 
 #[cfg(feature = "bevy")]
@@ -15,34 +11,6 @@ use ryot_tiled::prelude::*;
 #[cfg(feature = "debug")]
 #[derive(Component)]
 pub struct PositionDebugText;
-
-#[cfg(feature = "bevy")]
-#[derive(Component, Debug, Clone)]
-pub struct SpriteMovement {
-    pub origin: Vec3,
-    pub destination: Vec3,
-    pub timer: Timer,
-    pub despawn_on_end: bool,
-}
-
-#[cfg(feature = "bevy")]
-impl SpriteMovement {
-    pub fn new(origin: Vec3, destination: Vec3, duration: Duration) -> Self {
-        Self {
-            origin,
-            destination,
-            timer: Timer::new(duration, TimerMode::Once),
-            despawn_on_end: false,
-        }
-    }
-
-    pub fn despawn_on_end(self, despawn_on_end: bool) -> Self {
-        Self {
-            despawn_on_end,
-            ..self
-        }
-    }
-}
 
 #[cfg(feature = "debug")]
 pub fn debug_y_offset(layer: &Layer) -> f32 {

@@ -1,7 +1,6 @@
 use crate::{Cursor, CursorCommand, InputType};
 use bevy::prelude::*;
-use ryot::bevy_ryot::drawing::DrawingBundle;
-use ryot::prelude::drawing::*;
+use ryot::prelude::*;
 
 pub fn change_brush_shape(
     cursor_query: Query<&Cursor>,

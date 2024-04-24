@@ -30,6 +30,7 @@ bevy = [
 ]
 
 compression = ["ryot_core/compression"]
+egui = ["ryot_tiled/egui"]
 lmdb = ["ryot_tiled/lmdb"]
 
 tiled = ["ryot_pathfinder?/ryot_tiled"]

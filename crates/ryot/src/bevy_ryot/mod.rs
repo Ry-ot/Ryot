@@ -4,17 +4,11 @@
 //! It provides common ways of dealing with OT content, such as loading sprites,
 //! configuring the game, and handling asynchronous events.
 use crate::prelude::*;
-use bevy::app::{App, Plugin, Update};
 use bevy::prelude::*;
 use bevy_stroked_text::StrokedTextPlugin;
 
 mod game;
 pub use game::*;
-
-#[cfg(feature = "lmdb")]
-pub mod lmdb;
-
-pub mod drawing;
 
 pub mod sprites;
 

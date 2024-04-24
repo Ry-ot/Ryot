@@ -78,7 +78,7 @@ tibia = [
 debug = ["dep:bevy_stroked_text", "ryot_internal/debug"]
 lmdb = ["dep:heed", "dep:postcard", "ryot_internal/lmdb"]
 compression = ["ryot_internal/compression"]
-egui = ["dep:egui"]
+egui = ["dep:egui", "ryot_internal/egui"]
 
 pathfinder = ["ryot_internal/ryot_pathfinder"]
 tiled_pathfinder = ["ryot_internal/tiled", "ryot_internal/ryot_pathfinder"]

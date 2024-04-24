@@ -8,8 +8,6 @@ use bevy_egui::{EguiContext, EguiContexts};
 
 use leafwing_input_manager::common_conditions::action_just_pressed;
 use leafwing_input_manager::prelude::*;
-use ryot::bevy_ryot::drawing::{Deletion, DrawingBundle};
-use ryot::prelude::drawing::{BrushItem, BrushParams, Brushes};
 use ryot::prelude::*;
 
 pub struct CameraPlugin;

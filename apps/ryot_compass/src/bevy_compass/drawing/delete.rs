@@ -1,6 +1,6 @@
 use crate::{CommandHistory, Cursor, CursorCommand, ToolMode};
 use bevy::prelude::*;
-use ryot::prelude::drawing::*;
+use ryot::prelude::*;
 
 /// System responsible for toggling the deletion mode. This system is called when the user presses the
 /// [`ToggleDeletion`](crate::CompassAction::ToggleDeletion) action. When the deletion mode is active

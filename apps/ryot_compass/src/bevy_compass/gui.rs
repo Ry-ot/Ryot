@@ -13,10 +13,6 @@ use bevy_egui::{EguiContext, EguiContexts, EguiPlugin, EguiUserTextures};
 use egui::{load::SizedTexture, Slider, TextureId};
 use egui_dock::{DockArea, DockState, NodeIndex};
 use ryot::prelude::*;
-use ryot::{
-    bevy_ryot::drawing::{Brushes, DrawingBundle},
-    include_svg,
-};
 
 const DELETE_ICON: egui::ImageSource = include_svg!(
     r##"

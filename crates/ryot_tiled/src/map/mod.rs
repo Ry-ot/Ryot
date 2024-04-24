@@ -1,5 +1,10 @@
 pub mod directional;
+#[cfg(feature = "bevy")]
+pub mod elevation;
+pub mod grid;
 pub mod layer;
+#[cfg(feature = "lmdb")]
+pub mod lmdb;
 pub mod map_tile;
 pub mod position;
 pub mod sector;

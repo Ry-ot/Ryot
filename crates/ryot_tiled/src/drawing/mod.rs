@@ -1,10 +1,15 @@
 use std::time::Duration;
 
-use crate::bevy_ryot::{GameObjectId, RyotContentState};
-use bevy::prelude::*;
-use bevy::render::view::{check_visibility, VisibilitySystems, VisibleEntities};
+use crate::prelude::*;
+use bevy_app::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_reflect::Reflect;
+use bevy_render::prelude::*;
+use bevy_render::view::{check_visibility, VisibilitySystems, VisibleEntities};
+use bevy_utils::*;
+use glam::Vec3;
 use ryot_content::prelude::FrameGroup;
-use ryot_tiled::prelude::*;
+use ryot_content::prelude::{GameObjectId, RyotContentState};
 
 mod brushes;
 pub use brushes::*;
@@ -13,14 +18,14 @@ mod commands;
 pub use commands::*;
 
 mod systems;
-use crate::prelude::SpriteMovement;
 pub use systems::*;
 
-pub struct DrawingPlugin;
+pub struct RyotDrawingPlugin;
 
-impl Plugin for DrawingPlugin {
+impl Plugin for RyotDrawingPlugin {
     fn build(&self, app: &mut App) {
         app.register_type::<Layer>()
+            .init_resource::<MapTiles<Entity>>()
             .add_systems(
                 PostUpdate,
                 apply_detail_level_to_visibility

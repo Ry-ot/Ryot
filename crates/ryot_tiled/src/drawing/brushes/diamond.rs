@@ -1,10 +1,12 @@
-use crate::bevy_ryot::drawing::brushes::*;
 #[cfg(feature = "egui")]
 use crate::include_svg;
+
+use crate::prelude::*;
 
 pub struct Diamond;
 
 const NAME: &str = "Diamond";
+
 #[cfg(feature = "egui")]
 const ICON: egui::ImageSource = include_svg!(
     r##"

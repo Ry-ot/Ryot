@@ -1,13 +1,16 @@
 //! Systems responsible for deleting visual entities from the map using the ECS API.
 //! The systems are set to run after the update systems, so that the entities are updated before
 //! they are deleted. Their interaction is controlled by the state of Deletion component.
-use crate::bevy_ryot::drawing::*;
+use crate::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_reflect::Reflect;
+use bevy_render::prelude::*;
 
 #[cfg(feature = "lmdb")]
-use bevy::utils::HashMap;
+use bevy_utils::tracing::error;
 
 #[cfg(feature = "lmdb")]
-use crate::bevy_ryot::lmdb::LmdbEnv;
+use bevy_utils::HashMap;
 
 /// A component that flags the entity to be deleted from the map and controls the state
 /// of the deletion. The state is used to control the deletion flows and avoid deleting
