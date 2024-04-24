@@ -9,6 +9,12 @@ pub mod compression;
 #[cfg(feature = "bevy")]
 pub mod conditions;
 
+#[cfg(feature = "bevy")]
+pub mod plugins;
+
+#[cfg(feature = "bevy")]
+pub mod window;
+
 pub mod prelude {
     pub use crate::{async_task::execute, is_true, Flag};
 
@@ -18,6 +24,8 @@ pub mod prelude {
         cache::{Cache, CacheSystems},
         conditions::{on_hold_every, run_every, run_every_millis, run_every_secs, TimeArg},
         on_hold_every,
+        plugins::OptionalPlugin,
+        window::entitled_window,
     };
 
     #[cfg(feature = "compression")]

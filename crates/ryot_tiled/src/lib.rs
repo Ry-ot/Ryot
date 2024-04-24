@@ -3,19 +3,23 @@ use std::sync::OnceLock;
 
 #[cfg(feature = "bevy")]
 pub mod camera;
+pub mod grid;
 #[cfg(feature = "lmdb")]
 pub mod lmdb;
+#[cfg(feature = "bevy")]
+pub mod load;
 pub mod map;
 
 pub mod prelude {
     pub use crate::{
+        grid::GRID_LAYER,
         map::directional::{CardinalDirection, Directional, OrdinalDirection},
         map::layer::{
             compute_z_transform, BottomLayer, Layer, LayerIter, Order, RelativeLayer,
             RelativeLayerIter,
         },
         map::map_tile::{MapTile, MapTileIter, MapTiles},
-        map::position::{PreviousPosition, TilePosition},
+        map::position::{track_position_changes, PreviousPosition, TilePosition},
         map::sector::Sector,
         tile_offset, tile_size, TILE_SIZE,
     };
@@ -28,7 +32,8 @@ pub mod prelude {
             },
             sector::update_camera_visible_sector,
         },
-        map::position::track_position_changes,
+        grid::{spawn_grid, GridView},
+        load::{prepare_sprite_layouts, prepare_sprite_meshes},
     };
 
     #[cfg(feature = "lmdb")]

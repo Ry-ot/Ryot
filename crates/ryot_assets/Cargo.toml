@@ -24,8 +24,12 @@ default = ["bevy"]
 bevy = [
     "dep:bevy_asset",
     "dep:bevy_ecs",
+    "dep:bevy_math",
     "dep:bevy_reflect",
+    "dep:bevy_render",
+    "dep:bevy_sprite",
     "dep:bevy_utils",
+    "dep:bevy_asset_loader",
 ]
 
 debug = []
@@ -39,13 +43,29 @@ version = "0.13"
 features = ["bevy_reflect"]
 optional = true
 
+[dependencies.bevy_math]
+version = "0.13"
+optional = true
+
 [dependencies.bevy_reflect]
 version = "0.13"
 features = ["bevy"]
 optional = true
 
+[dependencies.bevy_render]
+version = "0.13"
+optional = true
+
+[dependencies.bevy_sprite]
+version = "0.13"
+optional = true
+
 [dependencies.bevy_utils]
 version = "0.13"
+optional = true
+
+[dependencies.bevy_asset_loader]
+version = "0.20.1"
 optional = true
 
 [dependencies]

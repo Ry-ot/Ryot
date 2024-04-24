@@ -22,11 +22,13 @@ all-features = true
 default = ["bevy"]
 
 bevy = [
+    "dep:bevy_asset",
     "dep:bevy_ecs",
     "dep:bevy_hierarchy",
     "dep:bevy_math",
     "dep:bevy_reflect",
     "dep:bevy_render",
+    "dep:bevy_sprite",
     "dep:bevy_transform",
     "dep:bevy_utils",
     "dep:bevy_window",
@@ -35,6 +37,10 @@ bevy = [
 debug = []
 test-utils = ["dep:quickcheck", "dep:quickcheck_macros"]
 lmdb = ["dep:heed"]
+
+[dependencies.bevy_asset]
+version = "0.13"
+optional = true
 
 [dependencies.bevy_ecs]
 version = "0.13"
@@ -56,6 +62,10 @@ features = ["bevy"]
 optional = true
 
 [dependencies.bevy_render]
+version = "0.13"
+optional = true
+
+[dependencies.bevy_sprite]
 version = "0.13"
 optional = true
 

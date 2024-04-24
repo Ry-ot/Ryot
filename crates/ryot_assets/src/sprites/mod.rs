@@ -1,4 +1,8 @@
+#[cfg(feature = "bevy")]
+pub mod atlas;
 pub mod layout;
+#[cfg(feature = "bevy")]
+pub mod meshes;
 pub mod sheet;
 
 pub static SPRITE_SHEET_FOLDER: &str = "sprite-sheets";

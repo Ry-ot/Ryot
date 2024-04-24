@@ -1,5 +1,7 @@
+#[cfg(feature = "bevy")]
+pub mod load;
+
 use crate::prelude::SpriteSheetData;
-use bevy_reflect::TypePath;
 use serde::{Deserialize, Serialize};
 
 /// Ryot expects the sprite sheets to be cataloged in a JSON file. This file contains a list of
@@ -9,7 +11,8 @@ use serde::{Deserialize, Serialize};
 ///
 /// You can use your own json struct to represent the catalog file, as long as it implements
 /// the Into<Option<SpriteSheetData>> + Clone.
-#[derive(Serialize, Deserialize, TypePath, Debug, Clone, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "bevy", derive(bevy_reflect::TypePath))]
 #[serde(tag = "type")]
 pub enum ContentType {
     #[serde(rename = "sprite")]

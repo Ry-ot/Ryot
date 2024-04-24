@@ -1,6 +1,5 @@
 use bevy::prelude::*;
 use bevy_asset_loader::asset_collection::AssetCollection;
-use ryot::bevy_ryot::Catalog;
 use ryot::prelude::*;
 
 #[derive(AssetCollection, Resource, Default)]
