@@ -44,7 +44,7 @@ impl Plugin for UiPlugin {
         app.add_optional_plugin(EguiPlugin)
             .init_resource::<UiState>()
             .add_systems(First, check_egui_usage)
-            .add_systems(OnEnter(InternalContentState::Ready), add_editor)
+            .add_systems(OnEnter(RyotContentState::Ready), add_editor)
             .add_systems(
                 Update,
                 (
@@ -53,7 +53,7 @@ impl Plugin for UiPlugin {
                     resize_camera_viewport_system.map(drop),
                 )
                     .chain()
-                    .run_if(in_state(InternalContentState::Ready)),
+                    .run_if(in_state(RyotContentState::Ready)),
             );
 
         #[cfg(not(target_arch = "wasm32"))]

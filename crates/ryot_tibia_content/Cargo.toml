@@ -1,5 +1,5 @@
 [package]
-name = "ryot_tibia_assets"
+name = "ryot_tibia_content"
 version = "0.2.0"
 edition = "2021"
 authors = [
@@ -40,7 +40,8 @@ version = "0.13"
 optional = true
 
 [dependencies]
-ryot_assets = { path = "../ryot_assets", version = "0.2.0" }
+ryot_content = { path = "../ryot_content", version = "0.2.0" }
+ryot_sprites = { path = "../ryot_sprites", version = "0.2.0" }
 derive_more.workspace = true
 glam.workspace = true
 prost = { workspace = true }

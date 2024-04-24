@@ -20,12 +20,11 @@ all-features = true
 
 [features]
 debug = [
-    "ryot_assets/debug",
     "ryot_tiled/debug",
 ]
 
 bevy = [
-    "ryot_assets/bevy",
+    "ryot_asset_loading",
     "ryot_core/bevy",
     "ryot_tiled/bevy",
 ]
@@ -37,10 +36,12 @@ tiled = ["ryot_pathfinder?/ryot_tiled"]
 ray_cast = ["ryot_ray_casting"]
 
 [dependencies]
-ryot_assets = { path = "../ryot_assets", version = "0.2.0" }
 ryot_core = { path = "../ryot_core", version = "0.2.0" }
+ryot_content = { path = "../ryot_content", version = "0.2.0" }
+ryot_sprites = { path = "../ryot_sprites", version = "0.2.0" }
 ryot_tiled = { path = "../ryot_tiled", version = "0.2.0" }
-ryot_tibia_assets = { path = "../ryot_tibia_assets", version = "0.2.0", optional = true }
+ryot_asset_loading = { path = "../ryot_asset_loading", version = "0.2.0", optional = true }
+ryot_tibia_content = { path = "../ryot_tibia_content", version = "0.2.0", optional = true }
 ryot_pathfinder = { path = "../ryot_pathfinder", version = "0.2.0", optional = true }
 ryot_ray_casting = { path = "../ryot_ray_casting", version = "0.2.0", optional = true }
 

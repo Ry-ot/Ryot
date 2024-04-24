@@ -1,9 +1,11 @@
-use crate::core::visual_elements::definitions::VisualElements;
 use bevy_asset::Assets;
+use bevy_asset_loader::prelude::AssetCollection;
 use bevy_ecs::change_detection::{Res, ResMut};
+use bevy_ecs::prelude::Resource;
 use bevy_utils::tracing::debug;
+use ryot_content::prelude::VisualElements;
 
-pub trait VisualElementsAsset: crate::core::AssetResource {
+pub trait VisualElementsAsset: Resource + AssetCollection + Send + Sync + 'static {
     fn visual_elements(&self) -> &bevy_asset::Handle<VisualElements>;
 }
 

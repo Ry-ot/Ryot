@@ -16,14 +16,14 @@ impl Plugin for PalettePlugin {
         app.add_optional_plugin(EguiPlugin)
             .init_resource::<Palette>()
             .init_resource::<PaletteState>()
-            .add_systems(OnEnter(InternalContentState::Ready), setup_categories)
+            .add_systems(OnEnter(RyotContentState::Ready), setup_categories)
             .add_systems(
                 Update,
                 (
                     clear_selection.run_if(action_just_pressed(CompassAction::ClearSelection)),
                     (update_palette_category, update_palette_items).chain(),
                 )
-                    .run_if(in_state(InternalContentState::Ready)),
+                    .run_if(in_state(RyotContentState::Ready)),
             );
     }
 }

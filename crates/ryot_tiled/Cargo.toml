@@ -100,7 +100,8 @@ color-eyre.workspace = true
 postcard.workspace = true
 thiserror.workspace = true
 ryot_core = { path = "../ryot_core", version = "0.2.0" }
-ryot_assets = { path = "../ryot_assets", version = "0.2.0" }
+ryot_content = { path = "../ryot_content", version = "0.2.0" }
+ryot_sprites = { path = "../ryot_sprites", version = "0.2.0" }
 
 [dev-dependencies]
 rstest.workspace = true

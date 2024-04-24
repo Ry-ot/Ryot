@@ -16,10 +16,12 @@ readme = "../../README.md"
 async-std = "1.12.0"
 derive_more = "0.99.17"
 serde_repr = "0.1"
-ryot_assets = { path = "../ryot_assets", version = "0.2.0" }
+ryot_asset_loading = { path = "../ryot_asset_loading", version = "0.2.0" }
+ryot_content = { path = "../ryot_content", version = "0.2.0" }
 ryot_core = { path = "../ryot_core", version = "0.2.0" }
 ryot_tiled = { path = "../ryot_tiled", version = "0.2.0" }
-ryot_internal = { path = "../ryot_internal", version = "0.2.0", features = ["ryot_tibia_assets"] }
+ryot_sprites = { path = "../ryot_sprites", version = "0.2.0" }
+ryot_internal = { path = "../ryot_internal", version = "0.2.0" }
 
 bevy = { workspace = true, optional = true }
 bevy_asset_loader = { workspace = true, optional = true }
@@ -55,6 +57,7 @@ quickcheck_macros.workspace = true
 
 [features]
 default = [
+    "tibia_content",
     "bevy",
 ]
 
@@ -67,7 +70,10 @@ bevy = [
     "ryot_internal/bevy"
 ]
 
-tibia_assets = ["ryot_internal/ryot_tibia_assets"]
+tibia_content = [
+    "ryot_asset_loading/ryot_tibia_content",
+    "ryot_internal/ryot_tibia_content",
+]
 
 debug = ["dep:bevy_stroked_text", "ryot_internal/debug"]
 lmdb = ["dep:heed", "dep:postcard", "ryot_internal/lmdb"]

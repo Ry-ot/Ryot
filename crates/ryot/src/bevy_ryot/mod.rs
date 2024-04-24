@@ -6,19 +6,16 @@
 use self::sprites::SpriteMaterial;
 #[cfg(feature = "debug")]
 use crate::position::debug_sprite_position;
-use crate::prelude::tibia::asset_loader::TibiaAssetsPlugin;
 use crate::prelude::*;
 use bevy::app::{App, Plugin, Update};
 use bevy::asset::embedded_asset;
 use bevy::prelude::*;
 use bevy::sprite::Material2dPlugin;
-use bevy_asset_loader::loading_state::{LoadingState, LoadingStateAppExt};
+use bevy_asset_loader::loading_state::LoadingStateAppExt;
 use bevy_asset_loader::prelude::*;
 use bevy_asset_loader::standard_dynamic_asset::StandardDynamicAssetArrayCollection;
 use bevy_common_assets::json::JsonAssetPlugin;
 use bevy_stroked_text::StrokedTextPlugin;
-use ryot_assets::prelude::*;
-use ryot_tiled::prelude::*;
 use std::marker::PhantomData;
 
 mod game;
@@ -34,57 +31,6 @@ pub mod sprites;
 pub(crate) mod sprite_animations;
 pub use sprite_animations::{toggle_sprite_animation, AnimationDuration};
 
-/// A plugin that registers implementations of ContentAssets and loads them.
-/// It inits the necessary resources and adds the necessary systems and plugins to load
-/// the content assets.
-///
-/// It also manages the loading state of the content assets, the lifecycle of the content
-/// and the events that allow lazy loading of sprites.
-macro_rules! content_plugin {
-    ($plugin_name:ident, $content_assets:tt) => {
-        pub struct $plugin_name<C: $content_assets>(PhantomData<C>);
-
-        impl<C: $content_assets> Default for $plugin_name<C> {
-            fn default() -> Self {
-                Self(PhantomData)
-            }
-        }
-    };
-}
-
-content_plugin!(BaseContentPlugin, VisualElementsAsset);
-
-impl<C: VisualElementsAsset + Default> Plugin for BaseContentPlugin<C> {
-    fn build(&self, app: &mut App) {
-        app.init_state::<InternalContentState>()
-            .init_resource::<C>()
-            .init_resource::<VisualElements>()
-            .register_type::<TilePosition>()
-            .add_plugins(TibiaAssetsPlugin)
-            .add_loading_state(
-                LoadingState::new(InternalContentState::LoadingContent)
-                    .continue_to_state(InternalContentState::PreparingContent)
-                    .load_collection::<C>(),
-            )
-            .add_systems(
-                OnEnter(InternalContentState::PreparingContent),
-                prepare_visual_elements::<C>,
-            );
-    }
-}
-
-content_plugin!(MetaContentPlugin, VisualElementsAsset);
-
-impl<C: VisualElementsAsset + Default> Plugin for MetaContentPlugin<C> {
-    fn build(&self, app: &mut App) {
-        app.add_plugins(BaseContentPlugin::<C>::default())
-            .add_systems(
-                OnEnter(InternalContentState::PreparingContent),
-                transition_to_ready.after(prepare_visual_elements::<C>),
-            );
-    }
-}
-
 content_plugin!(VisualContentPlugin, VisualElementsAsset);
 
 impl<C> Plugin for VisualContentPlugin<C>
@@ -94,7 +40,7 @@ where
     fn build(&self, app: &mut App) {
         app.add_plugins(BaseContentPlugin::<C>::default())
             .configure_loading_state(
-                LoadingStateConfig::new(InternalContentState::LoadingContent)
+                LoadingStateConfig::new(RyotContentState::LoadingContent)
                     .with_dynamic_assets_file::<StandardDynamicAssetArrayCollection>(
                     "dynamic.atlases.ron",
                 ),
@@ -107,7 +53,7 @@ where
             .add_optional_plugin(StrokedTextPlugin)
             .add_plugins(Material2dPlugin::<SpriteMaterial>::default())
             .add_systems(
-                OnEnter(InternalContentState::PreparingContent),
+                OnEnter(RyotContentState::PreparingContent),
                 (
                     prepare_sprite_layouts::<C>,
                     prepare_sprite_sheets::<C>,
@@ -143,7 +89,7 @@ where
                         .in_set(AnimationSystems::Update),
                 )
                     .chain()
-                    .run_if(in_state(InternalContentState::Ready)),
+                    .run_if(in_state(RyotContentState::Ready)),
             )
             .add_systems(
                 PostUpdate,

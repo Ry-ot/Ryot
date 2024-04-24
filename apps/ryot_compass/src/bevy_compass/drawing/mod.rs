@@ -50,12 +50,9 @@ impl Plugin for DrawingPlugin {
                     update_drawing_input_type.run_if(action_just_pressed(CompassAction::Draw)),
                 )
                     .chain()
-                    .run_if(in_state(InternalContentState::Ready))
+                    .run_if(in_state(RyotContentState::Ready))
                     .run_if(gui_is_not_in_use()),
             )
-            .add_systems(
-                OnEnter(InternalContentState::Ready),
-                spawn_grid(Color::WHITE),
-            );
+            .add_systems(OnEnter(RyotContentState::Ready), spawn_grid(Color::WHITE));
     }
 }
