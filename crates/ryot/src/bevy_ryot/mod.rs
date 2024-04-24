@@ -45,13 +45,11 @@ impl Plugin for RyotLegacySpritePlugin {
                         .pipe(sprites::store_loaded_appearances_system)
                         .run_if(on_event::<sprites::LoadAppearanceEvent>())
                         .in_set(SpriteSystems::Load),
-                    (
-                        #[cfg(feature = "debug")]
-                        sprites::debug_sprites,
-                        sprites::initialize_elevation,
-                    )
-                        .in_set(SpriteSystems::Initialize),
-                    sprites::update_sprite_system.in_set(SpriteSystems::Update),
+                    #[cfg(feature = "debug")]
+                    sprites::debug_sprites.in_set(SpriteSystems::Initialize),
+                    sprites::update_sprite_system
+                        .in_set(SpriteSystems::Update)
+                        .after(SpriteSystems::Initialize),
                     sprite_animations::initialize_animation_sprite_system
                         .in_set(AnimationSystems::Initialize),
                     sprite_animations::tick_animation_system

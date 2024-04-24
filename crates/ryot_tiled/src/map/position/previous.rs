@@ -16,7 +16,7 @@ pub struct PreviousPosition(pub TilePosition);
 /// component has been changed, so it can track the previous position.
 /// Better to run it during the [`Last`](Last) or [`PostUpdate`](PostUpdate) stages.
 #[cfg(feature = "bevy")]
-pub fn track_position_changes(
+pub(crate) fn track_position_changes(
     mut commands: Commands,
     mut query: Query<(Entity, &TilePosition, Option<&mut PreviousPosition>), Changed<TilePosition>>,
 ) {

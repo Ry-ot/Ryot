@@ -22,6 +22,7 @@ all-features = true
 default = ["bevy"]
 
 bevy = [
+    "dep:bevy_app",
     "dep:bevy_asset",
     "dep:bevy_ecs",
     "dep:bevy_hierarchy",
@@ -29,6 +30,7 @@ bevy = [
     "dep:bevy_reflect",
     "dep:bevy_render",
     "dep:bevy_sprite",
+    "dep:bevy_time",
     "dep:bevy_transform",
     "dep:bevy_utils",
     "dep:bevy_window",
@@ -37,6 +39,10 @@ bevy = [
 debug = []
 test-utils = ["dep:quickcheck", "dep:quickcheck_macros"]
 lmdb = ["dep:heed"]
+
+[dependencies.bevy_app]
+version = "0.13"
+optional = true
 
 [dependencies.bevy_asset]
 version = "0.13"
@@ -78,6 +84,10 @@ optional = true
 version = "0.13"
 optional = true
 
+[dependencies.bevy_time]
+version = "0.13"
+optional = true
+
 [dependencies.bevy_window]
 version = "0.13"
 optional = true
@@ -102,6 +112,7 @@ thiserror.workspace = true
 ryot_core = { path = "../ryot_core", version = "0.2.0" }
 ryot_content = { path = "../ryot_content", version = "0.2.0" }
 ryot_sprites = { path = "../ryot_sprites", version = "0.2.0" }
+itertools = "0.12.1"
 
 [dev-dependencies]
 rstest.workspace = true

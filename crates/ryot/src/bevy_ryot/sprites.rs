@@ -2,7 +2,6 @@
 use crate::prelude::*;
 use ryot_sprites::prelude::*;
 
-use self::elevation::Elevation;
 use self::sprite_animations::{
     AnimationDescriptor, AnimationKey, AnimationSprite, SpriteAnimationExt,
 };
@@ -17,8 +16,6 @@ use std::path::PathBuf;
 use bevy::sprite::Anchor;
 #[cfg(feature = "debug")]
 use bevy_stroked_text::{StrokedText, StrokedTextBundle};
-
-pub const SPRITE_BASE_SIZE: UVec2 = UVec2::new(32, 32);
 
 pub struct LoadedAppearance {
     pub sprites: Vec<LoadedSprite>,
@@ -150,15 +147,6 @@ pub(crate) fn load_sprite_texture(
     );
 
     Some(texture)
-}
-
-pub(crate) fn initialize_elevation(
-    mut commands: Commands,
-    query: Query<Entity, (With<GameObjectId>, Without<Elevation>)>,
-) {
-    query.iter().for_each(|entity| {
-        commands.entity(entity).insert(Elevation::default());
-    });
 }
 
 /// A system that ensures that all entities with an GameObjectId have a SpriteMaterial mesh bundle.
