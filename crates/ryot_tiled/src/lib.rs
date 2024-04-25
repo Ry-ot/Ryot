@@ -38,7 +38,12 @@ pub mod prelude {
         drawing::*,
         map::elevation::{apply_elevation, elevate_position, initialize_elevation},
         map::grid::{spawn_grid, GridView},
-        map::position::track_position_changes,
+        map::position::{
+            systems::{
+                finish_position_animation, move_sprites_with_animation, update_sprite_position,
+            },
+            track_position_changes,
+        },
         object::{GameObjectBundle, LoadObjects},
     };
 
@@ -53,6 +58,11 @@ pub mod prelude {
 
     #[cfg(feature = "egui")]
     pub use crate::include_svg;
+
+    #[cfg(feature = "debug")]
+    pub use crate::map::position::systems::{
+        debug_sprite_position, debug_y_offset, PositionDebugText,
+    };
 }
 
 pub static TILE_SIZE: OnceLock<UVec2> = OnceLock::new();

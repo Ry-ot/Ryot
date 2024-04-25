@@ -20,6 +20,9 @@ mod operations;
 mod previous;
 pub use previous::*;
 
+#[cfg(feature = "bevy")]
+pub mod systems;
+
 /// A 2d position in the tile grid. This is not the position of the tile on
 /// the screen, because it doesn't take into account the tile size. Z is used to
 /// calculate the rendering order of the tile.
