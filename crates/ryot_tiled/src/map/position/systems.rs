@@ -1,12 +1,14 @@
-use bevy::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_hierarchy::prelude::*;
+use bevy_time::prelude::*;
+use bevy_transform::prelude::*;
 
-#[cfg(all(feature = "bevy", feature = "debug"))]
+#[cfg(feature = "debug")]
 use bevy_stroked_text::StrokedText;
 use ryot_content::prelude::Elevation;
 
-#[cfg(feature = "bevy")]
+use crate::prelude::*;
 use ryot_content::prelude::SpriteLayout;
-use ryot_tiled::prelude::*;
 
 #[cfg(feature = "debug")]
 #[derive(Component)]
@@ -30,7 +32,6 @@ pub fn debug_y_offset(layer: &Layer) -> f32 {
         - tile_size().as_vec2().y / 2.
 }
 
-#[cfg(feature = "bevy")]
 type PositionChangedFilter = (
     With<Transform>,
     Or<(Added<Transform>, Changed<TilePosition>, Changed<Elevation>)>,
@@ -44,7 +45,6 @@ type PositionChangedFilter = (
 /// This system listen to all new and changed TilePosition components and update the Transform
 /// component of the sprite accordingly, if it exist. Ideally this should run in the end of
 /// the Update stage, so it can be sure that all TilePosition components have been updated.
-#[cfg(feature = "bevy")]
 pub fn update_sprite_position(
     mut query: Query<
         (
@@ -64,7 +64,7 @@ pub fn update_sprite_position(
         });
 }
 
-#[cfg(all(feature = "bevy", feature = "debug"))]
+#[cfg(feature = "debug")]
 pub fn debug_sprite_position(
     mut query: Query<
         (&Elevation, &Transform, Option<&Children>),
@@ -86,7 +86,6 @@ pub fn debug_sprite_position(
         });
 }
 
-#[cfg(feature = "bevy")]
 pub fn move_sprites_with_animation(
     mut query: Query<(&mut Transform, &mut SpriteMovement)>,
     time: Res<Time>,
@@ -107,7 +106,6 @@ pub fn move_sprites_with_animation(
         });
 }
 
-#[cfg(feature = "bevy")]
 pub fn finish_position_animation(
     mut commands: Commands,
     mut query: Query<(Entity, &mut Transform, &SpriteMovement)>,

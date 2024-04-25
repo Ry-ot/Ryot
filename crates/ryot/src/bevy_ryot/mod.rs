@@ -11,8 +11,6 @@ pub use ryot_sprites::prelude;
 mod game;
 pub use game::*;
 
-pub mod position;
-
 pub struct RyotLegacySpritePlugin;
 
 impl Plugin for RyotLegacySpritePlugin {
