@@ -5016,8 +5016,6 @@ dependencies = [
  "ryot_assets",
  "ryot_content",
  "ryot_core",
- "ryot_pathfinder",
- "ryot_ray_casting",
  "ryot_sprites",
  "ryot_tibia",
  "ryot_tiled",

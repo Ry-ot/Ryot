@@ -40,5 +40,3 @@ ryot_core = { path = "../ryot_core", version = "0.2", features = ["bevy"] }
 ryot_tiled = { path = "../ryot_tiled", version = "0.2", features = ["bevy"] }
 ryot_sprites = { path = "../ryot_sprites", version = "0.2" }
 ryot_tibia = { path = "../ryot_tibia", version = "0.2", optional = true }
-ryot_pathfinder = { path = "../ryot_pathfinder", version = "0.2" }
-ryot_ray_casting = { path = "../ryot_ray_casting", version = "0.2" }

@@ -1,6 +1,5 @@
 use crate::Pathable;
 use bevy_ecs::prelude::*;
-use bevy_tasks::Task;
 use derive_more::*;
 use std::hash::Hash;
 use std::time::Duration;
@@ -22,7 +21,7 @@ pub struct Path<P: Pathable>(pub(crate) Vec<P>);
 
 /// Component that holds a task running path finding with a potential path find result.
 #[derive(Component)]
-pub(crate) struct PathFindingTask<P: Pathable>(pub(crate) Task<Option<(Vec<P>, u32)>>);
+pub(crate) struct PathFindingTask<P: Pathable>(pub(crate) bevy_tasks::Task<Option<(Vec<P>, u32)>>);
 
 impl<P: Pathable + Default> Default for PathFindingQuery<P> {
     fn default() -> Self {

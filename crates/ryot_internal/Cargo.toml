@@ -37,7 +37,6 @@ compression = ["ryot_core/compression"]
 egui = ["ryot_tiled/egui"]
 lmdb = ["ryot_app?/lmdb", "ryot_tiled/lmdb"]
 
-tiled = ["ryot_pathfinder?/ryot_tiled"]
 ray_cast = ["ryot_ray_casting"]
 ryot_tibia = [
     "dep:ryot_tibia",
@@ -50,7 +49,7 @@ ryot_app = { path = "../ryot_app", version = "0.2.0", optional = true }
 ryot_assets = { path = "../ryot_assets", version = "0.2.0", optional = true }
 ryot_core = { path = "../ryot_core", version = "0.2" }
 ryot_content = { path = "../ryot_content", version = "0.2" }
-ryot_pathfinder = { path = "../ryot_pathfinder", version = "0.2.0", optional = true }
+ryot_pathfinder = { path = "../ryot_pathfinder", version = "0.2.0", optional = true, features = ["ryot_tiled"] }
 ryot_ray_casting = { path = "../ryot_ray_casting", version = "0.2.0", optional = true }
 ryot_sprites = { path = "../ryot_sprites", version = "0.2" }
 ryot_tiled = { path = "../ryot_tiled", version = "0.2" }
