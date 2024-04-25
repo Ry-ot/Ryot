@@ -64,8 +64,8 @@ impl Plugin for RyotSpritePlugin {
                         .pipe(store_loaded_appearances_system)
                         .run_if(on_event::<LoadAppearanceEvent>())
                         .in_set(SpriteSystems::Load),
-                    // #[cfg(feature = "debug")]
-                    // debug_sprites.in_set(SpriteSystems::Initialize),
+                    #[cfg(feature = "debug")]
+                    debug_sprites.in_set(SpriteSystems::Initialize),
                     update_sprite_system
                         .in_set(SpriteSystems::Update)
                         .after(SpriteSystems::Initialize),

@@ -18,6 +18,13 @@ categories = ["game-development", "game-engines", "games"]
 rustdoc-args = ["-Zunstable-options", "--cfg", "docsrs"]
 all-features = true
 
+[features]
+debug = [
+    "dep:bevy_hierarchy",
+    "dep:bevy_stroked_text",
+    "dep:bevy_transform",
+]
+
 [dependencies]
 bevy_app.workspace = true
 bevy_asset.workspace = true
@@ -28,6 +35,10 @@ bevy_sprite.workspace = true
 bevy_time.workspace = true
 bevy_utils.workspace = true
 bevy_asset_loader.workspace = true
+
+bevy_transform = { workspace = true, optional = true }
+bevy_hierarchy = { workspace = true, optional = true }
+bevy_stroked_text = { workspace = true, optional = true }
 
 ryot_core = { path = "../ryot_core", version = "0.2" }
 ryot_content = { path = "../ryot_content", version = "0.2" }
