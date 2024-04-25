@@ -59,7 +59,6 @@ bevy_window = { workspace = true, optional = true }
 
 ryot_core = { path = "../ryot_core", version = "0.2" }
 ryot_content = { path = "../ryot_content", version = "0.2" }
-ryot_sprites = { path = "../ryot_sprites", version = "0.2" }
 
 derive_more.workspace = true
 glam.workspace = true

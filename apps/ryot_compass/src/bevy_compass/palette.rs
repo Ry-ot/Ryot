@@ -6,7 +6,6 @@ use bevy::prelude::*;
 use bevy::utils::HashMap;
 use bevy_egui::EguiPlugin;
 use leafwing_input_manager::common_conditions::action_just_pressed;
-use ryot::bevy_ryot::sprites::{LoadAppearanceEvent, LoadedAppearances};
 use ryot::prelude::*;
 
 pub struct PalettePlugin;
