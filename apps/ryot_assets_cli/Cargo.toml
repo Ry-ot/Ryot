@@ -7,11 +7,11 @@ authors = [
     "Luan Santos <cargo@luan.sh>",
 ]
 license = "MIT OR Apache-2.0"
-description = "CLI for managing assets from the Tibia client for Ryot."
+description = "A command-line interface for managing game assets within the Ryot framework, facilitating efficient asset conversions of Tibia assets."
 repository = "https://github.com/opentibiabr/Ryot/tree/main/ryot"
 homepage = "https://github.com/opentibiabr/Ryot"
 documentation = "https://docs.rs/ryot/"
-keywords = ["gamedev", "assets", "ryot", "otbr", "bevy"]
+keywords = ["cli", "asset-management", "game-development", "command-line-tool", "ryot"]
 categories = ["game-development"]
 readme = "../../README.md"
 

@@ -1,3 +1,8 @@
+//! `ryot_utils`
+//!
+//! Provides general utilities and helpers that are fundamental across the Ryot framework.
+//! This crate includes functions and structs that assist in various aspects of game development,
+//! ensuring that core utilities are reusable and accessible.
 #[cfg(feature = "bevy")]
 pub mod async_events;
 pub mod async_task;

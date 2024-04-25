@@ -1,4 +1,9 @@
-//! This crate provides functionality for managing and processing perspectives and visibility
+//! `ryot_ray_casting`
+//!
+//! Provides ray casting capabilities specifically for Bevy 2D, essential for implementing
+//! line-of-sight features and other interactive game mechanics.
+//!
+//! It includes functionalities for managing and processing perspectives and visibility
 //! of entities in a game environment. Perspectives are defined by sets of view points that
 //! determine what an entity can see, based on tile positions and other spatial considerations.
 pub mod trajectory;

@@ -1,3 +1,7 @@
+//! `ryot_pathfinder`
+//!
+//! Specializes in providing pathfinding functionalities for Bevy 2D, enabling complex
+//! navigation and movement logic essential for dynamic game environments.
 use crate::systems::*;
 use bevy_app::prelude::*;
 use bevy_ecs::prelude::*;

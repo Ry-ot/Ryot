@@ -1,3 +1,7 @@
+//! `ryot_sprites`
+//!
+//! Focuses on sprite management, dealing with animations and visual representations of
+//! game objects, supporting rich graphical content within games.
 use bevy_ecs::prelude::SystemSet;
 
 pub mod animations;

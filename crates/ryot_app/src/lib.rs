@@ -1,3 +1,8 @@
+//! `ryot_app`
+//!
+//! This crate contains essential plugins and bundles for building applications using
+//! the Ryot framework. It facilitates the integration and management of Bevy engine
+//! functionalities, streamlining game development.
 pub mod content;
 pub mod game;
 #[cfg(feature = "lmdb")]

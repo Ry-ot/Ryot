@@ -7,11 +7,11 @@ authors = [
     "Luan Santos <cargo@luan.sh>",
 ]
 license = "MIT OR Apache-2.0"
-description = "An implementation of ray casting targeting 2d tile-based games using bevy ecs and ryot ecossystem."
+description = "Implements ray casting capabilities for Bevy 2D, crucial for interactive game mechanics and line-of-sight features."
 homepage = "https://github.com/opentibiabr/Ryot"
 repository = "https://github.com/opentibiabr/Ryot"
 documentation = "https://docs.rs/ryot/"
-keywords = ["gamedev", "ryot", "ray-cast", "tiled-2d", "tiled"]
+keywords = ["ray-casting", "bevy", "tiled-2d-games", "game-mechanics", "ryot"]
 categories = ["game-development", "games"]
 
 [package.metadata.docs.rs]

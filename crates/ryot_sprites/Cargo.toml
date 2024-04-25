@@ -7,11 +7,11 @@ authors = [
     "Luan Santos <cargo@luan.sh>",
 ]
 license = "MIT OR Apache-2.0"
-description = "A crate to handle sprites for the Ryot game engine."
+description = "Focuses on sprite management, handling animations and graphical representations for dynamic visual content in games."
 homepage = "https://github.com/opentibiabr/Ryot"
 repository = "https://github.com/opentibiabr/Ryot"
 documentation = "https://docs.rs/ryot/"
-keywords = ["gamedev", "ryot", "sprites", "bevy"]
+keywords = ["sprites", "animations", "graphics-2d", "ryot"]
 categories = ["game-development", "game-engines", "games"]
 
 [package.metadata.docs.rs]

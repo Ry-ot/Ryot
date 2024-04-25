@@ -1,3 +1,7 @@
+//! `ryot_tiled`
+//!
+//! Manages integration with tiled maps, offering tools for drawing and managing tilesets
+//! and supporting tile-based game development.
 #![feature(fn_traits)]
 #![feature(unboxed_closures)]
 use glam::{UVec2, Vec2};

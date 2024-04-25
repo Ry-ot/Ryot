@@ -1,4 +1,11 @@
-/// `use ryot::prelude::*;` to import common elements.
+//! `ryot_internal`
+//!
+//! Designed for internal use within the Ryot framework, this crate includes utilities and
+//! foundational elements that facilitate the implementation and integration of shared
+//! functionalities across various crates.
+//!
+//! DO NOT USE DIRECTLY. This crate is intended for internal use only.
+//! `use ryot::prelude::*;` to import common elements.
 pub mod prelude;
 
 #[cfg(feature = "ryot_app")]

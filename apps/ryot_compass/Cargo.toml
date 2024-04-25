@@ -1,7 +1,9 @@
 [package]
 name = "ryot_compass"
 version = "0.1.0"
+description = "Ryot Compass, the map editor for the Ryot framework, streamlines the creation and manipulation of tiled maps, enhancing the design process with powerful editing tools."
 edition = "2021"
+keywords = ["map-editor", "tiled-2d", "level-design", "game-dev-tool", "ryot"]
 exclude = ["dist", "build", "assets", "credits"]
 
 [dependencies]

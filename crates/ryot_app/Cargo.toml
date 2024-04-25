@@ -7,11 +7,11 @@ authors = [
     "Luan Santos <cargo@luan.sh>",
 ]
 license = "MIT OR Apache-2.0"
-description = "This crates provides the bevy most common blocks for building Ryot games, such as plugins and bundles."
+description = "Contains essential plugins and bundles for building Bevy-based applications within the Ryot framework."
 homepage = "https://github.com/opentibiabr/Ryot"
 repository = "https://github.com/opentibiabr/Ryot"
 documentation = "https://docs.rs/ryot/"
-keywords = ["gamedev", "ryot", "app", "building-blocks", "bevy"]
+keywords = ["bevy-plugins", "game-engine", "games-2d", "game-development", "ryot"]
 categories = ["game-development", "game-engines", "games"]
 
 [package.metadata.docs.rs]

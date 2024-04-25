@@ -7,11 +7,11 @@ authors = [
     "Luan Santos <cargo@luan.sh>",
 ]
 license = "MIT OR Apache-2.0"
-description = "A game engine core for Ryot, a MMORPG game, with generic features and systems."
+description = "General utilities and helpers for the Ryot framework, supporting a wide range of common game development tasks."
 homepage = "https://github.com/opentibiabr/Ryot"
 repository = "https://github.com/opentibiabr/Ryot"
 documentation = "https://docs.rs/ryot/"
-keywords = ["gamedev", "ryot", "core", "bevy"]
+keywords = ["utilities", "game-development", "helper-functions", "ryot"]
 categories = ["game-development", "game-engines", "games"]
 
 [package.metadata.docs.rs]
