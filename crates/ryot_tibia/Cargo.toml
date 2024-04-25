@@ -8,8 +8,8 @@ authors = [
 ]
 license = "MIT OR Apache-2.0"
 description = "Specializes in managing and integrating Tibia-specific legacy assets, tailored for games inspired by the classic Tibia."
-homepage = "https://github.com/opentibiabr/Ryot"
-repository = "https://github.com/opentibiabr/Ryot"
+homepage = "https://github.com/ry-ot/Ryot"
+repository = "https://github.com/ry-ot/Ryot"
 documentation = "https://docs.rs/ryot/"
 keywords = ["tibia", "legacy-games", "game-assets", "asset-integration", "ryot"]
 categories = ["game-development", "game-engines", "games"]

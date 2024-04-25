@@ -8,8 +8,8 @@ authors = [
 ]
 license = "MIT OR Apache-2.0"
 description = "General utilities and helpers for the Ryot framework, supporting a wide range of common game development tasks."
-homepage = "https://github.com/opentibiabr/Ryot"
-repository = "https://github.com/opentibiabr/Ryot"
+homepage = "https://github.com/ry-ot/Ryot"
+repository = "https://github.com/ry-ot/Ryot"
 documentation = "https://docs.rs/ryot/"
 keywords = ["utilities", "game-development", "helper-functions", "ryot"]
 categories = ["game-development", "game-engines", "games"]

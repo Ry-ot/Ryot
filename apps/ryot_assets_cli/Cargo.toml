@@ -8,8 +8,8 @@ authors = [
 ]
 license = "MIT OR Apache-2.0"
 description = "A command-line interface for managing game assets within the Ryot framework, facilitating efficient asset conversions of Tibia assets."
-repository = "https://github.com/opentibiabr/Ryot/tree/main/ryot"
-homepage = "https://github.com/opentibiabr/Ryot"
+repository = "https://github.com/ry-ot/Ryot/tree/main/ryot"
+homepage = "https://github.com/ry-ot/Ryot"
 documentation = "https://docs.rs/ryot/"
 keywords = ["cli", "asset-management", "game-development", "command-line-tool", "ryot"]
 categories = ["game-development"]

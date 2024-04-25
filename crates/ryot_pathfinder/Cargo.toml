@@ -8,8 +8,8 @@ authors = [
 ]
 license = "MIT OR Apache-2.0"
 description = "Provides specialized pathfinding functionalities for Bevy 2D, essential for dynamic navigation and movement within games."
-homepage = "https://github.com/opentibiabr/Ryot"
-repository = "https://github.com/opentibiabr/Ryot"
+homepage = "https://github.com/ry-ot/Ryot"
+repository = "https://github.com/ry-ot/Ryot"
 documentation = "https://docs.rs/ryot/"
 keywords = ["pathfinding", "navigation", "tiled-2d-games", "bevy", "ryot"]
 categories = ["game-development", "games"]
