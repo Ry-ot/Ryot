@@ -55,7 +55,7 @@ impl Plugin for AppPlugin {
                 DefaultPlugins
                     .set(entitled_window("Compass".to_string()))
                     .set(ImagePlugin::default_nearest()),
-                RyotLegacySpritePlugin,
+                RyotSpritePlugin,
                 VisualContentPlugin::<CompassContentAssets>::default(),
                 WorldInspectorPlugin::default()
                     .run_if(action_toggle_active(false, ToggleFeatures::Inspector)),
