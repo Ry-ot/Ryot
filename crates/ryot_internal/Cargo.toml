@@ -20,8 +20,9 @@ all-features = true
 
 [features]
 debug = [
-    "ryot_tiled/debug",
     "ryot_app?/debug",
+    "ryot_sprites/debug",
+    "ryot_tiled/debug",
 ]
 
 bevy = [

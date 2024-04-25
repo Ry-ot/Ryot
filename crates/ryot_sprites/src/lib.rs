@@ -35,4 +35,7 @@ pub mod prelude {
         sprites::*,
         SpriteSystems, SPRITE_SHEET_FOLDER,
     };
+
+    #[cfg(feature = "debug")]
+    pub use crate::sprites::debug_sprites;
 }

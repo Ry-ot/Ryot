@@ -13,9 +13,15 @@ use ryot_tiled::prelude::*;
 use std::path::PathBuf;
 
 #[cfg(feature = "debug")]
-use bevy::sprite::Anchor;
+use bevy_hierarchy::prelude::*;
+#[cfg(feature = "debug")]
+use bevy_sprite::Anchor;
 #[cfg(feature = "debug")]
 use bevy_stroked_text::{StrokedText, StrokedTextBundle};
+#[cfg(feature = "debug")]
+use bevy_transform::prelude::Transform;
+#[cfg(feature = "debug")]
+use glam::Vec3;
 
 pub struct LoadedAppearance {
     pub sprites: Vec<LoadedSprite>,
