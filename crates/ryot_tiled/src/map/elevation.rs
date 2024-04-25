@@ -1,36 +1,17 @@
-use bevy_app::{App, Last, Plugin, Update};
 use bevy_ecs::change_detection::Res;
 use bevy_ecs::entity::Entity;
 use bevy_ecs::prelude::*;
 use bevy_render::prelude::Visibility;
 use glam::{UVec2, Vec2, Vec3};
 use itertools::Itertools;
-
 use ryot_content::prelude::{Elevation, EntityType, GameObjectId, SpriteLayout, VisualElements};
-use ryot_sprites::SpriteSystems;
 
-use crate::map::position::track_position_changes;
 use crate::prelude::{Layer, MapTiles, TilePosition};
 use crate::tile_size;
 
 const SPRITE_BASE_SIZE: UVec2 = UVec2::new(32, 32);
 
-pub struct ElevationPlugin;
-
-impl Plugin for ElevationPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_systems(
-            Update,
-            (
-                initialize_elevation.in_set(SpriteSystems::Initialize),
-                apply_elevation,
-            ),
-        )
-        .add_systems(Last, track_position_changes);
-    }
-}
-
-fn initialize_elevation(
+pub fn initialize_elevation(
     mut commands: Commands,
     query: Query<Entity, (With<GameObjectId>, Without<Elevation>)>,
 ) {
@@ -54,7 +35,7 @@ pub fn elevate_position(
         - (layout.get_size(&tile_size()).as_vec2() * Vec2::new(0.5, -0.5)).extend(0.)
 }
 
-fn apply_elevation(
+pub fn apply_elevation(
     visual_elements: Res<VisualElements>,
     q_tile: Query<(&TilePosition, &Layer), ElevationFilter>,
     mut q_entities: Query<(&mut Elevation, &GameObjectId, Option<&Visibility>)>,

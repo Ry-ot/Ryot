@@ -5,7 +5,6 @@ pub mod atlas;
 pub mod material;
 pub mod meshes;
 pub mod params;
-pub mod plugins;
 
 pub static SPRITE_SHEET_FOLDER: &str = "sprite-sheets";
 
@@ -25,10 +24,9 @@ pub mod prelude {
         animations::AnimationSystems,
         atlas::TextureAtlasLayouts,
         get_decompressed_file_name,
-        material::SpriteMaterial,
+        material::{embed_sprite_assets, initialize_sprite_material, SpriteMaterial},
         meshes::{RectMeshes, SpriteMeshes},
         params::{SpriteOutline, SpriteParams},
-        plugins::RyotSpritePlugin,
         SpriteSystems, SPRITE_SHEET_FOLDER,
     };
 }

@@ -1,15 +1,14 @@
 use std::time::Duration;
 
 use crate::prelude::*;
-use bevy_app::prelude::*;
 use bevy_ecs::prelude::*;
 use bevy_reflect::Reflect;
 use bevy_render::prelude::*;
-use bevy_render::view::{check_visibility, VisibilitySystems, VisibleEntities};
+use bevy_render::view::VisibleEntities;
 use bevy_utils::*;
 use glam::Vec3;
 use ryot_content::prelude::FrameGroup;
-use ryot_content::prelude::{GameObjectId, RyotContentState};
+use ryot_content::prelude::GameObjectId;
 
 mod brushes;
 pub use brushes::*;
@@ -19,34 +18,6 @@ pub use commands::*;
 
 mod systems;
 pub use systems::*;
-
-pub struct RyotDrawingPlugin;
-
-impl Plugin for RyotDrawingPlugin {
-    fn build(&self, app: &mut App) {
-        app.register_type::<Layer>()
-            .init_resource::<MapTiles<Entity>>()
-            .add_systems(
-                PostUpdate,
-                apply_detail_level_to_visibility
-                    .in_set(VisibilitySystems::CheckVisibility)
-                    .after(check_visibility)
-                    .run_if(in_state(RyotContentState::Ready)),
-            )
-            .add_systems(
-                PostUpdate,
-                (apply_update, apply_deletion)
-                    .in_set(DrawingSystems::Apply)
-                    .after(VisibilitySystems::VisibilityPropagate),
-            )
-            .add_systems(
-                PostUpdate,
-                (persist_update, persist_deletion)
-                    .in_set(DrawingSystems::Persist)
-                    .after(DrawingSystems::Apply),
-            );
-    }
-}
 
 #[derive(Component, Debug, Copy, Clone, Default, Eq, PartialEq)]
 pub struct TileComponent;
@@ -323,7 +294,7 @@ impl DetailLevel {
 }
 
 #[allow(clippy::type_complexity)]
-fn apply_detail_level_to_visibility(
+pub fn apply_detail_level_to_visibility(
     mut q_visible_entities: Query<(&mut VisibleEntities, &Sector), With<Camera>>,
     mut q_all_entities: Query<
         (&mut ViewVisibility, Option<&Layer>),

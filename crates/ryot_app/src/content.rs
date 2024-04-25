@@ -1,22 +1,18 @@
-use crate::prelude::*;
 use bevy_app::{App, Plugin};
-use bevy_asset_loader::loading_state::LoadingState;
-use bevy_asset_loader::prelude::{
-    ConfigureLoadingState, LoadingStateAppExt, LoadingStateConfig,
-    StandardDynamicAssetArrayCollection,
-};
+use bevy_asset_loader::prelude::*;
 use bevy_common_assets::json::JsonAssetPlugin;
 use bevy_ecs::prelude::{IntoSystemConfigs, OnEnter};
-use ryot_content::prelude::*;
+use ryot_assets::atlas::AtlasLayoutsAsset;
+use ryot_assets::catalog::{prepare_sprite_sheets, Catalog, CatalogAsset};
+use ryot_assets::prelude::{
+    prepare_sprite_layouts, prepare_sprite_meshes, prepare_visual_elements, VisualElementsAsset,
+};
+use ryot_content::prelude::{
+    transition_to_ready, RyotContentState, SpriteSheetDataSet, VisualElements,
+};
 use ryot_tiled::prelude::TilePosition;
 use std::marker::PhantomData;
 
-/// A plugin that registers implementations of ContentAssets and loads them.
-/// It inits the necessary resources and adds the necessary systems and plugins to load
-/// the content assets.
-///
-/// It also manages the loading state of the content assets, the lifecycle of the content
-/// and the events that allow lazy loading of sprites.
 #[macro_export]
 macro_rules! content_plugin {
     ($plugin_name:ident, $content_assets:tt) => {
@@ -48,7 +44,7 @@ impl<C: VisualElementsAsset + Default> Plugin for BaseContentPlugin<C> {
                 prepare_visual_elements::<C>,
             );
 
-        #[cfg(feature = "ryot_tibia")]
+        #[cfg(feature = "tibia")]
         app.add_plugins(ryot_tibia::prelude::TibiaAssetsPlugin);
     }
 }

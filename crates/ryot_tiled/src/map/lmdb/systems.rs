@@ -1,5 +1,4 @@
 use crate::prelude::*;
-use bevy_app::*;
 use bevy_ecs::prelude::*;
 use bevy_render::prelude::*;
 use bevy_time::*;
@@ -12,16 +11,6 @@ use ryot_core::prelude::execute;
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-
-pub struct LmdbPlugin;
-
-impl Plugin for LmdbPlugin {
-    fn build(&self, app: &mut App) {
-        app.init_resource::<LmdbEnv>()
-            .init_resource::<LmdbCompactor>()
-            .add_systems(Startup, init_tiles_db.map(drop));
-    }
-}
 
 #[derive(Resource, Deref, DerefMut)]
 pub struct LmdbEnv(pub Option<Env>);
@@ -171,7 +160,7 @@ pub fn load_area(
     }
 }
 
-fn init_tiles_db(lmdb_env: Res<LmdbEnv>) -> color_eyre::Result<()> {
+pub fn init_tiles_db(lmdb_env: Res<LmdbEnv>) -> color_eyre::Result<()> {
     let Some(env) = &lmdb_env.0 else {
         return Ok(());
     };
