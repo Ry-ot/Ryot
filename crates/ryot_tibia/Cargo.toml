@@ -7,11 +7,11 @@ authors = [
     "Luan Santos <cargo@luan.sh>",
 ]
 license = "MIT OR Apache-2.0"
-description = "A compatibility layer between Ryot and Tibia's assets."
+description = "Specializes in managing and integrating Tibia-specific legacy assets, tailored for games inspired by the classic Tibia."
 homepage = "https://github.com/opentibiabr/Ryot"
 repository = "https://github.com/opentibiabr/Ryot"
 documentation = "https://docs.rs/ryot/"
-keywords = ["gamedev", "ryot", "tibia"]
+keywords = ["tibia", "legacy-games", "game-assets", "asset-integration", "ryot"]
 categories = ["game-development", "game-engines", "games"]
 
 [package.metadata.docs.rs]

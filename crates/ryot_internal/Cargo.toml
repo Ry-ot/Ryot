@@ -7,11 +7,11 @@ authors = [
     "Luan Santos <cargo@luan.sh>",
 ]
 license = "MIT OR Apache-2.0"
-description = "An internal Ryot crate used to facilitate optional dynamic linking via the 'dynamic_linking' feature"
+description = "Internal utilities and foundational elements for use within the Ryot framework, supporting cross-crate functionality."
 homepage = "https://github.com/opentibiabr/Ryot"
 repository = "https://github.com/opentibiabr/Ryot"
 documentation = "https://docs.rs/ryot/"
-keywords = ["gamedev", "assets", "ryot", "otbr", "bevy"]
+keywords = ["internal-utilities", "framework-support", "development-tools", "ryot"]
 categories = ["game-development", "game-engines"]
 
 [package.metadata.docs.rs]

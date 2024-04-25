@@ -7,11 +7,11 @@ authors = [
     "Luan Santos <cargo@luan.sh>",
 ]
 license = "MIT OR Apache-2.0"
-description = "An implementation of the pathfinding crate targeting 2d tile-based games using bevy ecs and ryot ecossystem."
+description = "Provides specialized pathfinding functionalities for Bevy 2D, essential for dynamic navigation and movement within games."
 homepage = "https://github.com/opentibiabr/Ryot"
 repository = "https://github.com/opentibiabr/Ryot"
 documentation = "https://docs.rs/ryot/"
-keywords = ["gamedev", "ryot", "pathfinding", "tiled-2d", "tiled"]
+keywords = ["pathfinding", "navigation", "tiled-2d-games", "bevy", "ryot"]
 categories = ["game-development", "games"]
 
 [package.metadata.docs.rs]

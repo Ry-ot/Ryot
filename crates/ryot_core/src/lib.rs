@@ -1,3 +1,8 @@
+//! `ryot_core`
+//!
+//! Acts as the backbone of the Ryot framework, housing essential components, systems,
+//! and utilities. This core crate supports foundational game development tasks, ensuring
+//! stability and efficiency across the framework.
 #![feature(trait_alias)]
 pub mod content_type;
 pub mod frame_group;

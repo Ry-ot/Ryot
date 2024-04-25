@@ -7,11 +7,11 @@ authors = [
     "Luan Santos <cargo@luan.sh>",
 ]
 license = "MIT OR Apache-2.0"
-description = "A 2d tile grid system for the Ryot engine."
+description = "Supports tile-based game development, providing tools for drawing and managing tilesets and tiled maps."
 homepage = "https://github.com/opentibiabr/Ryot"
 repository = "https://github.com/opentibiabr/Ryot"
 documentation = "https://docs.rs/ryot/"
-keywords = ["gamedev", "ryot", "grid", "tiled-2d", "tiled"]
+keywords = ["tiled-maps", "tiled-2d-games", "level-design", "game-development", "ryot"]
 categories = ["game-development", "games"]
 
 [package.metadata.docs.rs]

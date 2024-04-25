@@ -1,5 +1,8 @@
 //! # Tibia Appearance Protocol Definitions
 //!
+//! A specialized crate for managing Tibia-specific legacy assets, ensuring compatibility
+//! and enhancing functionalities tailored to games inspired by Tibia.
+//!
 //! This crate encapsulates the protocol definitions for Tibia's appearance data, providing
 //! a structured interface to Tibia appearance assets. It primarily consists of automatically
 //! generated Rust code from protocol buffer definitions, ensuring type safety and easy integration
