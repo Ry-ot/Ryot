@@ -36,16 +36,17 @@ pub mod prelude {
             sector::update_camera_visible_sector,
         },
         drawing::*,
-        map::elevation::{elevate_position, ElevationPlugin},
+        map::elevation::{apply_elevation, elevate_position, initialize_elevation},
         map::grid::{spawn_grid, GridView},
+        map::position::track_position_changes,
         object::{GameObjectBundle, LoadObjects},
     };
 
     #[cfg(feature = "lmdb")]
     pub use crate::map::lmdb::{
         systems::{
-            compact_map, load_area, read_area, reload_visible_area, LmdbCompactor, LmdbEnv,
-            LmdbPlugin,
+            compact_map, init_tiles_db, load_area, read_area, reload_visible_area, LmdbCompactor,
+            LmdbEnv,
         },
         *,
     };

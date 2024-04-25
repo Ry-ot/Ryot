@@ -1,4 +1,5 @@
-use bevy_asset::{Asset, Handle};
+use bevy_app::App;
+use bevy_asset::{embedded_asset, Asset, Handle};
 use bevy_ecs::entity::Entity;
 use bevy_ecs::prelude::{Commands, Query, With, Without};
 use bevy_reflect::TypePath;
@@ -34,9 +35,13 @@ impl Material2d for SpriteMaterial {
     }
 }
 
+pub fn embed_sprite_assets(app: &mut App) {
+    embedded_asset!(app, "shaders/sprite.wgsl");
+}
+
 /// A system that ensures that all entities with an and Id component
 /// have a SpriteMaterial mesh bundle.
-pub(crate) fn initialize_sprite_material(
+pub fn initialize_sprite_material(
     mut commands: Commands,
     query: Query<Entity, (With<GameObjectId>, Without<Handle<SpriteMaterial>>)>,
 ) {

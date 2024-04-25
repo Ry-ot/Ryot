@@ -1,0 +1,43 @@
+[package]
+name = "ryot_app"
+version = "0.2.2"
+edition = "2021"
+authors = [
+    "Lucas Grossi <lucas.ggrosis@gmail.com>",
+    "Luan Santos <cargo@luan.sh>",
+]
+license = "MIT OR Apache-2.0"
+description = "This crates provides the bevy most common blocks for building Ryot games, such as plugins and bundles."
+homepage = "https://github.com/opentibiabr/Ryot"
+repository = "https://github.com/opentibiabr/Ryot"
+documentation = "https://docs.rs/ryot/"
+keywords = ["gamedev", "ryot", "app", "building-blocks", "bevy"]
+categories = ["game-development", "game-engines", "games"]
+
+[package.metadata.docs.rs]
+rustdoc-args = ["-Zunstable-options", "--cfg", "docsrs"]
+all-features = true
+
+compression = ["dep:zstd"]
+
+[features]
+debug = ["ryot_tiled/debug"]
+lmdb = ["ryot_tiled/lmdb"]
+tibia = ["ryot_tibia"]
+
+[dependencies]
+bevy_app.workspace = true
+bevy_asset_loader.workspace = true
+bevy_common_assets.workspace = true
+bevy_ecs.workspace = true
+bevy_render.workspace = true
+bevy_sprite.workspace = true
+
+ryot_assets = { path = "../ryot_assets", version = "0.2" }
+ryot_content = { path = "../ryot_content", version = "0.2", features = ["bevy"] }
+ryot_core = { path = "../ryot_core", version = "0.2", features = ["bevy"] }
+ryot_tiled = { path = "../ryot_tiled", version = "0.2", features = ["bevy"] }
+ryot_sprites = { path = "../ryot_sprites", version = "0.2" }
+ryot_tibia = { path = "../ryot_tibia", version = "0.2", optional = true }
+ryot_pathfinder = { path = "../ryot_pathfinder", version = "0.2" }
+ryot_ray_casting = { path = "../ryot_ray_casting", version = "0.2" }
