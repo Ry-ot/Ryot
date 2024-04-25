@@ -31,7 +31,7 @@ compression = ["ryot_internal/compression"]
 egui = ["ryot_internal/egui"]
 
 pathfinder = ["ryot_internal/ryot_pathfinder"]
-tiled_pathfinder = ["ryot_internal/tiled", "ryot_internal/ryot_pathfinder"]
+tiled_pathfinder = ["ryot_internal/ryot_pathfinder"]
 
 ray_casting = ["ryot_internal/ryot_ray_casting"]
 

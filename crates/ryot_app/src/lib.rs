@@ -8,7 +8,7 @@ pub mod prelude {
     pub use crate::{
         content::{BaseContentPlugin, MetaContentPlugin, VisualContentPlugin},
         content_plugin,
-        game::{ElevationPlugin, GamePlugin},
+        game::{ElevationPlugin, GamePlugin, TileFlagPlugin},
         sprites::{RyotDrawingPlugin, RyotSpritePlugin},
     };
 
