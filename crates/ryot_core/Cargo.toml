@@ -1,6 +1,6 @@
 [package]
 name = "ryot_core"
-version = "0.2.0"
+version = "0.2.2"
 edition = "2021"
 authors = [
     "Lucas Grossi <lucas.ggrosis@gmail.com>",
@@ -32,28 +32,13 @@ bevy = [
 
 compression = ["dep:zstd"]
 
-[dependencies.bevy_app]
-version = "0.13"
-optional = true
-
-[dependencies.bevy_ecs]
-version = "0.13"
-features = ["bevy_reflect"]
-optional = true
-
-[dependencies.bevy_time]
-version = "0.13"
-optional = true
-
-[dependencies.bevy_utils]
-version = "0.13"
-optional = true
-
-[dependencies.bevy_window]
-version = "0.13"
-optional = true
-
 [dependencies]
+bevy_app = { workspace = true, optional = true }
+bevy_ecs = { workspace = true, optional = true }
+bevy_time = { workspace = true, optional = true }
+bevy_utils = { workspace = true, optional = true }
+bevy_window = { workspace = true, optional = true }
+
 async-std = "1.12.0"
 derive_more.workspace = true
 glam.workspace = true

@@ -1,6 +1,6 @@
 [package]
 name = "ryot_ray_casting"
-version = "0.2.0"
+version = "0.2.2"
 edition = "2021"
 authors = [
     "Lucas Grossi <lucas.ggrosis@gmail.com>",
@@ -18,28 +18,19 @@ categories = ["game-development", "games"]
 rustdoc-args = ["-Zunstable-options", "--cfg", "docsrs"]
 all-features = true
 
-[dependencies.bevy_app]
-version = "0.13"
-
-[dependencies.bevy_ecs]
-version = "0.13"
-features = ["bevy_reflect"]
-
-[dependencies.bevy_math]
-version = "0.13"
-
-[dependencies.bevy_reflect]
-version = "0.13"
-
-[dependencies.bevy_utils]
-version = "0.13"
-
 [dependencies]
+bevy_app.workspace = true
+bevy_ecs.workspace = true
+bevy_math.workspace = true
+bevy_reflect.workspace = true
+bevy_utils.workspace = true
+
+ryot_core = { path = "../ryot_core", version = "0.2" }
+ryot_tiled = { path = "../ryot_tiled", version = "0.2" }
+
 derive_more.workspace = true
 glam.workspace = true
 itertools.workspace = true
-ryot_core = { path = "../ryot_core", version = "0.2.0" }
-ryot_tiled = { path = "../ryot_tiled", version = "0.2.0" }
 
 [dev-dependencies]
 quickcheck.workspace = true

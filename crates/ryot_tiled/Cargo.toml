@@ -1,6 +1,6 @@
 [package]
 name = "ryot_tiled"
-version = "0.2.0"
+version = "0.2.2"
 edition = "2021"
 authors = [
     "Lucas Grossi <lucas.ggrosis@gmail.com>",
@@ -42,63 +42,25 @@ debug = []
 test-utils = ["dep:quickcheck", "dep:quickcheck_macros"]
 lmdb = ["dep:heed"]
 
-[dependencies.bevy_app]
-version = "0.13"
-optional = true
-
-[dependencies.bevy_asset]
-version = "0.13"
-optional = true
-
-[dependencies.bevy_ecs]
-version = "0.13"
-features = ["bevy_reflect"]
-optional = true
-
-[dependencies.bevy_hierarchy]
-version = "0.13"
-optional = true
-
-[dependencies.bevy_math]
-version = "0.13"
-features = ["serialize"]
-optional = true
-
-[dependencies.bevy_reflect]
-version = "0.13"
-features = ["bevy"]
-optional = true
-
-[dependencies.bevy_render]
-version = "0.13"
-optional = true
-
-[dependencies.bevy_sprite]
-version = "0.13"
-optional = true
-
-[dependencies.bevy_transform]
-version = "0.13"
-features = ["serialize"]
-optional = true
-
-[dependencies.bevy_utils]
-version = "0.13"
-optional = true
-
-[dependencies.bevy_time]
-version = "0.13"
-optional = true
-
-[dependencies.bevy_window]
-version = "0.13"
-optional = true
-
-[dependencies.bevy_stroked_text]
-version = "0.2.0"
-optional = true
-
 [dependencies]
+bevy_app = { workspace = true, optional = true }
+bevy_asset = { workspace = true, optional = true }
+bevy_ecs = { workspace = true, optional = true }
+bevy_hierarchy = { workspace = true, optional = true }
+bevy_math = { workspace = true, optional = true }
+bevy_reflect = { workspace = true, optional = true }
+bevy_render = { workspace = true, optional = true }
+bevy_sprite = { workspace = true, optional = true }
+bevy_stroked_text = { workspace = true, optional = true }
+bevy_time = { workspace = true, optional = true }
+bevy_transform = { workspace = true, optional = true }
+bevy_utils = { workspace = true, optional = true }
+bevy_window = { workspace = true, optional = true }
+
+ryot_core = { path = "../ryot_core", version = "0.2" }
+ryot_content = { path = "../ryot_content", version = "0.2" }
+ryot_sprites = { path = "../ryot_sprites", version = "0.2" }
+
 derive_more.workspace = true
 glam.workspace = true
 rand.workspace = true
@@ -112,9 +74,6 @@ color-eyre.workspace = true
 postcard.workspace = true
 thiserror.workspace = true
 egui = { workspace = true, optional = true }
-ryot_core = { path = "../ryot_core", version = "0.2.0" }
-ryot_content = { path = "../ryot_content", version = "0.2.0" }
-ryot_sprites = { path = "../ryot_sprites", version = "0.2.0" }
 itertools = "0.12.1"
 
 [dev-dependencies]
