@@ -8,8 +8,8 @@ authors = [
 ]
 license = "MIT OR Apache-2.0"
 description = "Implements ray casting capabilities for Bevy 2D, crucial for interactive game mechanics and line-of-sight features."
-homepage = "https://github.com/opentibiabr/Ryot"
-repository = "https://github.com/opentibiabr/Ryot"
+homepage = "https://github.com/ry-ot/Ryot"
+repository = "https://github.com/ry-ot/Ryot"
 documentation = "https://docs.rs/ryot/"
 keywords = ["ray-casting", "bevy", "tiled-2d-games", "game-mechanics", "ryot"]
 categories = ["game-development", "games"]

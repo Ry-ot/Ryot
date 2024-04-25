@@ -8,8 +8,8 @@ authors = [
 ]
 license = "MIT OR Apache-2.0"
 description = "Supports tile-based game development, providing tools for drawing and managing tilesets and tiled maps."
-homepage = "https://github.com/opentibiabr/Ryot"
-repository = "https://github.com/opentibiabr/Ryot"
+homepage = "https://github.com/ry-ot/Ryot"
+repository = "https://github.com/ry-ot/Ryot"
 documentation = "https://docs.rs/ryot/"
 keywords = ["tiled-maps", "tiled-2d-games", "level-design", "game-development", "ryot"]
 categories = ["game-development", "games"]

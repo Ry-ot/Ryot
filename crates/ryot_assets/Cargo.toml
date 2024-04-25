@@ -8,8 +8,8 @@ authors = [
 ]
 license = "MIT OR Apache-2.0"
 description = "Manages asset loading and processing, offering robust tools for efficient game resource management."
-homepage = "https://github.com/opentibiabr/Ryot"
-repository = "https://github.com/opentibiabr/Ryot"
+homepage = "https://github.com/ry-ot/Ryot"
+repository = "https://github.com/ry-ot/Ryot"
 documentation = "https://docs.rs/ryot/"
 keywords = ["asset-management", "resource-loading", "game-assets", "ryot"]
 categories = ["game-development", "game-engines", "games"]

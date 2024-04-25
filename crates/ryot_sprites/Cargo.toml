@@ -8,8 +8,8 @@ authors = [
 ]
 license = "MIT OR Apache-2.0"
 description = "Focuses on sprite management, handling animations and graphical representations for dynamic visual content in games."
-homepage = "https://github.com/opentibiabr/Ryot"
-repository = "https://github.com/opentibiabr/Ryot"
+homepage = "https://github.com/ry-ot/Ryot"
+repository = "https://github.com/ry-ot/Ryot"
 documentation = "https://docs.rs/ryot/"
 keywords = ["sprites", "animations", "graphics-2d", "ryot"]
 categories = ["game-development", "game-engines", "games"]

@@ -8,8 +8,8 @@ authors = [
 ]
 license = "MIT OR Apache-2.0"
 description = "Contains essential plugins and bundles for building Bevy-based applications within the Ryot framework."
-homepage = "https://github.com/opentibiabr/Ryot"
-repository = "https://github.com/opentibiabr/Ryot"
+homepage = "https://github.com/ry-ot/Ryot"
+repository = "https://github.com/ry-ot/Ryot"
 documentation = "https://docs.rs/ryot/"
 keywords = ["bevy-plugins", "game-engine", "games-2d", "game-development", "ryot"]
 categories = ["game-development", "game-engines", "games"]
