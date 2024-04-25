@@ -4,7 +4,7 @@
 <img src="https://raw.githubusercontent.com/opentibiabr/Ryot/ae87fdf207d540c901c9c03bb6bbdd0abb8027e4/ryot_compass/assets/ryot_mascot.png" width="256" height="256"  alt="Ryot! An open tibia based MMORPG library in Rust."/>
 </div>
 
-Welcome to the Ryot Framework, a robust and versatile suite of Rust crates and applications designed specifically for
+Welcome to the Ryot, the Rust canarY Open Tibia Framework, a robust and versatile suite of Rust crates and applications designed specifically for
 developing tiled 2D games.
 Inspired by the mechanics and perspectives of games like Open Tibia and Tibia, Ryot offers specialized tools for
 creating top-down 45-degree perspective games.
