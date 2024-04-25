@@ -5040,8 +5040,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "ryot_app"
+version = "0.2.2"
+dependencies = [
+ "bevy_app",
+ "bevy_asset_loader",
+ "bevy_common_assets",
+ "bevy_ecs",
+ "bevy_render",
+ "bevy_sprite",
+ "ryot_assets",
+ "ryot_content",
+ "ryot_core",
+ "ryot_pathfinder",
+ "ryot_ray_casting",
+ "ryot_sprites",
+ "ryot_tibia",
+ "ryot_tiled",
+]
+
+[[package]]
 name = "ryot_assets"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "async-std",
  "bevy_app",
@@ -5075,7 +5095,7 @@ dependencies = [
 
 [[package]]
 name = "ryot_assets_cli"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "clap",
  "color-eyre",
@@ -5137,7 +5157,7 @@ dependencies = [
 
 [[package]]
 name = "ryot_content"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "async-std",
  "bevy_asset",
@@ -5165,7 +5185,7 @@ dependencies = [
 
 [[package]]
 name = "ryot_core"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "async-std",
  "bevy_app",
@@ -5191,8 +5211,9 @@ dependencies = [
 
 [[package]]
 name = "ryot_internal"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
+ "ryot_app",
  "ryot_assets",
  "ryot_content",
  "ryot_core",
@@ -5205,7 +5226,7 @@ dependencies = [
 
 [[package]]
 name = "ryot_pathfinder"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "bevy_app",
  "bevy_ecs",
@@ -5223,7 +5244,7 @@ dependencies = [
 
 [[package]]
 name = "ryot_ray_casting"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "bevy_app",
  "bevy_ecs",
@@ -5244,7 +5265,7 @@ dependencies = [
 
 [[package]]
 name = "ryot_sprites"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "async-std",
  "bevy_app",
@@ -5273,7 +5294,7 @@ dependencies = [
 
 [[package]]
 name = "ryot_tibia"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -5300,7 +5321,7 @@ dependencies = [
 
 [[package]]
 name = "ryot_tiled"
-version = "0.2.0"
+version = "0.2.2"
 dependencies = [
  "bevy_app",
  "bevy_asset",

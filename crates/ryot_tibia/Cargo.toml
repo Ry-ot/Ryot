@@ -1,6 +1,6 @@
 [package]
 name = "ryot_tibia"
-version = "0.2.0"
+version = "0.2.2"
 edition = "2021"
 authors = [
     "Lucas Grossi <lucas.ggrosis@gmail.com>",
@@ -27,21 +27,14 @@ bevy = [
     "bevy_utils",
 ]
 
-[dependencies.bevy_app]
-version = "0.13"
-optional = true
-
-[dependencies.bevy_asset]
-version = "0.13"
-optional = true
-
-[dependencies.bevy_utils]
-version = "0.13"
-optional = true
-
 [dependencies]
-ryot_content = { path = "../ryot_content", version = "0.2.0" }
-ryot_sprites = { path = "../ryot_sprites", version = "0.2.0" }
+bevy_app = { workspace = true, optional = true }
+bevy_asset = { workspace = true, optional = true }
+bevy_utils = { workspace = true, optional = true }
+
+ryot_content = { path = "../ryot_content", version = "0.2" }
+ryot_sprites = { path = "../ryot_sprites", version = "0.2" }
+
 derive_more.workspace = true
 glam.workspace = true
 prost = { workspace = true }

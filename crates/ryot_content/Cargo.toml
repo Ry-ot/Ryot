@@ -1,6 +1,6 @@
 [package]
 name = "ryot_content"
-version = "0.2.0"
+version = "0.2.2"
 edition = "2021"
 authors = [
     "Lucas Grossi <lucas.ggrosis@gmail.com>",
@@ -32,42 +32,18 @@ bevy = [
     "dep:bevy_asset_loader",
 ]
 
-[dependencies.bevy_asset]
-version = "0.13"
-optional = true
-
-[dependencies.bevy_ecs]
-version = "0.13"
-features = ["bevy_reflect"]
-optional = true
-
-[dependencies.bevy_math]
-version = "0.13"
-optional = true
-
-[dependencies.bevy_reflect]
-version = "0.13"
-features = ["bevy"]
-optional = true
-
-[dependencies.bevy_render]
-version = "0.13"
-optional = true
-
-[dependencies.bevy_sprite]
-version = "0.13"
-optional = true
-
-[dependencies.bevy_utils]
-version = "0.13"
-optional = true
-
-[dependencies.bevy_asset_loader]
-version = "0.20.1"
-optional = true
-
 [dependencies]
-ryot_core = { path = "../ryot_core", version = "0.2.0" }
+bevy_asset = { workspace = true, optional = true }
+bevy_ecs = { workspace = true, optional = true }
+bevy_math = { workspace = true, optional = true }
+bevy_reflect = { workspace = true, optional = true }
+bevy_render = { workspace = true, optional = true }
+bevy_sprite = { workspace = true, optional = true }
+bevy_utils = { workspace = true, optional = true }
+bevy_asset_loader = { workspace = true, optional = true }
+
+ryot_core = { path = "../ryot_core", version = "0.2" }
+
 async-std = "1.12.0"
 derive_more.workspace = true
 glam.workspace = true

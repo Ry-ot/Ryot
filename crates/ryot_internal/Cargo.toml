@@ -1,6 +1,6 @@
 [package]
 name = "ryot_internal"
-version = "0.2.0"
+version = "0.2.2"
 edition = "2021"
 authors = [
     "Lucas Grossi <lucas.ggrosis@gmail.com>",
@@ -21,28 +21,38 @@ all-features = true
 [features]
 debug = [
     "ryot_tiled/debug",
+    "ryot_app?/debug",
 ]
 
 bevy = [
+    "ryot_app",
     "ryot_assets",
+    "ryot_content/bevy",
     "ryot_core/bevy",
     "ryot_tiled/bevy",
+    "ryot_tibia?/bevy",
 ]
 
 compression = ["ryot_core/compression"]
 egui = ["ryot_tiled/egui"]
-lmdb = ["ryot_tiled/lmdb"]
+lmdb = ["ryot_app?/lmdb", "ryot_tiled/lmdb"]
 
 tiled = ["ryot_pathfinder?/ryot_tiled"]
 ray_cast = ["ryot_ray_casting"]
+ryot_tibia = [
+    "dep:ryot_tibia",
+    "ryot_app/tibia",
+    "ryot_assets/ryot_tibia",
+]
 
 [dependencies]
-ryot_core = { path = "../ryot_core", version = "0.2.0" }
-ryot_content = { path = "../ryot_content", version = "0.2.0" }
-ryot_sprites = { path = "../ryot_sprites", version = "0.2.0" }
-ryot_tiled = { path = "../ryot_tiled", version = "0.2.0" }
+ryot_app = { path = "../ryot_app", version = "0.2.0", optional = true }
 ryot_assets = { path = "../ryot_assets", version = "0.2.0", optional = true }
-ryot_tibia = { path = "../ryot_tibia", version = "0.2.0", optional = true }
+ryot_core = { path = "../ryot_core", version = "0.2" }
+ryot_content = { path = "../ryot_content", version = "0.2" }
 ryot_pathfinder = { path = "../ryot_pathfinder", version = "0.2.0", optional = true }
 ryot_ray_casting = { path = "../ryot_ray_casting", version = "0.2.0", optional = true }
+ryot_sprites = { path = "../ryot_sprites", version = "0.2" }
+ryot_tiled = { path = "../ryot_tiled", version = "0.2" }
+ryot_tibia = { path = "../ryot_tibia", version = "0.2.0", optional = true }
 

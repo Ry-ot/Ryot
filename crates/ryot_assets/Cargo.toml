@@ -1,6 +1,6 @@
 [package]
 name = "ryot_assets"
-version = "0.2.0"
+version = "0.2.2"
 edition = "2021"
 authors = [
     "Lucas Grossi <lucas.ggrosis@gmail.com>",
@@ -18,41 +18,24 @@ categories = ["game-development", "game-engines", "games"]
 rustdoc-args = ["-Zunstable-options", "--cfg", "docsrs"]
 all-features = true
 
-[dependencies.bevy_app]
-version = "0.13"
-
-[dependencies.bevy_asset]
-version = "0.13"
-
-[dependencies.bevy_ecs]
-version = "0.13"
-features = ["bevy_reflect"]
-
-[dependencies.bevy_math]
-version = "0.13"
-
-[dependencies.bevy_reflect]
-version = "0.13"
-features = ["bevy"]
-
-[dependencies.bevy_render]
-version = "0.13"
-
-[dependencies.bevy_sprite]
-version = "0.13"
-
-[dependencies.bevy_utils]
-version = "0.13"
-
-[dependencies.bevy_asset_loader]
-version = "0.20.1"
-
 [dependencies]
-ryot_core = { path = "../ryot_core", version = "0.2.0" }
-ryot_content = { path = "../ryot_content", version = "0.2.0" }
-ryot_sprites = { path = "../ryot_sprites", version = "0.2.0" }
-ryot_tiled = { path = "../ryot_tiled", version = "0.2.0" }
+bevy_app.workspace = true
+bevy_asset.workspace = true
+bevy_ecs.workspace = true
+bevy_math.workspace = true
+bevy_reflect.workspace = true
+bevy_render.workspace = true
+bevy_sprite.workspace = true
+bevy_utils.workspace = true
+bevy_asset_loader.workspace = true
+bevy_common_assets.workspace = true
+
+ryot_core = { path = "../ryot_core", version = "0.2" }
+ryot_content = { path = "../ryot_content", version = "0.2" }
+ryot_sprites = { path = "../ryot_sprites", version = "0.2" }
+ryot_tiled = { path = "../ryot_tiled", version = "0.2" }
 ryot_tibia = { path = "../ryot_tibia", version = "0.2.0", optional = true }
+
 async-std = "1.12.0"
 derive_more.workspace = true
 glam.workspace = true
@@ -61,7 +44,6 @@ serde.workspace = true
 serde_json.workspace = true
 strum.workspace = true
 thiserror.workspace = true
-bevy_common_assets.workspace = true
 
 [dev-dependencies]
 quickcheck.workspace = true

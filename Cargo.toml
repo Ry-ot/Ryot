@@ -14,10 +14,6 @@ debug = 0
 opt-level = 3
 
 [workspace.dependencies]
-bevy_asset_loader = { version = "0.20.1", features = ["2d", "standard_dynamic_assets"] }
-bevy_common_assets = { version = "0.10", features = ["toml", "json"] }
-bevy_egui = { version = "0.25", features = ["immutable_ctx"] }
-bevy_stroked_text = "0.2"
 bytes = "1.5"
 color-eyre = "0.6"
 config = "0.13"
@@ -46,6 +42,26 @@ quickcheck = "1"
 quickcheck_macros = "1"
 wasm-bindgen-futures = "0.4"
 zstd = "0.13"
+
+# Bevy dependencies
+bevy_app = "0.13"
+bevy_asset = "0.13"
+bevy_ecs = { version = "0.13", features = ["bevy_reflect"] }
+bevy_hierarchy = "0.13"
+bevy_math = "0.13"
+bevy_reflect = { version = "0.13", features = ["bevy"] }
+bevy_render = "0.13"
+bevy_sprite = "0.13"
+bevy_tasks = { version = "0.13", features = ["multi-threaded"] }
+bevy_time = "0.13"
+bevy_transform = "0.13"
+bevy_utils = "0.13"
+bevy_window = "0.13"
+
+bevy_asset_loader = { version = "0.20.1", features = ["2d", "standard_dynamic_assets"] }
+bevy_common_assets = { version = "0.10", features = ["toml", "json"] }
+bevy_egui = { version = "0.25", features = ["immutable_ctx"] }
+bevy_stroked_text = "0.2"
 
 [workspace.dependencies.bevy]
 version = "0.13"
