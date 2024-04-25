@@ -26,6 +26,7 @@ lmdb = ["ryot_tiled/lmdb"]
 tibia = ["ryot_tibia"]
 
 [dependencies]
+bevy_stroked_text.workspace = true
 bevy_app.workspace = true
 bevy_asset_loader.workspace = true
 bevy_common_assets.workspace = true
