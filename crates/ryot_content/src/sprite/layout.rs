@@ -1,6 +1,12 @@
+use bevy_ecs::prelude::Resource;
+use bevy_sprite::TextureAtlasLayout;
+use derive_more::{Deref, DerefMut};
 use glam::{UVec2, Vec2};
 use serde_repr::{Deserialize_repr, Serialize_repr};
 use strum::EnumIter;
+
+#[derive(Debug, Default, Clone, Resource, Deref, DerefMut)]
+pub struct TextureAtlasLayouts(Vec<TextureAtlasLayout>);
 
 #[derive(
     Serialize_repr, Deserialize_repr, Default, Eq, PartialEq, Debug, Copy, Clone, EnumIter, Hash,

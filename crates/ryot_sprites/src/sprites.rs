@@ -1,14 +1,14 @@
 //! Sprite loading and drawing.
 use crate::prelude::*;
-use ryot_sprites::prelude::*;
-
-use self::sprite_animations::{
-    AnimationDescriptor, AnimationKey, AnimationSprite, SpriteAnimationExt,
-};
-use bevy::prelude::*;
-use bevy::sprite::Mesh2dHandle;
-use bevy::utils::{HashMap, HashSet};
+use bevy_asset::*;
+use bevy_ecs::prelude::*;
+use bevy_render::prelude::*;
+use bevy_sprite::Mesh2dHandle;
+use bevy_utils::tracing::warn;
+use bevy_utils::*;
+use derive_more::*;
 use itertools::Itertools;
+use ryot_content::prelude::*;
 use ryot_tiled::prelude::*;
 use std::path::PathBuf;
 
@@ -118,7 +118,7 @@ pub fn load_sprites(
         .collect()
 }
 
-pub(crate) fn load_sprite_textures(
+pub fn load_sprite_textures(
     sprite_ids: Vec<u32>,
     asset_server: &Res<AssetServer>,
     sprite_sheets: &SpriteSheetDataSet,
@@ -132,7 +132,7 @@ pub(crate) fn load_sprite_textures(
         .collect()
 }
 
-pub(crate) fn load_sprite_texture(
+pub fn load_sprite_texture(
     sprite_id: u32,
     asset_server: &Res<AssetServer>,
     sprite_sheets: &SpriteSheetDataSet,
@@ -151,7 +151,7 @@ pub(crate) fn load_sprite_texture(
 
 /// A system that ensures that all entities with an GameObjectId have a SpriteMaterial mesh bundle.
 #[cfg(feature = "debug")]
-pub(crate) fn debug_sprites(
+pub fn debug_sprites(
     mut commands: Commands,
     q_debug: Query<(Entity, &Layer), (With<GameObjectId>, Without<Handle<SpriteMaterial>>)>,
 ) {
@@ -188,14 +188,14 @@ pub(crate) fn debug_sprites(
     });
 }
 
-pub(crate) type ChangingAppearanceFilter = Or<(
+pub type ChangingAppearanceFilter = Or<(
     Changed<GameObjectId>,
     Changed<FrameGroup>,
     Changed<Directional>,
     (Without<AnimationSprite>, Changed<SpriteParams>),
 )>;
 
-pub(crate) fn update_sprite_system(
+pub fn update_sprite_system(
     mut q_updated: Query<
         (
             &GameObjectId,
@@ -242,7 +242,7 @@ pub(crate) fn update_sprite_system(
     );
 }
 
-pub(crate) fn sprite_material_from_params(
+pub fn sprite_material_from_params(
     sprite_params: Option<&SpriteParams>,
     materials: &mut ResMut<'_, Assets<SpriteMaterial>>,
     sprite: &LoadedSprite,
@@ -262,7 +262,7 @@ pub(crate) fn sprite_material_from_params(
         .unwrap_or_else(|| sprite.material.clone())
 }
 
-pub(crate) fn load_from_entities_system(
+pub fn load_from_entities_system(
     query: Query<
         (&GameObjectId, Option<&FrameGroup>),
         Or<(Changed<GameObjectId>, Changed<FrameGroup>)>,
@@ -290,7 +290,7 @@ pub struct LoadAppearanceEvent {
     pub frame_group: FrameGroup,
 }
 
-pub(crate) fn process_load_events_system(
+pub fn process_load_events_system(
     visual_elements: Res<VisualElements>,
     loaded_appearances: Res<LoadedAppearances>,
     mut events: EventReader<LoadAppearanceEvent>,
@@ -334,7 +334,7 @@ pub(crate) fn process_load_events_system(
     )
 }
 
-pub(crate) fn load_sprite_system(
+pub fn load_sprite_system(
     In(inputs): In<Option<HashMap<(GameObjectId, FrameGroup), SpriteInfo>>>,
     sprite_sheets: Res<SpriteSheetDataSet>,
     layouts: Res<TextureAtlasLayouts>,
@@ -378,7 +378,7 @@ pub(crate) fn load_sprite_system(
     })
 }
 
-pub(crate) fn store_loaded_appearances_system(
+pub fn store_loaded_appearances_system(
     In(input): In<
         Option<(
             HashMap<(GameObjectId, FrameGroup), SpriteInfo>,

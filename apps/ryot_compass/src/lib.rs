@@ -7,7 +7,6 @@ use bevy_inspector_egui::quick::WorldInspectorPlugin;
 use leafwing_input_manager::common_conditions::{action_just_pressed, action_toggle_active};
 use leafwing_input_manager::prelude::*;
 use leafwing_input_manager::user_input::InputKind;
-use ryot::bevy_ryot::toggle_sprite_animation;
 use ryot::prelude::*;
 
 #[cfg(all(feature = "lmdb", not(target_arch = "wasm32")))]

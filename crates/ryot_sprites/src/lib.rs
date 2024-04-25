@@ -1,10 +1,15 @@
 use bevy_ecs::prelude::SystemSet;
 
 pub mod animations;
-pub mod atlas;
 pub mod material;
 pub mod meshes;
 pub mod params;
+
+// TODO: make this better module, break it down
+pub mod sprite_animations;
+
+// TODO: make this better module, break it down
+pub mod sprites;
 
 pub static SPRITE_SHEET_FOLDER: &str = "sprite-sheets";
 
@@ -22,11 +27,12 @@ pub enum SpriteSystems {
 pub mod prelude {
     pub use crate::{
         animations::AnimationSystems,
-        atlas::TextureAtlasLayouts,
         get_decompressed_file_name,
         material::{embed_sprite_assets, initialize_sprite_material, SpriteMaterial},
         meshes::{RectMeshes, SpriteMeshes},
         params::{SpriteOutline, SpriteParams},
+        sprite_animations::*,
+        sprites::*,
         SpriteSystems, SPRITE_SHEET_FOLDER,
     };
 }

@@ -1,13 +1,17 @@
 //! Sprite animations module.
 use crate::prelude::*;
-use bevy::prelude::*;
-use bevy::utils::HashMap;
+use bevy_asset::*;
+use bevy_ecs::prelude::*;
+use bevy_time::*;
+use bevy_utils::tracing::warn;
+use bevy_utils::*;
+use derive_more::*;
 use rand::Rng;
-use ryot_sprites::prelude::*;
+use ryot_content::prelude::*;
 use ryot_tiled::prelude::*;
 use std::time::Duration;
 
-use self::sprites::{
+use crate::sprites::{
     sprite_material_from_params, ChangingAppearanceFilter, LoadedAppearances, LoadedSprite,
 };
 
@@ -22,7 +26,7 @@ impl Default for SpriteAnimationEnabled {
 }
 
 #[derive(Resource, Debug, Default, Deref, DerefMut)]
-pub(crate) struct SynchronizedAnimationTimers(HashMap<AnimationKey, AnimationState>);
+pub struct SynchronizedAnimationTimers(HashMap<AnimationKey, AnimationState>);
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum AnimationStartPhase {
@@ -58,13 +62,13 @@ impl AnimationKey {
             .unwrap_or(Duration::from_millis(300))
     }
 
-    pub(crate) fn default_state(&self) -> AnimationState {
+    pub fn default_state(&self) -> AnimationState {
         let current_phase = self.start_phase.get(self.total_phases);
         AnimationState::new(current_phase, self.create_timer(current_phase))
     }
 }
 
-pub(crate) trait SpriteAnimationExt {
+pub trait SpriteAnimationExt {
     fn get_animation_key(&self) -> AnimationKey;
 }
 
@@ -94,7 +98,7 @@ impl SpriteAnimationExt for Animation {
 }
 
 #[derive(Debug, Clone)]
-pub(crate) struct AnimationState {
+pub struct AnimationState {
     pub timer: Timer,
     pub current_phase: usize,
     just_finished: bool,
@@ -137,7 +141,7 @@ pub struct AnimationDescriptor {
 }
 
 #[derive(Component, Clone, Debug)]
-pub(crate) enum AnimationSprite {
+pub enum AnimationSprite {
     Independent {
         key: AnimationKey,
         descriptor: AnimationDescriptor,
@@ -150,10 +154,7 @@ pub(crate) enum AnimationSprite {
 }
 
 impl AnimationSprite {
-    pub(crate) fn from_key_and_descriptor(
-        key: &AnimationKey,
-        descriptor: &AnimationDescriptor,
-    ) -> Self {
+    pub fn from_key_and_descriptor(key: &AnimationKey, descriptor: &AnimationDescriptor) -> Self {
         if descriptor.synchronized {
             AnimationSprite::Synchronized {
                 key: key.clone(),
@@ -177,7 +178,7 @@ pub fn toggle_sprite_animation(mut enabled: ResMut<SpriteAnimationEnabled>) {
     enabled.0 = !enabled.0;
 }
 
-pub(crate) fn initialize_animation_sprite_system(
+pub fn initialize_animation_sprite_system(
     mut commands: Commands,
     q_maybe_animated: Query<(Entity, &GameObjectId, Option<&FrameGroup>), ChangingAppearanceFilter>,
     loaded_appereances: Res<LoadedAppearances>,
@@ -211,7 +212,7 @@ pub(crate) fn initialize_animation_sprite_system(
 /// A system that animates the sprites based on the `AnimationSprite` component.
 /// It's meant to run every frame to update the animation of the entities.
 /// It will only run if the entity has a `TextureAtlas` and an `AnimationSprite` component.
-pub(crate) fn tick_animation_system(
+pub fn tick_animation_system(
     time: Res<Time>,
     mut synced_timers: ResMut<SynchronizedAnimationTimers>,
     mut q_sprites: Query<(

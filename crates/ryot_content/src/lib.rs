@@ -18,7 +18,7 @@ pub mod prelude {
         game::{elevation::Elevation, game_object::GameObjectId},
         properties::{Category, EntityType, Flags, Properties},
         sprite::{
-            layout::{SpriteLayout, SpriteLayoutIter},
+            layout::{SpriteLayout, SpriteLayoutIter, TextureAtlasLayouts},
             sprite_sheet_data::{SpriteSheetData, SpriteSheetDataSet},
             Animation, SpriteInfo,
         },

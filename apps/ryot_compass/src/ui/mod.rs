@@ -1,4 +1,3 @@
-use crate::sprites::LoadedSprite;
 use crate::{CursorCommand, TilesetCategory, ToolMode};
 use bevy::prelude::*;
 use egui::{Align, Ui};

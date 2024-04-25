@@ -6,16 +6,12 @@
 use crate::prelude::*;
 use bevy::prelude::*;
 use bevy_stroked_text::StrokedTextPlugin;
+pub use ryot_sprites::prelude;
 
 mod game;
 pub use game::*;
 
-pub mod sprites;
-
 pub mod position;
-pub(crate) mod sprite_animations;
-
-pub use sprite_animations::{toggle_sprite_animation, AnimationDuration};
 
 pub struct RyotLegacySpritePlugin;
 
@@ -24,32 +20,29 @@ impl Plugin for RyotLegacySpritePlugin {
         app.add_plugins(RyotSpritePlugin);
 
         app.add_optional_plugin(StrokedTextPlugin)
-            .init_resource::<sprite_animations::SpriteAnimationEnabled>()
-            .init_resource::<sprite_animations::SynchronizedAnimationTimers>()
-            .init_resource::<sprites::LoadedAppearances>()
-            .add_event::<sprites::LoadAppearanceEvent>()
+            .init_resource::<SpriteAnimationEnabled>()
+            .init_resource::<SynchronizedAnimationTimers>()
+            .init_resource::<LoadedAppearances>()
+            .add_event::<LoadAppearanceEvent>()
             .add_systems(
                 Update,
                 (
                     #[cfg(feature = "debug")]
                     debug_sprite_position,
-                    sprites::load_from_entities_system.in_set(SpriteSystems::Load),
-                    sprites::process_load_events_system
-                        .pipe(sprites::load_sprite_system)
-                        .pipe(sprites::store_loaded_appearances_system)
-                        .run_if(on_event::<sprites::LoadAppearanceEvent>())
+                    load_from_entities_system.in_set(SpriteSystems::Load),
+                    process_load_events_system
+                        .pipe(load_sprite_system)
+                        .pipe(store_loaded_appearances_system)
+                        .run_if(on_event::<LoadAppearanceEvent>())
                         .in_set(SpriteSystems::Load),
-                    #[cfg(feature = "debug")]
-                    sprites::debug_sprites.in_set(SpriteSystems::Initialize),
-                    sprites::update_sprite_system
+                    // #[cfg(feature = "debug")]
+                    // debug_sprites.in_set(SpriteSystems::Initialize),
+                    update_sprite_system
                         .in_set(SpriteSystems::Update)
                         .after(SpriteSystems::Initialize),
-                    sprite_animations::initialize_animation_sprite_system
-                        .in_set(AnimationSystems::Initialize),
-                    sprite_animations::tick_animation_system
-                        .run_if(resource_exists_and_equals(
-                            sprite_animations::SpriteAnimationEnabled(true),
-                        ))
+                    initialize_animation_sprite_system.in_set(AnimationSystems::Initialize),
+                    tick_animation_system
+                        .run_if(resource_exists_and_equals(SpriteAnimationEnabled(true)))
                         .in_set(AnimationSystems::Update),
                 )
                     .chain()
