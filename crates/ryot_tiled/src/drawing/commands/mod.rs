@@ -15,7 +15,7 @@ use crate::prelude::*;
 use bevy_reflect::Reflect;
 use bevy_render::prelude::*;
 use bevy_utils::*;
-use ryot_content::prelude::*;
+use ryot_core::prelude::*;
 
 mod update;
 pub use update::*;

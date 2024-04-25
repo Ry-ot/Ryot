@@ -3,7 +3,7 @@ use bevy_ecs::bundle::Bundle;
 use bevy_ecs::event::Event;
 use bevy_utils::default;
 use derive_more::*;
-use ryot_content::prelude::{Elevation, GameObjectId};
+use ryot_core::prelude::{Elevation, GameObjectId};
 
 #[derive(Bundle, Copy, Clone, Debug)]
 pub struct GameObjectBundle {

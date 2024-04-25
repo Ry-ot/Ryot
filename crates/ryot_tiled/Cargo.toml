@@ -57,8 +57,8 @@ bevy_transform = { workspace = true, optional = true }
 bevy_utils = { workspace = true, optional = true }
 bevy_window = { workspace = true, optional = true }
 
+ryot_utils = { path = "../ryot_utils", version = "0.2" }
 ryot_core = { path = "../ryot_core", version = "0.2" }
-ryot_content = { path = "../ryot_content", version = "0.2" }
 
 derive_more.workspace = true
 glam.workspace = true

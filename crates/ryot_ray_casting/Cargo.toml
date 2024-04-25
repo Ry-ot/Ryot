@@ -25,7 +25,7 @@ bevy_math.workspace = true
 bevy_reflect.workspace = true
 bevy_utils.workspace = true
 
-ryot_core = { path = "../ryot_core", version = "0.2" }
+ryot_utils = { path = "../ryot_utils", version = "0.2" }
 ryot_tiled = { path = "../ryot_tiled", version = "0.2" }
 
 derive_more.workspace = true

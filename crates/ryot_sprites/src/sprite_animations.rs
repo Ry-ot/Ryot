@@ -7,7 +7,7 @@ use bevy_utils::tracing::warn;
 use bevy_utils::*;
 use derive_more::*;
 use rand::Rng;
-use ryot_content::prelude::*;
+use ryot_core::prelude::*;
 use ryot_tiled::prelude::*;
 use std::time::Duration;
 

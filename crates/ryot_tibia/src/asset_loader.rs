@@ -2,7 +2,7 @@ use crate as tibia;
 use bevy_asset::io::Reader;
 use bevy_asset::{AssetApp, AssetLoader, AsyncReadExt, LoadContext};
 use bevy_utils::BoxedFuture;
-use ryot_content::prelude::VisualElements;
+use ryot_core::prelude::VisualElements;
 use thiserror::Error;
 
 #[derive(Default)]

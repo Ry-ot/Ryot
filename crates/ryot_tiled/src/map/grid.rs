@@ -7,7 +7,7 @@ use bevy_render::render_asset::RenderAssetUsages;
 use bevy_transform::components::Transform;
 use bevy_utils::default;
 use glam::Vec2;
-use ryot_content::prelude::*;
+use ryot_core::prelude::*;
 
 pub static GRID_LAYER: Layer = Layer::Hud(0);
 

@@ -1,7 +1,7 @@
 use crate::systems::*;
 use bevy_app::prelude::*;
 use bevy_ecs::prelude::*;
-use ryot_core::Flag;
+use ryot_utils::Flag;
 use std::hash::Hash;
 use std::time::Duration;
 

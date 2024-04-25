@@ -5,7 +5,7 @@ use bevy_math::prelude::Rectangle;
 use bevy_render::mesh::Mesh;
 use bevy_sprite::TextureAtlasLayout;
 use bevy_utils::tracing::debug;
-use ryot_content::prelude::*;
+use ryot_core::prelude::*;
 use ryot_sprites::prelude::*;
 use ryot_tiled::*;
 use strum::IntoEnumIterator;

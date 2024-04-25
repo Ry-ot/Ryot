@@ -1,7 +1,7 @@
 use bevy_asset::Assets;
 use bevy_ecs::change_detection::{Res, ResMut};
 use bevy_utils::tracing::debug;
-use ryot_content::prelude::VisualElements;
+use ryot_core::prelude::VisualElements;
 
 pub trait VisualElementsAsset: crate::RyotAsset {
     fn visual_elements(&self) -> &bevy_asset::Handle<VisualElements>;

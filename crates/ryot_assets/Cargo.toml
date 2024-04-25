@@ -30,8 +30,8 @@ bevy_utils.workspace = true
 bevy_asset_loader.workspace = true
 bevy_common_assets.workspace = true
 
+ryot_utils = { path = "../ryot_utils", version = "0.2" }
 ryot_core = { path = "../ryot_core", version = "0.2" }
-ryot_content = { path = "../ryot_content", version = "0.2" }
 ryot_sprites = { path = "../ryot_sprites", version = "0.2" }
 ryot_tiled = { path = "../ryot_tiled", version = "0.2" }
 ryot_tibia = { path = "../ryot_tibia", version = "0.2.0", optional = true }

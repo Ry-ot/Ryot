@@ -2,8 +2,8 @@ use crate::components::{Path, PathFindingQuery, PathFindingTask};
 use crate::Pathable;
 use bevy_ecs::prelude::*;
 use bevy_tasks::*;
-use ryot_core::prelude::*;
-use ryot_core::Flag;
+use ryot_utils::prelude::*;
+use ryot_utils::Flag;
 
 /// Defines system sets for managing perspective calculation systems.
 /// This enum categorizes systems related to perspective calculations, facilitating the organization
