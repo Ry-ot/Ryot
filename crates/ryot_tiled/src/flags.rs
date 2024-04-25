@@ -1,22 +1,11 @@
 //! This module deals with the definition and management of `TileFlags`, which represent the state of tiles within the game world.
 //! These flags are crucial for determining visibility, walkability, and whether a tile blocks sight, among other properties.
-use bevy::prelude::*;
+use crate::prelude::*;
+use bevy_ecs::prelude::*;
+use bevy_reflect::prelude::*;
+use bevy_render::prelude::*;
 use ryot_content::prelude::*;
 use ryot_core::prelude::*;
-use ryot_tiled::prelude::*;
-
-/// `TileFlagPlugin` provides the necessary system and resource setup for managing `TileFlags`
-/// within the game world. It ensures that the flag cache is up-to-date and reflects the latest
-/// flag state of the whole tile, per position. This avoids the need to iterate over each entity
-/// within a tile to check its properties.
-pub struct TileFlagPlugin;
-
-impl Plugin for TileFlagPlugin {
-    fn build(&self, app: &mut App) {
-        app.init_resource::<Cache<TilePosition, TileFlags>>()
-            .add_systems(PostUpdate, update_tile_flag_cache);
-    }
-}
 
 /// Represents flags associated with a tile, including its visibility to players, walkability,
 /// and whether it obstructs the line of sight. These properties are essential for gameplay mechanics.
