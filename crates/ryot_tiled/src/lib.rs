@@ -7,6 +7,8 @@ use std::sync::OnceLock;
 pub mod camera;
 #[cfg(feature = "bevy")]
 pub mod drawing;
+#[cfg(feature = "bevy")]
+pub mod flags;
 pub mod map;
 pub mod movement;
 #[cfg(feature = "bevy")]
@@ -36,6 +38,7 @@ pub mod prelude {
             sector::update_camera_visible_sector,
         },
         drawing::*,
+        flags::{update_tile_flag_cache, TileFlags},
         map::elevation::{apply_elevation, elevate_position, initialize_elevation},
         map::grid::{spawn_grid, GridView},
         map::position::{

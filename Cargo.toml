@@ -52,7 +52,7 @@ bevy_math = "0.13"
 bevy_reflect = { version = "0.13", features = ["bevy"] }
 bevy_render = "0.13"
 bevy_sprite = "0.13"
-bevy_tasks = { version = "0.13", features = ["multi-threaded"] }
+bevy_tasks = "0.13"
 bevy_time = "0.13"
 bevy_transform = "0.13"
 bevy_utils = "0.13"
