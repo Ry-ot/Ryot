@@ -23,7 +23,7 @@
 //! Here is an example of how you might use this crate to decode appearance data:
 //!
 //!```rust
-//! use ryot_content::prelude::VisualElements;
+//! use ryot_core::prelude::VisualElements;
 //! use ryot_tibia as tibia;
 //!
 //! // Vec::new() simulates raw bytes received from Tibia's appearance data
@@ -69,7 +69,7 @@
 //! ]
 //! ```
 use prost::{DecodeError, Message};
-use ryot_content::prelude as ryot;
+use ryot_core::prelude as ryot;
 
 include!(concat!(env!("OUT_DIR"), "/tibia.rs"));
 

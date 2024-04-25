@@ -40,8 +40,8 @@ bevy_transform = { workspace = true, optional = true }
 bevy_hierarchy = { workspace = true, optional = true }
 bevy_stroked_text = { workspace = true, optional = true }
 
+ryot_utils = { path = "../ryot_utils", version = "0.2" }
 ryot_core = { path = "../ryot_core", version = "0.2" }
-ryot_content = { path = "../ryot_content", version = "0.2" }
 ryot_tiled = { path = "../ryot_tiled", version = "0.2" }
 
 async-std = "1.12.0"

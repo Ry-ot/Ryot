@@ -4,7 +4,7 @@ use bevy_ecs::prelude::*;
 use bevy_render::prelude::Visibility;
 use glam::{UVec2, Vec2, Vec3};
 use itertools::Itertools;
-use ryot_content::prelude::{Elevation, EntityType, GameObjectId, SpriteLayout, VisualElements};
+use ryot_core::prelude::{Elevation, EntityType, GameObjectId, SpriteLayout, VisualElements};
 
 use crate::prelude::{Layer, MapTiles, TilePosition};
 use crate::tile_size;

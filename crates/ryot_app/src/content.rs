@@ -7,7 +7,7 @@ use ryot_assets::catalog::{prepare_sprite_sheets, Catalog, CatalogAsset};
 use ryot_assets::prelude::{
     prepare_sprite_layouts, prepare_sprite_meshes, prepare_visual_elements, VisualElementsAsset,
 };
-use ryot_content::prelude::{
+use ryot_core::prelude::{
     transition_to_ready, RyotContentState, SpriteSheetDataSet, VisualElements,
 };
 use ryot_tiled::prelude::TilePosition;

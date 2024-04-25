@@ -4,7 +4,7 @@ use bevy_ecs::prelude::*;
 #[cfg(feature = "lmdb")]
 use bevy_utils::tracing::error;
 #[cfg(feature = "lmdb")]
-use ryot_content::prelude::GameObjectId;
+use ryot_core::prelude::GameObjectId;
 #[cfg(feature = "lmdb")]
 use std::collections::HashMap;
 

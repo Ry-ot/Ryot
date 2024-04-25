@@ -5014,11 +5014,11 @@ dependencies = [
  "bevy_sprite",
  "bevy_stroked_text",
  "ryot_assets",
- "ryot_content",
  "ryot_core",
  "ryot_sprites",
  "ryot_tibia",
  "ryot_tiled",
+ "ryot_utils",
 ]
 
 [[package]]
@@ -5042,11 +5042,11 @@ dependencies = [
  "quickcheck_macros",
  "rand",
  "rstest",
- "ryot_content",
  "ryot_core",
  "ryot_sprites",
  "ryot_tibia",
  "ryot_tiled",
+ "ryot_utils",
  "serde",
  "serde_json",
  "serde_repr",
@@ -5118,7 +5118,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ryot_content"
+name = "ryot_core"
 version = "0.2.2"
 dependencies = [
  "async-std",
@@ -5136,7 +5136,7 @@ dependencies = [
  "quickcheck_macros",
  "rand",
  "rstest",
- "ryot_core",
+ "ryot_utils",
  "serde",
  "serde_json",
  "serde_repr",
@@ -5146,44 +5146,18 @@ dependencies = [
 ]
 
 [[package]]
-name = "ryot_core"
-version = "0.2.2"
-dependencies = [
- "async-std",
- "bevy_app",
- "bevy_ecs",
- "bevy_time",
- "bevy_utils",
- "bevy_window",
- "derive_more",
- "glam",
- "leafwing-input-manager",
- "quickcheck",
- "quickcheck_macros",
- "rand",
- "rstest",
- "serde",
- "serde_json",
- "serde_repr",
- "strum",
- "time-test",
- "wasm-bindgen-futures",
- "zstd",
-]
-
-[[package]]
 name = "ryot_internal"
 version = "0.2.2"
 dependencies = [
  "ryot_app",
  "ryot_assets",
- "ryot_content",
  "ryot_core",
  "ryot_pathfinder",
  "ryot_ray_casting",
  "ryot_sprites",
  "ryot_tibia",
  "ryot_tiled",
+ "ryot_utils",
 ]
 
 [[package]]
@@ -5199,8 +5173,8 @@ dependencies = [
  "quickcheck_macros",
  "rand",
  "rstest",
- "ryot_core",
  "ryot_tiled",
+ "ryot_utils",
  "time-test",
 ]
 
@@ -5220,8 +5194,8 @@ dependencies = [
  "quickcheck_macros",
  "rand",
  "rstest",
- "ryot_core",
  "ryot_tiled",
+ "ryot_utils",
  "time-test",
 ]
 
@@ -5249,9 +5223,9 @@ dependencies = [
  "quickcheck_macros",
  "rand",
  "rstest",
- "ryot_content",
  "ryot_core",
  "ryot_tiled",
+ "ryot_utils",
  "serde",
  "serde_json",
  "serde_repr",
@@ -5276,7 +5250,7 @@ dependencies = [
  "quickcheck_macros",
  "rand",
  "rstest",
- "ryot_content",
+ "ryot_core",
  "ryot_sprites",
  "serde",
  "serde_json",
@@ -5316,12 +5290,38 @@ dependencies = [
  "rand",
  "rayon",
  "rstest",
- "ryot_content",
  "ryot_core",
+ "ryot_utils",
  "serde",
  "strum",
  "thiserror",
  "time-test",
+]
+
+[[package]]
+name = "ryot_utils"
+version = "0.2.2"
+dependencies = [
+ "async-std",
+ "bevy_app",
+ "bevy_ecs",
+ "bevy_time",
+ "bevy_utils",
+ "bevy_window",
+ "derive_more",
+ "glam",
+ "leafwing-input-manager",
+ "quickcheck",
+ "quickcheck_macros",
+ "rand",
+ "rstest",
+ "serde",
+ "serde_json",
+ "serde_repr",
+ "strum",
+ "time-test",
+ "wasm-bindgen-futures",
+ "zstd",
 ]
 
 [[package]]

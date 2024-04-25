@@ -8,7 +8,7 @@ use bevy_render::prelude::Image;
 use bevy_render::render_resource::{AsBindGroup, ShaderRef};
 use bevy_sprite::{Material2d, MaterialMesh2dBundle};
 use glam::Vec2;
-use ryot_content::prelude::{GameObjectId, SpriteLayout};
+use ryot_core::prelude::{GameObjectId, SpriteLayout};
 
 #[derive(AsBindGroup, TypePath, Asset, Debug, Clone, Default, PartialEq)]
 pub struct SpriteMaterial {

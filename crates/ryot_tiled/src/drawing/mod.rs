@@ -7,8 +7,8 @@ use bevy_render::prelude::*;
 use bevy_render::view::VisibleEntities;
 use bevy_utils::*;
 use glam::Vec3;
-use ryot_content::prelude::FrameGroup;
-use ryot_content::prelude::GameObjectId;
+use ryot_core::prelude::FrameGroup;
+use ryot_core::prelude::GameObjectId;
 
 mod brushes;
 pub use brushes::*;

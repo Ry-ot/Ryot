@@ -1,6 +1,6 @@
 use bevy_app::{App, Last, Plugin, PostUpdate, Update};
 use bevy_ecs::prelude::*;
-use ryot_core::cache::Cache;
+use ryot_utils::cache::Cache;
 
 use ryot_sprites::SpriteSystems;
 use ryot_tiled::prelude::*;

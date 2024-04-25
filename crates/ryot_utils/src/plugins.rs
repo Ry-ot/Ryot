@@ -28,7 +28,7 @@ use bevy_app::{App, Plugin};
 /// ```rust
 /// use bevy_app::prelude::*;
 /// use bevy_app::MainSchedulePlugin;
-/// use ryot_core::prelude::OptionalPlugin;
+/// use ryot_utils::prelude::OptionalPlugin;
 ///
 /// pub struct MyPlugin;
 ///

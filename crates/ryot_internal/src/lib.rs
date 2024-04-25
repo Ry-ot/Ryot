@@ -12,11 +12,11 @@ pub mod assets {
 }
 
 pub mod content {
-    pub use ryot_content::*;
+    pub use ryot_core::*;
 }
 
 pub mod core {
-    pub use ryot_core::*;
+    pub use ryot_utils::*;
 }
 
 pub mod sprites {

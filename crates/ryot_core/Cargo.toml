@@ -22,33 +22,36 @@ all-features = true
 default = ["bevy"]
 
 bevy = [
-    "dep:bevy_app",
+    "dep:bevy_asset",
     "dep:bevy_ecs",
-    "dep:bevy_time",
+    "dep:bevy_math",
+    "dep:bevy_reflect",
+    "dep:bevy_render",
+    "dep:bevy_sprite",
     "dep:bevy_utils",
-    "dep:bevy_window",
-    "dep:leafwing-input-manager",
+    "dep:bevy_asset_loader",
 ]
 
-compression = ["dep:zstd"]
-
 [dependencies]
-bevy_app = { workspace = true, optional = true }
+bevy_asset = { workspace = true, optional = true }
 bevy_ecs = { workspace = true, optional = true }
-bevy_time = { workspace = true, optional = true }
+bevy_math = { workspace = true, optional = true }
+bevy_reflect = { workspace = true, optional = true }
+bevy_render = { workspace = true, optional = true }
+bevy_sprite = { workspace = true, optional = true }
 bevy_utils = { workspace = true, optional = true }
-bevy_window = { workspace = true, optional = true }
+bevy_asset_loader = { workspace = true, optional = true }
+
+ryot_utils = { path = "../ryot_utils", version = "0.2" }
 
 async-std = "1.12.0"
 derive_more.workspace = true
 glam.workspace = true
-leafwing-input-manager = { workspace = true, optional = true }
 serde_repr = "0.1"
 serde.workspace = true
 serde_json.workspace = true
 strum.workspace = true
-wasm-bindgen-futures = "0.4.42"
-zstd = { workspace = true, optional = true }
+thiserror.workspace = true
 
 [dev-dependencies]
 quickcheck.workspace = true

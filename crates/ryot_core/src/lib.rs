@@ -1,43 +1,30 @@
+#![feature(trait_alias)]
+pub mod content_type;
+pub mod frame_group;
+pub mod game;
+pub mod properties;
+pub mod sprite;
 #[cfg(feature = "bevy")]
-pub mod async_events;
-pub mod async_task;
-#[cfg(feature = "bevy")]
-pub mod cache;
-#[cfg(feature = "compression")]
-pub mod compression;
+pub mod state;
+pub mod visual_element;
 
-#[cfg(feature = "bevy")]
-pub mod conditions;
-
-#[cfg(feature = "bevy")]
-pub mod plugins;
-
-#[cfg(feature = "bevy")]
-pub mod window;
+#[cfg(test)]
+mod tests;
 
 pub mod prelude {
-    pub use crate::{async_task::execute, is_true, Flag};
-
-    #[cfg(feature = "bevy")]
     pub use crate::{
-        async_events::{AsyncEventApp, EventSender},
-        cache::{Cache, CacheSystems},
-        conditions::{on_hold_every, run_every, run_every_millis, run_every_secs, TimeArg},
-        on_hold_every,
-        plugins::OptionalPlugin,
-        window::entitled_window,
+        content_type::ContentType,
+        frame_group::FrameGroup,
+        game::{elevation::Elevation, game_object::GameObjectId},
+        properties::{Category, EntityType, Flags, Properties},
+        sprite::{
+            layout::{SpriteLayout, SpriteLayoutIter, TextureAtlasLayouts},
+            sprite_sheet_data::{SpriteSheetData, SpriteSheetDataSet},
+            Animation, SpriteInfo,
+        },
+        visual_element::{VisualElement, VisualElements},
     };
 
-    #[cfg(feature = "compression")]
-    pub use crate::compression::{compress, decompress, Compression, Zstd};
-}
-
-pub fn is_true(value: Option<bool>) -> bool {
-    value == Some(true)
-}
-
-// TODO: Temp til we figure out module structure
-pub trait Flag: Copy + Clone + Eq + PartialEq + Default + Sync + Send + 'static {
-    fn is_walkable(&self) -> bool;
-    fn blocks_sight(&self) -> bool;
+    #[cfg(feature = "bevy")]
+    pub use crate::state::{transition_to_ready, RyotContentState};
 }

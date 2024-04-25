@@ -3,8 +3,8 @@ use bevy_app::{App, Update};
 use bevy_ecs::prelude::*;
 use bevy_reflect::Reflect;
 use bevy_utils::HashSet;
-use ryot_core::prelude::*;
 use ryot_tiled::prelude::TilePosition;
+use ryot_utils::prelude::*;
 use std::marker::PhantomData;
 
 /// Represents an App that can add one or more `Trajectory` to its systems.

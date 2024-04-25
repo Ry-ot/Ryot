@@ -4,8 +4,8 @@ use crate::prelude::*;
 use bevy_ecs::prelude::*;
 use bevy_reflect::prelude::*;
 use bevy_render::prelude::*;
-use ryot_content::prelude::*;
 use ryot_core::prelude::*;
+use ryot_utils::prelude::*;
 
 /// Represents flags associated with a tile, including its visibility to players, walkability,
 /// and whether it obstructs the line of sight. These properties are essential for gameplay mechanics.

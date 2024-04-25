@@ -5,10 +5,10 @@ use bevy_transform::prelude::*;
 
 #[cfg(feature = "debug")]
 use bevy_stroked_text::StrokedText;
-use ryot_content::prelude::Elevation;
+use ryot_core::prelude::Elevation;
 
 use crate::prelude::*;
-use ryot_content::prelude::SpriteLayout;
+use ryot_core::prelude::SpriteLayout;
 
 #[cfg(feature = "debug")]
 #[derive(Component)]

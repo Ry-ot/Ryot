@@ -5,8 +5,8 @@
 use crate::prelude::*;
 use bevy_ecs::prelude::*;
 use itertools::Itertools;
-use ryot_core::prelude::*;
 use ryot_tiled::prelude::*;
+use ryot_utils::prelude::*;
 use std::sync::mpsc;
 
 /// Defines system sets for managing perspective calculation systems.

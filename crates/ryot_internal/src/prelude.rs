@@ -1,7 +1,7 @@
-pub use ryot_content::prelude::*;
 pub use ryot_core::prelude::*;
 pub use ryot_sprites::prelude::*;
 pub use ryot_tiled::prelude::*;
+pub use ryot_utils::prelude::*;
 
 #[cfg(feature = "ryot_app")]
 pub use ryot_app::prelude::*;

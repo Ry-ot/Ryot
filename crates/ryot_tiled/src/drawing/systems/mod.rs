@@ -5,7 +5,7 @@
 use crate::prelude::*;
 use bevy_ecs::prelude::*;
 use bevy_render::prelude::*;
-use ryot_content::prelude::*;
+use ryot_core::prelude::*;
 
 mod deletion;
 pub use deletion::*;

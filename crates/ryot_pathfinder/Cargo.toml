@@ -26,7 +26,7 @@ bevy_app.workspace = true
 bevy_ecs.workspace = true
 bevy_tasks = { workspace = true, features = ["multi-threaded"] }
 
-ryot_core = { path = "../ryot_core", version = "0.2" }
+ryot_utils = { path = "../ryot_utils", version = "0.2" }
 ryot_tiled = { path = "../ryot_tiled", version = "0.2.0", optional = true }
 
 derive_more.workspace = true
