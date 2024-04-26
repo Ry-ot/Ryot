@@ -67,7 +67,7 @@ where
                     "dynamic.atlases.ron",
                 ),
             )
-            .init_resource::<SpriteSheetDataSet>()
+            .init_resource::<SpriteSheets>()
             .add_plugins(JsonAssetPlugin::<Catalog>::new(&["json"]))
             .add_systems(
                 OnEnter(RyotContentState::PreparingContent),

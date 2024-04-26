@@ -7,8 +7,8 @@ use bevy_render::prelude::*;
 use bevy_render::view::VisibleEntities;
 use bevy_utils::*;
 use glam::Vec3;
+use ryot_core::prelude::ContentId;
 use ryot_core::prelude::FrameGroup;
-use ryot_core::prelude::GameObjectId;
 
 pub mod brushes;
 
@@ -31,7 +31,7 @@ pub struct TileComponent;
 pub struct DrawingBundle {
     pub layer: Layer,
     pub tile_pos: TilePosition,
-    pub object_id: GameObjectId,
+    pub object_id: ContentId,
     pub frame_group: FrameGroup,
     pub visibility: Visibility,
     pub tile: TileComponent,
@@ -54,7 +54,7 @@ impl DrawingBundle {
     pub fn new(
         layer: impl Into<Layer>,
         tile_pos: TilePosition,
-        object_id: GameObjectId,
+        object_id: ContentId,
         frame_group: FrameGroup,
     ) -> Self {
         Self {
@@ -75,7 +75,7 @@ impl DrawingBundle {
     }
 
     pub fn object(layer: impl Into<Layer>, tile_pos: TilePosition, id: u32) -> Self {
-        Self::new(layer, tile_pos, GameObjectId::Object(id), default())
+        Self::new(layer, tile_pos, ContentId::Object(id), default())
     }
 
     pub fn outfit(
@@ -84,20 +84,15 @@ impl DrawingBundle {
         id: u32,
         frame_group: impl Into<FrameGroup>,
     ) -> Self {
-        Self::new(
-            layer,
-            tile_pos,
-            GameObjectId::Outfit(id),
-            frame_group.into(),
-        )
+        Self::new(layer, tile_pos, ContentId::Outfit(id), frame_group.into())
     }
 
     pub fn effect(layer: impl Into<Layer>, tile_pos: TilePosition, id: u32) -> Self {
-        Self::new(layer, tile_pos, GameObjectId::Effect(id), default())
+        Self::new(layer, tile_pos, ContentId::Effect(id), default())
     }
 
     pub fn missile(layer: impl Into<Layer>, tile_pos: TilePosition, id: u32) -> Self {
-        Self::new(layer, tile_pos, GameObjectId::Missile(id), default())
+        Self::new(layer, tile_pos, ContentId::Missile(id), default())
     }
 
     pub fn with_position(mut self, tile_pos: TilePosition) -> Self {
@@ -124,7 +119,7 @@ impl DrawingBundle {
 #[derive(Bundle, Debug, Clone)]
 pub struct MovementBundle {
     pub layer: Layer,
-    pub object_id: GameObjectId,
+    pub object_id: ContentId,
     pub frame_group: FrameGroup,
     pub movement: SpriteMovement,
     pub direction: Directional,
@@ -133,7 +128,7 @@ pub struct MovementBundle {
 impl MovementBundle {
     pub fn new(
         layer: Layer,
-        object_id: GameObjectId,
+        object_id: ContentId,
         frame_group: FrameGroup,
         start: Vec3,
         end: Vec3,
@@ -157,7 +152,7 @@ impl MovementBundle {
     ) -> Self {
         Self::new(
             layer.into(),
-            GameObjectId::Object(id),
+            ContentId::Object(id),
             default(),
             start,
             end,
@@ -174,7 +169,7 @@ impl MovementBundle {
     ) -> Self {
         Self::new(
             layer.into(),
-            GameObjectId::Missile(id),
+            ContentId::Missile(id),
             default(),
             start,
             end,
@@ -191,7 +186,7 @@ impl MovementBundle {
     ) -> Self {
         Self::new(
             layer.into(),
-            GameObjectId::Effect(id),
+            ContentId::Effect(id),
             default(),
             start,
             end,

@@ -145,7 +145,7 @@ pub fn load_area(
                     }
 
                     bundles.push(GameObjectBundle::new(
-                        GameObjectId::Object(item.id as u32),
+                        ContentId::Object(item.id as u32),
                         tile.position,
                         layer,
                     ));

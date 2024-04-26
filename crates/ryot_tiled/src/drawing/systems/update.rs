@@ -4,7 +4,7 @@ use bevy_ecs::prelude::*;
 #[cfg(feature = "lmdb")]
 use bevy_utils::tracing::error;
 #[cfg(feature = "lmdb")]
-use ryot_core::prelude::GameObjectId;
+use ryot_core::prelude::ContentId;
 #[cfg(feature = "lmdb")]
 use std::collections::HashMap;
 
@@ -161,7 +161,7 @@ pub fn persist_update(
                 .or_insert(Tile::from_pos(*tile_pos));
 
             let id = match object_id {
-                GameObjectId::Object(id) => *id as u16,
+                ContentId::Object(id) => *id as u16,
                 _ => continue,
             };
 

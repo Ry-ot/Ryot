@@ -3,14 +3,14 @@ use derive_more::{Deref, DerefMut};
 use glam::UVec2;
 use serde::{Deserialize, Serialize};
 
-/// This is the content of the Sprite ContentType. It contains the information needed
+/// This is the content of the Sprite Content. It contains the information needed
 /// to load the sprite sheet and individual sprites from it.
 /// A sprite sheet is defined by:
 /// - a sprite file (that can be compressed or not)
 /// - a sprite layout (1:1, 1:2, 2:1 or 2:2)
 /// - the ids of first and last sprites in the sheet, to determine which sprites are in the sheet
 #[derive(Serialize, Deserialize, Debug, Clone, PartialEq)]
-pub struct SpriteSheetData {
+pub struct SpriteSheet {
     pub file: String,
     #[serde(rename = "spritetype")]
     pub layout: SpriteLayout,
@@ -21,7 +21,7 @@ pub struct SpriteSheetData {
     pub area: u32,
 }
 
-impl SpriteSheetData {
+impl SpriteSheet {
     /// Checks if the sprite sheet contains the given sprite id
     pub fn has_sprite(&self, sprite_id: u32) -> bool {
         self.first_sprite_id <= sprite_id && self.last_sprite_id >= sprite_id
@@ -54,11 +54,11 @@ impl SpriteSheetData {
 /// sheet.
 #[derive(Debug, Default, Clone, Deref, DerefMut)]
 #[cfg_attr(feature = "bevy", derive(bevy_ecs::prelude::Resource))]
-pub struct SpriteSheetDataSet(Vec<SpriteSheetData>);
+pub struct SpriteSheets(Vec<SpriteSheet>);
 
-impl<T> From<&[T]> for SpriteSheetDataSet
+impl<T> From<&[T]> for SpriteSheets
 where
-    T: Into<Option<SpriteSheetData>> + Clone,
+    T: Into<Option<SpriteSheet>> + Clone,
 {
     fn from(content: &[T]) -> Self {
         let sprite_sheets = content
@@ -70,19 +70,19 @@ where
     }
 }
 
-impl<T> From<Vec<T>> for SpriteSheetDataSet
+impl<T> From<Vec<T>> for SpriteSheets
 where
-    T: Into<Option<SpriteSheetData>> + Clone,
+    T: Into<Option<SpriteSheet>> + Clone,
 {
     fn from(content: Vec<T>) -> Self {
         content.as_slice().into()
     }
 }
 
-impl SpriteSheetDataSet {
+impl SpriteSheets {
     /// Returns the sprite sheet that contains the given sprite id.
     /// Returns None if the sprite id is not in any of the sprite sheets.
-    pub fn get_by_sprite_id(&self, sprite_id: u32) -> Option<&SpriteSheetData> {
+    pub fn get_by_sprite_id(&self, sprite_id: u32) -> Option<&SpriteSheet> {
         self.iter().find(|sheet| sheet.has_sprite(sprite_id))
     }
 }

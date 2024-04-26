@@ -63,7 +63,7 @@ fn ui_menu_system(
     q_grid: Query<&mut Visibility, With<GridView>>,
     cursor_query: Query<&Cursor>,
     mut cursor_events_writer: EventWriter<CursorCommand>,
-    #[cfg(not(target_arch = "wasm32"))] sprite_sheets: Res<SpriteSheetDataSet>,
+    #[cfg(not(target_arch = "wasm32"))] sprite_sheets: Res<SpriteSheets>,
     #[cfg(not(target_arch = "wasm32"))] mut exit: EventWriter<AppExit>,
     #[cfg(not(target_arch = "wasm32"))] mut map_export_sender: EventWriter<ExportMap>,
     #[cfg(not(target_arch = "wasm32"))] load_map_sender: Res<EventSender<LoadMap>>,

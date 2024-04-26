@@ -1,7 +1,5 @@
+use crate::prelude::*;
 use derive_more::{Deref, DerefMut};
-
-use crate::prelude::SpriteInfo;
-use crate::properties::*;
 
 #[cfg(feature = "bevy")]
 use bevy_utils::HashMap;
@@ -13,14 +11,14 @@ use std::collections::HashMap;
     feature = "bevy",
     derive(bevy_ecs::prelude::Resource, bevy_reflect::TypePath, bevy_asset::Asset)
 )]
-pub struct VisualElements(HashMap<EntityType, HashMap<u32, VisualElement>>);
+pub struct VisualElements(HashMap<ContentType, HashMap<u32, VisualElement>>);
 
 impl VisualElements {
-    pub fn get_all_for_group(&self, group: EntityType) -> Option<&HashMap<u32, VisualElement>> {
+    pub fn get_all_for_group(&self, group: ContentType) -> Option<&HashMap<u32, VisualElement>> {
         self.get(&group)
     }
 
-    pub fn get_for_group_and_id(&self, group: EntityType, id: u32) -> Option<&VisualElement> {
+    pub fn get_for_group_and_id(&self, group: ContentType, id: u32) -> Option<&VisualElement> {
         self.get(&group)?.get(&id)
     }
 }

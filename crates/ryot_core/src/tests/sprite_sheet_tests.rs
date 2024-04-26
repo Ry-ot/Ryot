@@ -1,11 +1,11 @@
-use crate::prelude::ContentType;
+use crate::prelude::ContentRecord;
 use crate::prelude::*;
 use glam::UVec2;
 use rstest::{fixture, rstest};
 use serde_json::{from_str, to_string};
 
 #[rstest]
-fn test_has_sprite(#[from(sprite_sheet_fixture)] sprite_sheet: SpriteSheetData) {
+fn test_has_sprite(#[from(sprite_sheet_fixture)] sprite_sheet: SpriteSheet) {
     assert!(sprite_sheet.has_sprite(100));
     assert!(sprite_sheet.has_sprite(200));
     assert!(!sprite_sheet.has_sprite(99));
@@ -13,7 +13,7 @@ fn test_has_sprite(#[from(sprite_sheet_fixture)] sprite_sheet: SpriteSheetData) 
 }
 
 #[rstest]
-fn test_get_sprite_index(#[from(sprite_sheet_fixture)] sprite_sheet: SpriteSheetData) {
+fn test_get_sprite_index(#[from(sprite_sheet_fixture)] sprite_sheet: SpriteSheet) {
     assert_eq!(Some(0), sprite_sheet.get_sprite_index(100));
     assert_eq!(Some(99), sprite_sheet.get_sprite_index(199));
     assert_eq!(Some(100), sprite_sheet.get_sprite_index(200));
@@ -27,7 +27,7 @@ fn test_get_sprite_index(#[from(sprite_sheet_fixture)] sprite_sheet: SpriteSheet
 #[case(SpriteLayout::TwoByOne, UVec2::new(64, 32))]
 #[case(SpriteLayout::TwoByTwo, UVec2::new(64, 64))]
 fn test_get_tile_size(#[case] layout: SpriteLayout, #[case] expected: UVec2) {
-    let sprite_sheet = SpriteSheetData {
+    let sprite_sheet = SpriteSheet {
         file: "spritesheet.png".to_string(),
         layout,
         first_sprite_id: 100,
@@ -39,8 +39,8 @@ fn test_get_tile_size(#[case] layout: SpriteLayout, #[case] expected: UVec2) {
 }
 
 #[fixture]
-fn sprite_sheet_fixture() -> SpriteSheetData {
-    SpriteSheetData {
+fn sprite_sheet_fixture() -> SpriteSheet {
+    SpriteSheet {
         file: "spritesheet.png".to_string(),
         layout: SpriteLayout::OneByOne,
         first_sprite_id: 100,
@@ -50,7 +50,7 @@ fn sprite_sheet_fixture() -> SpriteSheetData {
 }
 
 #[rstest]
-fn test_from_content(#[from(sprite_sheet_set_fixture)] sprite_sheet_set: SpriteSheetDataSet) {
+fn test_from_content(#[from(sprite_sheet_set_fixture)] sprite_sheet_set: SpriteSheets) {
     assert_eq!(2, sprite_sheet_set.len());
     assert_eq!(100, sprite_sheet_set[0].first_sprite_id);
     assert_eq!(200, sprite_sheet_set[0].last_sprite_id);
@@ -59,9 +59,7 @@ fn test_from_content(#[from(sprite_sheet_set_fixture)] sprite_sheet_set: SpriteS
 }
 
 #[rstest]
-fn test_set_get_by_sprite_id(
-    #[from(sprite_sheet_set_fixture)] sprite_sheet_set: SpriteSheetDataSet,
-) {
+fn test_set_get_by_sprite_id(#[from(sprite_sheet_set_fixture)] sprite_sheet_set: SpriteSheets) {
     assert_eq!(
         100,
         sprite_sheet_set
@@ -97,16 +95,16 @@ fn test_set_get_by_sprite_id(
 }
 
 #[fixture]
-fn sprite_sheet_set_fixture() -> SpriteSheetDataSet {
+fn sprite_sheet_set_fixture() -> SpriteSheets {
     let vec = vec![
-        ContentType::Sprite(SpriteSheetData {
+        ContentRecord::SpriteSheet(SpriteSheet {
             file: "spritesheet.png".to_string(),
             layout: SpriteLayout::default(),
             first_sprite_id: 100,
             last_sprite_id: 200,
             area: 64,
         }),
-        ContentType::Sprite(SpriteSheetData {
+        ContentRecord::SpriteSheet(SpriteSheet {
             file: "spritesheet2.png".to_string(),
             layout: SpriteLayout::default(),
             first_sprite_id: 300,
@@ -119,9 +117,9 @@ fn sprite_sheet_set_fixture() -> SpriteSheetDataSet {
 }
 
 #[rstest]
-#[case(ContentType::Unknown, r#"{"type":"unknown"}"#)]
+#[case(ContentRecord::Unknown, r#"{"type":"unknown"}"#)]
 #[case(
-        ContentType::Sprite(SpriteSheetData {
+        ContentRecord::SpriteSheet(SpriteSheet {
             file: "spritesheet.png".to_string(),
             layout: SpriteLayout::OneByOne,
             first_sprite_id: 100,
@@ -130,27 +128,27 @@ fn sprite_sheet_set_fixture() -> SpriteSheetDataSet {
         }),
         r#"{"type":"sprite","file":"spritesheet.png","spritetype":0,"firstspriteid":100,"lastspriteid":200,"area":64}"#
     )]
-fn test_serialize_content_type(#[case] content: ContentType, #[case] expected_json: &str) {
+fn test_serialize_content_type(#[case] content: ContentRecord, #[case] expected_json: &str) {
     assert_eq!(to_string(&content).unwrap(), expected_json);
 }
 
 #[rstest]
 #[case(
     r#"{"type":"appearances","file":"appearances.dat"}"#,
-    ContentType::Unknown
+    ContentRecord::Unknown
 )]
 #[case(
     r#"{"type":"staticdata","file":"staticdata.dat"}"#,
-    ContentType::Unknown
+    ContentRecord::Unknown
 )]
 #[case(
     r#"{"type":"staticmapdata","file":"staticmapdata.dat"}"#,
-    ContentType::Unknown
+    ContentRecord::Unknown
 )]
-#[case(r#"{"type":"map","file":"map.otbm"}"#, ContentType::Unknown)]
+#[case(r#"{"type":"map","file":"map.otbm"}"#, ContentRecord::Unknown)]
 #[case(
         r#"{"type":"sprite","file":"spritesheet.png","spritetype":0,"firstspriteid":100,"lastspriteid":200,"area":64}"#,
-        ContentType::Sprite(SpriteSheetData {
+        ContentRecord::SpriteSheet(SpriteSheet {
             file: "spritesheet.png".to_string(),
             layout: SpriteLayout::OneByOne,
             first_sprite_id: 100,
@@ -158,6 +156,6 @@ fn test_serialize_content_type(#[case] content: ContentType, #[case] expected_js
             area: 64,
         })
     )]
-fn test_deserialize_content_type(#[case] json: &str, #[case] expected_content: ContentType) {
-    assert_eq!(from_str::<ContentType>(json).unwrap(), expected_content);
+fn test_deserialize_content_type(#[case] json: &str, #[case] expected_content: ContentRecord) {
+    assert_eq!(from_str::<ContentRecord>(json).unwrap(), expected_content);
 }

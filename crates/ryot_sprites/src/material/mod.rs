@@ -8,7 +8,7 @@ use bevy_render::prelude::Image;
 use bevy_render::render_resource::{AsBindGroup, ShaderRef};
 use bevy_sprite::{Material2d, MaterialMesh2dBundle};
 use glam::Vec2;
-use ryot_core::prelude::{GameObjectId, SpriteLayout};
+use ryot_core::prelude::{ContentId, SpriteLayout};
 
 #[derive(AsBindGroup, TypePath, Asset, Debug, Clone, Default, PartialEq)]
 pub struct SpriteMaterial {
@@ -43,7 +43,7 @@ pub fn embed_sprite_assets(app: &mut App) {
 /// have a SpriteMaterial mesh bundle.
 pub fn initialize_sprite_material(
     mut commands: Commands,
-    query: Query<Entity, (With<GameObjectId>, Without<Handle<SpriteMaterial>>)>,
+    query: Query<Entity, (With<ContentId>, Without<Handle<SpriteMaterial>>)>,
 ) {
     query.iter().for_each(|entity| {
         commands.entity(entity).insert((

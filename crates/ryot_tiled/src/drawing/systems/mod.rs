@@ -24,7 +24,7 @@ fn get_top_most_visible(
     tile_pos: TilePosition,
     map_tiles: &ResMut<MapTiles<Entity>>,
     q_current: &Query<
-        (&Visibility, &GameObjectId, Option<&FrameGroup>),
+        (&Visibility, &ContentId, Option<&FrameGroup>),
         (With<TileComponent>, With<Layer>),
     >,
 ) -> Option<(Entity, DrawingBundle)> {
@@ -39,7 +39,7 @@ pub fn get_top_most_visible_for_bundles(
     bundles: &[DrawingBundle],
     tiles: &mut ResMut<MapTiles<Entity>>,
     q_current: &Query<
-        (&Visibility, &GameObjectId, Option<&FrameGroup>),
+        (&Visibility, &ContentId, Option<&FrameGroup>),
         (With<TileComponent>, With<Layer>),
     >,
 ) -> Vec<DrawingBundle> {
@@ -54,7 +54,7 @@ pub fn get_top_most_visible_bottom_layer(
     tile_pos: TilePosition,
     map_tiles: &ResMut<MapTiles<Entity>>,
     q_current: &Query<
-        (&Visibility, &GameObjectId, Option<&FrameGroup>),
+        (&Visibility, &ContentId, Option<&FrameGroup>),
         (With<TileComponent>, With<Layer>),
     >,
 ) -> Option<(Entity, DrawingBundle)> {
@@ -74,7 +74,7 @@ fn get_top_most_visible_for_tile(
     iter: impl Iterator<Item = (Layer, Entity)>,
     tile_pos: TilePosition,
     q_current_appearance: &Query<
-        (&Visibility, &GameObjectId, Option<&FrameGroup>),
+        (&Visibility, &ContentId, Option<&FrameGroup>),
         (With<TileComponent>, With<Layer>),
     >,
 ) -> Option<(Entity, DrawingBundle)> {
