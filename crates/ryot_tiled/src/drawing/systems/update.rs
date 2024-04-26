@@ -49,7 +49,7 @@ pub fn update(world: &mut World, new: DrawingInfo, old: DrawingInfo, state: Comm
 
 /// An auxiliary function that fetches or create from the map of tiles the entity related to the
 /// DrawingInfo. It is used to avoid creating multiple entities for the same tile position and layer.
-pub fn get_or_create_entity_for_info(world: &mut World, info: &DrawingInfo) -> Entity {
+fn get_or_create_entity_for_info(world: &mut World, info: &DrawingInfo) -> Entity {
     let (pos, layer, ..) = info;
 
     let entity = world
