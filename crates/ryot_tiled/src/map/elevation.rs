@@ -4,7 +4,7 @@ use bevy_ecs::prelude::*;
 use bevy_render::prelude::Visibility;
 use glam::{UVec2, Vec2, Vec3};
 use itertools::Itertools;
-use ryot_core::prelude::{Elevation, EntityType, GameObjectId, SpriteLayout, VisualElements};
+use ryot_core::prelude::{ContentId, ContentType, Elevation, SpriteLayout, VisualElements};
 
 use crate::prelude::{Layer, MapTiles, TilePosition};
 use crate::tile_size;
@@ -13,7 +13,7 @@ const SPRITE_BASE_SIZE: UVec2 = UVec2::new(32, 32);
 
 pub fn initialize_elevation(
     mut commands: Commands,
-    query: Query<Entity, (With<GameObjectId>, Without<Elevation>)>,
+    query: Query<Entity, (With<ContentId>, Without<Elevation>)>,
 ) {
     query.iter().for_each(|entity| {
         commands.entity(entity).insert(Elevation::default());
@@ -26,10 +26,8 @@ pub fn elevate_position(
     layer: Layer,
     elevation: Elevation,
 ) -> Vec3 {
-    let anchor = Vec2::new(
-        elevation.elevation.clamp(0.0, 1.0),
-        (-elevation.elevation).clamp(-1.0, 0.0),
-    );
+    let elevation = elevation.clamp(0.0, 1.0);
+    let anchor = Vec2::new(elevation, -elevation);
     position.to_vec3(&layer)
         - (SpriteLayout::OneByOne.get_size(&tile_size()).as_vec2() * anchor).extend(0.)
         - (layout.get_size(&tile_size()).as_vec2() * Vec2::new(0.5, -0.5)).extend(0.)
@@ -38,7 +36,7 @@ pub fn elevate_position(
 pub fn apply_elevation(
     visual_elements: Res<VisualElements>,
     q_tile: Query<(&TilePosition, &Layer), ElevationFilter>,
-    mut q_entities: Query<(&mut Elevation, &GameObjectId, Option<&Visibility>)>,
+    mut q_entities: Query<(&mut Elevation, &ContentId, Option<&Visibility>)>,
     map_tiles: Res<MapTiles<Entity>>,
 ) {
     for tile in q_tile
@@ -64,18 +62,18 @@ pub fn apply_elevation(
                         visual_elements
                             .get_for_group_and_id(group, id)
                             .cloned()
-                            .map(|app| app.properties.elevation)
-                            .unwrap_or(0) as f32
+                            .map(|app| *app.properties.elevation)
+                            .unwrap_or(0.)
                             / SPRITE_BASE_SIZE.y as f32
                     } else {
                         0.
                     };
 
-                elevation.elevation = match group {
-                    EntityType::Object => tile_elevation,
-                    EntityType::Outfit => tile_elevation,
-                    EntityType::Effect => 0.,
-                    EntityType::Missile => 0.,
+                **elevation = match group {
+                    ContentType::Object => tile_elevation,
+                    ContentType::Outfit => tile_elevation,
+                    ContentType::Effect => 0.,
+                    ContentType::Missile => 0.,
                 };
 
                 tile_elevation + elevation_delta
@@ -84,9 +82,9 @@ pub fn apply_elevation(
 }
 
 type ElevationFilter = (
-    With<GameObjectId>,
+    With<ContentId>,
     Or<(
-        Changed<GameObjectId>,
+        Changed<ContentId>,
         Changed<Visibility>,
         Changed<TilePosition>,
     )>,

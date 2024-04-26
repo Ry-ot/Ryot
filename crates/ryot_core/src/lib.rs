@@ -4,32 +4,25 @@
 //! and utilities. This core crate supports foundational game development tasks, ensuring
 //! stability and efficiency across the framework.
 #![feature(trait_alias)]
-pub mod content_type;
-pub mod frame_group;
+pub mod content;
 pub mod game;
-pub mod properties;
-pub mod sprite;
-#[cfg(feature = "bevy")]
-pub mod state;
-pub mod visual_element;
 
 #[cfg(test)]
 mod tests;
 
 pub mod prelude {
     pub use crate::{
-        content_type::ContentType,
-        frame_group::FrameGroup,
-        game::{elevation::Elevation, game_object::GameObjectId},
-        properties::{Category, EntityType, Flags, Properties},
-        sprite::{
-            layout::{SpriteLayout, SpriteLayoutIter, TextureAtlasLayouts},
-            sprite_sheet_data::{SpriteSheetData, SpriteSheetDataSet},
-            Animation, SpriteInfo,
+        content::{
+            sprite::{
+                layout::{SpriteLayout, SpriteLayoutIter, TextureAtlasLayouts},
+                sprite_sheet::{SpriteSheet, SpriteSheets},
+                Animation, FrameGroup, SpriteInfo,
+            },
+            ContentId, ContentRecord, ContentType, RyotContentState, VisualElement, VisualElements,
         },
-        visual_element::{VisualElement, VisualElements},
+        game::{Category, Elevation, Flags, Properties},
     };
 
     #[cfg(feature = "bevy")]
-    pub use crate::state::{transition_to_ready, RyotContentState};
+    pub use crate::content::transition_to_ready;
 }

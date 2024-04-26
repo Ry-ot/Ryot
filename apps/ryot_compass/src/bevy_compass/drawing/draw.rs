@@ -18,10 +18,10 @@ pub fn handle_drawing_input(
     visual_elements: Res<VisualElements>,
     brushes: Res<Brushes<DrawingBundle>>,
     q_current: Query<
-        (&Visibility, &GameObjectId, Option<&FrameGroup>),
+        (&Visibility, &ContentId, Option<&FrameGroup>),
         (With<TileComponent>, With<Layer>),
     >,
-    cursor_query: Query<(Option<&GameObjectId>, &TilePosition, &Cursor)>,
+    cursor_query: Query<(Option<&ContentId>, &TilePosition, &Cursor)>,
 ) {
     get_cursor_inputs(
         &visual_elements,
@@ -52,7 +52,7 @@ pub fn handle_drawing_input(
 fn get_cursor_inputs<F: QueryFilter>(
     visual_elements: &Res<VisualElements>,
     brushes: &Res<Brushes<DrawingBundle>>,
-    cursor_query: &Query<(Option<&GameObjectId>, &TilePosition, &Cursor), F>,
+    cursor_query: &Query<(Option<&ContentId>, &TilePosition, &Cursor), F>,
     mut callback: impl FnMut(&Cursor, Vec<DrawingBundle>),
 ) {
     if visual_elements.is_empty() {
@@ -62,7 +62,7 @@ fn get_cursor_inputs<F: QueryFilter>(
 
     for (object_id, tile_pos, cursor) in cursor_query {
         let (object_id, layer) = match object_id {
-            None => (GameObjectId::default(), Layer::default()),
+            None => (ContentId::default(), Layer::default()),
             Some(object_id) => {
                 let Some((group, id)) = object_id.as_group_and_id() else {
                     continue;
@@ -92,7 +92,7 @@ fn create_or_update_content_for_positions(
     command_history: &mut ResMut<CommandHistory>,
     tiles: &mut ResMut<MapTiles<Entity>>,
     q_current: &Query<
-        (&Visibility, &GameObjectId, Option<&FrameGroup>),
+        (&Visibility, &ContentId, Option<&FrameGroup>),
         (With<TileComponent>, With<Layer>),
     >,
 ) {
@@ -164,10 +164,10 @@ pub fn get_current_appearance(
     new_bundle: DrawingBundle,
     tiles: &mut ResMut<MapTiles<Entity>>,
     q_current: &Query<
-        (&Visibility, &GameObjectId, Option<&FrameGroup>),
+        (&Visibility, &ContentId, Option<&FrameGroup>),
         (With<TileComponent>, With<Layer>),
     >,
-) -> Option<(GameObjectId, FrameGroup)> {
+) -> Option<(ContentId, FrameGroup)> {
     match q_current.get(
         tiles
             .get(&new_bundle.tile_pos)?

@@ -11,11 +11,11 @@ pub struct PaletteState {
     pub width: f32,
     pub grid_size: u32,
     pub tile_padding: f32,
-    pub selected_tile: Option<GameObjectId>,
+    pub selected_tile: Option<ContentId>,
     pub selected_category: TilesetCategory,
-    pub category_sprites: Vec<GameObjectId>,
+    pub category_sprites: Vec<ContentId>,
     pub visible_rows: Range<usize>,
-    pub loaded_images: Vec<(GameObjectId, Handle<Image>, egui::Vec2, egui::Rect)>,
+    pub loaded_images: Vec<(ContentId, Handle<Image>, egui::Vec2, egui::Rect)>,
 }
 
 impl Default for PaletteState {
@@ -152,7 +152,7 @@ pub fn draw_palette_picker(
 
 pub fn draw_palette_items(
     ui: &mut Ui,
-    egui_images: Vec<(&GameObjectId, egui::Image)>,
+    egui_images: Vec<(&ContentId, egui::Image)>,
     palette_state: &mut ResMut<PaletteState>,
     cursor_events_writer: &mut EventWriter<CursorCommand>,
 ) {

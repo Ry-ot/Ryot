@@ -180,7 +180,7 @@ pub fn toggle_sprite_animation(mut enabled: ResMut<SpriteAnimationEnabled>) {
 
 pub fn initialize_animation_sprite_system(
     mut commands: Commands,
-    q_maybe_animated: Query<(Entity, &GameObjectId, Option<&FrameGroup>), ChangingAppearanceFilter>,
+    q_maybe_animated: Query<(Entity, &ContentId, Option<&FrameGroup>), ChangingAppearanceFilter>,
     loaded_appereances: Res<LoadedAppearances>,
     mut synced_timers: ResMut<SynchronizedAnimationTimers>,
 ) {

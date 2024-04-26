@@ -64,7 +64,7 @@ impl Palette {
 }
 
 fn setup_categories(visual_elements: Res<VisualElements>, mut palettes: ResMut<Palette>) {
-    let Some(objects) = visual_elements.get_all_for_group(EntityType::Object) else {
+    let Some(objects) = visual_elements.get_all_for_group(ContentType::Object) else {
         warn!("Visual elements were not properly prepared");
         return;
     };
@@ -89,7 +89,7 @@ pub fn update_palette_category(palettes: Res<Palette>, mut palette_state: ResMut
         palettes
             .get_for_category(&category)
             .iter()
-            .map(|content_id| GameObjectId::Object(*content_id)),
+            .map(|content_id| ContentId::Object(*content_id)),
     );
 }
 
@@ -125,7 +125,7 @@ pub fn update_palette_items(
 
     palette_state.loaded_images.clear();
 
-    let (loaded, to_load): (Vec<GameObjectId>, Vec<GameObjectId>) =
+    let (loaded, to_load): (Vec<ContentId>, Vec<ContentId>) =
         object_ids.iter().partition(|&object_id| {
             loaded_appearances.contains_key(&(*object_id, FrameGroup::default()))
         });

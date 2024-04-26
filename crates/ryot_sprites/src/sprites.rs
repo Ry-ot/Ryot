@@ -30,7 +30,7 @@ pub struct LoadedAppearance {
 }
 
 #[derive(Resource, Default, Deref, DerefMut)]
-pub struct LoadedAppearances(pub HashMap<(GameObjectId, FrameGroup), LoadedAppearance>);
+pub struct LoadedAppearances(pub HashMap<(ContentId, FrameGroup), LoadedAppearance>);
 
 /// A struct that holds the information needed to draw a sprite.
 /// It's a wrapper around a sprite sheet and a sprite id, that also holds the
@@ -38,8 +38,8 @@ pub struct LoadedAppearances(pub HashMap<(GameObjectId, FrameGroup), LoadedAppea
 #[derive(Debug, Clone)]
 pub struct LoadedSprite {
     pub sprite_id: u32,
-    pub group: EntityType,
-    pub sprite_sheet: SpriteSheetData,
+    pub group: ContentType,
+    pub sprite_sheet: SpriteSheet,
     pub texture: Handle<Image>,
     pub material: Handle<SpriteMaterial>,
     pub mesh: Handle<Mesh>,
@@ -47,9 +47,9 @@ pub struct LoadedSprite {
 
 impl LoadedSprite {
     pub fn new(
-        group: EntityType,
+        group: ContentType,
         sprite_id: u32,
-        sprite_sheets: &SpriteSheetDataSet,
+        sprite_sheets: &SpriteSheets,
         textures: &HashMap<String, Handle<Image>>,
         material: &Handle<SpriteMaterial>,
         mesh: &Handle<Mesh>,
@@ -74,9 +74,9 @@ impl LoadedSprite {
 }
 
 pub fn load_sprites(
-    group: EntityType,
+    group: ContentType,
     sprite_ids: Vec<u32>,
-    sprite_sheets: &Res<SpriteSheetDataSet>,
+    sprite_sheets: &Res<SpriteSheets>,
     layouts: &Res<TextureAtlasLayouts>,
     sprite_meshes: &Res<SpriteMeshes>,
     materials: &mut ResMut<Assets<SpriteMaterial>>,
@@ -127,7 +127,7 @@ pub fn load_sprites(
 pub fn load_sprite_textures(
     sprite_ids: Vec<u32>,
     asset_server: &Res<AssetServer>,
-    sprite_sheets: &SpriteSheetDataSet,
+    sprite_sheets: &SpriteSheets,
 ) -> Vec<(u32, Handle<Image>)> {
     sprite_ids
         .iter()
@@ -141,7 +141,7 @@ pub fn load_sprite_textures(
 pub fn load_sprite_texture(
     sprite_id: u32,
     asset_server: &Res<AssetServer>,
-    sprite_sheets: &SpriteSheetDataSet,
+    sprite_sheets: &SpriteSheets,
 ) -> Option<Handle<Image>> {
     let Some(sprite_sheet) = sprite_sheets.get_by_sprite_id(sprite_id) else {
         warn!("Sprite {} not found in sprite sheets", sprite_id);
@@ -155,11 +155,11 @@ pub fn load_sprite_texture(
     Some(texture)
 }
 
-/// A system that ensures that all entities with an GameObjectId have a SpriteMaterial mesh bundle.
+/// A system that ensures that all entities with an ContentId have a SpriteMaterial mesh bundle.
 #[cfg(feature = "debug")]
 pub fn debug_sprites(
     mut commands: Commands,
-    q_debug: Query<(Entity, &Layer), (With<GameObjectId>, Without<Handle<SpriteMaterial>>)>,
+    q_debug: Query<(Entity, &Layer), (With<ContentId>, Without<Handle<SpriteMaterial>>)>,
 ) {
     q_debug.iter().for_each(|(entity, layer)| {
         commands.entity(entity).with_children(|builder| {
@@ -195,7 +195,7 @@ pub fn debug_sprites(
 }
 
 pub type ChangingAppearanceFilter = Or<(
-    Changed<GameObjectId>,
+    Changed<ContentId>,
     Changed<FrameGroup>,
     Changed<Directional>,
     (Without<AnimationSprite>, Changed<SpriteParams>),
@@ -204,7 +204,7 @@ pub type ChangingAppearanceFilter = Or<(
 pub fn update_sprite_system(
     mut q_updated: Query<
         (
-            &GameObjectId,
+            &ContentId,
             Option<&FrameGroup>,
             Option<&Directional>,
             Option<&SpriteParams>,
@@ -269,10 +269,7 @@ pub fn sprite_material_from_params(
 }
 
 pub fn load_from_entities_system(
-    query: Query<
-        (&GameObjectId, Option<&FrameGroup>),
-        Or<(Changed<GameObjectId>, Changed<FrameGroup>)>,
-    >,
+    query: Query<(&ContentId, Option<&FrameGroup>), Or<(Changed<ContentId>, Changed<FrameGroup>)>>,
     loaded_appearances: Res<LoadedAppearances>,
     mut events: EventWriter<LoadAppearanceEvent>,
 ) {
@@ -292,7 +289,7 @@ pub fn load_from_entities_system(
 
 #[derive(Event)]
 pub struct LoadAppearanceEvent {
-    pub object_id: GameObjectId,
+    pub object_id: ContentId,
     pub frame_group: FrameGroup,
 }
 
@@ -300,7 +297,7 @@ pub fn process_load_events_system(
     visual_elements: Res<VisualElements>,
     loaded_appearances: Res<LoadedAppearances>,
     mut events: EventReader<LoadAppearanceEvent>,
-) -> Option<HashMap<(GameObjectId, FrameGroup), SpriteInfo>> {
+) -> Option<HashMap<(ContentId, FrameGroup), SpriteInfo>> {
     let keys = loaded_appearances.keys().cloned().collect::<HashSet<_>>();
     let ids_and_frame_groups = events
         .read()
@@ -341,14 +338,14 @@ pub fn process_load_events_system(
 }
 
 pub fn load_sprite_system(
-    In(inputs): In<Option<HashMap<(GameObjectId, FrameGroup), SpriteInfo>>>,
-    sprite_sheets: Res<SpriteSheetDataSet>,
+    In(inputs): In<Option<HashMap<(ContentId, FrameGroup), SpriteInfo>>>,
+    sprite_sheets: Res<SpriteSheets>,
     layouts: Res<TextureAtlasLayouts>,
     sprite_meshes: Res<SpriteMeshes>,
     mut materials: ResMut<Assets<SpriteMaterial>>,
     asset_server: Res<AssetServer>,
 ) -> Option<(
-    HashMap<(GameObjectId, FrameGroup), SpriteInfo>,
+    HashMap<(ContentId, FrameGroup), SpriteInfo>,
     HashMap<u32, LoadedSprite>,
 )> {
     inputs.map(|object_id_sprite_info| {
@@ -387,7 +384,7 @@ pub fn load_sprite_system(
 pub fn store_loaded_appearances_system(
     In(input): In<
         Option<(
-            HashMap<(GameObjectId, FrameGroup), SpriteInfo>,
+            HashMap<(ContentId, FrameGroup), SpriteInfo>,
             HashMap<u32, LoadedSprite>,
         )>,
     >,

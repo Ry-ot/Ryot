@@ -90,12 +90,12 @@ pub fn update_tile_flag_cache(
     q_updated_entities: Query<
         (Option<&PreviousPosition>, &TilePosition),
         Or<(
-            Changed<GameObjectId>,
+            Changed<ContentId>,
             Changed<Visibility>,
             Changed<TilePosition>,
         )>,
     >,
-    q_object_and_visibility: Query<(&GameObjectId, Option<&Visibility>, Option<&TileFlags>)>,
+    q_object_and_visibility: Query<(&ContentId, Option<&Visibility>, Option<&TileFlags>)>,
 ) {
     for (previous_pos, new_pos) in q_updated_entities.iter() {
         let previous_pos = match previous_pos {

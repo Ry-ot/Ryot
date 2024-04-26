@@ -59,7 +59,7 @@ pub type DrawingInfo = (
     TilePosition,
     Layer,
     Visibility,
-    Option<(GameObjectId, FrameGroup)>,
+    Option<(ContentId, FrameGroup)>,
 );
 
 impl From<DrawingBundle> for DrawingInfo {

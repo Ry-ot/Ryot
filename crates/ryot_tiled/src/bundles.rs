@@ -3,18 +3,18 @@ use bevy_ecs::bundle::Bundle;
 use bevy_ecs::event::Event;
 use bevy_utils::default;
 use derive_more::*;
-use ryot_core::prelude::{Elevation, GameObjectId};
+use ryot_core::prelude::{ContentId, Elevation};
 
 #[derive(Bundle, Copy, Clone, Debug)]
 pub struct GameObjectBundle {
-    pub object_id: GameObjectId,
+    pub object_id: ContentId,
     pub position: TilePosition,
     pub elevation: Elevation,
     pub layer: Layer,
 }
 
 impl GameObjectBundle {
-    pub fn new(object_id: GameObjectId, position: TilePosition, layer: Layer) -> Self {
+    pub fn new(object_id: ContentId, position: TilePosition, layer: Layer) -> Self {
         Self {
             object_id,
             position,

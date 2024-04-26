@@ -3,7 +3,7 @@ use bevy_ecs::change_detection::ResMut;
 use bevy_ecs::prelude::Res;
 use bevy_reflect::TypePath;
 use bevy_utils::tracing::debug;
-use ryot_core::prelude::SpriteSheetDataSet;
+use ryot_core::prelude::SpriteSheets;
 
 pub trait CatalogAsset: crate::RyotAsset {
     fn catalog_content(&self) -> &Handle<Catalog>;
@@ -13,13 +13,13 @@ pub trait CatalogAsset: crate::RyotAsset {
 #[derive(serde::Deserialize, TypePath, Asset)]
 #[serde(transparent)]
 pub struct Catalog {
-    pub content: Vec<ryot_core::prelude::ContentType>,
+    pub content: Vec<ryot_core::prelude::ContentRecord>,
 }
 
 pub fn prepare_sprite_sheets<C: CatalogAsset>(
     content_assets: Res<C>,
     mut contents: ResMut<Assets<Catalog>>,
-    mut sprite_sheets: ResMut<SpriteSheetDataSet>,
+    mut sprite_sheets: ResMut<SpriteSheets>,
 ) {
     debug!("Preparing sprite sheets");
 

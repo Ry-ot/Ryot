@@ -38,7 +38,7 @@ impl From<tibia::VisualElements> for VisualElements {
     fn from(item: tibia::VisualElements) -> Self {
         fn process_items(
             items: &[tibia::VisualElement],
-            entity_type: EntityType,
+            entity_type: ContentType,
             visual_elements: &mut VisualElements,
         ) {
             for item in items.iter() {
@@ -55,17 +55,17 @@ impl From<tibia::VisualElements> for VisualElements {
 
         let mut visual_elements = VisualElements::default();
 
-        process_items(&item.objects, EntityType::Object, &mut visual_elements);
-        process_items(&item.outfits, EntityType::Outfit, &mut visual_elements);
-        process_items(&item.effects, EntityType::Effect, &mut visual_elements);
-        process_items(&item.missiles, EntityType::Missile, &mut visual_elements);
+        process_items(&item.objects, ContentType::Object, &mut visual_elements);
+        process_items(&item.outfits, ContentType::Outfit, &mut visual_elements);
+        process_items(&item.effects, ContentType::Effect, &mut visual_elements);
+        process_items(&item.missiles, ContentType::Missile, &mut visual_elements);
 
         visual_elements
     }
 }
 
 impl From<tibia::VisualElement> for VisualElement {
-    fn from(item: tibia::VisualElement) -> Self {
+    fn from(visual_element: tibia::VisualElement) -> Self {
         fn from_flags<T: Clone + Default + From<tibia::Flags>>(flags: &Option<tibia::Flags>) -> T {
             match flags {
                 Some(flags) => flags.clone().into(),
@@ -73,12 +73,12 @@ impl From<tibia::VisualElement> for VisualElement {
             }
         }
 
-        let id = item.id();
-        let name: String = item.name.clone().unwrap_or(id.to_string());
-        let flags: Flags = from_flags(&item.flags);
-        let category: Category = from_flags(&item.flags);
-        let properties: Properties = from_flags(&item.flags);
-        let sprites_info: Vec<SpriteInfo> = item
+        let id = visual_element.id();
+        let name: String = visual_element.name.clone().unwrap_or(id.to_string());
+        let flags: Flags = from_flags(&visual_element.flags);
+        let category: Category = from_flags(&visual_element.flags);
+        let properties: Properties = from_flags(&visual_element.flags);
+        let sprites_info: Vec<SpriteInfo> = visual_element
             .frames
             .iter()
             .map(|frame| frame.sprite_info.clone().unwrap().into())
@@ -100,24 +100,14 @@ impl From<tibia::VisualElement> for VisualElement {
     }
 }
 
-impl From<tibia::FrameType> for FrameGroup {
-    fn from(item: tibia::FrameType) -> Self {
-        match item {
-            tibia::FrameType::OutfitIdle => FrameGroup::Idle,
-            tibia::FrameType::OutfitMoving => FrameGroup::Moving,
-            tibia::FrameType::ObjectInitial => FrameGroup::Initial,
-        }
-    }
-}
-
 impl From<tibia::SpriteInfo> for SpriteInfo {
-    fn from(item: tibia::SpriteInfo) -> Self {
-        let ids = item.sprite_ids.clone();
-        let layers = item.layers();
-        let pattern_width = item.pattern_width();
-        let pattern_height = item.pattern_height();
-        let pattern_depth = item.pattern_depth();
-        let animation = item.animation.map(|a| a.into());
+    fn from(sprite_info: tibia::SpriteInfo) -> Self {
+        let ids = sprite_info.sprite_ids.clone();
+        let layers = sprite_info.layers();
+        let pattern_width = sprite_info.pattern_width();
+        let pattern_height = sprite_info.pattern_height();
+        let pattern_depth = sprite_info.pattern_depth();
+        let animation = sprite_info.animation.map(|a| a.into());
 
         SpriteInfo {
             ids,
@@ -131,11 +121,15 @@ impl From<tibia::SpriteInfo> for SpriteInfo {
 }
 
 impl From<tibia::Animation> for Animation {
-    fn from(item: tibia::Animation) -> Self {
-        let start_phase = item.start_phase();
-        let synchronized = item.synchronized();
-        let is_start_random = item.is_start_random();
-        let phases = item.phases.iter().map(|p| (p.min(), p.max())).collect();
+    fn from(animation: tibia::Animation) -> Self {
+        let start_phase = animation.start_phase();
+        let synchronized = animation.synchronized();
+        let is_start_random = animation.is_start_random();
+        let phases = animation
+            .phases
+            .iter()
+            .map(|p| (p.min(), p.max()))
+            .collect();
 
         Animation {
             start_phase,
@@ -147,19 +141,18 @@ impl From<tibia::Animation> for Animation {
 }
 
 impl From<tibia::Flags> for Flags {
-    fn from(item: tibia::Flags) -> Self {
+    fn from(flags: tibia::Flags) -> Self {
         Flags {
-            is_walkable: !item.is_not_walkable(),
-            blocks_sight: item.blocks_sight(),
+            is_walkable: !flags.is_not_walkable(),
+            blocks_sight: flags.blocks_sight(),
         }
     }
 }
 
 impl From<tibia::Flags> for Properties {
-    fn from(item: tibia::Flags) -> Self {
+    fn from(flags: tibia::Flags) -> Self {
         Properties {
-            ground_speed: item.ground.clone().unwrap_or_default().speed(),
-            elevation: item.elevation.clone().unwrap_or_default().height(),
+            elevation: flags.elevation.clone().unwrap_or_default().height().into(),
         }
     }
 }
