@@ -31,10 +31,10 @@ impl From<&Category> for TilesetCategory {
             Category::Corpses => TilesetCategory::Corpses,
             Category::Decor => TilesetCategory::Decor,
             Category::Edges => TilesetCategory::Edges,
-            Category::Ground => TilesetCategory::UpperLayer,
+            Category::Ground => TilesetCategory::Terrains,
             Category::Custom(category) => StoreCategory::try_from(*category).unwrap().into(),
             Category::Miscellaneous => TilesetCategory::Miscellaneous,
-            Category::Top => TilesetCategory::Terrains,
+            Category::Top => TilesetCategory::UpperLayer,
             Category::Wearable => TilesetCategory::Clothes,
         }
     }
