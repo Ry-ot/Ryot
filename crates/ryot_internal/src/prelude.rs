@@ -3,9 +3,6 @@ pub use ryot_sprites::prelude::*;
 pub use ryot_tiled::prelude::*;
 pub use ryot_utils::prelude::*;
 
-#[cfg(feature = "ryot_app")]
-pub use ryot_app::prelude::*;
-
 #[cfg(feature = "ryot_assets")]
 pub use ryot_assets::prelude::*;
 

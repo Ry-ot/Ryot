@@ -2,15 +2,7 @@ use bevy_app::{App, Plugin};
 use bevy_asset_loader::prelude::*;
 use bevy_common_assets::json::JsonAssetPlugin;
 use bevy_ecs::prelude::{IntoSystemConfigs, OnEnter};
-use ryot_assets::atlas::AtlasLayoutsAsset;
-use ryot_assets::catalog::{prepare_sprite_sheets, Catalog, CatalogAsset};
-use ryot_assets::prelude::{
-    prepare_sprite_layouts, prepare_sprite_meshes, prepare_visual_elements, VisualElementsAsset,
-};
-use ryot_core::prelude::{
-    transition_to_ready, RyotContentState, SpriteSheetDataSet, VisualElements,
-};
-use ryot_tiled::prelude::TilePosition;
+use ryot_internal::prelude::*;
 use std::marker::PhantomData;
 
 #[macro_export]
@@ -45,7 +37,7 @@ impl<C: VisualElementsAsset + Default> Plugin for BaseContentPlugin<C> {
             );
 
         #[cfg(feature = "tibia")]
-        app.add_plugins(ryot_tibia::prelude::TibiaAssetsPlugin);
+        app.add_plugins(tibia::TibiaAssetsPlugin);
     }
 }
 
