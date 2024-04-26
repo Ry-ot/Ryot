@@ -8,6 +8,8 @@ use glam::{UVec2, Vec2};
 use std::sync::OnceLock;
 
 #[cfg(feature = "bevy")]
+pub mod bundles;
+#[cfg(feature = "bevy")]
 pub mod camera;
 #[cfg(feature = "bevy")]
 pub mod drawing;
@@ -15,8 +17,6 @@ pub mod drawing;
 pub mod flags;
 pub mod map;
 pub mod movement;
-#[cfg(feature = "bevy")]
-pub mod object;
 
 pub mod prelude {
     pub use crate::{
@@ -35,13 +35,25 @@ pub mod prelude {
 
     #[cfg(feature = "bevy")]
     pub use crate::{
+        bundles::{GameObjectBundle, LoadObjects},
         camera::{
             cursor::{
                 cursor_sliding_camera, draw_cursor_system, move_to_cursor, update_cursor_pos,
             },
             sector::update_camera_visible_sector,
         },
-        drawing::*,
+        drawing::{
+            brushes::{
+                diamond::Diamond, line::Line, random::Random, rectangle::Rectangle, round::Round,
+                Brush, BrushItem, BrushParams, Brushes,
+            },
+            commands::{CommandState, DrawingInfo, UpdateTileContent},
+            systems::*,
+            {
+                apply_detail_level_to_visibility, DetailLevel, DrawingBundle, MovementBundle,
+                TileComponent,
+            },
+        },
         flags::{update_tile_flag_cache, TileFlags},
         map::elevation::{apply_elevation, elevate_position, initialize_elevation},
         map::grid::{spawn_grid, GridView},
@@ -51,7 +63,6 @@ pub mod prelude {
             },
             track_position_changes,
         },
-        object::{GameObjectBundle, LoadObjects},
     };
 
     #[cfg(feature = "lmdb")]

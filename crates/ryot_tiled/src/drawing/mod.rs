@@ -10,14 +10,11 @@ use glam::Vec3;
 use ryot_core::prelude::FrameGroup;
 use ryot_core::prelude::GameObjectId;
 
-mod brushes;
-pub use brushes::*;
+pub mod brushes;
 
-mod commands;
-pub use commands::*;
+pub mod commands;
 
-mod systems;
-pub use systems::*;
+pub mod systems;
 
 #[derive(Component, Debug, Copy, Clone, Default, Eq, PartialEq)]
 pub struct TileComponent;

@@ -20,7 +20,7 @@ pub enum DrawingSystems {
 }
 
 /// Auxiliary function to get the top most visible entity and its DrawingBundle from a tile position.
-pub fn get_top_most_visible(
+fn get_top_most_visible(
     tile_pos: TilePosition,
     map_tiles: &ResMut<MapTiles<Entity>>,
     q_current: &Query<
@@ -70,7 +70,7 @@ pub fn get_top_most_visible_bottom_layer(
     )
 }
 
-pub fn get_top_most_visible_for_tile(
+fn get_top_most_visible_for_tile(
     iter: impl Iterator<Item = (Layer, Entity)>,
     tile_pos: TilePosition,
     q_current_appearance: &Query<

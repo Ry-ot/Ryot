@@ -2,20 +2,15 @@ use crate::prelude::*;
 use bevy_ecs::prelude::*;
 use derive_more::*;
 
-mod diamond;
-pub use diamond::*;
+pub mod diamond;
 
-mod line;
-pub use line::*;
+pub mod line;
 
-mod round;
-pub use round::*;
+pub mod round;
 
-mod rectangle;
-pub use rectangle::*;
+pub mod rectangle;
 
-mod random;
-pub use random::*;
+pub mod random;
 
 #[cfg(feature = "egui")]
 #[macro_export]
