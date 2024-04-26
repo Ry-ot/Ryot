@@ -1,5 +1,5 @@
 use crate::material::SpriteMaterial;
-use crate::prelude::{AnimationDescriptor, AnimationKey};
+use crate::prelude::*;
 use bevy_asset::Handle;
 use bevy_ecs::prelude::Resource;
 use bevy_render::mesh::Mesh;

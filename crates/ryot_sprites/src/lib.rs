@@ -4,11 +4,9 @@
 //! game objects, supporting rich graphical content within games.
 use bevy_ecs::prelude::SystemSet;
 
-pub mod animations;
+pub mod animation;
 pub mod loading;
 pub mod material;
-// TODO: make this better module, break it down
-pub mod sprite_animations;
 pub mod update;
 
 pub static SPRITE_SHEET_FOLDER: &str = "sprite-sheets";
@@ -26,7 +24,16 @@ pub enum SpriteSystems {
 
 pub mod prelude {
     pub use crate::{
-        animations::AnimationSystems,
+        animation::{
+            descriptor::{AnimationDescriptor, AnimationSprite},
+            key::{AnimationKey, SpriteAnimationExt},
+            state::{AnimationStartPhase, AnimationState},
+            systems::{
+                initialize_animation_sprite_system, tick_animation_system, AnimationDuration,
+                AnimationSystems, SynchronizedAnimationTimers,
+            },
+            toggle::{toggle_sprite_animation, SpriteAnimationEnabled},
+        },
         get_decompressed_file_name,
         loading::{
             loaded::{LoadedAppearance, LoadedAppearances, LoadedSprite},
@@ -42,7 +49,6 @@ pub mod prelude {
             params::{SpriteOutline, SpriteParams},
             SpriteMaterial,
         },
-        sprite_animations::*,
         update::update_sprite_system,
         SpriteSystems, SPRITE_SHEET_FOLDER,
     };

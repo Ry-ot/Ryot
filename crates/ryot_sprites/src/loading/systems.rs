@@ -1,3 +1,5 @@
+use crate::animation::descriptor::AnimationDescriptor;
+use crate::animation::key::SpriteAnimationExt;
 use crate::material::meshes::SpriteMeshes;
 use crate::material::SpriteMaterial;
 use crate::prelude::*;

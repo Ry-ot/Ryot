@@ -1,4 +1,5 @@
 //! Sprite loading and drawing.
+use crate::animation::descriptor::AnimationSprite;
 use crate::prelude::*;
 use bevy_asset::*;
 use bevy_ecs::prelude::*;
