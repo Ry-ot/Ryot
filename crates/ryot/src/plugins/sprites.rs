@@ -3,10 +3,7 @@ use bevy_ecs::prelude::*;
 use bevy_render::view::{check_visibility, VisibilitySystems};
 use bevy_sprite::Material2dPlugin;
 use bevy_stroked_text::StrokedTextPlugin;
-use ryot_core::prelude::*;
-use ryot_sprites::prelude::*;
-use ryot_tiled::prelude::*;
-use ryot_utils::plugins::OptionalPlugin;
+use ryot_internal::prelude::*;
 
 pub struct RyotDrawingPlugin;
 

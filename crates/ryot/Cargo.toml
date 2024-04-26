@@ -4,15 +4,23 @@ version = "0.2.2"
 edition = "2021"
 authors = ["Lucas Grossi <lucas.ggrosis@gmail.com>"]
 license = "MIT OR Apache-2.0"
-description = "Entry point for the Ryot framework, providing a unified API to aggregate all functionalities for simplified integration."
+description = "Central hub for the Ryot framework, offering a unified API along with essential plugins and bundles to facilitate game development using Bevy."
 repository = "https://github.com/ry-ot/Ryot/tree/main/ryot"
 homepage = "https://github.com/ry-ot/Ryot"
 documentation = "https://docs.rs/ryot/"
-keywords = ["game-development", "bevy", "framework", "tiled-2-games", "ryot"]
+keywords = ["game-development", "bevy-plugins", "game-framework", "tiled-2-games", "ryot"]
 categories = ["game-development"]
 readme = "../../README.md"
 
 [dependencies]
+bevy_stroked_text.workspace = true
+bevy_app.workspace = true
+bevy_asset_loader.workspace = true
+bevy_common_assets.workspace = true
+bevy_ecs.workspace = true
+bevy_render.workspace = true
+bevy_sprite.workspace = true
+
 ryot_internal = { path = "../ryot_internal", version = "0.2" }
 
 [features]

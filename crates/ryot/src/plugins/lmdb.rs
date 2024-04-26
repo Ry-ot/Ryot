@@ -1,6 +1,6 @@
 use bevy_app::{App, Plugin, Startup};
 use bevy_ecs::prelude::*;
-use ryot_tiled::prelude::*;
+use ryot_internal::prelude::*;
 
 pub struct LmdbPlugin;
 

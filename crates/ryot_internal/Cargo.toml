@@ -20,13 +20,11 @@ all-features = true
 
 [features]
 debug = [
-    "ryot_app?/debug",
     "ryot_sprites/debug",
     "ryot_tiled/debug",
 ]
 
 bevy = [
-    "ryot_app",
     "ryot_assets",
     "ryot_core/bevy",
     "ryot_utils/bevy",
@@ -36,17 +34,15 @@ bevy = [
 
 compression = ["ryot_utils/compression"]
 egui = ["ryot_tiled/egui"]
-lmdb = ["ryot_app?/lmdb", "ryot_tiled/lmdb"]
+lmdb = ["ryot_tiled/lmdb"]
 
 ray_cast = ["ryot_ray_casting"]
 ryot_tibia = [
     "dep:ryot_tibia",
-    "ryot_app/tibia",
     "ryot_assets/ryot_tibia",
 ]
 
 [dependencies]
-ryot_app = { path = "../ryot_app", version = "0.2.0", optional = true }
 ryot_assets = { path = "../ryot_assets", version = "0.2.0", optional = true }
 ryot_utils = { path = "../ryot_utils", version = "0.2" }
 ryot_core = { path = "../ryot_core", version = "0.2" }
