@@ -11,9 +11,7 @@ use ryot_core::prelude::*;
 use ryot_tiled::prelude::*;
 use std::time::Duration;
 
-use crate::sprites::{
-    sprite_material_from_params, ChangingAppearanceFilter, LoadedAppearances, LoadedSprite,
-};
+use crate::update::{sprite_material_from_params, ChangingAppearanceFilter};
 
 /// A resource to enable/disable sprite animation globally.
 #[derive(Resource, PartialEq, Debug, Clone)]

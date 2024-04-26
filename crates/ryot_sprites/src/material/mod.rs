@@ -10,6 +10,9 @@ use bevy_sprite::{Material2d, MaterialMesh2dBundle};
 use glam::Vec2;
 use ryot_core::prelude::{ContentId, SpriteLayout};
 
+pub mod meshes;
+pub mod params;
+
 #[derive(AsBindGroup, TypePath, Asset, Debug, Clone, Default, PartialEq)]
 pub struct SpriteMaterial {
     #[uniform(0)]
