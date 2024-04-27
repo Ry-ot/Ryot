@@ -5,6 +5,7 @@
 use crate::prelude::*;
 use bevy_ecs::prelude::*;
 use itertools::Itertools;
+use ryot_core::prelude::Navigable;
 use ryot_tiled::prelude::*;
 use ryot_utils::prelude::*;
 use std::sync::mpsc;
@@ -40,8 +41,8 @@ pub fn update_intersection_cache<T: Trajectory>(
 /// conditions (e.g., obstructions, visibility flags) and updates each entity's InterestPositions.
 ///
 /// Run as part of [`PerspectiveSystems::CalculatePerspectives`].
-pub fn process_perspectives<T: Trajectory, F: Flag>(
-    tile_flags_cache: Res<Cache<TilePosition, F>>,
+pub fn process_perspectives<T: Trajectory, N: Navigable + Copy + Default>(
+    tile_flags_cache: Res<Cache<TilePosition, N>>,
     intersection_cache: Res<Cache<RadialArea, Vec<Vec<TilePosition>>>>,
     mut q_radial_areas: Query<(Entity, &T, &mut InterestPositions<T>)>,
 ) {

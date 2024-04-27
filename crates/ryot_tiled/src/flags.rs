@@ -1,92 +1,13 @@
-//! This module deals with the definition and management of `TileFlags`, which represent the state of tiles within the game world.
-//! These flags are crucial for determining visibility, walkability, and whether a tile blocks sight, among other properties.
 use crate::prelude::*;
 use bevy_ecs::prelude::*;
-use bevy_reflect::prelude::*;
 use bevy_render::prelude::*;
 use ryot_core::prelude::*;
 use ryot_utils::prelude::*;
 
-/// Represents flags associated with a tile, including its visibility to players, walkability,
-/// and whether it obstructs the line of sight. These properties are essential for gameplay mechanics.
-#[derive(Debug, Clone, Component, Copy, Eq, PartialEq, Reflect)]
-pub struct TileFlags {
-    walkable: bool,
-    blocks_sight: bool,
-}
-
-impl Default for TileFlags {
-    fn default() -> Self {
-        TileFlags {
-            walkable: true,
-            blocks_sight: false,
-        }
-    }
-}
-
-impl TileFlags {
-    pub fn new(walkable: bool, blocks_sight: bool) -> Self {
-        TileFlags {
-            walkable,
-            blocks_sight,
-        }
-    }
-
-    pub fn with_walkable(self, walkable: bool) -> Self {
-        TileFlags { walkable, ..self }
-    }
-
-    pub fn with_blocks_sight(self, blocks_sight: bool) -> Self {
-        TileFlags {
-            blocks_sight,
-            ..self
-        }
-    }
-
-    /// Updates the flags based on the flags attribute of the asset.
-    /// This allows dynamic modification of tile properties based on in-game events or conditions.
-    pub fn for_assets_flag(self, flags: Flags) -> Self {
-        self.append(TileFlags {
-            walkable: flags.is_walkable,
-            blocks_sight: flags.blocks_sight,
-        })
-    }
-
-    pub fn append(mut self, flags: TileFlags) -> Self {
-        self.walkable &= flags.walkable;
-        self.blocks_sight |= flags.blocks_sight;
-        self
-    }
-}
-
-impl Flag for TileFlags {
-    fn is_walkable(&self) -> bool {
-        self.walkable
-    }
-
-    fn blocks_sight(&self) -> bool {
-        self.blocks_sight
-    }
-}
-
-/// Synchronizes the `TileFlags` cache with current game state changes related to visibility and object attributes.
-///
-/// This system plays a critical role in gameplay mechanics by dynamically updating tile properties based on
-/// visibility changes and flags attributes defined in game objects. It directly affects how entities interact
-/// with the game world, particularly in terms of navigation and line-of-sight calculations.
-///
-/// The function leverages a cache to store `TileFlags` for each tile position, significantly optimizing
-/// performance. By avoiding repetitive access to each entity within a tile to check its properties, the game
-/// can quickly and efficiently update the state of the game world, ensuring accurate and up-to-date flag settings.
-///
-/// By maintaining an up-to-date cache of `TileFlags`, this system facilitates efficient game world interactions
-/// and mechanics, enhancing the overall gameplay experience.
-///
-/// Run as part of [`CacheSystems::UpdateCache`].
-pub fn update_tile_flag_cache(
+pub fn update_tile_flag_cache<N: Navigable + Copy + Default + Component>(
     visual_elements: Res<VisualElements>,
     map_tiles: Res<MapTiles<Entity>>,
-    mut cache: ResMut<Cache<TilePosition, TileFlags>>,
+    mut cache: ResMut<Cache<TilePosition, N>>,
     q_updated_entities: Query<
         (Option<&PreviousPosition>, &TilePosition),
         Or<(
@@ -95,7 +16,7 @@ pub fn update_tile_flag_cache(
             Changed<TilePosition>,
         )>,
     >,
-    q_object_and_visibility: Query<(&ContentId, Option<&Visibility>, Option<&TileFlags>)>,
+    q_object_and_visibility: Query<(&ContentId, Option<&Visibility>, Option<&N>)>,
 ) {
     for (previous_pos, new_pos) in q_updated_entities.iter() {
         let previous_pos = match previous_pos {
@@ -117,7 +38,7 @@ pub fn update_tile_flag_cache(
             cache.insert(
                 *pos,
                 tile.into_iter()
-                    .fold(TileFlags::default(), |mut flags, (_, entity)| {
+                    .fold(N::default(), |mut flags, (_, entity)| {
                         let Ok((object_id, visibility, entity_flags)) =
                             q_object_and_visibility.get(entity)
                         else {
@@ -130,15 +51,15 @@ pub fn update_tile_flag_cache(
 
                         if pos == new_pos {
                             flags = entity_flags
-                                .map_or_else(|| flags, |entity_flags| flags.append(*entity_flags));
+                                .map_or_else(|| flags, |entity_flags| flags.append(entity_flags));
                         }
 
                         flags = object_id
                             .as_group_and_id()
                             .and_then(|(group, id)| visual_elements.get_for_group_and_id(group, id))
                             .map(|visual_element| visual_element.flags)
-                            .filter(|&flags| flags != Flags::default())
-                            .map_or_else(|| flags, |a_flags| flags.for_assets_flag(a_flags));
+                            .filter(|&flags| !flags.is_default())
+                            .map_or_else(|| flags, |a_flags| flags.append(&a_flags));
 
                         flags
                     }),

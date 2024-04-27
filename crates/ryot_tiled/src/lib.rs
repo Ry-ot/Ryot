@@ -54,7 +54,7 @@ pub mod prelude {
                 TileComponent,
             },
         },
-        flags::{update_tile_flag_cache, TileFlags},
+        flags::update_tile_flag_cache,
         map::elevation::{apply_elevation, elevate_position, initialize_elevation},
         map::grid::{spawn_grid, GridView},
         map::position::{

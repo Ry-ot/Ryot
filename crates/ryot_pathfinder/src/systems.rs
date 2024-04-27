@@ -2,8 +2,8 @@ use crate::components::{Path, PathFindingQuery, PathFindingTask};
 use crate::prelude::Pathable;
 use bevy_ecs::prelude::*;
 use bevy_tasks::*;
+use ryot_core::prelude::Navigable;
 use ryot_utils::prelude::*;
-use ryot_utils::Flag;
 
 /// Defines system sets for managing perspective calculation systems.
 /// This enum categorizes systems related to perspective calculations, facilitating the organization
@@ -16,9 +16,9 @@ pub enum PathFindingSystems {
 
 /// System that performs a path finding request query and starts a path finding
 /// async task based on the request params.
-pub(super) fn trigger_path_finding_tasks<P: Pathable + Component, F: Flag>(
+pub(super) fn trigger_path_finding_tasks<P: Pathable + Component, N: Navigable + Copy + Default>(
     mut commands: Commands,
-    tile_flags_cache: Res<Cache<P, F>>,
+    tile_flags_cache: Res<Cache<P, N>>,
     q_path_finding_query: Query<(Entity, &P, &PathFindingQuery<P>), Changed<PathFindingQuery<P>>>,
 ) {
     for (entity, from, query) in &q_path_finding_query {
