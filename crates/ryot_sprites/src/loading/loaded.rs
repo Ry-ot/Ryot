@@ -7,7 +7,7 @@ use bevy_render::prelude::Image;
 use bevy_utils::HashMap;
 use derive_more::{Deref, DerefMut};
 use ryot_core::content::{ContentId, ContentType};
-use ryot_core::prelude::{FrameGroup, SpriteSheet, SpriteSheets};
+use ryot_core::prelude::{FrameGroup, SpriteSheet};
 
 pub struct LoadedAppearance {
     pub sprites: Vec<LoadedSprite>,

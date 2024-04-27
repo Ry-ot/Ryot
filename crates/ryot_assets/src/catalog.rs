@@ -3,7 +3,7 @@ use bevy_ecs::change_detection::ResMut;
 use bevy_ecs::prelude::Res;
 use bevy_reflect::TypePath;
 use bevy_utils::tracing::debug;
-use ryot_core::prelude::SpriteSheets;
+use ryot_sprites::prelude::SpriteSheets;
 
 pub trait CatalogAsset: crate::RyotAsset {
     fn catalog_content(&self) -> &Handle<Catalog>;

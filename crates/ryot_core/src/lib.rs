@@ -7,16 +7,13 @@
 pub mod content;
 pub mod game;
 
-#[cfg(test)]
-mod tests;
-
 pub mod prelude {
     pub use crate::{
         content::{
             record::{Category, ContentRecord, Flags, VisualElement, VisualElements},
             sprite::{
                 layout::{SpriteLayout, SpriteLayoutIter, TextureAtlasLayouts},
-                sprite_sheet::{SpriteSheet, SpriteSheets},
+                sprite_sheet::SpriteSheet,
                 Animation, FrameGroup, SpriteInfo,
             },
             ContentId, ContentType, RyotContentState,
@@ -27,3 +24,6 @@ pub mod prelude {
     #[cfg(feature = "bevy")]
     pub use crate::content::transition_to_ready;
 }
+
+#[cfg(test)]
+mod tests;
