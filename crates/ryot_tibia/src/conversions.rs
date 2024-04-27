@@ -142,10 +142,7 @@ impl From<tibia::Animation> for Animation {
 
 impl From<tibia::Flags> for Flags {
     fn from(flags: tibia::Flags) -> Self {
-        Flags {
-            is_walkable: !flags.is_not_walkable(),
-            blocks_sight: flags.blocks_sight(),
-        }
+        Flags::new(!flags.is_not_walkable(), flags.blocks_sight())
     }
 }
 

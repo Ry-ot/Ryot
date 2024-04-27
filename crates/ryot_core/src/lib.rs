@@ -13,14 +13,15 @@ mod tests;
 pub mod prelude {
     pub use crate::{
         content::{
+            record::{Category, ContentRecord, Flags, VisualElement, VisualElements},
             sprite::{
                 layout::{SpriteLayout, SpriteLayoutIter, TextureAtlasLayouts},
                 sprite_sheet::{SpriteSheet, SpriteSheets},
                 Animation, FrameGroup, SpriteInfo,
             },
-            ContentId, ContentRecord, ContentType, RyotContentState, VisualElement, VisualElements,
+            ContentId, ContentType, RyotContentState,
         },
-        game::{Category, Elevation, Flags, Properties},
+        game::{Elevation, Navigable, Properties},
     };
 
     #[cfg(feature = "bevy")]

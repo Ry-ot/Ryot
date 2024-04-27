@@ -3,6 +3,7 @@ use bevy_app::{App, Update};
 use bevy_ecs::prelude::*;
 use bevy_reflect::Reflect;
 use bevy_utils::HashSet;
+use ryot_core::prelude::Navigable;
 use ryot_tiled::prelude::TilePosition;
 use ryot_utils::prelude::*;
 use std::marker::PhantomData;
@@ -10,17 +11,17 @@ use std::marker::PhantomData;
 /// Represents an App that can add one or more `Trajectory` to its systems.
 /// Requires the `Cache<RadialArea, Vec<Vec<TilePosition>>>` resource to be initialized.
 pub trait TrajectoryApp {
-    fn add_trajectory<T: Trajectory, F: Flag>(&mut self) -> &mut Self;
+    fn add_trajectory<T: Trajectory, N: Navigable + Copy + Default>(&mut self) -> &mut Self;
 }
 
 impl TrajectoryApp for App {
-    fn add_trajectory<T: Trajectory, F: Flag>(&mut self) -> &mut Self {
+    fn add_trajectory<T: Trajectory, N: Navigable + Copy + Default>(&mut self) -> &mut Self {
         self.init_resource::<Cache<RadialArea, Vec<Vec<TilePosition>>>>()
             .add_systems(
                 Update,
                 (
                     update_intersection_cache::<T>.in_set(CacheSystems::UpdateCache),
-                    process_perspectives::<T, F>
+                    process_perspectives::<T, N>
                         .in_set(PerspectiveSystems::CalculatePerspectives)
                         .after(CacheSystems::UpdateCache),
                 )
@@ -47,7 +48,7 @@ pub trait Trajectory: Component + Send + Sync + 'static {
     ///
     /// This method should be used to check conditions related to the entity's interaction with the
     /// environment, such as obstructions, visibility, or other criteria defined by `Flag`.
-    fn meets_condition(&self, flags: &impl Flag, _: &TilePosition) -> bool {
+    fn meets_condition(&self, flags: &impl Navigable, _: &TilePosition) -> bool {
         flags.is_walkable()
     }
 }
@@ -108,7 +109,7 @@ impl<T: Copy + Send + Sync + 'static> Trajectory for VisibleTrajectory<T> {
         (*self).into()
     }
 
-    fn meets_condition(&self, flags: &impl Flag, _: &TilePosition) -> bool {
+    fn meets_condition(&self, flags: &impl Navigable, _: &TilePosition) -> bool {
         !flags.blocks_sight()
     }
 }
