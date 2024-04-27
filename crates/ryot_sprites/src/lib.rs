@@ -7,6 +7,7 @@ use bevy_ecs::prelude::SystemSet;
 pub mod animation;
 pub mod loading;
 pub mod material;
+pub mod sheets;
 pub mod update;
 
 pub static SPRITE_SHEET_FOLDER: &str = "sprite-sheets";
@@ -49,6 +50,7 @@ pub mod prelude {
             params::{SpriteOutline, SpriteParams},
             SpriteMaterial,
         },
+        sheets::SpriteSheets,
         update::update_sprite_system,
         SpriteSystems, SPRITE_SHEET_FOLDER,
     };
@@ -56,3 +58,6 @@ pub mod prelude {
     #[cfg(feature = "debug")]
     pub use crate::loading::debug::debug_sprites;
 }
+
+#[cfg(test)]
+mod tests;
