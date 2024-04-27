@@ -141,7 +141,7 @@ fn export_map(
 
 fn load_tile_content(world: &mut World) {
     let events = world.resource::<Events<LoadObjects>>();
-    let mut bundles: Vec<GameObjectBundle> = vec![];
+    let mut bundles: Vec<TiledContentBundle> = vec![];
 
     for LoadObjects(event_bundles) in events.get_reader().read(events) {
         bundles.extend(event_bundles);

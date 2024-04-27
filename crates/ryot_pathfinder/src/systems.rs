@@ -1,5 +1,5 @@
 use crate::components::{Path, PathFindingQuery, PathFindingTask};
-use crate::Pathable;
+use crate::prelude::Pathable;
 use bevy_ecs::prelude::*;
 use bevy_tasks::*;
 use ryot_utils::prelude::*;

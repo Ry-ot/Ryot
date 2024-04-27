@@ -1,4 +1,4 @@
-use crate::Pathable;
+use crate::prelude::Pathable;
 use pathfinding::prelude::astar;
 use ryot_tiled::prelude::*;
 use std::time::{Duration, Instant};
