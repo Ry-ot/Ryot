@@ -1,4 +1,4 @@
-use crate::Pathable;
+use crate::prelude::*;
 use bevy_ecs::prelude::*;
 use derive_more::*;
 use std::hash::Hash;

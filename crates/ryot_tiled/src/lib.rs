@@ -35,7 +35,7 @@ pub mod prelude {
 
     #[cfg(feature = "bevy")]
     pub use crate::{
-        bundles::{GameObjectBundle, LoadObjects},
+        bundles::{LoadObjects, TiledContentBundle},
         camera::{
             cursor::{
                 cursor_sliding_camera, draw_cursor_system, move_to_cursor, update_cursor_pos,

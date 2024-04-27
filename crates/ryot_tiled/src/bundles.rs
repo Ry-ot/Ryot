@@ -6,14 +6,14 @@ use derive_more::*;
 use ryot_core::prelude::{ContentId, Elevation};
 
 #[derive(Bundle, Copy, Clone, Debug)]
-pub struct GameObjectBundle {
+pub struct TiledContentBundle {
     pub object_id: ContentId,
     pub position: TilePosition,
     pub elevation: Elevation,
     pub layer: Layer,
 }
 
-impl GameObjectBundle {
+impl TiledContentBundle {
     pub fn new(object_id: ContentId, position: TilePosition, layer: Layer) -> Self {
         Self {
             object_id,
@@ -25,4 +25,4 @@ impl GameObjectBundle {
 }
 
 #[derive(Event, Clone, Debug, Deref, DerefMut)]
-pub struct LoadObjects(pub Vec<GameObjectBundle>);
+pub struct LoadObjects(pub Vec<TiledContentBundle>);

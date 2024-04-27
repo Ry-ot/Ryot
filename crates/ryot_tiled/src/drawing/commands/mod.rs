@@ -73,8 +73,8 @@ impl From<DrawingBundle> for DrawingInfo {
     }
 }
 
-impl From<GameObjectBundle> for DrawingInfo {
-    fn from(bundle: GameObjectBundle) -> Self {
+impl From<TiledContentBundle> for DrawingInfo {
+    fn from(bundle: TiledContentBundle) -> Self {
         (
             bundle.position,
             bundle.layer,
