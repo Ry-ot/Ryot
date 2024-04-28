@@ -33,8 +33,21 @@ ryot_tiled = { path = "../ryot_tiled", version = "0.2.0", optional = true }
 derive_more.workspace = true
 
 [dev-dependencies]
+bevy.workspace = true
 quickcheck.workspace = true
 quickcheck_macros.workspace = true
 rstest.workspace = true
 time-test.workspace = true
 rand.workspace = true
+
+[[example]]
+name = "basic"
+
+[[example]]
+name = "multiple"
+
+[[example]]
+name = "with_obstacles"
+
+[[example]]
+name = "stress_test"

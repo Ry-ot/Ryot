@@ -5151,6 +5151,7 @@ dependencies = [
 name = "ryot_pathfinder"
 version = "0.2.2"
 dependencies = [
+ "bevy",
  "bevy_app",
  "bevy_ecs",
  "bevy_tasks",

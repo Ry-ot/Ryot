@@ -92,7 +92,7 @@ pub fn tile_size() -> UVec2 {
 
 #[cfg(not(test))]
 pub fn tile_size() -> UVec2 {
-    *TILE_SIZE.get().expect("TILE_SIZE not initialized")
+    *TILE_SIZE.get_or_init(|| UVec2::new(32, 32))
 }
 
 pub fn tile_offset() -> Vec2 {

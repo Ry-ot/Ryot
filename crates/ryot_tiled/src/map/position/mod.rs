@@ -41,7 +41,7 @@ impl TilePosition {
 
     pub const BOTTOM_RIGHT_OFFSET: Vec2 = Vec2::new(0., -1.);
 
-    pub fn new(x: i32, y: i32, z: i32) -> Self {
+    pub const fn new(x: i32, y: i32, z: i32) -> Self {
         Self(IVec3::new(x, y, z))
     }
 

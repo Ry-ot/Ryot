@@ -44,3 +44,21 @@ pub trait Navigable: Sync + Send + 'static {
     fn append(self, navigable: &impl Navigable) -> Self;
     fn is_default(&self) -> bool;
 }
+
+impl Navigable for () {
+    fn is_walkable(&self) -> bool {
+        true
+    }
+
+    fn blocks_sight(&self) -> bool {
+        false
+    }
+
+    fn append(self, _: &impl Navigable) -> Self {
+        self
+    }
+
+    fn is_default(&self) -> bool {
+        false
+    }
+}

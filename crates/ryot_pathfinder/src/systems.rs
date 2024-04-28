@@ -59,6 +59,7 @@ pub(super) fn handle_path_finding_tasks<P: Pathable>(
             commands.entity(entity).insert(Path(path));
         };
 
+        commands.entity(entity).remove::<PathFindingQuery<P>>();
         commands.entity(entity).remove::<PathFindingTask<P>>();
     }
 }
