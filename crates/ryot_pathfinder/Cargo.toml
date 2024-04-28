@@ -52,3 +52,6 @@ name = "with_obstacles"
 
 [[example]]
 name = "stress_test"
+
+[[example]]
+name = "tiled"
