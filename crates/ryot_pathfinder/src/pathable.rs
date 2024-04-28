@@ -3,6 +3,7 @@ use crate::systems::{handle_path_finding_tasks, trigger_path_finding_tasks};
 use bevy_app::{App, Update};
 use bevy_ecs::prelude::*;
 use ryot_core::prelude::Navigable;
+use ryot_utils::cache::Cache;
 use std::hash::Hash;
 use std::time::Duration;
 
@@ -37,7 +38,7 @@ impl PathableApp for App {
     fn add_pathable<P: Pathable + Component, N: Navigable + Copy + Default>(
         &mut self,
     ) -> &mut Self {
-        self.add_systems(
+        self.init_resource::<Cache<P, N>>().add_systems(
             Update,
             (
                 trigger_path_finding_tasks::<P, N>.in_set(PathFindingSystems::TriggerTask),
