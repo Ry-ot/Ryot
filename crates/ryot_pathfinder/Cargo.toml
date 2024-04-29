@@ -55,3 +55,6 @@ name = "stress_test"
 
 [[example]]
 name = "tiled"
+
+[[benches]]
+name = "tiled"

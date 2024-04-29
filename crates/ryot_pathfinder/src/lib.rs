@@ -20,7 +20,3 @@ pub mod prelude {
         two_d::{find_path_2d, weighted_neighbors_2d_generator},
     };
 }
-
-#[cfg(test)]
-#[cfg(feature = "ryot_tiled")]
-mod bench;
