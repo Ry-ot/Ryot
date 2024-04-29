@@ -43,3 +43,7 @@ please refer to our contribution guidelines for more information.
 
 Thank you for choosing the Ryot Framework for your 2D game development journey!
 
+## License
+
+The `Ryot` framework, is released under the GNU-APGLv3 license. For more information, the [license](LICENSE) file is
+available in the root directory of this repository.
