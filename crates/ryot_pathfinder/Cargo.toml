@@ -1,16 +1,16 @@
 [package]
 name = "ryot_pathfinder"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 authors = [
     "Lucas Grossi <lucas.ggrosis@gmail.com>",
     "Luan Santos <cargo@luan.sh>",
 ]
-license = "MIT OR Apache-2.0"
+license = "AGPL-3.0-only"
 description = "Provides specialized pathfinding functionalities for Bevy 2D, essential for dynamic navigation and movement within games."
-homepage = "https://github.com/ry-ot/Ryot"
+homepage = "https://github.com/Ry-ot/Ryot/tree/main/crates/ryot_pathfinder"
 repository = "https://github.com/ry-ot/Ryot"
-documentation = "https://docs.rs/ryot/"
+documentation = "https://docs.rs/ryot_pathfinder/"
 keywords = ["pathfinding", "navigation", "tiled-2d-games", "bevy", "ryot"]
 categories = ["game-development", "games"]
 
