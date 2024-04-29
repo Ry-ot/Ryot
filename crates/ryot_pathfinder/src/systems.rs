@@ -15,8 +15,8 @@ pub enum PathFindingSystems {
     ExecuteTask,
 }
 
-/// System that performs a path finding request query and starts a path finding
-/// async task based on the request params.
+/// Initiates pathfinding async tasks based on changes to pathfinding queries, leveraging
+/// a provided cache for environmental data.
 pub(super) fn trigger_path_finding_tasks<P: Pathable + Component, N: Navigable + Copy + Default>(
     mut commands: Commands,
     tile_flags_cache: Res<Cache<P, N>>,
@@ -31,20 +31,16 @@ pub(super) fn trigger_path_finding_tasks<P: Pathable + Component, N: Navigable +
         commands
             .entity(entity)
             .insert(PathFindingTask(thread_pool.spawn(async move {
-                from.path_to(
-                    query.to,
-                    |p| {
-                        let read_guard = flags_cache.read().unwrap();
-                        read_guard.get(p).copied().unwrap_or_default().is_walkable()
-                    },
-                    query.timeout,
-                )
+                from.path_to(&query, |p| {
+                    let read_guard = flags_cache.read().unwrap();
+                    read_guard.get(p).copied().unwrap_or_default().is_walkable()
+                })
             })));
     }
 }
 
-/// System that consolidates the results of the async path finding tasks and inserts the
-/// resulting path into the entity that requested the path finding.
+/// Processes the results of pathfinding tasks, updating entities with new paths and cleaning up
+/// resources once calculations are complete.
 pub(super) fn handle_path_finding_tasks<P: Pathable>(
     mut commands: Commands,
     mut transform_tasks: Query<(Entity, &mut PathFindingTask<P>)>,
