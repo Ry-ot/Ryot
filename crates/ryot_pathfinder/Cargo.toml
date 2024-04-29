@@ -24,6 +24,7 @@ version = "4.9.1"
 [dependencies]
 bevy_app.workspace = true
 bevy_ecs.workspace = true
+bevy_math.workspace = true
 bevy_tasks = { workspace = true, features = ["multi-threaded"] }
 
 ryot_core = { path = "../ryot_core", version = "0.2" }

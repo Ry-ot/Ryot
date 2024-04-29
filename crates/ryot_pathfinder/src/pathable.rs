@@ -1,37 +1,32 @@
-use crate::prelude::PathFindingSystems;
+use crate::prelude::*;
 use crate::systems::{handle_path_finding_tasks, trigger_path_finding_tasks};
 use bevy_app::{App, Update};
 use bevy_ecs::prelude::*;
 use ryot_core::prelude::Navigable;
 use ryot_utils::cache::Cache;
 use std::hash::Hash;
-use std::time::Duration;
 
-/// Represents an App that can add one or more `Pathable` to its systems.
+/// Enables Bevy apps to integrate pathfinding by adding required systems and resources.
 /// Requires the `Cache<P, F>` resource to be initialized.
 pub trait PathableApp {
     fn add_pathable<P: Pathable + Component, N: Navigable + Copy + Default>(&mut self)
         -> &mut Self;
 }
 
-/// Represents an element that can be used in path finding calculations.
+/// Defines capabilities for elements that can engage in pathfinding, including
+/// generating coordinates and calculating paths based on specified criteria.
 pub trait Pathable: Eq + Hash + Copy + Clone + Sync + Send + 'static {
-    /// Returns the path from the current element to the target element, taking into
-    /// account the custom walkable function (if it's possible to walk through that element or not)
-    /// and a timeout (maximum time to calculate the path).
+    fn generate(x: i32, y: i32, z: i32) -> Self;
+    fn coordinates(&self) -> (i32, i32, i32);
     fn path_to<F: Fn(&Self) -> bool>(
         &self,
-        to: Self,
-        is_walkable: F,
-        timeout: Option<Duration>,
-    ) -> Option<(Vec<Self>, u32)>;
-
-    /// Returns the positions of the tiles that are directly adjacent to the current element
-    /// and its weight (cost) to reach them.
-    fn get_weighted_neighbors<F: Fn(&Self) -> bool + ?Sized>(
-        &self,
-        is_walkable: &F,
-    ) -> Vec<(Self, u32)>;
+        query: &PathFindingQuery<Self>,
+        validator: F,
+    ) -> Option<(Vec<Self>, u32)> {
+        // This crate is mostly focused on 2D path finding, so we'll provide a default implementation
+        // for 2D, which can be overridden by the user if they need 3D path finding or other scenarios.
+        find_path_2d(self, query, &validator, &weighted_neighbors_2d_generator)
+    }
 }
 
 impl PathableApp for App {
