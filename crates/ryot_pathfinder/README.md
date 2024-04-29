@@ -77,18 +77,19 @@ method on your Bevy app builder. A pathable is represented by a pair of Pathable
 Here is a basic example with the pre-defined Pathable and Navigable implementations from `ryot_tiled`:
 
 ```rust
-use ryot_pathfinder::prelude::*;
 use bevy::prelude::*;
+use ryot_pathfinder::prelude::*;
+use ryot_core::prelude::*;
+use ryot_tiled::prelude::*;
 
 fn setup(mut commands: Commands) {
-    commands.spawn().insert(PathFindingQuery::default());
+    commands.spawn(PathFindingQuery::<TilePosition>::default());
 }
 
-fn main() {
-    App::build()
+fn build_app(app: &mut App) -> &mut App {
+    app
         .add_plugins(DefaultPlugins)
         .add_pathable::<TilePosition, Flags>()
-        .run();
 }
 ```
 
@@ -165,20 +166,20 @@ Those examples require the `"ryot_tiled"` feature to be enabled.
 
 ### Building Your Own Scenarios
 
-Leverage the `ExampleBuilder` to customize and create tailored pathfinding scenarios:
+Leverage the `ExampleBuilder` to customize and create tailored pathfinding example/test scenarios:
 
 ```rust
 fn main() {
-    ExampleBuilder::<P/* custom pathable type */, N/* custom navigable type */>::new()
-        .with_grid_size(/* custom dimension of a squared grid, default 10 */)
-        .with_n_entities(/* number of actors to spawn, default 10 */)
-        .with_n_obstacles(/* number of obstacles to spawn, default 0 */)
-        .with_max_distance(/* maximum distance to calculate pathfinding, default 10 */)
-        .with_sleep(/* sleep time (ms) between consuming pathfinding results, default 100 */)
-        .with_navigable(/* custom navigable (N) value for obstacles, default N::default() */)
-        .with_query_builder(/* custom query builder, default PathFindingQuery::new(pos).with_success_distance(0.) */)
-        .drawing_app()
-        .run();
+    // ExampleBuilder::<P/* custom pathable type */, N/* custom navigable type */>::new()
+    //     .with_grid_size(/* custom dimension of a squared grid, default 10 */)
+    //     .with_n_entities(/* number of actors to spawn, default 10 */)
+    //     .with_n_obstacles(/* number of obstacles to spawn, default 0 */)
+    //     .with_max_distance(/* maximum distance to calculate pathfinding, default 10 */)
+    //     .with_sleep(/* sleep time (ms) between consuming pathfinding results, default 100 */)
+    //     .with_navigable(/* custom navigable (N) value for obstacles, default N::default() */)
+    //     .with_query_builder(/* custom query builder, default PathFindingQuery::new(pos).with_success_distance(0.) */)
+    //     .drawing_app()
+    //     .run();
 }
 ```
 
