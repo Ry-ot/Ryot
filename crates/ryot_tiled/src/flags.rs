@@ -7,7 +7,7 @@ use ryot_utils::prelude::*;
 pub fn update_tile_flag_cache<N: Navigable + Copy + Default + Component>(
     visual_elements: Res<VisualElements>,
     map_tiles: Res<MapTiles<Entity>>,
-    mut cache: ResMut<Cache<TilePosition, N>>,
+    cache: ResMut<Cache<TilePosition, N>>,
     q_updated_entities: Query<
         (Option<&PreviousPosition>, &TilePosition),
         Or<(
@@ -18,6 +18,10 @@ pub fn update_tile_flag_cache<N: Navigable + Copy + Default + Component>(
     >,
     q_object_and_visibility: Query<(&ContentId, Option<&Visibility>, Option<&N>)>,
 ) {
+    let Ok(mut write_guard) = cache.write() else {
+        return;
+    };
+
     for (previous_pos, new_pos) in q_updated_entities.iter() {
         let previous_pos = match previous_pos {
             Some(previous_pos) => *previous_pos,
@@ -35,7 +39,7 @@ pub fn update_tile_flag_cache<N: Navigable + Copy + Default + Component>(
                 continue;
             };
 
-            cache.insert(
+            write_guard.insert(
                 *pos,
                 tile.into_iter()
                     .fold(N::default(), |mut flags, (_, entity)| {
