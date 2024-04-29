@@ -24,7 +24,7 @@ pub enum PerspectiveSystems {
 ///
 /// Run as part of [`CacheSystems::UpdateCache`].
 pub fn update_intersection_cache<T: Trajectory>(
-    mut intersection_cache: ResMut<Cache<RadialArea, Vec<Vec<TilePosition>>>>,
+    mut intersection_cache: ResMut<SimpleCache<RadialArea, Vec<Vec<TilePosition>>>>,
     q_radial_areas: Query<&T, Changed<T>>,
 ) {
     q_radial_areas.iter().for_each(|trajectory| {
@@ -43,7 +43,7 @@ pub fn update_intersection_cache<T: Trajectory>(
 /// Run as part of [`PerspectiveSystems::CalculatePerspectives`].
 pub fn process_perspectives<T: Trajectory, N: Navigable + Copy + Default>(
     tile_flags_cache: Res<Cache<TilePosition, N>>,
-    intersection_cache: Res<Cache<RadialArea, Vec<Vec<TilePosition>>>>,
+    intersection_cache: Res<SimpleCache<RadialArea, Vec<Vec<TilePosition>>>>,
     mut q_radial_areas: Query<(Entity, &T, &mut InterestPositions<T>)>,
 ) {
     let (tx, rx) = mpsc::channel::<(Entity, TilePosition)>();
@@ -61,7 +61,8 @@ pub fn process_perspectives<T: Trajectory, N: Navigable + Copy + Default>(
 
             for intersections in intersections_per_trajectory {
                 for pos in intersections {
-                    let flags = tile_flags_cache.get(pos).copied().unwrap_or_default();
+                    let read_guard = tile_flags_cache.read().unwrap();
+                    let flags = read_guard.get(pos).copied().unwrap_or_default();
 
                     if trajectory.meets_condition(&flags, pos) {
                         tx.send((entity, *pos)).ok();

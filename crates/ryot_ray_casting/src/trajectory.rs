@@ -9,14 +9,14 @@ use ryot_utils::prelude::*;
 use std::marker::PhantomData;
 
 /// Represents an App that can add one or more `Trajectory` to its systems.
-/// Requires the `Cache<RadialArea, Vec<Vec<TilePosition>>>` resource to be initialized.
+/// Requires the `SimpleCache<RadialArea, Vec<Vec<TilePosition>>>` resource to be initialized.
 pub trait TrajectoryApp {
     fn add_trajectory<T: Trajectory, N: Navigable + Copy + Default>(&mut self) -> &mut Self;
 }
 
 impl TrajectoryApp for App {
     fn add_trajectory<T: Trajectory, N: Navigable + Copy + Default>(&mut self) -> &mut Self {
-        self.init_resource::<Cache<RadialArea, Vec<Vec<TilePosition>>>>()
+        self.init_resource::<SimpleCache<RadialArea, Vec<Vec<TilePosition>>>>()
             .add_systems(
                 Update,
                 (

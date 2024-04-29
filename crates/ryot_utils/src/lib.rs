@@ -26,7 +26,7 @@ pub mod prelude {
     #[cfg(feature = "bevy")]
     pub use crate::{
         async_events::{AsyncEventApp, EventSender},
-        cache::{Cache, CacheSystems},
+        cache::{Cache, CacheSystems, SimpleCache},
         conditions::{on_hold_every, run_every, run_every_millis, run_every_secs, TimeArg},
         on_hold_every,
         plugins::OptionalPlugin,

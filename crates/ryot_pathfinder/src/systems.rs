@@ -4,6 +4,7 @@ use bevy_ecs::prelude::*;
 use bevy_tasks::*;
 use ryot_core::prelude::Navigable;
 use ryot_utils::prelude::*;
+use std::sync::Arc;
 
 /// Defines system sets for managing perspective calculation systems.
 /// This enum categorizes systems related to perspective calculations, facilitating the organization
@@ -21,10 +22,11 @@ pub(super) fn trigger_path_finding_tasks<P: Pathable + Component, N: Navigable +
     tile_flags_cache: Res<Cache<P, N>>,
     q_path_finding_query: Query<(Entity, &P, &PathFindingQuery<P>), Changed<PathFindingQuery<P>>>,
 ) {
+    let thread_pool = AsyncComputeTaskPool::get();
+
     for (entity, from, query) in &q_path_finding_query {
         let (from, query) = (*from, *query);
-        let flags_cache = tile_flags_cache.clone();
-        let thread_pool = AsyncComputeTaskPool::get();
+        let flags_cache = Arc::clone(&tile_flags_cache);
 
         commands
             .entity(entity)
@@ -32,11 +34,8 @@ pub(super) fn trigger_path_finding_tasks<P: Pathable + Component, N: Navigable +
                 from.path_to(
                     query.to,
                     |p| {
-                        flags_cache
-                            .get(p)
-                            .copied()
-                            .unwrap_or_default()
-                            .is_walkable()
+                        let read_guard = flags_cache.read().unwrap();
+                        read_guard.get(p).copied().unwrap_or_default().is_walkable()
                     },
                     query.timeout,
                 )
