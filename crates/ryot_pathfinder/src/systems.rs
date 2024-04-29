@@ -9,6 +9,15 @@ use std::sync::Arc;
 /// Defines system sets for managing perspective calculation systems.
 /// This enum categorizes systems related to perspective calculations, facilitating the organization
 /// and prioritization of systems that calculate and update entity perspectives based on game state.
+///
+/// TriggerTask: Systems related to initiating pathfinding tasks based on changes to pathfinding queries
+/// will run under this category.
+///
+/// ExecuteTask: Systems responsible for processing the results of pathfinding tasks, updating entities,
+/// storing results, and cleaning up resources will run under this category.
+///
+/// You can also use those categories to schedule your systems accordingly. E.g. if you have a system
+/// that needs to run before the async tasks are scheduled or after the results are processed.
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
 pub enum PathFindingSystems {
     TriggerTask,
