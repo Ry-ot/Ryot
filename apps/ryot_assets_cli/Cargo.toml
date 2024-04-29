@@ -6,7 +6,7 @@ authors = [
     "Lucas Grossi <lucas.ggrosis@gmail.com>",
     "Luan Santos <cargo@luan.sh>",
 ]
-license = "MIT OR Apache-2.0"
+license = "AGPL-3.0-only"
 description = "A command-line interface for managing game assets within the Ryot framework, facilitating efficient asset conversions of Tibia assets."
 repository = "https://github.com/ry-ot/Ryot/tree/main/ryot"
 homepage = "https://github.com/ry-ot/Ryot"

@@ -6,7 +6,7 @@ authors = [
     "Lucas Grossi <lucas.ggrosis@gmail.com>",
     "Luan Santos <cargo@luan.sh>",
 ]
-license = "MIT OR Apache-2.0"
+license = "AGPL-3.0-only"
 description = "Manages asset loading and processing, offering robust tools for efficient game resource management."
 homepage = "https://github.com/ry-ot/Ryot"
 repository = "https://github.com/ry-ot/Ryot"

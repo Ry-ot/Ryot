@@ -6,7 +6,7 @@ authors = [
     "Lucas Grossi <lucas.ggrosis@gmail.com>",
     "Luan Santos <cargo@luan.sh>",
 ]
-license = "MIT OR Apache-2.0"
+license = "AGPL-3.0-only"
 description = "Specializes in managing and integrating Tibia-specific legacy assets, tailored for games inspired by the classic Tibia."
 homepage = "https://github.com/ry-ot/Ryot"
 repository = "https://github.com/ry-ot/Ryot"

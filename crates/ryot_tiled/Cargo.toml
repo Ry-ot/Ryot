@@ -6,7 +6,7 @@ authors = [
     "Lucas Grossi <lucas.ggrosis@gmail.com>",
     "Luan Santos <cargo@luan.sh>",
 ]
-license = "MIT OR Apache-2.0"
+license = "AGPL-3.0-only"
 description = "Supports tile-based game development, providing tools for drawing and managing tilesets and tiled maps."
 homepage = "https://github.com/ry-ot/Ryot"
 repository = "https://github.com/ry-ot/Ryot"

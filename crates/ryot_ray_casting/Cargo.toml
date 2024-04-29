@@ -6,7 +6,7 @@ authors = [
     "Lucas Grossi <lucas.ggrosis@gmail.com>",
     "Luan Santos <cargo@luan.sh>",
 ]
-license = "MIT OR Apache-2.0"
+license = "AGPL-3.0-only"
 description = "Implements ray casting capabilities for Bevy 2D, crucial for interactive game mechanics and line-of-sight features."
 homepage = "https://github.com/ry-ot/Ryot"
 repository = "https://github.com/ry-ot/Ryot"
