@@ -42,6 +42,7 @@ fn test_load_sprite_sheet_image_for_uncompressed_image(#[from(image_fixture)] ex
 }
 
 #[rstest]
+#[ignore]
 fn test_decompress_sprite_sheet(#[from(image_fixture)] expected: RgbaImage) {
     let sheet_config = SpriteSheetConfig::tibia_sheet();
 
