@@ -6,7 +6,7 @@ pub use ryot_utils::prelude::*;
 #[cfg(feature = "ryot_assets")]
 pub use ryot_assets::prelude::*;
 
-#[cfg(feature = "ryot_pathfinder")]
+#[cfg(feature = "pathfinding")]
 pub use ryot_pathfinder::prelude::*;
 
 #[cfg(feature = "ryot_ray_casting")]

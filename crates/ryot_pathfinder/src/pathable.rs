@@ -1,7 +1,6 @@
 //! Pathable is the bare-bone concept of this pathfinding library, representing a position in the world
-//! that can be used to calculate paths between two points. It's represented by a trait that knows
-//! how to generate a pathable position based on (x, y, z) coordinates, which coordinates represent
-//! this pathable position, and how to calculate the path to another pathable position.
+//! that can be used to calculate paths between two points. It extends the Point trait, a representation
+//! of a spatial point within Ryot ecosystem, and encapsulates the calculation of the path between two points.
 //!
 //! There is also a well-defined way to integrate the pathfinding capabilities provided by this
 //! library into a Bevy app, by adding the necessary systems and resources to the app. This is done
@@ -11,23 +10,18 @@ use crate::prelude::*;
 use crate::systems::{handle_path_finding_tasks, trigger_path_finding_tasks};
 use bevy_app::{App, Update};
 use bevy_ecs::prelude::*;
-use ryot_core::prelude::Navigable;
+use ryot_core::prelude::*;
 use ryot_utils::cache::Cache;
-use std::hash::Hash;
 
-/// Trait for elements that can engage in pathfinding, providing the necessary methods to calculate
-/// paths between two points. You can implement this trait for your own types, or if you need a
-/// solution tailored for 2D tiled games, you can use the `TilePosition` struct provided by the
-/// `ryot_tiled` module. Defines capabilities for elements that can engage in pathfinding. Contains
-/// a default 2d focused implementation for the `path_to` method, which can be overridden based on
-/// the user's needs.
-pub trait Pathable: Eq + Hash + Copy + Clone + Sync + Send + 'static {
-    fn generate(x: i32, y: i32, z: i32) -> Self;
-    fn coordinates(&self) -> (i32, i32, i32);
-    fn path_to<F: Fn(&Self) -> bool>(
+/// Trait for elements that can engage in pathfinding, providing a method to determine the path
+/// between two Points. This trait depends on Point, which is a trait that represents a position in
+/// the world. Contains a default 2d focused implementation for the `path_to` method, which can be
+/// overridden to provide pathfinding to other scenarios.
+pub trait Pathable: Point + Sync + Send + 'static {
+    fn path_to(
         &self,
         query: &PathFindingQuery<Self>,
-        validator: F,
+        validator: impl Fn(&Self) -> bool,
     ) -> Option<(Vec<Self>, u32)> {
         // This crate is mostly focused on 2D path finding, so we'll provide a default implementation
         // for 2D, which can be overridden by the user if they need 3D path finding or other scenarios.

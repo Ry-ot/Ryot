@@ -29,7 +29,7 @@ pub mod tiled {
     pub use ryot_tiled::*;
 }
 
-#[cfg(feature = "ryot_pathfinder")]
+#[cfg(feature = "pathfinding")]
 pub mod pathfinder {
     pub use ryot_pathfinder::*;
 }

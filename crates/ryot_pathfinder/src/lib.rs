@@ -6,9 +6,6 @@ pub mod pathable;
 pub mod systems;
 mod two_d;
 
-#[cfg(feature = "ryot_tiled")]
-mod tiled;
-
 pub mod prelude {
     pub use crate::{
         components::{Path, PathFindingQuery},
