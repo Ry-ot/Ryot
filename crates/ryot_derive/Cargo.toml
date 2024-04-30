@@ -1,0 +1,26 @@
+[package]
+name = "ryot_derive"
+version = "0.2.2"
+edition = "2021"
+authors = [
+    "Lucas Grossi <lucas.ggrosis@gmail.com>",
+    "Luan Santos <cargo@luan.sh>",
+]
+license = "AGPL-3.0-only"
+description = "Provide derive implementations for RyOT framework"
+repository = "https://github.com/ry-ot/Ryot/tree/main/ryot"
+homepage = "https://github.com/ry-ot/Ryot"
+keywords = ["ryot"]
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = { version = "2.0", features = ["full"] }
+toml_edit = { version = "0.22", features = ["parse"] }
+
+[package.metadata.docs.rs]
+rustdoc-args = ["-Zunstable-options", "--cfg", "docsrs"]
+all-features = true
