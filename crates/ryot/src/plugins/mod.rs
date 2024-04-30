@@ -22,3 +22,5 @@ pub mod prelude {
     #[cfg(feature = "lmdb")]
     pub use crate::plugins::lmdb::LmdbPlugin;
 }
+
+pub use prelude::*;

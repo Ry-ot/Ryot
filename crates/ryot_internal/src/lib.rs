@@ -8,7 +8,7 @@
 //! `use ryot::prelude::*;` to import common elements.
 pub mod prelude;
 
-#[cfg(feature = "ryot_assets")]
+#[cfg(feature = "bevy")]
 pub mod assets {
     pub use ryot_assets::*;
 }

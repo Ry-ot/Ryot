@@ -7,6 +7,7 @@ keywords = ["map-editor", "tiled-2d", "level-design", "game-dev-tool", "ryot"]
 exclude = ["dist", "build", "assets", "credits"]
 
 [dependencies]
+ryot_derive = { version = "0.2.0", path = "../../crates/ryot_derive" }
 ryot = { version = "0.2.0", path = "../../crates/ryot", features = ["egui", "tibia"] }
 
 async-std = "1.12"

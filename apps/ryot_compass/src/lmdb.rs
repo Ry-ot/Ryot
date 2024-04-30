@@ -2,7 +2,7 @@ use crate::{ExportMap, LoadMap};
 use bevy::prelude::*;
 use heed::types::Bytes;
 use log::{debug, warn};
-use ryot::prelude::LmdbPlugin as RyotLmdbPlugin;
+use ryot::plugins::LmdbPlugin as RyotLmdbPlugin;
 use ryot::prelude::*;
 use std::collections::HashMap;
 use std::sync::atomic::Ordering;

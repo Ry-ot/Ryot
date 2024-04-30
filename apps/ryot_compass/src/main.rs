@@ -4,7 +4,7 @@ use bevy::prelude::*;
 use bevy::window::PrimaryWindow;
 use bevy::winit::WinitWindows;
 use bevy_egui::EguiContexts;
-use ryot::prelude::GamePlugin;
+use ryot::plugins::GamePlugin;
 #[cfg(feature = "lmdb")]
 use ryot_compass::lmdb::LmdbPlugin;
 use ryot_compass::*;

@@ -38,12 +38,14 @@ lmdb = ["ryot_tiled/lmdb"]
 
 ray_cast = ["ryot_ray_casting"]
 pathfinding = [
+    "bevy",
     "ryot_tiled/pathfinding",
     "dep:ryot_pathfinder",
 ]
 ryot_tibia = [
+    "bevy",
     "dep:ryot_tibia",
-    "ryot_assets/ryot_tibia",
+    "ryot_assets?/ryot_tibia",
 ]
 
 [dependencies]

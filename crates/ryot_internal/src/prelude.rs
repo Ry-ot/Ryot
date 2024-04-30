@@ -3,7 +3,7 @@ pub use ryot_sprites::prelude::*;
 pub use ryot_tiled::prelude::*;
 pub use ryot_utils::prelude::*;
 
-#[cfg(feature = "ryot_assets")]
+#[cfg(feature = "bevy")]
 pub use ryot_assets::prelude::*;
 
 #[cfg(feature = "pathfinding")]

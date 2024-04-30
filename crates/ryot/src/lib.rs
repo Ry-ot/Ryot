@@ -9,7 +9,4 @@
 //! functionalities, streamlining game development.
 pub mod plugins;
 
-pub mod prelude {
-    pub use crate::plugins::prelude::*;
-    pub use ryot_internal::prelude::*;
-}
+pub use ryot_internal::*;

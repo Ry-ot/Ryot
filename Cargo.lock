@@ -5095,6 +5095,7 @@ dependencies = [
  "rfd",
  "rstest",
  "ryot",
+ "ryot_derive",
  "serde",
  "serde_json",
  "strum",
