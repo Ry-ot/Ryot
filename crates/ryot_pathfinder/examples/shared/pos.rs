@@ -1,4 +1,4 @@
-use bevy::math::Vec2;
+use bevy::math::*;
 use bevy::prelude::Component;
 use ryot_core::prelude::Point;
 use ryot_derive::Pathable;
@@ -11,6 +11,12 @@ pub struct Pos(i32, i32, i32);
 impl From<Pos> for Vec2 {
     fn from(pos: Pos) -> Self {
         Vec2::new(pos.0 as f32, pos.1 as f32 - 1.) * 32.
+    }
+}
+
+impl From<Pos> for Vec3 {
+    fn from(pos: Pos) -> Self {
+        Vec3::new(pos.0 as f32, pos.1 as f32, pos.2 as f32)
     }
 }
 
