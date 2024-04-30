@@ -1,6 +1,7 @@
 use crate::{gui_is_not_in_use, toggle_grid, CompassAction};
 use bevy::prelude::*;
 use leafwing_input_manager::common_conditions::*;
+use ryot::plugins::*;
 use ryot::prelude::*;
 
 mod commands;

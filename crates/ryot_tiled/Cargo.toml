@@ -36,12 +36,13 @@ bevy = [
     "dep:bevy_transform",
     "dep:bevy_utils",
     "dep:bevy_window",
-    "dep:bevy_stroked_text", ]
+    "dep:bevy_stroked_text",
+]
 
 debug = []
 test-utils = ["dep:quickcheck", "dep:quickcheck_macros"]
 lmdb = ["dep:heed"]
-pathfinding = ["dep:ryot_pathfinder", "dep:ryot_derive"]
+pathfinding = ["bevy", "dep:ryot_pathfinder", "dep:ryot_derive"]
 
 [dependencies]
 bevy_app = { workspace = true, optional = true }

@@ -41,7 +41,7 @@ lmdb = ["ryot_internal/lmdb"]
 compression = ["ryot_internal/compression"]
 egui = ["ryot_internal/egui"]
 
-pathfinding = ["ryot_internal/pathfinding"]
+pathfinding = ["bevy", "ryot_internal/pathfinding"]
 
 ray_casting = ["ryot_internal/ryot_ray_casting"]
 
