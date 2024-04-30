@@ -28,14 +28,14 @@ pub enum PathFindingSystems {
 /// a provided cache for environmental data.
 pub(super) fn trigger_path_finding_tasks<P: Pathable + Component, N: Navigable + Copy + Default>(
     mut commands: Commands,
-    tile_flags_cache: Res<Cache<P, N>>,
+    flags_cache: Res<Cache<P, N>>,
     q_path_finding_query: Query<(Entity, &P, &PathFindingQuery<P>), Changed<PathFindingQuery<P>>>,
 ) {
     let thread_pool = AsyncComputeTaskPool::get();
 
     for (entity, from, query) in &q_path_finding_query {
         let (from, query) = (*from, *query);
-        let flags_cache = Arc::clone(&tile_flags_cache);
+        let flags_cache = Arc::clone(&flags_cache);
 
         commands
             .entity(entity)

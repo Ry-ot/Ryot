@@ -5133,6 +5133,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "ryot_derive"
+version = "0.2.2"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.53",
+ "toml_edit 0.22.8",
+]
+
+[[package]]
 name = "ryot_internal"
 version = "0.2.2"
 dependencies = [
@@ -5162,7 +5172,7 @@ dependencies = [
  "rand",
  "rstest",
  "ryot_core",
- "ryot_tiled",
+ "ryot_derive",
  "ryot_utils",
  "time-test",
 ]
@@ -5281,6 +5291,8 @@ dependencies = [
  "rayon",
  "rstest",
  "ryot_core",
+ "ryot_derive",
+ "ryot_pathfinder",
  "ryot_utils",
  "serde",
  "strum",

@@ -19,6 +19,7 @@ mod operations;
 
 mod previous;
 pub use previous::*;
+use ryot_core::game::Point;
 
 #[cfg(feature = "bevy")]
 pub mod systems;
@@ -28,6 +29,7 @@ pub mod systems;
 /// calculate the rendering order of the tile.
 #[derive(Eq, PartialEq, Deserialize, Serialize, Default, Clone, Copy, Debug, Hash, Add, Sub)]
 #[cfg_attr(feature = "bevy", derive(Component, Reflect))]
+#[cfg_attr(feature = "pathfinding", derive(ryot_derive::Pathable))]
 pub struct TilePosition(pub IVec3);
 
 impl TilePosition {
@@ -71,6 +73,18 @@ impl Deref for TilePosition {
 impl DerefMut for TilePosition {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.0
+    }
+}
+
+/// TilePosition is a spatial Point, this trait guarantees good integration with the rest of the
+/// RyOT ecosystem, such as pathfinding, ray casting, and other spatial algorithms.
+impl Point for TilePosition {
+    fn generate(x: i32, y: i32, z: i32) -> Self {
+        TilePosition::new(x, y, z)
+    }
+
+    fn coordinates(&self) -> (i32, i32, i32) {
+        (self.x, self.y, self.z)
     }
 }
 

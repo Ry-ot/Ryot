@@ -2,7 +2,10 @@
 name = "ryot"
 version = "0.2.2"
 edition = "2021"
-authors = ["Lucas Grossi <lucas.ggrosis@gmail.com>"]
+authors = [
+    "Lucas Grossi <lucas.ggrosis@gmail.com>",
+    "Luan Santos <cargo@luan.sh>",
+]
 license = "AGPL-3.0-only"
 description = "Central hub for the Ryot framework, offering a unified API along with essential plugins and bundles to facilitate game development using Bevy."
 repository = "https://github.com/ry-ot/Ryot/tree/main/ryot"
@@ -38,8 +41,7 @@ lmdb = ["ryot_internal/lmdb"]
 compression = ["ryot_internal/compression"]
 egui = ["ryot_internal/egui"]
 
-pathfinder = ["ryot_internal/ryot_pathfinder"]
-tiled_pathfinder = ["ryot_internal/ryot_pathfinder"]
+pathfinding = ["ryot_internal/pathfinding"]
 
 ray_casting = ["ryot_internal/ryot_ray_casting"]
 

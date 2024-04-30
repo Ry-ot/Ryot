@@ -9,11 +9,6 @@ use ryot_utils::cache::Cache;
 use std::fmt::Debug;
 use std::time::{Duration, Instant};
 
-#[cfg(feature = "ryot_tiled")]
-use ryot_tiled::tile_size;
-
-#[cfg(not(feature = "ryot_tiled"))]
-/// tile_size is a concept of ryot_tiled, here we mock it i f ryot_tiled is not enabled.
 fn tile_size() -> UVec2 {
     UVec2::new(32, 32)
 }

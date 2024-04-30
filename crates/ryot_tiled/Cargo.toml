@@ -41,6 +41,7 @@ bevy = [
 debug = []
 test-utils = ["dep:quickcheck", "dep:quickcheck_macros"]
 lmdb = ["dep:heed"]
+pathfinding = ["dep:ryot_pathfinder", "dep:ryot_derive"]
 
 [dependencies]
 bevy_app = { workspace = true, optional = true }
@@ -59,6 +60,8 @@ bevy_window = { workspace = true, optional = true }
 
 ryot_utils = { path = "../ryot_utils", version = "0.2" }
 ryot_core = { path = "../ryot_core", version = "0.2" }
+ryot_derive = { path = "../ryot_derive", version = "0.2", optional = true }
+ryot_pathfinder = { path = "../ryot_pathfinder", version = "0.2", optional = true }
 
 derive_more.workspace = true
 glam.workspace = true

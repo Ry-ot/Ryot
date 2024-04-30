@@ -6,13 +6,13 @@
 [![Docs](https://docs.rs/ryot_pathfinder/badge.svg)](https://docs.rs/ryot_pathfinder/latest/ryot_pathfinder/)
 [![Discord](https://img.shields.io/discord/528117503952551936.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.com/channels/528117503952551936)
 
-## What is Ryot PathFinder
+## What is Ryot PathFinder?
 
 Ryot PathFinder is a high-performance, asynchronous implementation of [Pathfinding][path_finding] for [Bevy][bevy]. It
 is designed to work seamlessly with Bevy's ECS, providing robust pathfinding capabilities for games and simulations that
 demand dynamic navigation. Even though it's optimized for 2D grid-based environments, it can be easily extended to fit
-specific game requirements and open-world scenarios. It relies on [Ryot Core][ryot_core] and has a built integration
-with [Ryot Tiled][ryot_tiled].
+specific game requirements and open-world scenarios. It's part of [Ryot][ryot] framework, having [Ryot Core][ryot_core]
+and [Ryot Utils][ryot_utils] as dependencies.
 
 ## Pathfinding
 
@@ -40,24 +40,20 @@ it uses the [A*][astar] algorithm to calculate the shortest path between two poi
 - **Extensible Architecture**: Designed to be flexible, allowing developers to extend and customize pathfinding logic to
   fit specific game requirements.
 
-## Features
-
-This crate includes an optional feature, `ryot_tiled`, which integrates with the [Ryot Tiled][ryot_tiled] crate to
-support
-tiled-2D specific pathfinding systems. This feature extends the pathfinding capabilities to work seamlessly with tiled
-maps, adding valuable functionality for games using tile-based layouts.
-
 ## Basic Setup
 
-Before setting up the pathfinder, lets understand the two core concepts of the pathfinder: `Pathable<P>`
+Before setting up the pathfinder, lets understand the core concepts of the pathfinder: `Point`, `Pathable<P>`
 and `Navigable<N>`.
+
+### Point
+
+The Point trait represents a position in the world. It's a core concept of the Ryot ecosystem, that allows you to
+integrate your own world representation with Ryot and its spatial algorithms.
 
 ### Pathable
 
-The Pathable trait represents the position in the world. It's used to calculate the path between two points. The trait
-requires the implementation of the `generate` method, which returns a pathable position based on (x, y, z),
-a coordinates method that returns the coordinates of the pathable position, and a path_to method that calculates the
-path to another pathable position.
+The Pathable trait represents the position in the world. It's used to calculate the path between two points.
+Pathable extends Point and provides an interface to calculate the path between two Points in space.
 
 ### Navigable
 
@@ -74,22 +70,20 @@ corresponds to the default value (useful to skip unnecessary calculations).
 To integrate `ryot_pathfinder` you need to add a pathable to your Bevy app. This is done by calling the `add_pathable`
 method on your Bevy app builder. A pathable is represented by a pair of Pathable and Navigable implementations <P, N>.
 
-Here is a basic example with the pre-defined Pathable and Navigable implementations from `ryot_tiled`:
+Here is a basic example:
 
 ```rust
 use bevy::prelude::*;
 use ryot_pathfinder::prelude::*;
-use ryot_core::prelude::*;
-use ryot_tiled::prelude::*;
 
-fn setup(mut commands: Commands) {
-    commands.spawn(PathFindingQuery::<TilePosition>::default());
+fn setup<P: Pathable + Default>(mut commands: Commands) {
+    commands.spawn(PathFindingQuery::<P>::default());
 }
 
-fn build_app(app: &mut App) -> &mut App {
+fn build_app<P: Pathable + Component>(app: &mut App) -> &mut App {
     app
         .add_plugins(DefaultPlugins)
-        .add_pathable::<TilePosition, Flags>()
+        .add_pathable::<P, ()>()
 }
 ```
 
@@ -157,12 +151,10 @@ Each example included in the library showcases different aspects of the pathfind
 
 ### Experimenting with Advanced Scenarios
 
-As you grow more comfortable, explore more complex examples like stress tests or integration with tile-based systems:
+As you grow more comfortable, explore more complex examples:
 
-- **Tiled***: Utilizes the `ryot_tiled` feature to perform pathfinding on a tiled map, using TilePosition and Flags.
-- **Stress Test***: Evaluates the pathfinder's performance under high load conditions.
-
-Those examples require the `"ryot_tiled"` feature to be enabled.
+- **Simulation**: Small simulation of multiple actors navigating through multiple obstacles in a grid-based environment.
+- **Stress Test**: Evaluates the pathfinder's performance under high load conditions.
 
 ### Building Your Own Scenarios
 
@@ -189,7 +181,7 @@ Performance benchmarks are included to provide insights into the crate's efficie
 evaluate performance under various conditions:
 
 ```bash
-cargo bench --features ryot_tiled
+cargo bench
 ```
 
 ### Results
@@ -218,6 +210,8 @@ anyone looking to integrate the `ryot_pathfinder` crate into their projects.
 
 [path_finding]: https://github.com/evenfurther/pathfinding
 
-[ryot_core]: https://github.com/Ry-ot/Ryot/tree/main/crates/ryot_core
+[ryot]: https://crates.io/crates/ryot
 
-[ryot_tiled]: https://github.com/Ry-ot/Ryot/tree/main/crates/ryot_tiled
+[ryot_core]: https://crates.io/crates/ryot_core
+
+[ryot_utils]: https://crates.io/crates/ryot_utils
