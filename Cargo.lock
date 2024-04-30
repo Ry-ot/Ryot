@@ -5014,6 +5014,7 @@ name = "ryot_assets"
 version = "0.2.2"
 dependencies = [
  "async-std",
+ "bevy",
  "bevy_app",
  "bevy_asset",
  "bevy_asset_loader",

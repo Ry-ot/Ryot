@@ -46,6 +46,7 @@ strum.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]
+bevy.workspace = true
 quickcheck.workspace = true
 quickcheck_macros.workspace = true
 rstest.workspace = true
