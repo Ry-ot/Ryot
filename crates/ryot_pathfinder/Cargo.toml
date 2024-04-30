@@ -59,5 +59,8 @@ name = "stress_test"
 [[example]]
 name = "with_obstacles"
 
+[[example]]
+name = "3d"
+
 [[benches]]
 name = "grid_2d"

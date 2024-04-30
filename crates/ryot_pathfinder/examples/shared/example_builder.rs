@@ -15,7 +15,7 @@ fn tile_size() -> UVec2 {
 
 /// A component that represents an on-going pathfinding execution.
 #[derive(Component, Copy, Clone)]
-pub(crate) struct Pathing<P: Pathable>(P);
+pub struct Pathing<P: Pathable>(pub P);
 
 /// A marker component that represents the visual element of an obstacle.
 #[derive(Component, Copy, Clone)]
@@ -303,9 +303,9 @@ pub fn basic_setup(mut commands: Commands) {
 // Just a beautifier for the test, can be ignored.
 pub fn draw_actors<P: Pathable + Component + Into<Vec2>>(
     mut gizmos: Gizmos,
-    mut q_paths: Query<&P, Without<Obstacle>>,
+    q_paths: Query<&P, Without<Obstacle>>,
 ) {
-    for pos in q_paths.iter_mut() {
+    for pos in &q_paths {
         gizmos.circle_2d((*pos).into(), (tile_size().x / 2) as f32, Color::BLUE);
     }
 }
@@ -313,9 +313,9 @@ pub fn draw_actors<P: Pathable + Component + Into<Vec2>>(
 // Just a beautifier for the test, can be ignored.
 pub fn draw_target<P: Pathable + Component + Into<Vec2>>(
     mut gizmos: Gizmos,
-    mut q_targets: Query<&Pathing<P>>,
+    q_targets: Query<&Pathing<P>>,
 ) {
-    for Pathing(pos) in q_targets.iter_mut() {
+    for Pathing(pos) in &q_targets {
         gizmos.circle_2d((*pos).into(), (tile_size().x / 2) as f32, Color::GREEN);
     }
 }
@@ -323,9 +323,9 @@ pub fn draw_target<P: Pathable + Component + Into<Vec2>>(
 // Just a beautifier for the test, can be ignored.
 pub fn draw_obstacles<P: Pathable + Component + Into<Vec2>>(
     mut gizmos: Gizmos,
-    mut q_obstacles: Query<&P, With<Obstacle>>,
+    q_obstacles: Query<&P, With<Obstacle>>,
 ) {
-    for pos in q_obstacles.iter_mut() {
+    for pos in &q_obstacles {
         gizmos.rect_2d((*pos).into(), 0., tile_size().as_vec2() / 2., Color::RED);
     }
 }
