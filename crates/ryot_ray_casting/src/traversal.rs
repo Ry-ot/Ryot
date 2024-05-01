@@ -2,51 +2,13 @@
 //! and representing the visible area or perspective from a given position. It utilizes ray casting
 //! and angle-based calculations to determine visible tiles in a game world.
 use bevy_ecs::prelude::Component;
-use bevy_math::bounding::{Aabb3d, RayCast3d};
+use bevy_math::bounding::RayCast3d;
 use bevy_math::Ray3d;
 use glam::Vec3;
+use ryot_core::prelude::Point;
 use ryot_tiled::prelude::TilePosition;
 
 use crate::prelude::*;
-
-/// Represents an area that can be traversable by a ray cast. This struct is pivotal for
-/// calculating which areas of the game world are reachable from a certain position, using ray
-/// casting for precise checks.
-#[derive(Debug, Clone)]
-pub struct Traversal {
-    pub ray_cast: RayCast3d,
-    pub target_area: Vec<TilePosition>,
-}
-
-impl Traversal {
-    pub fn new(ray_cast: RayCast3d, target_area: Vec<TilePosition>) -> Self {
-        Traversal {
-            ray_cast,
-            target_area,
-        }
-    }
-
-    /// Returns a vector of tile positions from the target area that intersect with the ray cast.
-    pub fn get_intersections(self) -> Vec<TilePosition> {
-        self.get_intersections_with(|pos| Aabb3d::from(*pos))
-    }
-
-    /// Allows for custom AABB3d transformations when filtering intersections,
-    /// providing flexibility in how intersections are calculated.
-    pub fn get_intersections_with(
-        self,
-        aabb_transformer: impl Fn(&TilePosition) -> Aabb3d,
-    ) -> Vec<TilePosition> {
-        self.target_area
-            .into_iter()
-            .filter_map(|pos| {
-                self.ray_cast
-                    .aabb_intersection_at(&aabb_transformer(&pos))?;
-                Some(pos)
-            })
-            .collect()
-    }
-}
 
 /// Defines a radial area of interest from a specific point in the game world, characterized by
 /// a range, center position, step angle, and an angle range. This struct is used to generate
@@ -144,7 +106,7 @@ impl From<RadialArea> for Perspective {
                         Ray3d::new(center_pos_vec3, (arc_tile.0 - center_pos.0).as_vec3()),
                         range as f32,
                     );
-                    Traversal::new(ray_cast, center_pos.bresenhams_line(arc_tile))
+                    (ray_cast, center_pos.draw_line_to(arc_tile))
                 })
                 .collect::<Vec<_>>(),
         )

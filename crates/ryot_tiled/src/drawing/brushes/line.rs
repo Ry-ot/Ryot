@@ -3,6 +3,7 @@ use crate::prelude::*;
 #[cfg(feature = "egui")]
 use crate::include_svg;
 use glam::IVec2;
+use ryot_core::prelude::Point;
 
 pub struct Line;
 
@@ -38,7 +39,7 @@ pub fn line<B: BrushItem>(params: BrushParams<B>, center: B) -> Vec<B> {
         BrushParams::Element(e) => e.get_position(),
     };
 
-    for pos in start_pos.bresenhams_line(center_pos) {
+    for pos in start_pos.draw_line_to(center_pos) {
         elements.push(B::from_position(center, pos));
     }
 
