@@ -41,8 +41,9 @@ pub(super) fn trigger_path_finding_tasks<P: Pathable + Component, N: Navigable +
             .entity(entity)
             .insert(PathFindingTask(thread_pool.spawn(async move {
                 from.path_to(&query, |p| {
-                    let read_guard = flags_cache.read().unwrap();
-                    read_guard.get(p).copied().unwrap_or_default().is_walkable()
+                    flags_cache
+                        .read()
+                        .map_or(false, |read_guard| from.can_be_navigated(read_guard.get(p)))
                 })
             })));
     }

@@ -154,14 +154,7 @@ impl<P: Pathable + Default + Component + Debug + Into<Vec2>, N: Navigable + Copy
 
                 // This loop is just a way to avoid spawning an entity on top of an obstacle.
                 // Can be ignored for the sake of understanding the pathfinding system.
-                while !cache
-                    .read()
-                    .unwrap()
-                    .get(&pos)
-                    .copied()
-                    .unwrap_or_default()
-                    .is_walkable()
-                {
+                while !pos.can_be_navigated(cache.read().unwrap().get(&pos)) {
                     pos = builder.random_from_pos(current_pos);
                 }
 

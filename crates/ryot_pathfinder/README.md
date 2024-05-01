@@ -53,17 +53,17 @@ integrate your own world representation with Ryot and its spatial algorithms.
 ### Pathable
 
 The Pathable trait represents the position in the world. It's used to calculate the path between two points.
-Pathable extends Point and provides an interface to calculate the path between two Points in space.
+Pathable extends Point, provides an interface to calculate the path between two Points in space and to check
+if the pathable can be navigated against a given Navigable.
 
 ### Navigable
 
-The Navigable trait belongs to `ryot_core` and is used to determine if a point is navigable or not. Currently, it
-has two navigation conditions in a dimensional space: `is_walkable` and `blocks_sight`. The trait requires the
-implementation of the `is_walkable` and `blocks_sight` methods, which return a boolean value based on the navigable
-condition. The trait has an `append` method that appends the navigable value to another navigable value.
+The Navigable trait belongs to `ryot_core` and is used to determine if a point is navigable or not. It's used
+to determine if an actor can go through a particular point in the world, for instance if this point is walkable
+or not.
 
-It also requires the implementation of the `is_default` method, which returns true if that implementation
-corresponds to the default value (useful to skip unnecessary calculations).
+Currently, Navigable has two flags: `is_walkable` and `is_flyable`. The first one is used to determine if an actor
+can walk through a point, and the second one is used to determine if an actor can fly through a point.
 
 ### Bevy
 
