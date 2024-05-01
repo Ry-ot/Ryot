@@ -14,18 +14,29 @@ use ryot_core::prelude::*;
 use ryot_utils::cache::Cache;
 
 /// Trait for elements that can engage in pathfinding, providing a method to determine the path
-/// between two Points. This trait depends on Point, which is a trait that represents a position in
-/// the world. Contains a default 2d focused implementation for the `path_to` method, which can be
-/// overridden to provide pathfinding to other scenarios.
+/// between two Points and if the current Pathable can be navigated based on a given Navigable.
+/// This trait depends on Point, which is a trait that represents a position in the world.
 pub trait Pathable: Point + Sync + Send + 'static {
+    /// Calculates the path between two points, based on the provided query and a validator function
+    /// that determines if a point is pathable. The path is returned as a vector of points and the
+    /// total cost of the path.
+    /// The default implementation is focused on 2D pathfinding, which can be overridden for other
+    /// scenarios, like 3D pathfinding.
     fn path_to(
         &self,
         query: &PathFindingQuery<Self>,
         validator: impl Fn(&Self) -> bool,
     ) -> Option<(Vec<Self>, u32)> {
-        // This crate is mostly focused on 2D path finding, so we'll provide a default implementation
-        // for 2D, which can be overridden by the user if they need 3D path finding or other scenarios.
         find_path_2d(self, query, &validator, &weighted_neighbors_2d_generator)
+    }
+
+    /// Determines if a Pathable can be navigated, based on the provided Navigable element.
+    /// This method is used to check if one is allowed to navigate through the pathable in the
+    /// context of the game environment.
+    /// The default implementation returns true if the Navigable element is walkable, or true if
+    /// no Navigable element is provided.
+    fn can_be_navigated<N: Navigable>(&self, nav: Option<&N>) -> bool {
+        nav.map_or(true, |nav| nav.is_walkable())
     }
 }
 
