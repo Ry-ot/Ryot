@@ -40,7 +40,7 @@ impl<N: Navigable + Copy + Default + Component> Default for NavigablePlugin<N> {
 
 impl<N: Navigable + Copy + Default + Component> Plugin for NavigablePlugin<N> {
     fn build(&self, app: &mut App) {
-        app.init_resource::<Cache<TilePosition, N>>()
+        app.init_resource_once::<Cache<TilePosition, N>>()
             .add_systems(PostUpdate, update_tile_flag_cache::<N>);
     }
 }
