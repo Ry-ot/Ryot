@@ -24,7 +24,7 @@ fn main() {
         .add_systems(Startup, (basic_setup, spawn_obstacle()))
         .add_systems(First, draw_grid::<TilePosition>)
         .add_systems(Update, process_interest)
-        .add_trajectory::<VisibleTrajectory<TilePosition>, Flags>()
+        .add_trajectory::<TilePosition, VisibleTrajectory<()>, Flags>()
         .add_optional_plugin(LogPlugin::default())
         .add_plugins((
             FrameTimeDiagnosticsPlugin,
@@ -40,7 +40,7 @@ pub fn basic_setup(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
 
     for i in 0..1 {
-        commands.spawn(VisibleTrajectory::<TilePosition>::new(
+        commands.spawn(VisibleTrajectory::<()>::new(
             // RadialArea::default()
             //     .with_range(15)
             //     .with_angle_range((0, 1)),
@@ -77,7 +77,7 @@ fn draw_grid<P: Point + Into<Vec2>>(mut gizmos: Gizmos) {
 
 fn process_interest(
     mut gizmos: Gizmos,
-    player_query: Query<&InterestPositions<VisibleTrajectory<TilePosition>>>,
+    player_query: Query<&InterestPositions<VisibleTrajectory<()>>>,
 ) {
     for interest_positions in &player_query {
         for pos in interest_positions.positions.iter() {

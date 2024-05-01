@@ -1,25 +1,31 @@
 //! This crate provides functionality for managing and processing perspectives and visibility
 //! of entities in a game environment. Perspectives are defined by sets of view points that
-//! determine what an entity can see, based on tile positions and other spatial considerations.
+//! determine what an entity can see, based on a spatial point and other considerations.
 use crate::prelude::*;
 use bevy_math::bounding::{Aabb3d, RayCast3d};
 use derive_more::{Deref, DerefMut};
-use ryot_tiled::prelude::*;
+use ryot_core::game::Point;
 
 /// A group of multiple traversals representing all the possible trajectories from a single point,
 /// determining what can be reached from that point. Reachable is an abstract concept that depends
 /// on the context of the game and the specific traversal logic (e.g. vision, path, etc).
-#[derive(Debug, Clone, Default, Deref, DerefMut)]
-pub struct Perspective(Vec<(RayCast3d, Vec<TilePosition>)>);
+#[derive(Debug, Clone, Deref, DerefMut)]
+pub struct Perspective<P>(Vec<(RayCast3d, Vec<P>)>);
 
-impl Perspective {
-    pub fn new(traversals: Vec<(RayCast3d, Vec<TilePosition>)>) -> Self {
+impl<P> Default for Perspective<P> {
+    fn default() -> Self {
+        Perspective(vec![])
+    }
+}
+
+impl<P: Point + Into<Aabb3d>> Perspective<P> {
+    pub fn new(traversals: Vec<(RayCast3d, Vec<P>)>) -> Self {
         Self(traversals)
     }
 
     /// Gets the intersections filtered by the provided condition across all view points in the
     /// perspective. This represents calculating what's visible from the entire perspective.
-    pub fn get_intersections(self) -> Vec<Vec<TilePosition>> {
+    pub fn get_intersections(self) -> Vec<Vec<P>> {
         self.get_intersections_with(|p| (*p).into())
     }
 
@@ -27,8 +33,8 @@ impl Perspective {
     /// function. This can be used to apply custom filters or transformations to the intersections.
     pub fn get_intersections_with(
         self,
-        aabb_transformer: impl Fn(&TilePosition) -> Aabb3d + Copy,
-    ) -> Vec<Vec<TilePosition>> {
+        aabb_transformer: impl Fn(&P) -> Aabb3d + Copy,
+    ) -> Vec<Vec<P>> {
         self.0
             .into_iter()
             .map(|(ray_cast, target_area)| {
@@ -44,8 +50,8 @@ impl Perspective {
     }
 }
 
-impl<T: Copy + Into<RadialArea>> From<&T> for RadialArea {
-    fn from(element: &T) -> RadialArea {
+impl<P, T: Copy + Into<RadialArea<P>>> From<&T> for RadialArea<P> {
+    fn from(element: &T) -> RadialArea<P> {
         (*element).into()
     }
 }
