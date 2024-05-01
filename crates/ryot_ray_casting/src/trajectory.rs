@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use crate::systems::share_trajectories;
 use bevy_app::{App, Update};
 use bevy_ecs::prelude::*;
 use bevy_reflect::Reflect;
@@ -11,19 +12,24 @@ use std::marker::PhantomData;
 /// Represents an App that can add one or more `Trajectory` to its systems.
 /// Requires the `SimpleCache<RadialArea, Vec<Vec<TilePosition>>>` resource to be initialized.
 pub trait TrajectoryApp {
-    fn add_trajectory<T: Trajectory, N: Navigable + Copy + Default>(&mut self) -> &mut Self;
+    fn add_trajectory<T: Trajectory + Clone, N: Navigable + Copy + Default>(&mut self)
+        -> &mut Self;
 }
 
 impl TrajectoryApp for App {
-    fn add_trajectory<T: Trajectory, N: Navigable + Copy + Default>(&mut self) -> &mut Self {
-        self.init_resource::<SimpleCache<RadialArea, Vec<Vec<TilePosition>>>>()
+    fn add_trajectory<T: Trajectory + Clone, N: Navigable + Copy + Default>(
+        &mut self,
+    ) -> &mut Self {
+        self.init_resource_once::<Cache<TilePosition, N>>()
+            .init_resource::<SimpleCache<RadialArea, Vec<Vec<TilePosition>>>>()
             .add_systems(
                 Update,
                 (
                     update_intersection_cache::<T>.in_set(CacheSystems::UpdateCache),
-                    process_perspectives::<T, N>
+                    process_trajectories::<T, N>
                         .in_set(PerspectiveSystems::CalculatePerspectives)
                         .after(CacheSystems::UpdateCache),
+                    share_trajectories::<T>.in_set(PerspectiveSystems::CalculatePerspectives),
                 )
                     .chain(),
             )
@@ -66,10 +72,7 @@ pub trait Trajectory: Component + Send + Sync + 'static {
 /// This struct facilitates diverse gameplay mechanics by allowing entities to dynamically respond
 /// to and share critical spatial information within the game world.
 #[derive(Clone, Component, Debug, Reflect)]
-#[reflect]
 pub struct InterestPositions<T: Trajectory> {
-    #[reflect(ignore)]
-    pub shared_with: HashSet<Entity>,
     #[reflect(ignore)]
     pub positions: Vec<TilePosition>,
     _phantom: PhantomData<T>,
@@ -78,7 +81,6 @@ pub struct InterestPositions<T: Trajectory> {
 impl<T: Trajectory> Default for InterestPositions<T> {
     fn default() -> Self {
         Self {
-            shared_with: HashSet::default(),
             positions: Vec::default(),
             _phantom: PhantomData::<T>,
         }
@@ -86,6 +88,31 @@ impl<T: Trajectory> Default for InterestPositions<T> {
 }
 
 impl<T: Trajectory> InterestPositions<T> {
+    pub fn new(positions: Vec<TilePosition>) -> Self {
+        Self {
+            positions,
+            _phantom: PhantomData::<T>,
+        }
+    }
+}
+
+#[derive(Clone, Component, Debug, Reflect)]
+pub struct ShareTrajectoryWith<T: Trajectory> {
+    #[reflect(ignore)]
+    pub shared_with: HashSet<Entity>,
+    _phantom: PhantomData<T>,
+}
+
+impl<T: Trajectory> Default for ShareTrajectoryWith<T> {
+    fn default() -> Self {
+        Self {
+            shared_with: HashSet::default(),
+            _phantom: PhantomData::<T>,
+        }
+    }
+}
+
+impl<T: Trajectory> ShareTrajectoryWith<T> {
     /// Allows sharing visibility with additional entities. This can be used in team-based or
     /// cooperative scenarios, where visibility information should be shared among allies.
     pub fn share_with(mut self, entities: Vec<Entity>) -> Self {

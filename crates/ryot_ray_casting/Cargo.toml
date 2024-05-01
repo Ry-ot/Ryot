@@ -34,8 +34,12 @@ glam.workspace = true
 itertools.workspace = true
 
 [dev-dependencies]
+bevy.workspace = true
 quickcheck.workspace = true
 quickcheck_macros.workspace = true
 rstest.workspace = true
 time-test.workspace = true
 rand.workspace = true
+
+[[example]]
+name = "basic"

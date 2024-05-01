@@ -5183,6 +5183,7 @@ dependencies = [
 name = "ryot_ray_casting"
 version = "0.2.2"
 dependencies = [
+ "bevy",
  "bevy_app",
  "bevy_ecs",
  "bevy_math",
