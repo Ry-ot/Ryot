@@ -15,7 +15,7 @@ pub mod compression;
 pub mod conditions;
 
 #[cfg(feature = "bevy")]
-pub mod plugins;
+pub mod app;
 
 #[cfg(feature = "bevy")]
 pub mod window;
@@ -25,11 +25,11 @@ pub mod prelude {
 
     #[cfg(feature = "bevy")]
     pub use crate::{
+        app::{InitResourceOnce, OptionalPlugin},
         async_events::{AsyncEventApp, EventSender},
         cache::{Cache, CacheSystems, SimpleCache},
         conditions::{on_hold_every, run_every, run_every_millis, run_every_secs, TimeArg},
         on_hold_every,
-        plugins::OptionalPlugin,
         window::entitled_window,
     };
 

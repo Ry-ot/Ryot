@@ -11,7 +11,7 @@ use crate::systems::{handle_path_finding_tasks, trigger_path_finding_tasks};
 use bevy_app::{App, Update};
 use bevy_ecs::prelude::*;
 use ryot_core::prelude::*;
-use ryot_utils::cache::Cache;
+use ryot_utils::prelude::*;
 
 /// Trait for elements that can engage in pathfinding, providing a method to determine the path
 /// between two Points and if the current Pathable can be navigated based on a given Navigable.
@@ -53,7 +53,7 @@ impl PathableApp for App {
     fn add_pathable<P: Pathable + Component, N: Navigable + Copy + Default>(
         &mut self,
     ) -> &mut Self {
-        self.init_resource::<Cache<P, N>>().add_systems(
+        self.init_resource_once::<Cache<P, N>>().add_systems(
             Update,
             (
                 trigger_path_finding_tasks::<P, N>.in_set(PathFindingSystems::TriggerTask),
