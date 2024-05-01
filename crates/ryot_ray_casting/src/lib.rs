@@ -13,7 +13,6 @@ pub mod traversal;
 pub mod systems;
 
 pub mod perspective;
-
 #[cfg(test)]
 mod tests;
 
@@ -27,6 +26,6 @@ pub mod prelude {
             InterestPositions, ShareTrajectoryWith, Trajectory, TrajectoryApp, VisibleTrajectory,
             WalkableTrajectory,
         },
-        traversal::{RadialArea, Traversal},
+        traversal::RadialArea,
     };
 }
