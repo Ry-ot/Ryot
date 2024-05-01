@@ -1,7 +1,6 @@
 use crate::prelude::*;
 use ryot_core::prelude::Point;
 use std::collections::HashSet;
-use std::f32::consts::PI;
 
 impl TilePosition {
     pub fn distance(self, other: Self) -> f32 {

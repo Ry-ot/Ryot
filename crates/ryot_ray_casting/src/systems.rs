@@ -4,8 +4,8 @@
 //! entities' visible positions accordingly.
 use crate::prelude::*;
 use bevy_ecs::prelude::*;
-use ryot_core::prelude::Navigable;
-use ryot_tiled::prelude::*;
+use bevy_math::bounding::Aabb3d;
+use ryot_core::prelude::{Navigable, Point};
 use ryot_utils::prelude::*;
 use std::sync::mpsc;
 
@@ -22,16 +22,19 @@ pub enum PerspectiveSystems {
 /// based on their RadialArea and the current state of the game world.
 ///
 /// Run as part of [`CacheSystems::UpdateCache`].
-pub fn update_intersection_cache<T: Trajectory>(
-    mut intersection_cache: ResMut<SimpleCache<RadialArea, Vec<Vec<TilePosition>>>>,
+pub fn update_intersection_cache<
+    P: Point + Into<Aabb3d> + Send + Sync + 'static,
+    T: Trajectory<Position = P>,
+>(
+    mut intersection_cache: ResMut<SimpleCache<RadialArea<P>, Vec<Vec<P>>>>,
     q_radial_areas: Query<&T, Changed<T>>,
 ) {
     q_radial_areas.iter().for_each(|trajectory| {
-        let radial_area: RadialArea = trajectory.get_area();
+        let radial_area: RadialArea<P> = trajectory.get_area();
 
         intersection_cache
             .entry(radial_area)
-            .or_insert_with(|| Perspective::from(radial_area).get_intersections());
+            .or_insert_with(|| Perspective::<P>::from(radial_area).get_intersections());
     });
 }
 
@@ -40,13 +43,17 @@ pub fn update_intersection_cache<T: Trajectory>(
 /// conditions (e.g., obstructions, visibility flags) and updates each entity's InterestPositions.
 ///
 /// Run as part of [`PerspectiveSystems::CalculatePerspectives`].
-pub fn process_trajectories<T: Trajectory, N: Navigable + Copy + Default>(
+pub fn process_trajectories<
+    P: Point + Send + Sync + 'static,
+    T: Trajectory<Position = P>,
+    N: Navigable + Copy + Default,
+>(
     mut commands: Commands,
-    tile_flags_cache: Res<Cache<TilePosition, N>>,
-    intersection_cache: Res<SimpleCache<RadialArea, Vec<Vec<TilePosition>>>>,
+    flags_cache: Res<Cache<P, N>>,
+    intersection_cache: Res<SimpleCache<RadialArea<P>, Vec<Vec<P>>>>,
     mut q_radial_areas: Query<(Entity, &T)>,
 ) {
-    let Ok(read_guard) = tile_flags_cache.read() else {
+    let Ok(read_guard) = flags_cache.read() else {
         return;
     };
 
@@ -55,7 +62,7 @@ pub fn process_trajectories<T: Trajectory, N: Navigable + Copy + Default>(
     q_radial_areas
         .par_iter_mut()
         .for_each(|(entity, trajectory)| {
-            let radial_area: RadialArea = trajectory.get_area();
+            let radial_area: RadialArea<P> = trajectory.get_area();
 
             let Some(intersections_per_trajectory) = intersection_cache.get(&radial_area) else {
                 return;
@@ -84,7 +91,7 @@ pub fn process_trajectories<T: Trajectory, N: Navigable + Copy + Default>(
     }
 }
 
-pub fn share_trajectories<T: Trajectory + Clone>(
+pub fn share_trajectories<T: Trajectory<Position: Clone + Send + Sync + 'static> + Clone>(
     mut q_interest_positions: Query<(Entity, &mut InterestPositions<T>)>,
     q_shared_with: Query<&ShareTrajectoryWith<T>>,
 ) {

@@ -2,11 +2,10 @@
 //! and representing the visible area or perspective from a given position. It utilizes ray casting
 //! and angle-based calculations to determine visible tiles in a game world.
 use bevy_ecs::prelude::Component;
-use bevy_math::bounding::RayCast3d;
+use bevy_math::bounding::{Aabb3d, RayCast3d};
 use bevy_math::Ray3d;
 use glam::Vec3;
 use ryot_core::prelude::Point;
-use ryot_tiled::prelude::TilePosition;
 
 use crate::prelude::*;
 
@@ -14,31 +13,31 @@ use crate::prelude::*;
 /// a range, center position, step angle, and an angle range. This struct is used to generate
 /// `Perspective` objects that represent the observable area from the center position.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Component)]
-pub struct RadialArea {
+pub struct RadialArea<P> {
     pub range: u8,
-    pub center_pos: TilePosition,
+    pub center_pos: P,
     pub angle_step: usize,
     pub angle_range: (u16, u16),
 }
 
-impl Default for RadialArea {
+impl<P: Point> Default for RadialArea<P> {
     fn default() -> Self {
         Self {
             range: 1,
-            center_pos: TilePosition::new(0, 0, 0),
+            center_pos: P::generate(0, 0, 0),
             angle_step: 10,
             angle_range: (315, 405),
         }
     }
 }
 
-impl RadialArea {
+impl<P: Point> RadialArea<P> {
     pub fn new() -> Self {
         Self::default()
     }
 
-    pub fn get_center_pos(&self) -> TilePosition {
-        self.center_pos
+    pub fn get_center_pos(&self) -> &P {
+        &self.center_pos
     }
 
     pub fn circle() -> Self {
@@ -53,7 +52,7 @@ impl RadialArea {
         Self { range, ..self }
     }
 
-    pub fn with_center_pos(self, center_pos: TilePosition) -> Self {
+    pub fn with_center_pos(self, center_pos: P) -> Self {
         Self { center_pos, ..self }
     }
 
@@ -78,8 +77,8 @@ impl RadialArea {
 /// Implements conversion from `RadialArea` to `Perspective`, allowing easy creation of
 /// perspective objects based on radial descriptions. This facilitates the dynamic generation
 /// of visible areas based on the position and defined view angle of entities.
-impl From<RadialArea> for Perspective {
-    fn from(radial_area: RadialArea) -> Self {
+impl<P: Point + Into<Aabb3d>> From<RadialArea<P>> for Perspective<P> {
+    fn from(radial_area: RadialArea<P>) -> Self {
         let RadialArea {
             range,
             center_pos,
@@ -92,9 +91,9 @@ impl From<RadialArea> for Perspective {
         }
 
         let center_pos_vec3 = Vec3::new(
-            center_pos.x as f32,
-            center_pos.y as f32,
-            center_pos.z as f32,
+            center_pos.x() as f32,
+            center_pos.y() as f32,
+            center_pos.z() as f32,
         );
 
         Perspective::new(
@@ -102,10 +101,14 @@ impl From<RadialArea> for Perspective {
                 .tiles_on_arc_circumference(range, start_angle, end_angle, angle_step)
                 .into_iter()
                 .map(|arc_tile| {
-                    let ray_cast = RayCast3d::from_ray(
-                        Ray3d::new(center_pos_vec3, (arc_tile.0 - center_pos.0).as_vec3()),
-                        range as f32,
+                    let sub = Vec3::new(
+                        arc_tile.x() as f32 - center_pos.x() as f32,
+                        arc_tile.y() as f32 - center_pos.y() as f32,
+                        arc_tile.z() as f32 - center_pos.z() as f32,
                     );
+
+                    let ray_cast =
+                        RayCast3d::from_ray(Ray3d::new(center_pos_vec3, sub), range as f32);
                     (ray_cast, center_pos.draw_line_to(arc_tile))
                 })
                 .collect::<Vec<_>>(),
