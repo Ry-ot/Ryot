@@ -4,7 +4,6 @@
 //! entities' visible positions accordingly.
 use crate::prelude::*;
 use bevy_ecs::prelude::*;
-use itertools::Itertools;
 use ryot_core::prelude::Navigable;
 use ryot_tiled::prelude::*;
 use ryot_utils::prelude::*;
@@ -41,63 +40,69 @@ pub fn update_intersection_cache<T: Trajectory>(
 /// conditions (e.g., obstructions, visibility flags) and updates each entity's InterestPositions.
 ///
 /// Run as part of [`PerspectiveSystems::CalculatePerspectives`].
-pub fn process_perspectives<T: Trajectory, N: Navigable + Copy + Default>(
+pub fn process_trajectories<T: Trajectory, N: Navigable + Copy + Default>(
+    mut commands: Commands,
     tile_flags_cache: Res<Cache<TilePosition, N>>,
     intersection_cache: Res<SimpleCache<RadialArea, Vec<Vec<TilePosition>>>>,
-    mut q_radial_areas: Query<(Entity, &T, &mut InterestPositions<T>)>,
+    mut q_radial_areas: Query<(Entity, &T)>,
 ) {
-    let (tx, rx) = mpsc::channel::<(Entity, TilePosition)>();
+    let Ok(read_guard) = tile_flags_cache.read() else {
+        return;
+    };
+
+    let (tx, rx) = mpsc::channel::<(Entity, InterestPositions<T>)>();
 
     q_radial_areas
         .par_iter_mut()
-        .for_each(|(entity, trajectory, mut interest_positions)| {
-            interest_positions.positions.clear();
-
+        .for_each(|(entity, trajectory)| {
             let radial_area: RadialArea = trajectory.get_area();
 
             let Some(intersections_per_trajectory) = intersection_cache.get(&radial_area) else {
                 return;
             };
 
+            let mut valid_positions = Vec::new();
+
             for intersections in intersections_per_trajectory {
                 for pos in intersections {
-                    let read_guard = tile_flags_cache.read().unwrap();
                     let flags = read_guard.get(pos).copied().unwrap_or_default();
 
                     if trajectory.meets_condition(&flags, pos) {
-                        tx.send((entity, *pos)).ok();
+                        valid_positions.push(*pos);
                     } else {
                         break;
                     }
                 }
             }
+
+            tx.send((entity, InterestPositions::new(valid_positions)))
+                .ok();
         });
 
-    for (entity, pos) in rx.try_iter() {
-        let mut shared_with_vec = Vec::new();
-        if let Ok((_, _, mut interest_positions)) = q_radial_areas.get_mut(entity) {
-            interest_positions.positions.push(pos);
+    for (entity, positions) in rx.try_iter() {
+        commands.entity(entity).insert(positions);
+    }
+}
 
-            for shared_with in &interest_positions.shared_with {
-                shared_with_vec.push(*shared_with);
+pub fn share_trajectories<T: Trajectory + Clone>(
+    mut q_interest_positions: Query<(Entity, &mut InterestPositions<T>)>,
+    q_shared_with: Query<&ShareTrajectoryWith<T>>,
+) {
+    let (tx, rx) = mpsc::channel::<(Entity, InterestPositions<T>)>();
+
+    q_interest_positions
+        .iter()
+        .for_each(|(entity, interest_positions)| {
+            if let Ok(share_with) = q_shared_with.get(entity) {
+                for shared_entity in &share_with.shared_with {
+                    tx.send((*shared_entity, interest_positions.clone())).ok();
+                }
             }
-        };
+        });
 
-        for shared_with in shared_with_vec {
-            if let Ok((_, _, mut interest_positions)) = q_radial_areas.get_mut(shared_with) {
-                interest_positions.positions.push(pos);
-            };
+    for (entity, positions) in rx.try_iter() {
+        if let Ok((_, mut interest_positions)) = q_interest_positions.get_mut(entity) {
+            interest_positions.positions.extend(positions.positions);
         }
     }
-
-    q_radial_areas
-        .par_iter_mut()
-        .for_each(|(_, _, mut interest_positions)| {
-            interest_positions.positions = interest_positions
-                .positions
-                .iter()
-                .unique()
-                .copied()
-                .collect();
-        });
 }
