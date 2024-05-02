@@ -19,7 +19,7 @@ pub struct Pathing<P: Pathable>(pub P);
 
 /// A marker component that represents the visual element of an obstacle.
 #[derive(Component, Copy, Clone)]
-pub(crate) struct Obstacle;
+pub struct Obstacle;
 
 /// This is a builder for creating examples for pathfinding.
 /// This makes it easier to create examples with different configurations.

@@ -1,6 +1,4 @@
 //! Shows how to do the bare minimum to execute a path finding using ryot.
-use crate::shared::example_builder::Pathing;
-use crate::shared::pos::Pos;
 use bevy::math::Vec3;
 use bevy::prelude::*;
 use bevy::DefaultPlugins;
@@ -9,13 +7,16 @@ use bevy_ecs::prelude::Commands;
 use ryot_core::prelude::Point;
 use ryot_pathfinder::pathable::PathableApp;
 
-mod shared {
-    pub mod example_builder;
-    pub mod pos;
-}
+#[path = "../shared_stubs/example_builder.rs"]
+pub mod example_builder;
+use example_builder::*;
+
+#[path = "../shared_stubs/pos.rs"]
+pub mod pos;
+use pos::Pos;
 
 fn main() {
-    let builder = shared::example_builder::ExampleBuilder::<Pos, ()>::default()
+    let builder = ExampleBuilder::<Pos, ()>::default()
         .with_grid_size(3)
         .with_max_distance(3);
 

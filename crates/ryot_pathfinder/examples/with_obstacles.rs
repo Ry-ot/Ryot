@@ -1,12 +1,14 @@
-use crate::shared::example_builder::ExampleBuilder;
-use crate::shared::is_walkable::IsWalkable;
-use crate::shared::pos::Pos;
+#[path = "../shared_stubs/example_builder.rs"]
+pub mod example_builder;
+use example_builder::*;
 
-mod shared {
-    pub mod example_builder;
-    pub mod is_walkable;
-    pub mod pos;
-}
+#[path = "../shared_stubs/pos.rs"]
+pub mod pos;
+use pos::Pos;
+
+#[path = "../shared_stubs/is_walkable.rs"]
+pub mod is_walkable;
+use is_walkable::IsWalkable;
 
 fn main() {
     // Here we use a Pos as the representation of a point and IsWalkable as the navigable type, to
