@@ -6,6 +6,10 @@
 //! It includes functionalities for managing and processing perspectives and visibility
 //! of entities in a game environment. Perspectives are defined by sets of view points that
 //! determine what an entity can see, based on it spatial position and other considerations.
+#![feature(trait_alias)]
+use bevy_math::bounding::Aabb3d;
+use ryot_core::game::Point;
+
 pub mod trajectory;
 
 pub mod traversal;
@@ -15,6 +19,8 @@ pub mod systems;
 pub mod perspective;
 #[cfg(test)]
 mod tests;
+
+pub trait RayCastingPoint = Point + Into<Aabb3d> + Send + Sync + 'static;
 
 pub mod prelude {
     pub use crate::{
@@ -27,5 +33,6 @@ pub mod prelude {
             WalkableTrajectory,
         },
         traversal::RadialArea,
+        RayCastingPoint,
     };
 }

@@ -16,16 +16,12 @@ use ryot_utils::prelude::OptionalPlugin;
 pub mod pos;
 use pos::*;
 
-fn tile_size() -> UVec2 {
-    UVec2::new(32, 32)
-}
-
 fn main() {
     let mut app = App::new();
 
-    app.add_plugins(DefaultPlugins)
+    app.add_plugins(MinimalPlugins)
         .add_systems(Startup, (basic_setup, spawn_obstacle()))
-        .add_systems(First, draw_grid::<Pos>)
+        // .add_systems(First, draw_grid::<Pos>)
         .add_systems(Update, process_interest)
         .add_trajectory::<MyTrajectory<()>, Flags>()
         .add_optional_plugin(LogPlugin::default())
@@ -42,12 +38,12 @@ fn main() {
 pub fn basic_setup(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
 
-    for i in 0..1 {
+    for _ in 0..10_000 {
         commands.spawn(MyTrajectory::<()>::new(
-            // RadialArea::default()
-            //     .with_range(15)
-            //     .with_angle_range((0, 1)),
-            RadialArea::circle().with_range(5),
+            RadialArea::default()
+                .with_range(15)
+                .with_angle_range((0, 1)),
+            // RadialArea::circle().with_range(5),
         ));
     }
 }
@@ -65,23 +61,10 @@ pub fn spawn_obstacle() -> impl FnMut(Commands, ResMut<Cache<Pos, Flags>>) {
     }
 }
 
-fn draw_grid<P: Point + Into<Vec2>>(mut gizmos: Gizmos) {
-    for x in -10..=10 {
-        for y in -10..=10 {
-            gizmos.rect_2d(
-                P::generate(x, y, 0).into(),
-                0.,
-                tile_size().as_vec2(),
-                Color::WHITE,
-            );
-        }
-    }
-}
-
-fn process_interest(mut gizmos: Gizmos, player_query: Query<&InterestPositions<MyTrajectory<()>>>) {
+fn process_interest(player_query: Query<&InterestPositions<MyTrajectory<()>>>) {
     for interest_positions in &player_query {
-        for pos in interest_positions.positions.iter() {
-            gizmos.circle_2d((*pos).into(), (tile_size().x / 2) as f32, Color::BLUE);
+        for _ in interest_positions.positions.iter() {
+            // gizmos.circle_2d((*pos).into(), (tile_size().x / 2) as f32, Color::BLUE);
         }
     }
 }

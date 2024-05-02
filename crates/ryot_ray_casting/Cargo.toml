@@ -27,7 +27,6 @@ bevy_utils.workspace = true
 
 ryot_core = { path = "../ryot_core", version = "0.2" }
 ryot_utils = { path = "../ryot_utils", version = "0.2" }
-ryot_tiled = { path = "../ryot_tiled", version = "0.2" }
 
 derive_more.workspace = true
 glam.workspace = true
@@ -43,3 +42,6 @@ rand.workspace = true
 
 [[example]]
 name = "basic"
+
+[[example]]
+name = "stress_test"

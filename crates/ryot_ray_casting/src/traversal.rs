@@ -2,7 +2,7 @@
 //! and representing the visible area or perspective from a given position. It utilizes ray casting
 //! and angle-based calculations to determine visible tiles in a game world.
 use bevy_ecs::prelude::Component;
-use bevy_math::bounding::{Aabb3d, RayCast3d};
+use bevy_math::bounding::RayCast3d;
 use bevy_math::Ray3d;
 use glam::Vec3;
 use ryot_core::prelude::Point;
@@ -77,7 +77,7 @@ impl<P: Point> RadialArea<P> {
 /// Implements conversion from `RadialArea` to `Perspective`, allowing easy creation of
 /// perspective objects based on radial descriptions. This facilitates the dynamic generation
 /// of visible areas based on the position and defined view angle of entities.
-impl<P: Point + Into<Aabb3d>> From<RadialArea<P>> for Perspective<P> {
+impl<P: RayCastingPoint> From<RadialArea<P>> for Perspective<P> {
     fn from(radial_area: RadialArea<P>) -> Self {
         let RadialArea {
             range,

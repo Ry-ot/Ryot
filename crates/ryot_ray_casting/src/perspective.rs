@@ -4,7 +4,6 @@
 use crate::prelude::*;
 use bevy_math::bounding::{Aabb3d, RayCast3d};
 use derive_more::{Deref, DerefMut};
-use ryot_core::game::Point;
 
 /// A group of multiple traversals representing all the possible trajectories from a single point,
 /// determining what can be reached from that point. Reachable is an abstract concept that depends
@@ -18,7 +17,7 @@ impl<P> Default for Perspective<P> {
     }
 }
 
-impl<P: Point + Into<Aabb3d>> Perspective<P> {
+impl<P: RayCastingPoint> Perspective<P> {
     pub fn new(traversals: Vec<(RayCast3d, Vec<P>)>) -> Self {
         Self(traversals)
     }

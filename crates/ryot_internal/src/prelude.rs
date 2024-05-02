@@ -9,7 +9,7 @@ pub use ryot_assets::prelude::*;
 #[cfg(feature = "pathfinding")]
 pub use ryot_pathfinder::prelude::*;
 
-#[cfg(feature = "ryot_ray_casting")]
+#[cfg(feature = "ray_casting")]
 pub use ryot_ray_casting::prelude::*;
 
 #[cfg(feature = "ryot_tibia")]

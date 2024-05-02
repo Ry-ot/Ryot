@@ -5197,7 +5197,6 @@ dependencies = [
  "rand",
  "rstest",
  "ryot_core",
- "ryot_tiled",
  "ryot_utils",
  "time-test",
 ]
@@ -5296,6 +5295,7 @@ dependencies = [
  "ryot_core",
  "ryot_derive",
  "ryot_pathfinder",
+ "ryot_ray_casting",
  "ryot_utils",
  "serde",
  "strum",

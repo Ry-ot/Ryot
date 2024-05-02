@@ -2,41 +2,31 @@ use crate::prelude::*;
 use crate::systems::share_trajectories;
 use bevy_app::{App, Update};
 use bevy_ecs::prelude::*;
-use bevy_math::bounding::Aabb3d;
 use bevy_reflect::Reflect;
 use bevy_utils::HashSet;
-use ryot_core::prelude::{Navigable, Point};
-use ryot_tiled::prelude::TilePosition;
+use ryot_core::prelude::Navigable;
 use ryot_utils::prelude::*;
 use std::marker::PhantomData;
 
 /// Represents an App that can add one or more `Trajectory` to its systems.
-/// Requires the `SimpleCache<RadialArea, Vec<Vec<TilePosition>>>` resource to be initialized.
+/// Requires the `SimpleCache<RadialArea, Vec<Vec<P>>>` resource to be initialized.
 pub trait TrajectoryApp {
-    fn add_trajectory<
-        P: Point + Into<Aabb3d> + Send + Sync + 'static,
-        T: Trajectory<Position = P> + Clone,
-        N: Navigable + Copy + Default,
-    >(
+    fn add_trajectory<T: Trajectory + Component, N: Navigable + Copy + Default>(
         &mut self,
     ) -> &mut Self;
 }
 
 impl TrajectoryApp for App {
-    fn add_trajectory<
-        P: Point + Into<Aabb3d> + Send + Sync + 'static,
-        T: Trajectory<Position = P> + Clone,
-        N: Navigable + Copy + Default,
-    >(
+    fn add_trajectory<T: Trajectory + Component, N: Navigable + Copy + Default>(
         &mut self,
     ) -> &mut Self {
-        self.init_resource_once::<Cache<P, N>>()
-            .init_resource::<SimpleCache<RadialArea<P>, Vec<Vec<P>>>>()
+        self.init_resource_once::<Cache<T::Position, N>>()
+            .init_resource::<SimpleCache<RadialArea<T::Position>, Vec<Vec<T::Position>>>>()
             .add_systems(
                 Update,
                 (
-                    update_intersection_cache::<P, T>.in_set(CacheSystems::UpdateCache),
-                    process_trajectories::<P, T, N>
+                    update_intersection_cache::<T>.in_set(CacheSystems::UpdateCache),
+                    process_trajectories::<T, N>
                         .in_set(PerspectiveSystems::CalculatePerspectives)
                         .after(CacheSystems::UpdateCache),
                     share_trajectories::<T>.in_set(PerspectiveSystems::CalculatePerspectives),
@@ -53,8 +43,8 @@ impl TrajectoryApp for App {
 /// world. The `meets_condition` method allows for additional checks on environmental or
 /// entity-specific conditions that may affect whether a position is considered valid for certain
 /// operations within the trajectory area, like visibility checks or interactions.
-pub trait Trajectory: Component + Send + Sync + 'static {
-    type Position;
+pub trait Trajectory: Clone + Send + Sync + 'static {
+    type Position: RayCastingPoint;
 
     /// Generates a `RadialArea` based on the entity's current state or position.
     ///
@@ -135,16 +125,18 @@ impl<T: Trajectory> ShareTrajectoryWith<T> {
 
 /// An implementation of trajectory used to define a what is visible for different contexts.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Component)]
-pub struct VisibleTrajectory<T>(pub RadialArea<TilePosition>, PhantomData<T>);
+pub struct VisibleTrajectory<P, Marker>(pub RadialArea<P>, PhantomData<Marker>);
 
-impl<T> VisibleTrajectory<T> {
-    pub fn new(area: RadialArea<TilePosition>) -> Self {
-        Self(area, PhantomData::<T>)
+impl<P, Marker> VisibleTrajectory<P, Marker> {
+    pub fn new(area: RadialArea<P>) -> Self {
+        Self(area, PhantomData::<Marker>)
     }
 }
 
-impl<T: Copy + Send + Sync + 'static> Trajectory for VisibleTrajectory<T> {
-    type Position = TilePosition;
+impl<P: RayCastingPoint, Marker: Copy + Send + Sync + 'static> Trajectory
+    for VisibleTrajectory<P, Marker>
+{
+    type Position = P;
 
     fn get_area(&self) -> RadialArea<Self::Position> {
         (*self).into()
@@ -155,32 +147,34 @@ impl<T: Copy + Send + Sync + 'static> Trajectory for VisibleTrajectory<T> {
     }
 }
 
-impl<T> From<VisibleTrajectory<T>> for RadialArea<TilePosition> {
-    fn from(visible: VisibleTrajectory<T>) -> Self {
+impl<P, Marker> From<VisibleTrajectory<P, Marker>> for RadialArea<P> {
+    fn from(visible: VisibleTrajectory<P, Marker>) -> Self {
         visible.0
     }
 }
 
 /// An implementation of trajectory used to define what is walkable for different contexts.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Component)]
-pub struct WalkableTrajectory<T>(pub RadialArea<TilePosition>, PhantomData<T>);
+pub struct WalkableTrajectory<P, Marker>(pub RadialArea<P>, PhantomData<Marker>);
 
-impl<T> WalkableTrajectory<T> {
-    pub fn new(area: RadialArea<TilePosition>) -> Self {
-        Self(area, PhantomData::<T>)
+impl<P, Marker> WalkableTrajectory<P, Marker> {
+    pub fn new(area: RadialArea<P>) -> Self {
+        Self(area, PhantomData::<Marker>)
     }
 }
 
-impl<T: Copy + Send + Sync + 'static> Trajectory for WalkableTrajectory<T> {
-    type Position = TilePosition;
+impl<P: RayCastingPoint, Marker: Copy + Send + Sync + 'static> Trajectory
+    for WalkableTrajectory<P, Marker>
+{
+    type Position = P;
 
     fn get_area(&self) -> RadialArea<Self::Position> {
         (*self).into()
     }
 }
 
-impl<T> From<WalkableTrajectory<T>> for RadialArea<TilePosition> {
-    fn from(path: WalkableTrajectory<T>) -> Self {
+impl<P, Marker> From<WalkableTrajectory<P, Marker>> for RadialArea<P> {
+    fn from(path: WalkableTrajectory<P, Marker>) -> Self {
         path.0
     }
 }
