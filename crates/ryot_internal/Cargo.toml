@@ -36,7 +36,11 @@ compression = ["ryot_utils/compression"]
 egui = ["ryot_tiled/egui"]
 lmdb = ["ryot_tiled/lmdb"]
 
-ray_cast = ["ryot_ray_casting"]
+ray_casting = [
+    "bevy",
+    "ryot_tiled/ray_casting",
+    "dep:ryot_ray_casting",
+]
 pathfinding = [
     "bevy",
     "ryot_tiled/pathfinding",

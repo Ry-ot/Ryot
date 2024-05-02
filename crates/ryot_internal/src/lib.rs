@@ -39,7 +39,7 @@ pub mod tibia {
     pub use ryot_tibia::*;
 }
 
-#[cfg(feature = "ryot_ray_casting")]
+#[cfg(feature = "ray_casting")]
 pub mod ray_casting {
     pub use ryot_ray_casting::*;
 }

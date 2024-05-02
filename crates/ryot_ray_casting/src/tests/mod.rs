@@ -1,17 +1,20 @@
 use crate::prelude::RadialArea;
 use derive_more::{Deref, DerefMut};
-use glam::IVec3;
-use ryot_tiled::prelude::*;
+use ryot_core::prelude::Point;
+
+#[path = "../../shared_stubs/pos.rs"]
+pub mod pos;
+use pos::*;
 
 mod traversal_test;
 
-impl quickcheck::Arbitrary for RadialArea {
+impl quickcheck::Arbitrary for RadialArea<Pos> {
     fn arbitrary(g: &mut quickcheck::Gen) -> Self {
         RadialArea::default()
             .with_range(u8::arbitrary(g) % 10 + 1)
             .with_angle_step(usize::arbitrary(g) % 90 + 1)
             .with_angle_range((u16::arbitrary(g), u16::arbitrary(g)))
-            .with_center_pos(TilePosition::new(
+            .with_center_pos(Pos::generate(
                 i8::arbitrary(g) as i32,
                 i8::arbitrary(g) as i32,
                 0,
@@ -19,19 +22,35 @@ impl quickcheck::Arbitrary for RadialArea {
     }
 }
 
-#[derive(Copy, Clone, Debug, Deref, DerefMut, Eq, PartialEq)]
-struct TilePosition3x3(TilePosition);
+#[derive(Copy, Clone, Debug, Deref, DerefMut, Hash, Eq, PartialEq)]
+struct Pos3x3(Pos);
 
-impl TilePosition3x3 {
-    pub const ZERO: TilePosition3x3 = TilePosition3x3(TilePosition(IVec3::ZERO));
+impl Point for Pos3x3 {
+    fn generate(x: i32, y: i32, z: i32) -> Self {
+        Pos3x3(Pos::generate(x, y, z))
+    }
+
+    fn coordinates(&self) -> (i32, i32, i32) {
+        self.0.coordinates()
+    }
 }
 
-impl quickcheck::Arbitrary for TilePosition3x3 {
+impl quickcheck::Arbitrary for Pos {
     fn arbitrary(g: &mut quickcheck::Gen) -> Self {
-        let x = i32::arbitrary(g) % 3;
-        let y = i32::arbitrary(g) % 3;
-        let z = i32::arbitrary(g) % 3;
+        Pos::generate(
+            i32::arbitrary(g) % i16::MAX as i32,
+            i32::arbitrary(g) % i16::MAX as i32,
+            i32::arbitrary(g) % i16::MAX as i32,
+        )
+    }
+}
 
-        TilePosition3x3(TilePosition::new(x, y, z))
+impl quickcheck::Arbitrary for Pos3x3 {
+    fn arbitrary(g: &mut quickcheck::Gen) -> Self {
+        Pos3x3(Pos::generate(
+            i32::arbitrary(g) % 3,
+            i32::arbitrary(g) % 3,
+            i32::arbitrary(g) % 3,
+        ))
     }
 }
