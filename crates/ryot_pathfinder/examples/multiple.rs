@@ -1,10 +1,10 @@
-use crate::shared::example_builder::ExampleBuilder;
-use crate::shared::pos::Pos;
+#[path = "../shared_stubs/example_builder.rs"]
+pub mod example_builder;
+use example_builder::*;
 
-mod shared {
-    pub mod example_builder;
-    pub mod pos;
-}
+#[path = "../shared_stubs/pos.rs"]
+pub mod pos;
+use pos::Pos;
 
 fn main() {
     // Here we use a Pos as the representation of a point and () as the navigable type, meaning that

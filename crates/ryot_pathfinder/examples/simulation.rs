@@ -1,11 +1,12 @@
-use crate::shared::example_builder::ExampleBuilder;
-use crate::shared::pos::Pos;
 use ryot_core::prelude::Flags;
 
-mod shared {
-    pub mod example_builder;
-    pub mod pos;
-}
+#[path = "../shared_stubs/example_builder.rs"]
+pub mod example_builder;
+use example_builder::*;
+
+#[path = "../shared_stubs/pos.rs"]
+pub mod pos;
+use pos::Pos;
 
 fn main() {
     // In this example we are leveraging the Pos and Flags types to represent the position and
