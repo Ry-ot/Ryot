@@ -89,18 +89,15 @@ pub fn process_trajectories<
 }
 
 pub fn share_trajectories<T: Copy + Send + Sync + 'static, P: TrajectoryPoint>(
-    mut q_interest_positions: Query<(&ShareTrajectoryWith<T, P>, &mut InterestPositions<T, P>)>,
-    mut q_interest_positions_only: Query<
-        &mut InterestPositions<T, P>,
-        Without<ShareTrajectoryWith<T, P>>,
-    >,
+    mut q_interest_positions: Query<(&Trajectory<T, P>, &mut InterestPositions<T, P>)>,
+    mut q_interest_positions_only: Query<&mut InterestPositions<T, P>, Without<Trajectory<T, P>>>,
 ) {
     let (tx, rx) = mpsc::channel::<(Entity, InterestPositions<T, P>)>();
 
     q_interest_positions
         .iter()
-        .for_each(|(share_with, interest_positions)| {
-            for shared_entity in &share_with.shared_with {
+        .for_each(|(trajectory, interest_positions)| {
+            for shared_entity in &trajectory.shared_with {
                 tx.send((*shared_entity, interest_positions.clone())).ok();
             }
         });
