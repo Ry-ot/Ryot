@@ -1,10 +1,10 @@
+use crate::components::{Path, PathFindingQuery};
+use crate::pathable::Pathable;
+use crate::prelude::PathableApp;
 use bevy::log::LogPlugin;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
 use ryot_core::prelude::Navigable;
-use ryot_pathfinder::components::{Path, PathFindingQuery};
-use ryot_pathfinder::pathable::Pathable;
-use ryot_pathfinder::prelude::PathableApp;
 use ryot_utils::cache::Cache;
 use std::fmt::Debug;
 use std::time::{Duration, Instant};

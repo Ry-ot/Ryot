@@ -1,5 +1,5 @@
 use crate::prelude::{RadialArea, Trajectory};
-use crate::Pos;
+use crate::stubs::Pos;
 use bevy_ecs::prelude::Component;
 use ryot_core::game::Navigable;
 use std::marker::PhantomData;

@@ -1,4 +1,4 @@
-use bevy::prelude::Component;
+use bevy_ecs::prelude::Component;
 use ryot_core::game::Navigable;
 
 /// This is an example on how to use the Navigable trait to flag non-walkable pathfinding points.

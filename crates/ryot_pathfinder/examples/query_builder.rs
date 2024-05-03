@@ -1,16 +1,5 @@
 use ryot_pathfinder::components::PathFindingQuery;
-
-#[path = "../shared_stubs/example_builder.rs"]
-pub mod example_builder;
-use example_builder::*;
-
-#[path = "../shared_stubs/pos.rs"]
-pub mod pos;
-use pos::Pos;
-
-#[path = "../shared_stubs/is_walkable.rs"]
-pub mod is_walkable;
-use is_walkable::IsWalkable;
+use ryot_pathfinder::stubs::*;
 
 fn main() {
     // This example is using a custom builder where diagonal movements are cheaper than cardinal

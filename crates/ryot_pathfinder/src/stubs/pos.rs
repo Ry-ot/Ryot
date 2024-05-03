@@ -1,12 +1,14 @@
-use bevy::math::*;
-use bevy::prelude::Component;
+use crate::prelude::Pathable;
+use bevy_ecs::prelude::Component;
+use bevy_math::prelude::*;
 use ryot_core::prelude::Point;
-use ryot_derive::Pathable;
 
 /// This is an example on how to use the Pathable trait to define a point for pathfinding.
 /// Pos is a simple 3D point with x, y, and z coordinates.
-#[derive(Eq, PartialEq, Component, Pathable, Default, Clone, Copy, Debug, Hash)]
+#[derive(Eq, PartialEq, Component, Default, Clone, Copy, Debug, Hash)]
 pub struct Pos(i32, i32, i32);
+
+impl Pathable for Pos {}
 
 impl From<Pos> for Vec2 {
     fn from(pos: Pos) -> Self {

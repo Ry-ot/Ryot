@@ -1,5 +1,5 @@
 use crate::prelude::RadialArea;
-use crate::Pos;
+use crate::stubs::Pos;
 use derive_more::{Deref, DerefMut};
 use ryot_core::prelude::Point;
 

@@ -5,11 +5,8 @@ extern crate test;
 use bevy::utils::HashMap;
 use ryot_core::prelude::Point;
 use ryot_pathfinder::prelude::*;
+use ryot_pathfinder::stubs::*;
 use test::Bencher;
-
-#[path = "../shared_stubs/pos.rs"]
-pub mod pos;
-use pos::Pos;
 
 #[bench]
 fn bench_2_sized_path_finding(b: &mut Bencher) {

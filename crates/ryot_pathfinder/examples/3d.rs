@@ -6,14 +6,7 @@ use bevy_app::{App, Startup, Update};
 use bevy_ecs::prelude::Commands;
 use ryot_core::prelude::Point;
 use ryot_pathfinder::pathable::PathableApp;
-
-#[path = "../shared_stubs/example_builder.rs"]
-pub mod example_builder;
-use example_builder::*;
-
-#[path = "../shared_stubs/pos.rs"]
-pub mod pos;
-use pos::Pos;
+use ryot_pathfinder::stubs::*;
 
 fn main() {
     let builder = ExampleBuilder::<Pos, ()>::default()
