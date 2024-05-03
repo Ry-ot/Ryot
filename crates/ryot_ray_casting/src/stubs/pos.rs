@@ -1,10 +1,7 @@
-use crate::prelude::*;
-use bevy::math::*;
-use bevy::prelude::Component;
+use bevy_ecs::prelude::Component;
 use bevy_math::bounding::Aabb3d;
-use ryot_core::game::Navigable;
+use bevy_math::*;
 use ryot_core::prelude::Point;
-use std::marker::PhantomData;
 
 /// This is an example on how to use the Pathable trait to define a point for pathfinding.
 /// Pos is a simple 3D point with x, y, and z coordinates.
@@ -47,26 +44,5 @@ impl From<Pos> for Aabb3d {
             tile_pos.z() as f32,
         );
         Aabb3d::new(vec3, Vec3::new(0.35, 0.35, 0.))
-    }
-}
-
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Component)]
-pub struct MyTrajectory<Marker>(pub RadialArea<Pos>, PhantomData<Marker>);
-
-impl<Marker> MyTrajectory<Marker> {
-    pub fn new(radial_area: RadialArea<Pos>) -> Self {
-        Self(radial_area, PhantomData)
-    }
-}
-
-impl<Marker: Copy + Send + Sync + 'static> Trajectory for MyTrajectory<Marker> {
-    type Position = Pos;
-
-    fn get_area(&self) -> RadialArea<Self::Position> {
-        self.0
-    }
-
-    fn meets_condition(&self, nav: &impl Navigable, _: &Self::Position) -> bool {
-        !nav.blocks_sight()
     }
 }

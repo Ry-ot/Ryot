@@ -9,19 +9,15 @@ use bevy::prelude::*;
 use ryot_core::game::Point;
 use ryot_core::prelude::Flags;
 use ryot_ray_casting::prelude::{InterestPositions, RadialArea, TrajectoryApp};
+use ryot_ray_casting::{MyTrajectory, Pos};
 use ryot_utils::cache::Cache;
 use ryot_utils::prelude::OptionalPlugin;
-
-#[path = "../shared_stubs/pos.rs"]
-pub mod pos;
-use pos::*;
 
 fn main() {
     let mut app = App::new();
 
     app.add_plugins(MinimalPlugins)
         .add_systems(Startup, (basic_setup, spawn_obstacle()))
-        // .add_systems(First, draw_grid::<Pos>)
         .add_systems(Update, process_interest)
         .add_trajectory::<MyTrajectory<()>, Flags>()
         .add_optional_plugin(LogPlugin::default())
