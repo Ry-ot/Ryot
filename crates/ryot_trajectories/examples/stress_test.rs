@@ -9,7 +9,7 @@ use bevy::prelude::*;
 use ryot_core::game::Point;
 use ryot_core::prelude::Flags;
 use ryot_trajectories::prelude::{InterestPositions, RadialArea, TrajectoryApp};
-use ryot_trajectories::{MyTrajectory, Pos};
+use ryot_trajectories::stubs::{MyTrajectory, Pos};
 use ryot_utils::cache::Cache;
 use ryot_utils::prelude::OptionalPlugin;
 

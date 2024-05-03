@@ -1,13 +1,6 @@
 use bevy::diagnostic::*;
 use ryot_core::prelude::Flags;
-
-#[path = "../shared_stubs/example_builder.rs"]
-pub mod example_builder;
-use example_builder::*;
-
-#[path = "../shared_stubs/pos.rs"]
-pub mod pos;
-use pos::Pos;
+use ryot_pathfinder::stubs::*;
 
 fn main() {
     // In this example we are stress testing the setup that uses Pos and Flags types to represent

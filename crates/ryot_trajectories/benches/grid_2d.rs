@@ -3,9 +3,9 @@
 extern crate test;
 
 use bevy_utils::hashbrown::HashMap;
-use ryot_core::prelude::{Flags, Point};
+use ryot_core::prelude::Flags;
 use ryot_trajectories::prelude::*;
-use ryot_trajectories::Pos;
+use ryot_trajectories::stubs::Pos;
 use test::Bencher;
 
 macro_rules! trajectories_bench {
