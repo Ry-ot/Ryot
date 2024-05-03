@@ -25,7 +25,7 @@ creating top-down 45-degree perspective games.
 - **[Ryot Core][ryot_core]**: Provides foundational components and systems crucial for all other functionalities.
 - **[Ryot Internal][ryot_internal]**: Includes utilities for internal use within the framework.
 - **[Ryot Pathfinder][ryot_pathfinder]**: Offers pathfinding functionalities tailored for Bevy 2D.
-- **[Ryot Ray_casting][ryot_ray_casting]**: Implements ray casting capabilities within Bevy 2D environments.
+- **[Ryot Trajectories][ryot_trajectories]**: Implements ray casting capabilities within Bevy 2D environments.
 - **[Ryot Sprites][ryot_sprites]**: Manages sprites and animations, enhancing the visual content of games.
 - **[Ryot Tibia][ryot_tibia]**: Specializes in handling Tibia-specific legacy assets.
 - **[Ryot Tiled][ryot_tiled]**: Supports tile-based game development with advanced map editing tools.
@@ -66,7 +66,7 @@ available in the root directory of this repository.
 
 [ryot_pathfinder]: https://crates.io/crates/ryot_pathfinder
 
-[ryot_ray_casting]: https://crates.io/crates/ryot_ray_casting
+[ryot_trajectories]: https://crates.io/crates/ryot_trajectories
 
 [ryot_sprites]: https://crates.io/crates/ryot_sprites
 

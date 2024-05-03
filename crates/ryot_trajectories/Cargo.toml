@@ -1,5 +1,5 @@
 [package]
-name = "ryot_ray_casting"
+name = "ryot_trajectories"
 version = "0.2.2"
 edition = "2021"
 authors = [

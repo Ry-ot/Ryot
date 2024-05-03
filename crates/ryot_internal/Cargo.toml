@@ -36,10 +36,10 @@ compression = ["ryot_utils/compression"]
 egui = ["ryot_tiled/egui"]
 lmdb = ["ryot_tiled/lmdb"]
 
-ray_casting = [
+trajectories = [
     "bevy",
-    "ryot_tiled/ray_casting",
-    "dep:ryot_ray_casting",
+    "ryot_tiled/trajectories",
+    "dep:ryot_trajectories",
 ]
 pathfinding = [
     "bevy",
@@ -57,7 +57,7 @@ ryot_assets = { path = "../ryot_assets", version = "0.2.0", optional = true }
 ryot_utils = { path = "../ryot_utils", version = "0.2" }
 ryot_core = { path = "../ryot_core", version = "0.2" }
 ryot_pathfinder = { path = "../ryot_pathfinder", version = "0.2.0", optional = true }
-ryot_ray_casting = { path = "../ryot_ray_casting", version = "0.2.0", optional = true }
+ryot_trajectories = { path = "../ryot_trajectories", version = "0.2.0", optional = true }
 ryot_sprites = { path = "../ryot_sprites", version = "0.2" }
 ryot_tiled = { path = "../ryot_tiled", version = "0.2" }
 ryot_tibia = { path = "../ryot_tibia", version = "0.2.0", optional = true }
