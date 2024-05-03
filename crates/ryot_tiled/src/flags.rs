@@ -54,8 +54,10 @@ pub fn update_tile_flag_cache<N: Navigable + Copy + Default + Component>(
                         }
 
                         if pos == new_pos {
-                            flags = entity_flags
-                                .map_or_else(|| flags, |entity_flags| flags.append(entity_flags));
+                            flags = entity_flags.map_or_else(
+                                || flags,
+                                |entity_flags| append_navigable(flags, entity_flags),
+                            );
                         }
 
                         flags = object_id
@@ -63,7 +65,7 @@ pub fn update_tile_flag_cache<N: Navigable + Copy + Default + Component>(
                             .and_then(|(group, id)| visual_elements.get_for_group_and_id(group, id))
                             .map(|visual_element| visual_element.flags)
                             .filter(|&flags| !flags.is_default())
-                            .map_or_else(|| flags, |a_flags| flags.append(&a_flags));
+                            .map_or_else(|| flags, |a_flags| append_navigable(flags, &a_flags));
 
                         flags
                     }),

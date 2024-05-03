@@ -77,7 +77,7 @@ impl DerefMut for TilePosition {
 }
 
 /// TilePosition is a spatial Point, this trait guarantees good integration with the rest of the
-/// RyOT ecosystem, such as pathfinding, ray casting, and other spatial algorithms.
+/// RyOT ecosystem, such as pathfinding, trajectories, and other spatial algorithms.
 impl Point for TilePosition {
     fn generate(x: i32, y: i32, z: i32) -> Self {
         TilePosition::new(x, y, z)

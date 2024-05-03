@@ -34,6 +34,20 @@ impl Flags {
         }
     }
 
+    pub fn walkable() -> Self {
+        Flags {
+            is_walkable: true,
+            ..Flags::default()
+        }
+    }
+
+    pub fn visible() -> Self {
+        Flags {
+            blocks_sight: true,
+            ..Flags::default()
+        }
+    }
+
     pub fn with_walkable(self, is_walkable: bool) -> Self {
         Flags {
             is_walkable,
@@ -58,10 +72,12 @@ impl Navigable for Flags {
         self.blocks_sight
     }
 
-    fn append(mut self, navigable: &impl Navigable) -> Self {
-        self.is_walkable &= navigable.is_walkable();
-        self.blocks_sight |= navigable.blocks_sight();
-        self
+    fn set_walkable(&mut self, walkable: bool) {
+        self.is_walkable = walkable;
+    }
+
+    fn set_blocks_sight(&mut self, blocks_sight: bool) {
+        self.blocks_sight = blocks_sight;
     }
 
     fn is_default(&self) -> bool {
