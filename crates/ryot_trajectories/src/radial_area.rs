@@ -1,7 +1,9 @@
-//! This module introduces the concepts of `Trajectory` and `RadialArea` for calculating
-//! and representing the visible area or perspective from a given position. It utilizes ray casting
-//! and angle-based calculations to determine visible tiles in a game world.
-use bevy_ecs::prelude::Component;
+//! This module introduces the concepts of `RadialArea` a primary representation of an area of
+//! interest in the game world, that can be used for determining trajectories. It's the main way
+//! of generating the [Perspective] from a spectator in a given position.
+//!
+//! Radial area tries to represent an area based on angles, like a circle or a sector, with a
+//! predefined range and center position.
 use bevy_math::bounding::RayCast3d;
 use bevy_math::Ray3d;
 use glam::Vec3;
@@ -11,8 +13,8 @@ use crate::prelude::*;
 
 /// Defines a radial area of interest from a specific point in the game world, characterized by
 /// a range, center position, step angle, and an angle range. This struct is used to generate
-/// `Perspective` objects that represent the observable area from the center position.
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash, Component)]
+/// [Perspective] objects that represent the observable area from the center position.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct RadialArea<P> {
     pub range: u8,
     pub center_pos: P,
@@ -74,10 +76,10 @@ impl<P: Point> RadialArea<P> {
     }
 }
 
-/// Implements conversion from `RadialArea` to `Perspective`, allowing easy creation of
+/// Implements conversion from `RadialArea` to [Perspective], allowing easy creation of
 /// perspective objects based on radial descriptions. This facilitates the dynamic generation
 /// of visible areas based on the position and defined view angle of entities.
-impl<P: RayCastingPoint> From<RadialArea<P>> for Perspective<P> {
+impl<P: TrajectoryPoint> From<RadialArea<P>> for Perspective<P> {
     fn from(radial_area: RadialArea<P>) -> Self {
         let RadialArea {
             range,

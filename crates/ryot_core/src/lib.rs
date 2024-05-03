@@ -18,7 +18,7 @@ pub mod prelude {
             },
             ContentId, ContentType, RyotContentState,
         },
-        game::{Elevation, Navigable, Point, Properties},
+        game::{append_navigable, Elevation, Navigable, Point, Properties},
     };
 
     #[cfg(feature = "bevy")]

@@ -39,8 +39,8 @@ macro_rules! trajectories_bench_with_obstacles {
                 );
             }
 
-            let trajectory = VisibleTrajectory::<Pos, ()>::new($radial_area_builder);
-            let intersections = execute_perspective(trajectory.get_area().clone().into());
+            let trajectory = visible_trajectory::<(), Pos>($radial_area_builder);
+            let intersections = execute_perspective(trajectory.area.clone().into());
 
             b.iter(|| {
                 for intersections in intersections.iter() {

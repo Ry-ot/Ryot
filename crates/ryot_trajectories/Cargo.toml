@@ -7,11 +7,11 @@ authors = [
     "Luan Santos <cargo@luan.sh>",
 ]
 license = "AGPL-3.0-only"
-description = "Implements ray casting capabilities for Bevy 2D, crucial for interactive game mechanics and line-of-sight features."
+description = "Implements trajectory capabilities for Bevy, crucial for interactive game mechanics like line-of-sight, fog, complex collision, etc."
 homepage = "https://github.com/ry-ot/Ryot"
 repository = "https://github.com/ry-ot/Ryot"
 documentation = "https://docs.rs/ryot/"
-keywords = ["ray-casting", "bevy", "tiled-2d-games", "game-mechanics", "ryot"]
+keywords = ["ray-cast", "bevy", "trajectory", "game-mechanics", "ryot"]
 categories = ["game-development", "games"]
 
 [package.metadata.docs.rs]
@@ -28,6 +28,9 @@ bevy_utils.workspace = true
 ryot_core = { path = "../ryot_core", version = "0.2" }
 ryot_utils = { path = "../ryot_utils", version = "0.2" }
 
+rand = { workspace = true, optional = true }
+bevy = { workspace = true, optional = true }
+
 derive_more.workspace = true
 glam.workspace = true
 itertools.workspace = true
@@ -41,7 +44,10 @@ time-test.workspace = true
 rand.workspace = true
 
 [features]
-stubs = []
+stubs = [
+    "dep:bevy",
+    "dep:rand",
+]
 
 [[example]]
 name = "basic"

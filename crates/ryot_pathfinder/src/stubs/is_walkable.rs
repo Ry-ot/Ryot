@@ -29,10 +29,11 @@ impl Navigable for IsWalkable {
         true
     }
 
-    fn append(mut self, navigable: &impl Navigable) -> Self {
-        self.0 &= navigable.is_walkable();
-        self
+    fn set_walkable(&mut self, walkable: bool) {
+        self.0 = walkable;
     }
+
+    fn set_blocks_sight(&mut self, _: bool) {}
 
     fn is_default(&self) -> bool {
         self.0

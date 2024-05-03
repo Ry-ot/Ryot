@@ -25,12 +25,12 @@ version = "4.9.1"
 bevy_app.workspace = true
 bevy_ecs.workspace = true
 bevy_math.workspace = true
-bevy = { workspace = true, optional = true }
 bevy_tasks = { workspace = true, features = ["multi-threaded"] }
-
-rand = { workspace = true, optional = true }
 ryot_core = { path = "../ryot_core", version = "0.2" }
 ryot_utils = { path = "../ryot_utils", version = "0.2" }
+
+rand = { workspace = true, optional = true }
+bevy = { workspace = true, optional = true }
 
 derive_more.workspace = true
 

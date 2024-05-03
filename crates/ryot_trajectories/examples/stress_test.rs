@@ -1,4 +1,4 @@
-//! Shows how to do the bare minimum to execute ray casting using ryot
+//! Shows how to do the bare minimum to use trajectories within ryot
 
 use bevy::diagnostic::{
     EntityCountDiagnosticsPlugin, FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin,
@@ -8,8 +8,10 @@ use bevy::log::LogPlugin;
 use bevy::prelude::*;
 use ryot_core::game::Point;
 use ryot_core::prelude::Flags;
-use ryot_trajectories::prelude::{InterestPositions, RadialArea, TrajectoryApp};
-use ryot_trajectories::stubs::{MyTrajectory, Pos};
+use ryot_trajectories::prelude::{
+    visible_trajectory, InterestPositions, RadialArea, TrajectoryApp,
+};
+use ryot_trajectories::stubs::Pos;
 use ryot_utils::cache::Cache;
 use ryot_utils::prelude::OptionalPlugin;
 
@@ -19,7 +21,7 @@ fn main() {
     app.add_plugins(MinimalPlugins)
         .add_systems(Startup, (basic_setup, spawn_obstacle()))
         .add_systems(Update, process_interest)
-        .add_trajectory::<MyTrajectory<()>, Flags>()
+        .add_trajectory::<(), Pos, Flags>()
         .add_optional_plugin(LogPlugin::default())
         .add_plugins((
             FrameTimeDiagnosticsPlugin,
@@ -35,7 +37,7 @@ pub fn basic_setup(mut commands: Commands) {
     commands.spawn(Camera2dBundle::default());
 
     for _ in 0..10_000 {
-        commands.spawn(MyTrajectory::<()>::new(
+        commands.spawn(visible_trajectory::<(), Pos>(
             RadialArea::default()
                 .with_range(15)
                 .with_angle_range((0, 1)),
@@ -57,7 +59,7 @@ pub fn spawn_obstacle() -> impl FnMut(Commands, ResMut<Cache<Pos, Flags>>) {
     }
 }
 
-fn process_interest(player_query: Query<&InterestPositions<MyTrajectory<()>>>) {
+fn process_interest(player_query: Query<&InterestPositions<(), Pos>>) {
     for interest_positions in &player_query {
         for _ in interest_positions.positions.iter() {
             // gizmos.circle_2d((*pos).into(), (tile_size().x / 2) as f32, Color::BLUE);
