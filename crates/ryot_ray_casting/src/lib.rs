@@ -20,6 +20,11 @@ pub mod perspective;
 #[cfg(test)]
 mod tests;
 
+#[cfg(feature = "stubs")]
+mod stubs;
+#[cfg(feature = "stubs")]
+pub use stubs::{MyTrajectory, Pos};
+
 pub trait RayCastingPoint = Point + Into<Aabb3d> + Send + Sync + 'static;
 
 pub mod prelude {

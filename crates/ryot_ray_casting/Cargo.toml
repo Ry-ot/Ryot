@@ -40,8 +40,14 @@ rstest.workspace = true
 time-test.workspace = true
 rand.workspace = true
 
+[features]
+stubs = []
+
 [[example]]
 name = "basic"
 
 [[example]]
 name = "stress_test"
+
+[[bench]]
+name = "grid_2d"

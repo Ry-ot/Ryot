@@ -9,13 +9,9 @@ use bevy::prelude::*;
 use ryot_core::game::Point;
 use ryot_core::prelude::Flags;
 use ryot_ray_casting::prelude::{InterestPositions, RadialArea, TrajectoryApp};
+use ryot_ray_casting::{MyTrajectory, Pos};
 use ryot_utils::cache::Cache;
 use ryot_utils::prelude::OptionalPlugin;
-
-#[path = "../shared_stubs/pos.rs"]
-pub mod pos;
-use pos::*;
-
 fn tile_size() -> UVec2 {
     UVec2::new(32, 32)
 }

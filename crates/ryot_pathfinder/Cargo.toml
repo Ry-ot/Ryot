@@ -62,5 +62,5 @@ name = "with_obstacles"
 [[example]]
 name = "3d"
 
-[[benches]]
+[[bench]]
 name = "grid_2d"

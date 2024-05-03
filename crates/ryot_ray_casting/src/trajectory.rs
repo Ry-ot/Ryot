@@ -139,17 +139,11 @@ impl<P: RayCastingPoint, Marker: Copy + Send + Sync + 'static> Trajectory
     type Position = P;
 
     fn get_area(&self) -> RadialArea<Self::Position> {
-        (*self).into()
+        self.0
     }
 
     fn meets_condition(&self, flags: &impl Navigable, _: &Self::Position) -> bool {
         !flags.blocks_sight()
-    }
-}
-
-impl<P, Marker> From<VisibleTrajectory<P, Marker>> for RadialArea<P> {
-    fn from(visible: VisibleTrajectory<P, Marker>) -> Self {
-        visible.0
     }
 }
 
@@ -169,12 +163,6 @@ impl<P: RayCastingPoint, Marker: Copy + Send + Sync + 'static> Trajectory
     type Position = P;
 
     fn get_area(&self) -> RadialArea<Self::Position> {
-        (*self).into()
-    }
-}
-
-impl<P, Marker> From<WalkableTrajectory<P, Marker>> for RadialArea<P> {
-    fn from(path: WalkableTrajectory<P, Marker>) -> Self {
-        path.0
+        self.0
     }
 }

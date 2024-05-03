@@ -1,0 +1,212 @@
+#![feature(test)]
+
+extern crate test;
+
+use bevy_utils::hashbrown::HashMap;
+use ryot_core::prelude::{Flags, Point};
+use ryot_ray_casting::prelude::*;
+use ryot_ray_casting::Pos;
+use test::Bencher;
+
+macro_rules! ray_casting_bench {
+    ($radial_area_builder:expr, $create_name:ident, $execute_name:ident) => {
+        #[bench]
+        fn $create_name(b: &mut Bencher) {
+            b.iter(|| create_perspective($radial_area_builder));
+        }
+
+        #[bench]
+        fn $execute_name(b: &mut Bencher) {
+            let perspective = create_perspective($radial_area_builder);
+            b.iter(|| execute_perspective(perspective.clone()));
+        }
+    };
+}
+
+macro_rules! ray_casting_bench_with_obstacles {
+    ($radial_area_builder:expr, $name:ident, $count:expr) => {
+        #[bench]
+        fn $name(b: &mut Bencher) {
+            let mut obstacles = HashMap::new();
+            for _ in 0..$count {
+                obstacles.insert(
+                    Pos::generate(
+                        rand::random::<i32>() % 16_000,
+                        rand::random::<i32>() % 16_000,
+                        0,
+                    ),
+                    Flags::default().with_blocks_sight(true),
+                );
+            }
+
+            let trajectory = VisibleTrajectory::<Pos, ()>::new($radial_area_builder);
+            let intersections = execute_perspective(trajectory.get_area().clone().into());
+
+            b.iter(|| {
+                for intersections in intersections.iter() {
+                    for pos in intersections {
+                        let Some(flags) = obstacles.get(pos) else {
+                            continue;
+                        };
+
+                        if !trajectory.meets_condition(flags, pos) {
+                            continue;
+                        }
+                    }
+                }
+            });
+        }
+    };
+}
+
+ray_casting_bench!(
+    RadialArea::circle().with_range(3),
+    create_circular_range_3,
+    execute_circular_range_3
+);
+
+ray_casting_bench!(
+    RadialArea::circle().with_range(5),
+    create_circular_range_5,
+    execute_circular_range_5
+);
+
+ray_casting_bench!(
+    RadialArea::circle().with_range(10),
+    create_circular_range_10,
+    execute_circular_range_10
+);
+
+ray_casting_bench!(
+    RadialArea::circle().with_range(25),
+    create_circular_range_25,
+    execute_circular_range_25
+);
+
+ray_casting_bench!(
+    RadialArea::circle().with_range(50),
+    create_circular_range_50,
+    execute_circular_range_50
+);
+
+ray_casting_bench!(
+    RadialArea::circle().with_range(100),
+    create_circular_range_100,
+    execute_circular_range_100
+);
+
+ray_casting_bench!(
+    RadialArea::sector(0, 90).with_range(10),
+    create_90_degrees_sector_range_10,
+    execute_90_degrees_sector_range_10
+);
+
+ray_casting_bench!(
+    RadialArea::sector(0, 90).with_range(100),
+    create_90_degrees_sector_range_100,
+    execute_90_degrees_sector_range_100
+);
+
+ray_casting_bench!(
+    RadialArea::sector(0, 90).with_range(255),
+    create_90_degrees_sector_range_255,
+    execute_90_degrees_sector_range_255
+);
+
+ray_casting_bench!(
+    RadialArea::sector(0, 45).with_range(100),
+    create_45_degrees_sector_range_100,
+    execute_45_degrees_sector_range_100
+);
+
+ray_casting_bench!(
+    RadialArea::sector(0, 45).with_range(255),
+    create_45_degrees_sector_range_255,
+    execute_45_degrees_sector_range_255
+);
+
+ray_casting_bench!(
+    RadialArea::sector(0, 1).with_range(100),
+    create_linear_range_100,
+    execute_linear_range_100
+);
+
+ray_casting_bench!(
+    RadialArea::sector(0, 1).with_range(255),
+    create_linear_range_255,
+    execute_linear_range_255
+);
+
+ray_casting_bench_with_obstacles!(
+    RadialArea::circle().with_range(5),
+    check_1million_obstacles_against_circle_range_5,
+    1_000_000
+);
+
+ray_casting_bench_with_obstacles!(
+    RadialArea::circle().with_range(100),
+    check_1million_obstacles_against_circle_range_100,
+    1_000_000
+);
+
+ray_casting_bench_with_obstacles!(
+    RadialArea::circle().with_range(255),
+    check_1million_obstacles_against_circle_range_255,
+    1_000_000
+);
+
+ray_casting_bench_with_obstacles!(
+    RadialArea::sector(0, 90).with_range(25),
+    check_1million_obstacles_against_90_degrees_sector_range_25,
+    1_000_000
+);
+
+ray_casting_bench_with_obstacles!(
+    RadialArea::sector(0, 90).with_range(100),
+    check_1million_obstacles_against_90_degrees_sector_range_100,
+    1_000_000
+);
+
+ray_casting_bench_with_obstacles!(
+    RadialArea::sector(0, 90).with_range(255),
+    check_1million_obstacles_against_90_degrees_sector_range_255,
+    1_000_000
+);
+
+ray_casting_bench_with_obstacles!(
+    RadialArea::sector(0, 45).with_range(50),
+    check_1million_obstacles_against_45_degrees_sector_range_50,
+    1_000_000
+);
+
+ray_casting_bench_with_obstacles!(
+    RadialArea::sector(0, 45).with_range(100),
+    check_1million_obstacles_against_45_degrees_sector_range_100,
+    1_000_000
+);
+
+ray_casting_bench_with_obstacles!(
+    RadialArea::sector(0, 45).with_range(255),
+    check_1million_obstacles_against_45_degrees_sector_range_255,
+    1_000_000
+);
+
+ray_casting_bench_with_obstacles!(
+    RadialArea::sector(0, 1).with_range(100),
+    check_1million_obstacles_against_line_range_100,
+    1_000_000
+);
+
+ray_casting_bench_with_obstacles!(
+    RadialArea::sector(0, 1).with_range(255),
+    check_1million_obstacles_against_line_range_255,
+    1_000_000
+);
+
+fn create_perspective(radial_area: RadialArea<Pos>) -> Perspective<Pos> {
+    radial_area.into()
+}
+
+fn execute_perspective(perspective: Perspective<Pos>) -> Vec<Vec<Pos>> {
+    perspective.get_intersections()
+}

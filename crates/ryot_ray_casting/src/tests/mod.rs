@@ -1,10 +1,7 @@
 use crate::prelude::RadialArea;
+use crate::Pos;
 use derive_more::{Deref, DerefMut};
 use ryot_core::prelude::Point;
-
-#[path = "../../shared_stubs/pos.rs"]
-pub mod pos;
-use pos::*;
 
 mod traversal_test;
 
