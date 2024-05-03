@@ -35,7 +35,7 @@ pub mod prelude {
         systems::{
             process_trajectories, share_trajectories, update_intersection_cache, TrajectorySystems,
         },
-        trajectory::{visible_trajectory, walkable_trajectory, ShareTrajectoryWith, Trajectory},
+        trajectory::{visible_trajectory, walkable_trajectory, Trajectory},
         TrajectoryPoint,
     };
 }
@@ -48,5 +48,6 @@ TO IMPROVE
     - shareable or not
     - different type of perspective search (e.g. in_area, get N hits, get closets, etc.)
     - triggered search like path finding instead of always performing
+    - different type of trajectory: time-based, one-time, etc.
 
 */
