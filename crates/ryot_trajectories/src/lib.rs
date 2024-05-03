@@ -1,4 +1,4 @@
-//! `ryot_ray_casting`
+//! `ryot_trajectories`
 //!
 //! Provides ray casting capabilities specifically for Bevy 2D, essential for implementing
 //! line-of-sight features and other interactive game mechanics.

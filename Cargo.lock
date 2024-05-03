@@ -5151,10 +5151,10 @@ dependencies = [
  "ryot_assets",
  "ryot_core",
  "ryot_pathfinder",
- "ryot_ray_casting",
  "ryot_sprites",
  "ryot_tibia",
  "ryot_tiled",
+ "ryot_trajectories",
  "ryot_utils",
 ]
 
@@ -5175,28 +5175,6 @@ dependencies = [
  "rstest",
  "ryot_core",
  "ryot_derive",
- "ryot_utils",
- "time-test",
-]
-
-[[package]]
-name = "ryot_ray_casting"
-version = "0.2.2"
-dependencies = [
- "bevy",
- "bevy_app",
- "bevy_ecs",
- "bevy_math",
- "bevy_reflect",
- "bevy_utils",
- "derive_more",
- "glam",
- "itertools 0.12.1",
- "quickcheck",
- "quickcheck_macros",
- "rand",
- "rstest",
- "ryot_core",
  "ryot_utils",
  "time-test",
 ]
@@ -5295,11 +5273,33 @@ dependencies = [
  "ryot_core",
  "ryot_derive",
  "ryot_pathfinder",
- "ryot_ray_casting",
+ "ryot_trajectories",
  "ryot_utils",
  "serde",
  "strum",
  "thiserror",
+ "time-test",
+]
+
+[[package]]
+name = "ryot_trajectories"
+version = "0.2.2"
+dependencies = [
+ "bevy",
+ "bevy_app",
+ "bevy_ecs",
+ "bevy_math",
+ "bevy_reflect",
+ "bevy_utils",
+ "derive_more",
+ "glam",
+ "itertools 0.12.1",
+ "quickcheck",
+ "quickcheck_macros",
+ "rand",
+ "rstest",
+ "ryot_core",
+ "ryot_utils",
  "time-test",
 ]
 

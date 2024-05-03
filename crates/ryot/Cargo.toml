@@ -43,7 +43,7 @@ egui = ["ryot_internal/egui"]
 
 pathfinding = ["bevy", "ryot_internal/pathfinding"]
 
-ray_casting = ["bevy", "ryot_internal/ray_casting"]
+trajectories = ["bevy", "ryot_internal/trajectories"]
 
 [lints.clippy]
 enum_glob_use = "deny"
