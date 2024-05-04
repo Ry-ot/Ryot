@@ -6,7 +6,6 @@ use crate::prelude::*;
 use bevy_ecs::prelude::*;
 use ryot_core::prelude::Navigable;
 use ryot_utils::prelude::*;
-use std::collections::VecDeque;
 use std::sync::mpsc;
 
 /// Defines system sets for managing perspective calculation systems.
@@ -15,6 +14,7 @@ use std::sync::mpsc;
 #[derive(Debug, Hash, PartialEq, Eq, Clone, SystemSet)]
 pub enum TrajectorySystems {
     ProcessTrajectories,
+    CleanUp,
 }
 
 /// Updates the cache of intersections for radial view points that have changed.
@@ -37,50 +37,42 @@ pub fn update_intersection_cache<T: Copy + Send + Sync + 'static, P: TrajectoryP
 
 /// Processes each entity's perspective to update its visible positions.
 /// This system filters the previously calculated intersections based on actual visibility
-/// conditions (e.g., obstructions, visibility flags) and updates each entity's InterestPositions.
+/// conditions (e.g., obstructions, visibility flags) and updates each entity's Intersections.
 ///
 /// Run as part of [`TrajectorySystems::ProcessTrajectories`].
 pub fn process_trajectories<
     T: Copy + Send + Sync + 'static,
-    P: TrajectoryPoint,
+    P: TrajectoryPoint + Component,
     N: Navigable + Copy + Default,
 >(
     mut commands: Commands,
     flags_cache: Res<Cache<P, N>>,
     intersection_cache: Res<SimpleCache<RadialArea<P>, Vec<Vec<P>>>>,
-    mut q_radial_areas: Query<(Entity, &Trajectory<T, P>)>,
+    mut q_radial_areas: Query<(Entity, &P, &mut Trajectory<T, P>)>,
 ) {
     let Ok(read_guard) = flags_cache.read() else {
         return;
     };
 
-    let (tx, rx) = mpsc::channel::<(Entity, InterestPositions<T, P>)>();
+    let (tx, rx) = mpsc::channel::<(Entity, Intersections<T, P>)>();
 
     q_radial_areas
         .par_iter_mut()
-        .for_each(|(entity, trajectory)| {
-            let radial_area: RadialArea<P> = trajectory.area;
-
-            let Some(intersections_per_trajectory) = intersection_cache.get(&radial_area) else {
+        .for_each(|(entity, from, mut trajectory)| {
+            let Some(intersections_per_trajectory) = intersection_cache.get(&trajectory.area)
+            else {
                 return;
             };
 
-            let mut valid_positions = VecDeque::new();
+            let result = trajectory.execute(from, intersections_per_trajectory, |pos| {
+                read_guard.get(pos).copied().unwrap_or_default()
+            });
 
-            for intersections in intersections_per_trajectory {
-                for pos in intersections {
-                    let flags = read_guard.get(pos).copied().unwrap_or_default();
+            let Some(intersections) = result else {
+                return;
+            };
 
-                    if trajectory.meets_condition(&flags, pos) {
-                        valid_positions.push_back(*pos);
-                    } else {
-                        break;
-                    }
-                }
-            }
-
-            tx.send((entity, InterestPositions::new(valid_positions)))
-                .ok();
+            tx.send((entity, intersections)).ok();
         });
 
     for (entity, positions) in rx.try_iter() {
@@ -88,25 +80,58 @@ pub fn process_trajectories<
     }
 }
 
-pub fn share_trajectories<T: Copy + Send + Sync + 'static, P: TrajectoryPoint>(
-    mut q_interest_positions: Query<(&Trajectory<T, P>, &mut InterestPositions<T, P>)>,
-    mut q_interest_positions_only: Query<&mut InterestPositions<T, P>, Without<Trajectory<T, P>>>,
+pub fn share_results<T: Copy + Send + Sync + 'static, P: TrajectoryPoint>(
+    mut q_trajectory_intersections: Query<(&Trajectory<T, P>, &mut Intersections<T, P>)>,
+    mut q_intersections: Query<&mut Intersections<T, P>, Without<Trajectory<T, P>>>,
 ) {
-    let (tx, rx) = mpsc::channel::<(Entity, InterestPositions<T, P>)>();
+    let (tx, rx) = mpsc::channel::<(Entity, Intersections<T, P>)>();
 
-    q_interest_positions
+    q_trajectory_intersections
         .iter()
-        .for_each(|(trajectory, interest_positions)| {
+        .for_each(|(trajectory, intersections)| {
             for shared_entity in &trajectory.shared_with {
-                tx.send((*shared_entity, interest_positions.clone())).ok();
+                tx.send((*shared_entity, intersections.clone())).ok();
             }
         });
 
-    for (entity, positions) in rx.try_iter() {
-        if let Ok((_, mut interest_positions)) = q_interest_positions.get_mut(entity) {
-            interest_positions.positions.extend(positions.positions);
-        } else if let Ok(mut interest_positions) = q_interest_positions_only.get_mut(entity) {
-            interest_positions.positions.extend(positions.positions);
+    for (entity, shared) in rx.try_iter() {
+        if let Ok((_, mut intersections)) = q_trajectory_intersections.get_mut(entity) {
+            intersections
+                .area_of_interest
+                .extend(shared.area_of_interest);
+            intersections.hits.extend(shared.hits);
+        } else if let Ok(mut intersections) = q_intersections.get_mut(entity) {
+            intersections
+                .area_of_interest
+                .extend(shared.area_of_interest);
+            intersections.hits.extend(shared.hits);
         }
     }
+}
+
+pub fn remove_orphan_intersections<T: Copy + Send + Sync + 'static, P: TrajectoryPoint>(
+    mut commands: Commands,
+    q_orphan_intersections: Query<Entity, (With<Intersections<T, P>>, Without<Trajectory<T, P>>)>,
+) {
+    q_orphan_intersections.iter().for_each(|entity| {
+        commands.entity(entity).remove::<Intersections<T, P>>();
+    });
+}
+
+pub fn remove_stale_trajectories<T: Copy + Send + Sync + 'static, P: TrajectoryPoint>(
+    mut commands: Commands,
+    q_trajectories: Query<(Entity, &Trajectory<T, P>)>,
+) {
+    q_trajectories.iter().for_each(|(entity, trajectory)| {
+        if trajectory.last_execution().is_none() {
+            return;
+        }
+
+        match trajectory.execution_type() {
+            ExecutionType::Once => {
+                commands.entity(entity).remove::<Trajectory<T, P>>();
+            }
+            ExecutionType::TimeBased(_) => (),
+        }
+    });
 }

@@ -1,5 +1,6 @@
 use crate::prelude::*;
-use bevy_app::{App, Update};
+use crate::systems::{remove_orphan_intersections, remove_stale_trajectories};
+use bevy_app::{App, PostUpdate, Update};
 use bevy_ecs::prelude::*;
 use ryot_core::prelude::Navigable;
 use ryot_utils::prelude::*;
@@ -9,7 +10,7 @@ use ryot_utils::prelude::*;
 pub trait TrajectoryApp {
     fn add_trajectory<
         Marker: Copy + Send + Sync + 'static,
-        P: TrajectoryPoint,
+        P: TrajectoryPoint + Component,
         N: Navigable + Copy + Default,
     >(
         &mut self,
@@ -19,7 +20,7 @@ pub trait TrajectoryApp {
 impl TrajectoryApp for App {
     fn add_trajectory<
         Marker: Copy + Send + Sync + 'static,
-        P: TrajectoryPoint,
+        P: TrajectoryPoint + Component,
         N: Navigable + Copy + Default,
     >(
         &mut self,
@@ -33,8 +34,18 @@ impl TrajectoryApp for App {
                     process_trajectories::<Marker, P, N>
                         .in_set(TrajectorySystems::ProcessTrajectories)
                         .after(CacheSystems::UpdateCache),
-                    share_trajectories::<Marker, P>.in_set(TrajectorySystems::ProcessTrajectories),
+                    share_results::<Marker, P>.in_set(TrajectorySystems::ProcessTrajectories),
                 )
+                    .chain(),
+            )
+            .add_systems(
+                PostUpdate,
+                (
+                    remove_orphan_intersections::<Marker, P>,
+                    remove_stale_trajectories::<Marker, P>,
+                )
+                    .in_set(TrajectorySystems::CleanUp)
+                    .after(TrajectorySystems::ProcessTrajectories)
                     .chain(),
             )
     }

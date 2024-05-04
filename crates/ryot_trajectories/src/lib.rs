@@ -11,7 +11,8 @@ use bevy_math::bounding::Aabb3d;
 use ryot_core::game::Point;
 
 mod app;
-mod interest_positions;
+mod intersection;
+mod request;
 
 pub mod perspective;
 pub mod radial_area;
@@ -29,25 +30,15 @@ pub trait TrajectoryPoint = Point + Into<Aabb3d> + Send + Sync + 'static;
 pub mod prelude {
     pub use crate::{
         app::TrajectoryApp,
-        interest_positions::InterestPositions,
+        intersection::{Intersection, Intersections},
         perspective::Perspective,
         radial_area::RadialArea,
+        request::ExecutionType,
         systems::{
-            process_trajectories, share_trajectories, update_intersection_cache, TrajectorySystems,
+            process_trajectories, remove_orphan_intersections, remove_stale_trajectories,
+            share_results, update_intersection_cache, TrajectorySystems,
         },
         trajectory::{visible_trajectory, walkable_trajectory, Trajectory},
         TrajectoryPoint,
     };
 }
-
-/*
-
-TO IMPROVE
-
-- Configurable:
-    - shareable or not
-    - different type of perspective search (e.g. in_area, get N hits, get closets, etc.)
-    - triggered search like path finding instead of always performing
-    - different type of trajectory: time-based, one-time, etc.
-
-*/
