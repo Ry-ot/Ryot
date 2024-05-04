@@ -1,7 +1,9 @@
+use glam::Vec2;
 use std::f32::consts::PI;
+use std::fmt::Debug;
 use std::hash::Hash;
 
-pub trait Point: Eq + Hash + Copy + Clone {
+pub trait Point: Eq + Hash + Copy + Clone + Debug {
     fn generate(x: i32, y: i32, z: i32) -> Self;
     fn coordinates(&self) -> (i32, i32, i32);
 
@@ -17,6 +19,11 @@ pub trait Point: Eq + Hash + Copy + Clone {
         self.coordinates().2
     }
 
+    fn distance_2d(&self, other: &Self) -> f32 {
+        Vec2::new(self.x() as f32, self.y() as f32)
+            .distance(Vec2::new(other.x() as f32, other.y() as f32))
+    }
+
     /// Generates a straight line from `self` to `end` using Bresenham's line algorithm.
     /// This algorithm determines the points of an n-dimensional raster that should be selected
     /// to form a close approximation to a straight line between two points.
@@ -24,13 +31,14 @@ pub trait Point: Eq + Hash + Copy + Clone {
         let mut points = Vec::new();
 
         let dx = (end.x() - self.x()).abs();
-        let sx = if self.x() < end.x() { 1 } else { -1 };
         let dy = -(end.y() - self.y()).abs();
+        let sx = if self.x() < end.x() { 1 } else { -1 };
         let sy = if self.y() < end.y() { 1 } else { -1 };
-        let mut err = dx + dy;
 
+        let mut err = dx + dy;
         let mut x = self.x();
         let mut y = self.y();
+
         loop {
             points.push(Self::generate(x, y, self.z()));
             if x == end.x() && y == end.y() {
@@ -38,10 +46,16 @@ pub trait Point: Eq + Hash + Copy + Clone {
             }
             let e2 = 2 * err;
             if e2 >= dy {
+                if x == end.x() {
+                    break;
+                }
                 err += dy;
                 x += sx;
             }
             if e2 <= dx {
+                if y == end.y() {
+                    break;
+                }
                 err += dx;
                 y += sy;
             }
@@ -59,18 +73,26 @@ pub trait Point: Eq + Hash + Copy + Clone {
         end_angle_deg: u16,
         angle_step: usize,
     ) -> Vec<Self> {
-        if angle_step == 0 || radius == 0 {
+        if angle_step == 0 || radius == 0 || start_angle_deg == end_angle_deg {
             return vec![];
         }
 
-        if start_angle_deg == end_angle_deg {
-            return vec![];
-        }
+        let angle_step = angle_step as u16;
 
         let mut tiles = Vec::new();
+        let mut angle_deg = start_angle_deg;
 
-        for angle_deg in (start_angle_deg..=end_angle_deg).step_by(angle_step) {
+        while angle_deg <= end_angle_deg {
             let angle = (angle_deg as f32).to_radians();
+            let dx = (angle.cos() * radius as f32).round() as i32;
+            let dy = (angle.sin() * radius as f32).round() as i32;
+            tiles.push(Self::generate(self.x() + dx, self.y() + dy, self.z()));
+            angle_deg = angle_deg.saturating_add(angle_step);
+        }
+
+        // Ensure the last point is always included
+        if angle_deg != start_angle_deg && angle_deg - angle_step < end_angle_deg {
+            let angle = (end_angle_deg as f32).to_radians();
             let dx = (angle.cos() * radius as f32).round() as i32;
             let dy = (angle.sin() * radius as f32).round() as i32;
             tiles.push(Self::generate(self.x() + dx, self.y() + dy, self.z()));
