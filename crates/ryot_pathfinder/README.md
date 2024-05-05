@@ -136,7 +136,7 @@ To better understand how `PathFindingQuery<P>`, `PathFindingTask<P>`, and `Path<
 Choose an example to run based on your needs, such as handling multiple entities or dealing with obstacles:
 
 ```bash
-cargo run --example example_name
+cargo run --example example_name --features stubs
 ```
 
 Replace example_name with the name of the example you wish to run.
@@ -177,11 +177,11 @@ fn main() {
 
 ## Benchmarks
 
-Performance benchmarks are included to provide insights into the crate's efficiency. The benchmark bench can be run to
+Performance benchmarks are included to provide insights into the crate's efficiency. The benchmark can be run to
 evaluate performance under various conditions:
 
 ```bash
-cargo bench
+cargo bench --features stubs
 ```
 
 ### Results
