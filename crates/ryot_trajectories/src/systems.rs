@@ -24,7 +24,7 @@ pub enum TrajectorySystems {
 /// Run as part of [`CacheSystems::UpdateCache`].
 pub fn update_intersection_cache<T: Copy + Send + Sync + 'static, P: TrajectoryPoint>(
     mut intersection_cache: ResMut<SimpleCache<RadialArea<P>, Vec<Vec<P>>>>,
-    q_radial_areas: Query<&Trajectory<T, P>, Changed<Trajectory<T, P>>>,
+    q_radial_areas: Query<&TrajectoryRequest<T, P>, Changed<TrajectoryRequest<T, P>>>,
 ) {
     q_radial_areas.iter().for_each(|trajectory| {
         let radial_area: RadialArea<P> = trajectory.area;
@@ -48,13 +48,13 @@ pub fn process_trajectories<
     mut commands: Commands,
     flags_cache: Res<Cache<P, N>>,
     intersection_cache: Res<SimpleCache<RadialArea<P>, Vec<Vec<P>>>>,
-    mut q_radial_areas: Query<(Entity, &P, &mut Trajectory<T, P>)>,
+    mut q_radial_areas: Query<(Entity, &P, &mut TrajectoryRequest<T, P>)>,
 ) {
     let Ok(read_guard) = flags_cache.read() else {
         return;
     };
 
-    let (tx, rx) = mpsc::channel::<(Entity, Intersections<T, P>)>();
+    let (tx, rx) = mpsc::channel::<(Entity, TrajectoryResult<T, P>)>();
 
     q_radial_areas
         .par_iter_mut()
@@ -68,11 +68,11 @@ pub fn process_trajectories<
                 read_guard.get(pos).copied().unwrap_or_default()
             });
 
-            let Some(intersections) = result else {
+            let Some(result) = result else {
                 return;
             };
 
-            tx.send((entity, intersections)).ok();
+            tx.send((entity, result)).ok();
         });
 
     for (entity, positions) in rx.try_iter() {
@@ -81,46 +81,48 @@ pub fn process_trajectories<
 }
 
 pub fn share_results<T: Copy + Send + Sync + 'static, P: TrajectoryPoint>(
-    mut q_trajectory_intersections: Query<(&Trajectory<T, P>, &mut Intersections<T, P>)>,
-    mut q_intersections: Query<&mut Intersections<T, P>, Without<Trajectory<T, P>>>,
+    mut q_trajectory_results: Query<(&TrajectoryRequest<T, P>, &mut TrajectoryResult<T, P>)>,
+    mut q_results: Query<&mut TrajectoryResult<T, P>, Without<TrajectoryRequest<T, P>>>,
 ) {
-    let (tx, rx) = mpsc::channel::<(Entity, Intersections<T, P>)>();
+    let (tx, rx) = mpsc::channel::<(Entity, TrajectoryResult<T, P>)>();
 
-    q_trajectory_intersections
+    q_trajectory_results
         .iter()
-        .for_each(|(trajectory, intersections)| {
+        .for_each(|(trajectory, results)| {
             for shared_entity in &trajectory.shared_with {
-                tx.send((*shared_entity, intersections.clone())).ok();
+                tx.send((*shared_entity, results.clone())).ok();
             }
         });
 
     for (entity, shared) in rx.try_iter() {
-        if let Ok((_, mut intersections)) = q_trajectory_intersections.get_mut(entity) {
-            intersections
-                .area_of_interest
-                .extend(shared.area_of_interest);
-            intersections.hits.extend(shared.hits);
-        } else if let Ok(mut intersections) = q_intersections.get_mut(entity) {
-            intersections
-                .area_of_interest
-                .extend(shared.area_of_interest);
-            intersections.hits.extend(shared.hits);
+        if let Ok((_, mut result)) = q_trajectory_results.get_mut(entity) {
+            result.area_of_interest.extend(shared.area_of_interest);
+            result.collisions.extend(shared.collisions);
+        } else if let Ok(mut result) = q_results.get_mut(entity) {
+            result.area_of_interest.extend(shared.area_of_interest);
+            result.collisions.extend(shared.collisions);
         }
     }
 }
 
-pub fn remove_orphan_intersections<T: Copy + Send + Sync + 'static, P: TrajectoryPoint>(
+pub fn remove_stale_results<T: Copy + Send + Sync + 'static, P: TrajectoryPoint>(
     mut commands: Commands,
-    q_orphan_intersections: Query<Entity, (With<Intersections<T, P>>, Without<Trajectory<T, P>>)>,
+    q_orphan_results: Query<
+        Entity,
+        (
+            With<TrajectoryResult<T, P>>,
+            Without<TrajectoryRequest<T, P>>,
+        ),
+    >,
 ) {
-    q_orphan_intersections.iter().for_each(|entity| {
-        commands.entity(entity).remove::<Intersections<T, P>>();
+    q_orphan_results.iter().for_each(|entity| {
+        commands.entity(entity).remove::<TrajectoryResult<T, P>>();
     });
 }
 
 pub fn remove_stale_trajectories<T: Copy + Send + Sync + 'static, P: TrajectoryPoint>(
     mut commands: Commands,
-    q_trajectories: Query<(Entity, &Trajectory<T, P>)>,
+    q_trajectories: Query<(Entity, &TrajectoryRequest<T, P>)>,
 ) {
     q_trajectories.iter().for_each(|(entity, trajectory)| {
         if trajectory.last_execution().is_none() {
@@ -129,7 +131,7 @@ pub fn remove_stale_trajectories<T: Copy + Send + Sync + 'static, P: TrajectoryP
 
         match trajectory.execution_type() {
             ExecutionType::Once => {
-                commands.entity(entity).remove::<Trajectory<T, P>>();
+                commands.entity(entity).remove::<TrajectoryRequest<T, P>>();
             }
             ExecutionType::TimeBased(_) => (),
         }

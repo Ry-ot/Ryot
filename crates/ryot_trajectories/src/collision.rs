@@ -4,7 +4,7 @@ use std::collections::VecDeque;
 use std::marker::PhantomData;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct Intersection<P, T> {
+pub struct Collision<T, P> {
     pub position: P,
     pub distance: f32,
     pub previous_position: P,
@@ -12,7 +12,7 @@ pub struct Intersection<P, T> {
     _marker: PhantomData<T>,
 }
 
-impl<P, T> Intersection<P, T> {
+impl<T, P> Collision<T, P> {
     pub fn new(position: P, distance: f32, previous_position: P) -> Self {
         Self {
             position,
@@ -42,44 +42,44 @@ impl<P, T> Intersection<P, T> {
 /// This struct facilitates diverse gameplay mechanics by allowing entities to dynamically respond
 /// to and share critical spatial information within the game world.
 #[derive(Clone, Component, Debug, PartialEq)]
-pub struct Intersections<T, P> {
-    pub hits: VecDeque<Intersection<P, T>>,
+pub struct TrajectoryResult<T, P> {
+    pub collisions: VecDeque<Collision<T, P>>,
     pub area_of_interest: VecDeque<P>,
 }
 
-impl<T, P> Default for Intersections<T, P> {
+impl<T, P> Default for TrajectoryResult<T, P> {
     fn default() -> Self {
         Self {
-            hits: VecDeque::new(),
+            collisions: VecDeque::new(),
             area_of_interest: VecDeque::new(),
         }
     }
 }
 
-impl<T, P> Intersections<T, P> {
-    pub fn new(hits: VecDeque<Intersection<P, T>>, area_of_interest: VecDeque<P>) -> Self {
+impl<T, P> TrajectoryResult<T, P> {
+    pub fn new(collisions: VecDeque<Collision<T, P>>, area_of_interest: VecDeque<P>) -> Self {
         Self {
-            hits,
+            collisions,
             area_of_interest,
         }
     }
 }
 
-impl<T, P: Point> Intersections<T, P> {
-    pub fn get_hits_last_positions(&self) -> VecDeque<P> {
+impl<T, P: Point> TrajectoryResult<T, P> {
+    pub fn get_collisions_last_positions(&self) -> VecDeque<P> {
         let mut last_positions = VecDeque::new();
 
-        for hit in self.hits.iter().rev() {
-            if hit.pierced {
+        for intersection in self.collisions.iter().rev() {
+            if intersection.pierced {
                 continue;
             }
 
             if !self
-                .hits
+                .collisions
                 .iter()
-                .any(|hit| hit.position == hit.previous_position)
+                .any(|intersection| intersection.position == intersection.previous_position)
             {
-                last_positions.push_back(hit.previous_position);
+                last_positions.push_back(intersection.previous_position);
             }
         }
 
