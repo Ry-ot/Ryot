@@ -1,5 +1,5 @@
 use crate::prelude::*;
-use crate::systems::{remove_orphan_intersections, remove_stale_trajectories};
+use crate::systems::{remove_stale_results, remove_stale_trajectories};
 use bevy_app::{App, PostUpdate, Update};
 use bevy_ecs::prelude::*;
 use ryot_core::prelude::Navigable;
@@ -41,7 +41,7 @@ impl TrajectoryApp for App {
             .add_systems(
                 PostUpdate,
                 (
-                    remove_orphan_intersections::<Marker, P>,
+                    remove_stale_results::<Marker, P>,
                     remove_stale_trajectories::<Marker, P>,
                 )
                     .in_set(TrajectorySystems::CleanUp)

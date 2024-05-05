@@ -11,7 +11,7 @@ use bevy_math::bounding::Aabb3d;
 use ryot_core::game::Point;
 
 mod app;
-mod intersection;
+mod collision;
 mod request;
 
 pub mod perspective;
@@ -30,15 +30,15 @@ pub trait TrajectoryPoint = Point + Into<Aabb3d> + Send + Sync + 'static;
 pub mod prelude {
     pub use crate::{
         app::TrajectoryApp,
-        intersection::{Intersection, Intersections},
+        collision::{Collision, TrajectoryResult},
         perspective::Perspective,
         radial_area::RadialArea,
         request::ExecutionType,
         systems::{
-            process_trajectories, remove_orphan_intersections, remove_stale_trajectories,
-            share_results, update_intersection_cache, TrajectorySystems,
+            process_trajectories, remove_stale_results, remove_stale_trajectories, share_results,
+            update_intersection_cache, TrajectorySystems,
         },
-        trajectory::{visible_trajectory, walkable_trajectory, Trajectory},
+        trajectory::{visible_trajectory, walkable_trajectory, TrajectoryRequest},
         TrajectoryPoint,
     };
 }

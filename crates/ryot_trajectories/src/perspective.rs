@@ -57,7 +57,7 @@ impl<P: TrajectoryPoint> Perspective<P> {
     }
 }
 
-impl<P, T: Copy + Into<RadialArea<P>>> From<&T> for RadialArea<P> {
+impl<T: Copy + Into<RadialArea<P>>, P> From<&T> for RadialArea<P> {
     fn from(element: &T) -> RadialArea<P> {
         (*element).into()
     }

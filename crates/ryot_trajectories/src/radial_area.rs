@@ -60,10 +60,7 @@ impl<P: Point> RadialArea<P> {
                 5..=8 => 5,
                 _ => 1,
             },
-            extra_rays: match range {
-                0..=11 => false,
-                _ => true,
-            },
+            extra_rays: !matches!(range, 0..=11),
             ..self
         }
     }
@@ -150,8 +147,8 @@ impl<P: TrajectoryPoint> From<RadialArea<P>> for Perspective<P> {
             center_pos
                 .tiles_on_arc_circumference(range, start_angle, end_angle, angle_step)
                 .into_iter()
-                .filter_map(|arc_tile| {
-                    let rays = radial_area
+                .flat_map(|arc_tile| {
+                    radial_area
                         .get_rays_to_tile(&arc_tile)
                         .into_iter()
                         .filter_map(|sub| {
@@ -164,11 +161,8 @@ impl<P: TrajectoryPoint> From<RadialArea<P>> for Perspective<P> {
                                 center_pos.draw_line_to(arc_tile),
                             ))
                         })
-                        .collect::<Vec<_>>();
-
-                    Some(rays)
+                        .collect::<Vec<_>>()
                 })
-                .flatten()
                 .collect::<Vec<_>>(),
         )
     }

@@ -1,9 +1,8 @@
-use bevy_ecs::prelude::Component;
 use std::time::Duration;
 
-#[derive(Clone, Copy, Eq, PartialEq, Component, Debug)]
+#[derive(Clone, Copy, Eq, PartialEq, Debug)]
 pub(crate) struct Params {
-    pub max_hits: i32,
+    pub max_collisions: i32,
     pub reversed: bool,
     pub execution_type: ExecutionType,
 }
@@ -11,7 +10,7 @@ pub(crate) struct Params {
 impl Default for Params {
     fn default() -> Self {
         Self {
-            max_hits: 0,
+            max_collisions: 0,
             reversed: false,
             execution_type: ExecutionType::Once,
         }

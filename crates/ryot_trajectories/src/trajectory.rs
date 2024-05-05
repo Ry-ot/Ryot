@@ -2,7 +2,7 @@ use crate::prelude::*;
 use crate::request::Params;
 use bevy_ecs::prelude::*;
 use bevy_utils::HashSet;
-use ryot_core::prelude::Navigable;
+use ryot_core::prelude::{Navigable, Point};
 use std::collections::VecDeque;
 use std::marker::PhantomData;
 use std::time::Instant;
@@ -15,7 +15,7 @@ use std::time::Instant;
 /// entity-specific conditions that may affect whether a position is considered valid for certain
 /// operations within the trajectory area, like visibility checks or interactions.
 #[derive(Debug, Clone, Eq, PartialEq, Component)]
-pub struct Trajectory<T, P> {
+pub struct TrajectoryRequest<T, P> {
     pub area: RadialArea<P>,
     pub shared_with: HashSet<Entity>,
     condition: fn(&Self, &dyn Navigable, &P) -> bool,
@@ -24,7 +24,20 @@ pub struct Trajectory<T, P> {
     marker: PhantomData<T>,
 }
 
-impl<T, P> Trajectory<T, P> {
+impl<T, P: Point> Default for TrajectoryRequest<T, P> {
+    fn default() -> Self {
+        Self {
+            area: RadialArea::<P>::default(),
+            condition: |_, _, _| true,
+            params: Params::default(),
+            shared_with: HashSet::default(),
+            last_executed_at: None,
+            marker: PhantomData,
+        }
+    }
+}
+
+impl<T, P> TrajectoryRequest<T, P> {
     pub fn new(area: RadialArea<P>, condition: fn(&Self, &dyn Navigable, &P) -> bool) -> Self {
         Self {
             area,
@@ -52,8 +65,8 @@ impl<T, P> Trajectory<T, P> {
         self
     }
 
-    pub fn with_max_hits(mut self, max_hits: i32) -> Self {
-        self.params.max_hits = max_hits;
+    pub fn with_max_collisions(mut self, max_collisions: i32) -> Self {
+        self.params.max_collisions = max_collisions;
         self
     }
 
@@ -76,20 +89,20 @@ impl<T, P> Trajectory<T, P> {
     }
 }
 
-impl<T, P: Copy> Trajectory<T, P> {
+impl<T, P: Copy> TrajectoryRequest<T, P> {
     pub fn meets_condition<N: Navigable>(&self, flags: &N, position: &P) -> bool {
         (self.condition)(self, flags, position)
     }
 }
 
-impl<T: Copy, P: TrajectoryPoint> Trajectory<T, P> {
+impl<T: Copy, P: TrajectoryPoint> TrajectoryRequest<T, P> {
     pub fn execute<N: Navigable>(
         &mut self,
         from: &P,
         intersections_per_trajectory: &Vec<Vec<P>>,
         get_nav_for_position: impl Fn(&P) -> N,
-    ) -> Option<Intersections<T, P>> {
-        let mut hits = VecDeque::new();
+    ) -> Option<TrajectoryResult<T, P>> {
+        let mut collisions = VecDeque::new();
         let mut impact_area = VecDeque::new();
 
         if !self.can_execute() {
@@ -98,16 +111,16 @@ impl<T: Copy, P: TrajectoryPoint> Trajectory<T, P> {
 
         for intersections in intersections_per_trajectory {
             let reversed = self.params.reversed;
-            let mut max_hits = self.params.max_hits;
+            let mut max_collisions = self.params.max_collisions;
 
             let mut previous_pos = from;
 
             let mut executor = |pos| {
-                let Some((intersection, hit)) = self.execute_for_position(
+                let Some((intersection, collided)) = self.execute_for_position(
                     from,
                     pos,
                     previous_pos,
-                    &mut max_hits,
+                    &mut max_collisions,
                     &get_nav_for_position,
                 ) else {
                     return;
@@ -117,8 +130,8 @@ impl<T: Copy, P: TrajectoryPoint> Trajectory<T, P> {
                     impact_area.push_back(intersection.position);
                 }
 
-                if hit {
-                    hits.push_back(intersection);
+                if collided {
+                    collisions.push_back(intersection);
                 }
 
                 previous_pos = pos;
@@ -133,7 +146,7 @@ impl<T: Copy, P: TrajectoryPoint> Trajectory<T, P> {
 
         self.last_executed_at = Some(Instant::now());
 
-        Some(Intersections::new(hits, impact_area))
+        Some(TrajectoryResult::new(collisions, impact_area))
     }
 
     fn execute_for_position<N: Navigable>(
@@ -141,21 +154,21 @@ impl<T: Copy, P: TrajectoryPoint> Trajectory<T, P> {
         from: &P,
         pos: &P,
         previous_pos: &P,
-        remaining_hits: &mut i32,
+        remaining_collisions: &mut i32,
         get_nav_for_position: impl Fn(&P) -> N,
-    ) -> Option<(Intersection<P, T>, bool)> {
+    ) -> Option<(Collision<T, P>, bool)> {
         let flags = get_nav_for_position(pos);
-        let hit = !self.meets_condition(&flags, pos);
+        let collided = !self.meets_condition(&flags, pos);
 
-        if hit {
-            *remaining_hits -= 1;
+        if collided {
+            *remaining_collisions -= 1;
         }
 
-        let intersection = Intersection::new(*pos, from.distance_2d(pos), *previous_pos);
+        let intersection = Collision::new(*pos, from.distance_2d(pos), *previous_pos);
 
-        if *remaining_hits >= 0 {
-            Some((intersection.pierced(), hit))
-        } else if *remaining_hits == -1 && hit {
+        if *remaining_collisions >= 0 {
+            Some((intersection.pierced(), collided))
+        } else if *remaining_collisions == -1 && collided {
             Some((intersection, true))
         } else {
             None
@@ -163,10 +176,10 @@ impl<T: Copy, P: TrajectoryPoint> Trajectory<T, P> {
     }
 }
 
-pub fn visible_trajectory<T, P>(area: RadialArea<P>) -> Trajectory<T, P> {
-    Trajectory::<T, P>::new(area, |_, flags, _pos| !flags.blocks_sight())
+pub fn visible_trajectory<T, P>(area: RadialArea<P>) -> TrajectoryRequest<T, P> {
+    TrajectoryRequest::<T, P>::new(area, |_, flags, _pos| !flags.blocks_sight())
 }
 
-pub fn walkable_trajectory<T, P>(area: RadialArea<P>) -> Trajectory<T, P> {
-    Trajectory::<T, P>::new(area, |_, flags, _pos| flags.is_walkable())
+pub fn walkable_trajectory<T, P>(area: RadialArea<P>) -> TrajectoryRequest<T, P> {
+    TrajectoryRequest::<T, P>::new(area, |_, flags, _pos| flags.is_walkable())
 }
