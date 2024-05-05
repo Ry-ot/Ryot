@@ -10,7 +10,7 @@ impl quickcheck::Arbitrary for RadialArea<Pos> {
         RadialArea::default()
             .with_range(u8::arbitrary(g) % 10 + 1)
             .with_angle_step(usize::arbitrary(g) % 90 + 1)
-            .with_angle_range((u16::arbitrary(g), u16::arbitrary(g)))
+            .with_angle_range((u16::arbitrary(g) % 360, u16::arbitrary(g) % 360))
             .with_center_pos(Pos::generate(
                 i8::arbitrary(g) as i32,
                 i8::arbitrary(g) as i32,
