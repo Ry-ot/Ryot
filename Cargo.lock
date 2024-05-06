@@ -1055,6 +1055,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bevy_mod_index"
+version = "0.4.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0576202d36d8d6393b71e34a09e55301a4901825367d7bff35d47104286e4463"
+dependencies = [
+ "bevy",
+]
+
+[[package]]
 name = "bevy_pbr"
 version = "0.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5186,6 +5195,7 @@ dependencies = [
  "bevy_app",
  "bevy_ecs",
  "bevy_math",
+ "bevy_mod_index",
  "bevy_reflect",
  "bevy_utils",
  "derive_more",

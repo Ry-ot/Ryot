@@ -19,6 +19,7 @@ rustdoc-args = ["-Zunstable-options", "--cfg", "docsrs"]
 all-features = true
 
 [dependencies]
+bevy_mod_index = "0.4"
 bevy_app.workspace = true
 bevy_ecs.workspace = true
 bevy_math.workspace = true
