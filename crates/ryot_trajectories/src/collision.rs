@@ -1,5 +1,5 @@
 use bevy_ecs::prelude::*;
-use ryot_core::game::Point;
+use ryot_core::prelude::Point;
 use std::collections::VecDeque;
 use std::marker::PhantomData;
 

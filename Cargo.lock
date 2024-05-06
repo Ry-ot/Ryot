@@ -5109,7 +5109,7 @@ dependencies = [
 
 [[package]]
 name = "ryot_core"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "async-std",
  "bevy_asset",
@@ -5215,7 +5215,7 @@ dependencies = [
 
 [[package]]
 name = "ryot_tibia"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -5242,7 +5242,7 @@ dependencies = [
 
 [[package]]
 name = "ryot_tiled"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "bevy_app",
  "bevy_asset",
@@ -5304,7 +5304,7 @@ dependencies = [
 
 [[package]]
 name = "ryot_utils"
-version = "0.2.2"
+version = "0.2.3"
 dependencies = [
  "async-std",
  "bevy_app",

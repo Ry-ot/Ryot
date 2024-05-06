@@ -1,7 +1,7 @@
 //! Shows how to do the bare minimum to use trajectories within ryot
 use bevy::prelude::*;
-use ryot_core::game::Point;
 use ryot_core::prelude::Flags;
+use ryot_core::prelude::Point;
 use ryot_trajectories::prelude::*;
 use ryot_trajectories::stubs::*;
 use std::time::Duration;

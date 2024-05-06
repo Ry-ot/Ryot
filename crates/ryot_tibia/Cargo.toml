@@ -1,6 +1,6 @@
 [package]
 name = "ryot_tibia"
-version = "0.2.2"
+version = "0.2.3"
 edition = "2021"
 authors = [
     "Lucas Grossi <lucas.ggrosis@gmail.com>",
@@ -32,7 +32,7 @@ bevy_app = { workspace = true, optional = true }
 bevy_asset = { workspace = true, optional = true }
 bevy_utils = { workspace = true, optional = true }
 
-ryot_core = { path = "../ryot_core", version = "0.2" }
+ryot_core = { path = "../ryot_core", version = "0.2.2" }
 ryot_sprites = { path = "../ryot_sprites", version = "0.2" }
 
 derive_more.workspace = true

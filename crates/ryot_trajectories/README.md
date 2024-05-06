@@ -102,13 +102,13 @@ use ryot_trajectories::prelude::*;
 fn setup<P: TrajectoryPoint + Component>(mut commands: Commands) {
     // here we use () as a marker, but in a real scenario you should use a marker type
     // that properly represents the context of the trajectory.
-    commands.spawn(Trajectory::<(), P>::default());
+    commands.spawn(TrajectoryRequest::<(), P>::default());
 }
 
 fn build_app<P: TrajectoryPoint + Component>(app: &mut App) -> &mut App {
     app
         .add_plugins(DefaultPlugins)
-        .add_trajectory::<(), P, Flags::default()>()
+        .add_trajectory::<(), P, Flags>()
 }
 ```
 
