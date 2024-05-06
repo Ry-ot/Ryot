@@ -7,6 +7,8 @@ pub mod content;
 pub mod game;
 #[cfg(feature = "lmdb")]
 pub mod lmdb;
+#[cfg(feature = "pathfinding")]
+pub mod pathfinding;
 pub mod sprites;
 
 pub mod prelude {
@@ -21,6 +23,9 @@ pub mod prelude {
 
     #[cfg(feature = "lmdb")]
     pub use crate::plugins::lmdb::LmdbPlugin;
+
+    #[cfg(feature = "pathfinding")]
+    pub use crate::plugins::pathfinding::PathFindingPlugin;
 }
 
 pub use prelude::*;

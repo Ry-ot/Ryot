@@ -17,6 +17,8 @@ pub mod drawing;
 pub mod flags;
 pub mod map;
 pub mod movement;
+#[cfg(feature = "ray_casting")]
+pub mod ray_casting;
 
 pub mod prelude {
     pub use crate::{
@@ -65,6 +67,14 @@ pub mod prelude {
         },
     };
 
+    #[cfg(feature = "debug")]
+    pub use crate::map::position::systems::{
+        debug_sprite_position, debug_y_offset, PositionDebugText,
+    };
+
+    #[cfg(feature = "egui")]
+    pub use crate::include_svg;
+
     #[cfg(feature = "lmdb")]
     pub use crate::map::lmdb::{
         systems::{
@@ -74,12 +84,10 @@ pub mod prelude {
         *,
     };
 
-    #[cfg(feature = "egui")]
-    pub use crate::include_svg;
-
-    #[cfg(feature = "debug")]
-    pub use crate::map::position::systems::{
-        debug_sprite_position, debug_y_offset, PositionDebugText,
+    #[cfg(feature = "ray_casting")]
+    pub use crate::ray_casting::{
+        tiled_ray_casting, tiled_visible_ray_casting, tiled_walkable_ray_casting, TiledRayCasting,
+        TiledRayCastingApp,
     };
 }
 
