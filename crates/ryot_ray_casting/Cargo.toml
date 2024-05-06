@@ -1,17 +1,17 @@
 [package]
-name = "ryot_trajectories"
-version = "0.2.2"
+name = "ryot_ray_casting"
+version = "0.2.3"
 edition = "2021"
 authors = [
     "Lucas Grossi <lucas.ggrosis@gmail.com>",
     "Luan Santos <cargo@luan.sh>",
 ]
 license = "AGPL-3.0-only"
-description = "Implements trajectory capabilities for Bevy, crucial for interactive game mechanics like line-of-sight, fog, complex collision, etc."
-homepage = "https://github.com/Ry-ot/Ryot/tree/main/crates/ryot_trajectories"
+description = "Implements ray casting capabilities for Bevy, crucial for interactive game mechanics like line-of-sight, fog, complex collision, etc."
+homepage = "https://github.com/Ry-ot/Ryot/tree/main/crates/ryot_ray_casting"
 repository = "https://github.com/ry-ot/Ryot"
-documentation = "https://docs.rs/ryot_trajectories/"
-keywords = ["ray-cast", "bevy", "trajectory", "game-mechanics", "ryot"]
+documentation = "https://docs.rs/ryot_ray_casting/"
+keywords = ["ray-casting", "bevy", "trajectory", "game-mechanics", "ryot"]
 categories = ["game-development", "games"]
 
 [package.metadata.docs.rs]

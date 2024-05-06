@@ -1,34 +1,35 @@
-# Ryot Trajectory
+# Ryot Ray Casting
 
 [![License](https://img.shields.io/badge/license-GNU%2FAGPL--3.0-blue.svg)](https://github.com/Ry-ot/Ryot?tab=AGPL-3.0-1-ov-file)
-[![Crates.io](https://img.shields.io/crates/v/ryot_trajectories.svg)](https://crates.io/crates/ryot_trajectories)
-[![Downloads](https://img.shields.io/crates/d/ryot_trajectories.svg)](https://crates.io/crates/ryot_trajectories)
-[![Docs](https://docs.rs/ryot_trajectories/badge.svg)](https://docs.rs/ryot_trajectories/latest/ryot_trajectories/)
+[![Crates.io](https://img.shields.io/crates/v/ryot_ray_casting.svg)](https://crates.io/crates/ryot_ray_casting)
+[![Downloads](https://img.shields.io/crates/d/ryot_ray_casting.svg)](https://crates.io/crates/ryot_ray_casting)
+[![Docs](https://docs.rs/ryot_ray_casting/badge.svg)](https://docs.rs/ryot_ray_casting/latest/ryot_ray_casting/)
 [![Discord](https://img.shields.io/discord/528117503952551936.svg?label=&logo=discord&logoColor=ffffff&color=7389D8&labelColor=6A7EC2)](https://discord.com/channels/528117503952551936)
 
-## What is Ryot Trajectory?
+## What is Ryot Ray Casting?
 
-Ryot Trajectory leverages the concept of [ray casting][ray_casting] to provide a robust trajectory system
+Ryot Ray Casting leverages the concept of [ray casting][ray_casting] to provide a robust ray casting system
 for [Bevy][bevy]. It is designed to work seamlessly with Bevy's ECS, enabling developers to implement advanced
-trajectory-based mechanics in their games and simulations that require precise trajectory calculations, with
-support for obstacles, line of sight, and other complex interactions. Even though it's optimized for 2D grid-based
+trajectory-based mechanics in their games and simulations that require precise straight-line trajectory calculations,
+with support for obstacles, line of sight, and other complex interactions. Even though it's optimized for 2D grid-based
 environments, it can be easily extended to fit specific game requirements and open-world scenarios. It's part of
 [Ryot][ryot] framework, having [Ryot Core][ryot_core] and [Ryot Utils][ryot_utils] as dependencies.
 
-## Ray Cast and Trajectories
+## Ray Casting and Trajectories
 
-Trajectory is a fundamental concept in game development, enabling complex game mechanics such as projectile motion,
+Ray Casting is a fundamental concept in game development, enabling complex game mechanics such as projectile motion,
 line of sight, fog of war, collision detection, and more. Ray casting is a technique used to simulate trajectories
 by tracing rays through a 2D or 3D environment, detecting collisions and interactions along the way. It's widely
 used in games to implement realistic physics, lighting effects, and AI behaviors, providing a versatile tool for
 creating engaging gameplay experiences.
 
-In the context of Ryot Trajectory offers a comprehensive solution for implementing trajectory systems in Bevy projects,
-providing a flexible and extensible framework for handling trajectory logic. By leveraging the ECS architecture and
-seamless Bevy integration, developers can create dynamic trajectory systems that adapt to changing game conditions and
-player interactions.
+In the context of Ryot Ray Casting offers a comprehensive solution for implementing ray casting systems in Bevy
+projects, providing a flexible and extensible framework for handling ray casting logic. By leveraging the ECS
+architecture and seamless Bevy integration, developers can create dynamic ray casting systems that adapt to changing
+game conditions and player interactions.
 
-Trajectory uses [Bevy RayCast3d][bevy_ray_cast] as the underlying ray casting library, for both 2D and 3D environments.
+Ryot RayCasting uses [Bevy RayCast3d][bevy_ray_cast] as the underlying ray casting library, for both 2D and 3D
+environments.
 
 ## Capabilities
 
@@ -38,25 +39,25 @@ Trajectory uses [Bevy RayCast3d][bevy_ray_cast] as the underlying ray casting li
   interaction with obstacles.
 - **2D Optimization**: Specially tailored for 2D grid-based navigation, providing robust tools for tile-based and
   open-world game environments.
-- **Extensible Architecture**: Designed to be flexible, allowing developers to extend and customize trajectory logic to
+- **Extensible Architecture**: Designed to be flexible, allowing developers to extend and customize ray casting logic to
   fit specific game requirements.
 
 ## Basic Setup
 
-Before setting up the trajectory framework, lets understand the core concepts: `Point`, `TrajectoryPoint`, `Navigable`,
-`RadialArea<P>`, `Perspective<P>` and `Trajectory<T, P>`.
+Before setting up the ray casting framework, lets understand the core concepts: `Point`, `RayCastingPoint`, `Navigable`,
+`RadialArea<P>` and `Perspective<P>`.
 
 ### Point
 
 The Point trait represents a position in the world. It's a core concept of the Ryot ecosystem, that allows you to
 integrate your own world representation with Ryot and its spatial algorithms.
 
-### TrajectoryPoint
+### RayCastingPoint
 
-An extension of the Point trait, the TrajectoryPoint trait represents a position in the world that can be used to
-calculate a trajectory. It's used to generate the bounding box of a given point in space, used to check the point
+An extension of the Point trait, the RayCastingPoint trait represents a position in the world that can be used to
+evaluate ray casting. It's used to generate the bounding box of a given point in space, used to check the point
 against the ray cast. This crate uses primarily the aabb3d (axis-aligned bounding box) to represent the bounding box of
-a point in space and the ray cast aabb intersection to check if a point is inside a trajectory or not.
+a point in space and the ray cast aabb intersection to check if a point is inside a ray or not.
 
 ### Navigable
 
@@ -76,39 +77,32 @@ allowing to cache complex calculations of perspectives and reuse them in the fut
 ### Perspective<P>
 
 The Perspective struct is a representation of a perspective from a given spectator point. It contains an array of
-traversals, which are tuples of RayCast3d and the area traversed by the ray. It's used to represent all the trajectories
-that a spectator can see from a given point in space in a determined scenario/condition.
-
-### Trajectory<T, P>
-
-The trajectory struct is a representation of a trajectory in the game world. It's a component that can be attached to
-entities in the ECS, and it's used to represent the trajectory request of an entity. It contains the radial area of the
-trajectory, the conditions that the trajectory must satisfy, the entities that the trajectory can be shared with, and a
-set of params that can be used to customize the trajectory calculation.
+traversals, which are tuples of RayCast3d and the area traversed by the ray. It's used to represent all the rays that
+can be cast from a spectator perspective in a determined scenario/condition.
 
 ### Bevy
 
-To integrate `ryot_trajectories` you need to add a trajectory to your Bevy app. This is done by calling
-the `add_trajectory<T, P, N>`, where `T` is a marker type that represents the trajectory context, `P` a TrajectoryPoint
-type and `N` is the Navigable type. This method is a builder method on your Bevy app builder.
+To integrate `ryot_ray_casting` you need to add a ray casting to your Bevy app. This is done by calling
+the `add_ray_casting<T, P, N>`, where `T` is a marker type that represents the ray casting context, `P` a
+RayCastingPoint type and `N` is the Navigable type. This method is a builder method on your Bevy app builder.
 
 Here is a basic example:
 
 ```rust
 use bevy::prelude::*;
 use ryot_core::prelude::*;
-use ryot_trajectories::prelude::*;
+use ryot_ray_casting::prelude::*;
 
-fn setup<P: TrajectoryPoint + Component>(mut commands: Commands) {
+fn setup<P: RayCastingPoint + Component>(mut commands: Commands) {
     // here we use () as a marker, but in a real scenario you should use a marker type
-    // that properly represents the context of the trajectory.
-    commands.spawn(TrajectoryRequest::<(), P>::default());
+    // that properly represents the context of the ray casting.
+    commands.spawn(RayCasting::<(), P>::default());
 }
 
-fn build_app<P: TrajectoryPoint + Component>(app: &mut App) -> &mut App {
+fn build_app<P: RayCastingPoint + Component>(app: &mut App) -> &mut App {
     app
         .add_plugins(DefaultPlugins)
-        .add_trajectory::<(), P, Flags>()
+        .add_ray_casting::<(), P, Flags>()
 }
 ```
 
@@ -116,57 +110,63 @@ fn build_app<P: TrajectoryPoint + Component>(app: &mut App) -> &mut App {
 
 This crate has two main ECS components:
 
-### `TrajectoryRequest<T, P>`
+### `RayCasting<T, P>`
 
-This component is attached to entities that require a trajectory computation. It specifies the parameters for the
-trajectory algorithm:
+This struct is a representation of a ray casting in the game world. It's a component that can be attached to
+entities in the ECS, and it's used to represent the ray casting request of an entity given a context T.
 
-- **area**: the radial area that represents the area that the trajectory will cover.
-- **shared_with**: the entities that the trajectory can be shared with.
-- **conditions**: the conditions that the trajectory must satisfy, based on a navigable type and a position.
-- **params**: a set of parameters that can be used to customize the trajectory calculation.
-    - **max_collisions**: the maximum number of collisions that a ray cast in this trajectory can have.
-    - **reversed**: if the trajectory should be analysed in reverse order (from the end to the start).
-    - **execution_type**: the type of execution that the trajectory should have: once or time based.
-- **last_executed_at**: the last time that the trajectory was executed, a flag to determine if the trajectory should be
+This component is attached to entities that require a ray casting computation. It specifies the parameters for the
+ray casting evaluation:
+
+- **area**: the radial area that represents the plan over which the rays will be casted.
+- **shared_with**: the entities that the propagation of the rays will be shared with.
+- **conditions**: the conditions that the plane points P must satisfy, based on a navigable type, to avoid colliding
+  with the rays cast.
+- **params**: a set of parameters that can be used to customize the ray casting calculation.
+    - **max_collisions**: the maximum number of collisions that a ray cast can have before stopping propagating.
+    - **reversed**: if the ray should be analysed in reverse order (from the end to the start).
+    - **execution_type**: the type of execution that the ray casting should have: once or time based.
+- **last_executed_at**: the last time that the ray casting was executed, a flag to determine if it should be
   executed again or not.
 
-It's part of the public API and should be used by the user to trigger trajectory computations.
+It's part of the public API and should be used by the user to trigger ray casting computations.
 
-### `TrajectoryResult<T, P>`
+This component is automatically removed when it no longer meets the execution requirements related to its ExecutionType.
 
-This component is attached to entities that have completed a trajectory computation. It holds the result of the
-trajectory computation, represented by:
+### `RayPropagation<T, P>`
 
-- **collisions**: the collisions between the trajectory and the world, meaning that the trajectory is not navigable
-  in these points.
+This component is attached to entities that have completed a ray casting computation. It holds the result of the
+ray casting evaluation, how the ray propagated over the given plane, represented by:
+
+- **collisions**: the collisions between the ray and the requested plane, meaning that the those points are not
+  navigable.
     - **position**: the position where the collision happened.
-    - **distance**: the distance from the start of the trajectory to the collision.
-    - **previous_position**: the previous position of the trajectory, before the collision.
-    - **pierced**: if the collision was pierced or not, meaning that the trajectory continued after the collision.
-- **area_of_interest**: the area of interest of the trajectory, meaning that the trajectory is navigable and can
-  influence the world in these points.
+    - **distance**: the distance from the ray's origin to the collision point.
+    - **previous_position**: the previous position that the ray touched before the collision occurred.
+    - **pierced**: if the collision was pierced or not, meaning that the ray propagation continued after the collision.
+- **area_of_interest**: the area of interest of the ray casting, all points through which the rays cast propagated,
+  meaning that the ray influences the world in these points.
 
-This component is attached to entities that have completed a trajectory computation. It's part of the public API and
-should be used by the user to check the trajectory results.
+This component is attached to entities that have completed a ray casting computation. It's part of the public API and
+should be used by the user to check the ray propagation.
 
 ## Systems
 
-The trajectory framework is composed of three main systems:
+The ray casting framework is composed of three main systems:
 
 1. `update_intersection_cache<T, P>`: this system updates the cache of intersections represented by a radial area
-   present in the TrajectoryRequest<T, P> component. This cache is used to speed up the trajectory computation, avoiding
+   present in the RayCasting<T, P> component. This cache is used to speed up the ray casting computation, avoiding
    re-calculating already calculated ray cast aabb intersections.
-2. `process_trajectories<T, P, N>`: the main system of the trajectory framework, it executes the trajectory requests
-   present in the ECS, calculating the trajectories and attaching the results to the entities.
-3. `share_results<T, P>`: this system shares the trajectory results of an entity with the entities that the trajectory
-   can be shared with.
+2. `process_ray_casting<T, P, N>`: the main system of the ray casting framework, it executes the ray casting requests
+   present in the ECS, calculating the ray propagation and attaching the results to the entities.
+3. `share_results<T, P>`: this system shares the ray propagation results of an entity with the entities that the
+   ray casting can be shared with.
 
 There are also two systems that are part of the clean-up process:
 
-1. `remove_stale_results<T, P>`: this system removes the trajectory results that are no longer associated to a
-   trajectory request.
-2. `remove_stale_trajectories<T, P>`: this system removes the trajectory requests that are no longer valid.
+1. `remove_stale_results<T, P>`: this system removes the RayPropagation<T, P> from entities that no longer have a
+   RayCasting<T, P> component.
+2. `remove_stale_requests<T, P>`: this system removes the RayCasting<T, P> requests that are no longer valid.
 
 ## Examples
 
@@ -180,19 +180,19 @@ Replace example_name with the name of the example you wish to run.
 
 ### Understanding the Examples
 
-Each example included in the library showcases different aspects of the trajectory system:
+Each example included in the library showcases different aspects of the ray casting system:
 
-- **Basic**: Demonstrates a basic complete trajectory use case, with obstacles and different radial areas.
-- **Stress Test**: Evaluates the trajectory's performance under high load conditions.
+- **Basic**: Demonstrates a basic complete ray casting use case, with obstacles and different radial areas.
+- **Stress Test**: Evaluates the ray casting's performance under high load conditions.
 
 ### Building Your Own Scenarios
 
-Leverage the `ExampleBuilder` to customize and create tailored trajectory example/test scenarios:
+Leverage the `ExampleBuilder` to customize and create tailored ray casting example/test scenarios:
 
 ```rust
 fn main() {
-    // ExampleBuilder::<T /* Contextual Marker */, P /* TrajectoryPoint */, N /* Navigable */>::new()
-    // .with_trajectories(/* array of (trajectory, count) tuples, containing the trajectories to be instantiated and how many */)
+    // ExampleBuilder::<T /* Contextual Marker */, P /* RayCastingPoint */, N /* Navigable */>::new()
+    // .with_ray_castings(/* array of (ray casting, count) tuples, containing the ray casting to be instantiated and how many */)
     //  .with_obstacles(/* number of obstacles to be instantiated */)
     //      .app() // basic app with visual capabilities
     //      /* add your custom systems, plugins and resources here */
@@ -211,11 +211,11 @@ cargo bench --features stubs
 
 ### Results
 
-There are three main benchmarks for the trajectory system: creating trajectories, executing trajectories, and checking
-navigable points against trajectories. The benchmarks cover different scenarios, such as linear, sectorial and circular
-areas, with different ranges values.
+There are three main benchmarks for the ray casting system: creating the perspectives, executing the ray casting, and
+checking navigable points against the ray propagation. The benchmarks cover different scenarios, such as linear,
+sectorial and circular areas, with different ranges values.
 
-The following tables provide an overview of the benchmark results for the trajectory system:
+The following tables provide an overview of the benchmark results for the ray casting system:
 
 #### Creation
 
@@ -281,7 +281,7 @@ The following tables provide an overview of the benchmark results for the trajec
 | check_1million_obstacles_against_circle_range_255            | circular  | 255              | 437,340        | 10,785             | 2,287                           |
 
 This README format clearly sections out the features, example usage, and benchmarks, providing a comprehensive guide for
-anyone looking to integrate the `ryot_trajectories` crate into their projects.
+anyone looking to integrate the `ryot_ray_casting` crate into their projects.
 
 
 [bevy]: https://bevyengine.org/

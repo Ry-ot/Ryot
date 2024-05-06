@@ -1,17 +1,16 @@
-//! Shows how to do the bare minimum to use trajectories within ryot
 use bevy::prelude::*;
 use ryot_core::prelude::Flags;
-use ryot_trajectories::prelude::*;
-use ryot_trajectories::stubs::{ExampleBuilder, Pos};
+use ryot_ray_casting::prelude::*;
+use ryot_ray_casting::stubs::{ExampleBuilder, Pos};
 
 fn main() {
     let builder: ExampleBuilder<(), Pos, Flags> = ExampleBuilder::default();
 
     builder
         .clone()
-        .with_trajectories(vec![
+        .with_ray_castings(vec![
             (
-                visible_trajectory(
+                visible_ray_casting(
                     RadialArea::circle()
                         .with_range(15)
                         .with_center_pos(builder.random_pos()),
@@ -20,7 +19,7 @@ fn main() {
                 10_000,
             ),
             (
-                visible_trajectory(
+                visible_ray_casting(
                     RadialArea::default()
                         .with_range(1)
                         .with_center_pos(builder.random_pos())
@@ -30,7 +29,7 @@ fn main() {
                 1_000_000,
             ),
             (
-                visible_trajectory(
+                visible_ray_casting(
                     RadialArea::circle()
                         .with_range(3)
                         .with_center_pos(builder.random_pos()),
@@ -39,7 +38,7 @@ fn main() {
                 50_000,
             ),
             (
-                visible_trajectory(
+                visible_ray_casting(
                     RadialArea::default()
                         .with_range(15)
                         .with_center_pos(builder.random_pos())
@@ -55,7 +54,7 @@ fn main() {
         .run();
 }
 
-fn process_intersections(player_query: Query<&TrajectoryResult<(), Pos>>) {
+fn process_intersections(player_query: Query<&RayPropagation<(), Pos>>) {
     for intersections in player_query.iter() {
         for _ in intersections.area_of_interest.iter() {}
     }

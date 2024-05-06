@@ -32,10 +32,9 @@ Here is an example of how you might use this crate to decode appearance data:
 use ryot_core::prelude::VisualElements;
 use ryot_tibia as tibia;
 
-fn main() {
+fn needless_main() {
     // Vec::new() simulates raw bytes received from Tibia's appearance data
     let visual_elements: VisualElements = tibia::from_bytes(&Vec::new()).unwrap();
-    println!("{:?}", visual_elements);
 }
 ```
 

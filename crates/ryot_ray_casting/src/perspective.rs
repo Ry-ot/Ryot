@@ -5,17 +5,16 @@ use crate::prelude::*;
 use bevy_math::bounding::{Aabb3d, RayCast3d};
 use derive_more::{Deref, DerefMut};
 
-/// A perspective represents a set of view points that determine what an entity can see.
-/// Each view point is represented by a ray cast and a target area covered by the ray cast.
-/// The target area is a collection of points that can be seen from the view point.
+/// A perspective slices a given observable area into rays and target areas through which the
+/// rays are cast. This allows for the calculation of intersections between the ray and the
+/// target area, which can be used to determine the propagation of the ray given the conditions
+/// of the ray casting request.
 ///
-/// Perspective is used only for the calculation of the possible trajectories from the given
-/// view points. This calculation has significant costs, so it is done only when necessary and
-/// cached based on the representation of that perspective (e.g. [RadialArea]). Only aabb
-/// intersection is currently supported as the calculation method.
+/// The intersection calculation is a costly operation. To mitigate this, we use the radial
+/// description of the perspective, [RadialArea], to cache the intersections for each perspective,
+/// so it is done only when necessary and cached based on the representation of that perspective.
 ///
-/// The trajectories are multiple collections of spatial points representing different trajectories
-/// from spectator perspective. These trajectories can then be used in a variety of calculations.
+/// Only aabb intersection is currently supported as the calculation method.
 #[derive(Debug, Clone, Deref, DerefMut)]
 pub struct Perspective<P>(Vec<(RayCast3d, Vec<P>)>);
 
@@ -25,7 +24,7 @@ impl<P> Default for Perspective<P> {
     }
 }
 
-impl<P: TrajectoryPoint> Perspective<P> {
+impl<P: RayCastingPoint> Perspective<P> {
     pub fn new(traversals: Vec<(RayCast3d, Vec<P>)>) -> Self {
         Self(traversals)
     }

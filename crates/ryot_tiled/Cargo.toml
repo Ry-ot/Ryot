@@ -43,7 +43,7 @@ debug = []
 test-utils = ["dep:quickcheck", "dep:quickcheck_macros"]
 lmdb = ["dep:heed"]
 pathfinding = ["bevy", "dep:ryot_pathfinder", "dep:ryot_derive"]
-trajectories = ["bevy", "dep:ryot_trajectories", "dep:ryot_derive"]
+ray_casting = ["bevy", "dep:ryot_ray_casting", "dep:ryot_derive"]
 
 [dependencies]
 bevy_app = { workspace = true, optional = true }
@@ -63,7 +63,7 @@ bevy_window = { workspace = true, optional = true }
 ryot_core.workspace = true
 ryot_derive = { workspace = true, optional = true }
 ryot_pathfinder = { workspace = true, optional = true }
-ryot_trajectories = { workspace = true, optional = true }
+ryot_ray_casting = { workspace = true, optional = true }
 ryot_utils.workspace = true
 
 derive_more.workspace = true

@@ -1,6 +1,6 @@
-//! This module introduces the concepts of `RadialArea` a primary representation of an area of
-//! interest in the game world, that can be used for determining trajectories. It's the main way
-//! of generating the [Perspective] from a spectator in a given position.
+//! This module introduces the concepts of `RadialArea` a descriptive representation of a plane
+//! over which rays can be cast, used to determine the propagation of rays in the game world.
+//! It's the main way of generating the [Perspective] from a spectator in a given position.
 //!
 //! Radial area tries to represent an area based on angles, like a circle or a sector, with a
 //! predefined range and center position.
@@ -11,9 +11,17 @@ use ryot_core::prelude::Point;
 
 use crate::prelude::*;
 
-/// Defines a radial area of interest from a specific point in the game world, characterized by
-/// a range, center position, step angle, and an angle range. This struct is used to generate
-/// [Perspective] objects that represent the observable area from the center position.
+/// Defines an area of interest from a specific point in the game world. It represents the plane
+/// over which the ray casting requests will be evaluated, in a descriptive way. It's used to
+/// determine the propagation of rays in the game world, based on the center position and the
+/// defined range and angle range.
+///
+/// The description is based on radial areas, which can be a circle or a sector, since it allows
+/// a quite generic and flexible way to define the observable area from a given position, regardless
+/// of the game world's complexity or design.
+///
+/// This struct is used to generate [Perspective] objects that represent the observable area from
+/// the center position.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Hash)]
 pub struct RadialArea<P> {
     pub range: u8,
@@ -123,7 +131,7 @@ impl<P: Point> RadialArea<P> {
 /// Implements conversion from `RadialArea` to [Perspective], allowing easy creation of
 /// perspective objects based on radial descriptions. This facilitates the dynamic generation
 /// of visible areas based on the position and defined view angle of entities.
-impl<P: TrajectoryPoint> From<RadialArea<P>> for Perspective<P> {
+impl<P: RayCastingPoint> From<RadialArea<P>> for Perspective<P> {
     fn from(radial_area: RadialArea<P>) -> Self {
         let RadialArea {
             range,
