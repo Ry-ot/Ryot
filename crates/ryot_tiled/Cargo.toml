@@ -60,11 +60,11 @@ bevy_transform = { workspace = true, optional = true }
 bevy_utils = { workspace = true, optional = true }
 bevy_window = { workspace = true, optional = true }
 
-ryot_utils = { path = "../ryot_utils", version = "0.2" }
-ryot_core = { path = "../ryot_core", version = "0.2" }
-ryot_derive = { path = "../ryot_derive", version = "0.2", optional = true }
-ryot_pathfinder = { path = "../ryot_pathfinder", version = "0.2", optional = true }
-ryot_trajectories = { path = "../ryot_trajectories", version = "0.2", optional = true }
+ryot_core.workspace = true
+ryot_derive = { workspace = true, optional = true }
+ryot_pathfinder = { workspace = true, optional = true }
+ryot_trajectories = { workspace = true, optional = true }
+ryot_utils.workspace = true
 
 derive_more.workspace = true
 glam.workspace = true
