@@ -10,7 +10,7 @@ license = "AGPL-3.0-only"
 description = "Implements trajectory capabilities for Bevy, crucial for interactive game mechanics like line-of-sight, fog, complex collision, etc."
 homepage = "https://github.com/Ry-ot/Ryot/tree/main/crates/ryot_trajectories"
 repository = "https://github.com/ry-ot/Ryot"
-documentation = "ttps://docs.rs/ryot_trajectories/"
+documentation = "https://docs.rs/ryot_trajectories/"
 keywords = ["ray-cast", "bevy", "trajectory", "game-mechanics", "ryot"]
 categories = ["game-development", "games"]
 
