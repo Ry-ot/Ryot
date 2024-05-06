@@ -25,8 +25,8 @@ bevy_math.workspace = true
 bevy_reflect.workspace = true
 bevy_utils.workspace = true
 
-ryot_core = { path = "../ryot_core", version = "0.2" }
-ryot_utils = { path = "../ryot_utils", version = "0.2" }
+ryot_core.workspace = true
+ryot_utils.workspace = true
 
 rand = { workspace = true, optional = true }
 bevy = { workspace = true, optional = true }

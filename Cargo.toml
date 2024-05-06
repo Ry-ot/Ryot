@@ -58,6 +58,19 @@ bevy_transform = "0.13"
 bevy_utils = "0.13"
 bevy_window = "0.13"
 
+# Ryot dependencies
+ryot = { path = "./crates/ryot", version = "0.2" }
+ryot_assets = { path = "./crates/ryot_assets", version = "0.2" }
+ryot_core = { path = "./crates/ryot_core", version = "0.2" }
+ryot_derive = { path = "./crates/ryot_derive", version = "0.2" }
+ryot_internal = { path = "./crates/ryot_internal", version = "0.2" }
+ryot_pathfinder = { path = "./crates/ryot_pathfinder", version = "0.2" }
+ryot_sprites = { path = "./crates/ryot_sprites", version = "0.2" }
+ryot_tibia = { path = "./crates/ryot_tibia", version = "0.2" }
+ryot_tiled = { path = "./crates/ryot_tiled", version = "0.2" }
+ryot_trajectories = { path = "./crates/ryot_trajectories", version = "0.2" }
+ryot_utils = { path = "./crates/ryot_utils", version = "0.2" }
+
 bevy_asset_loader = { version = "0.20.1", features = ["2d", "standard_dynamic_assets"] }
 bevy_common_assets = { version = "0.10", features = ["toml", "json"] }
 bevy_egui = { version = "0.25", features = ["immutable_ctx"] }

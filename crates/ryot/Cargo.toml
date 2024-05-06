@@ -24,7 +24,7 @@ bevy_ecs.workspace = true
 bevy_render.workspace = true
 bevy_sprite.workspace = true
 
-ryot_internal = { path = "../ryot_internal", version = "0.2" }
+ryot_internal.workspace = true
 
 [features]
 default = [
