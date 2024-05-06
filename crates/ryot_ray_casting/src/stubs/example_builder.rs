@@ -27,18 +27,18 @@ pub struct Obstacle;
 #[derive(Clone)]
 pub struct ExampleBuilder<
     T: Copy + Send + Sync + 'static,
-    P: TrajectoryPoint + Component,
+    P: RayCastingPoint + Component,
     N: Navigable + Copy + Default,
 > {
     grid_size: i32,
     n_obstacles: usize,
-    trajectories: Vec<(TrajectoryRequest<T, P>, usize)>,
+    ray_castings: Vec<(RayCasting<T, P>, usize)>,
     _marker: PhantomData<(T, N)>,
 }
 
 impl<
         T: Copy + Send + Sync + 'static,
-        P: TrajectoryPoint + Component,
+        P: RayCastingPoint + Component,
         N: Navigable + Copy + Default,
     > Default for ExampleBuilder<T, P, N>
 {
@@ -46,7 +46,7 @@ impl<
         Self {
             grid_size: 10,
             n_obstacles: 0,
-            trajectories: Vec::new(),
+            ray_castings: Vec::new(),
             _marker: PhantomData,
         }
     }
@@ -54,28 +54,25 @@ impl<
 
 impl<
         T: Copy + Send + Sync + 'static,
-        P: TrajectoryPoint + Component + Into<Vec2>,
+        P: RayCastingPoint + Component + Into<Vec2>,
         N: Navigable + Copy + Default,
     > ExampleBuilder<T, P, N>
 {
     pub fn new(
         grid_size: i32,
-        trajectories: Vec<(TrajectoryRequest<T, P>, usize)>,
+        ray_castings: Vec<(RayCasting<T, P>, usize)>,
         n_obstacles: usize,
     ) -> Self {
         Self {
             grid_size,
-            trajectories,
+            ray_castings,
             n_obstacles,
             _marker: PhantomData,
         }
     }
 
-    pub fn with_trajectories(
-        mut self,
-        trajectories: Vec<(TrajectoryRequest<T, P>, usize)>,
-    ) -> Self {
-        self.trajectories = trajectories;
+    pub fn with_ray_castings(mut self, ray_castings: Vec<(RayCasting<T, P>, usize)>) -> Self {
+        self.ray_castings = ray_castings;
         self
     }
 
@@ -160,8 +157,8 @@ impl<
     }
 
     fn setup_app(&self, mut app: App) -> App {
-        app.add_trajectory::<T, P, N>()
-            .add_systems(Startup, (self.spawn_trajectories(), self.spawn_obstacles()))
+        app.add_ray_casting::<T, P, N>()
+            .add_systems(Startup, (self.spawn_ray_castings(), self.spawn_obstacles()))
             .add_plugins((
                 FrameTimeDiagnosticsPlugin,
                 EntityCountDiagnosticsPlugin,
@@ -178,13 +175,13 @@ impl<
         }
     }
 
-    fn spawn_trajectories(&self) -> impl FnMut(Commands) {
+    fn spawn_ray_castings(&self) -> impl FnMut(Commands) {
         let builder = self.clone();
 
         move |mut commands: Commands| {
-            for (trajectory, n) in builder.trajectories.iter() {
+            for (ray_casting, n) in builder.ray_castings.iter() {
                 for _ in 0..*n {
-                    commands.spawn((trajectory.clone(), trajectory.area.center_pos));
+                    commands.spawn((ray_casting.clone(), ray_casting.area.center_pos));
                 }
             }
         }
@@ -235,7 +232,7 @@ pub fn draw_obstacles(mut gizmos: Gizmos, query: Query<&Pos, With<Obstacle>>) {
     }
 }
 
-pub fn draw_area_of_interest(mut gizmos: Gizmos, player_query: Query<&TrajectoryResult<(), Pos>>) {
+pub fn draw_area_of_interest(mut gizmos: Gizmos, player_query: Query<&RayPropagation<(), Pos>>) {
     for results in &player_query {
         for pos in results.area_of_interest.iter() {
             gizmos.circle_2d(
@@ -251,7 +248,7 @@ pub fn draw_area_of_interest(mut gizmos: Gizmos, player_query: Query<&Trajectory
     }
 }
 
-pub fn draw_collisions(mut gizmos: Gizmos, q_result: Query<&TrajectoryResult<(), Pos>>) {
+pub fn draw_collisions(mut gizmos: Gizmos, q_result: Query<&RayPropagation<(), Pos>>) {
     for result in &q_result {
         for intersection in result.collisions.iter() {
             gizmos.line_2d(

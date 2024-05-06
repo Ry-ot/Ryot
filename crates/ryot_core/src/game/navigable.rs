@@ -1,7 +1,7 @@
 /// Defines behavior for tiles or entities in terms of navigation and visibility within the Ryot framework.
 ///
 /// This trait abstracts the walkability and sight-blocking properties to ensure compatibility with
-/// generic systems such as pathfinding and trajectory, facilitating their application across
+/// generic systems such as pathfinding and ray casting, facilitating their application across
 /// different types of game environments and scenarios.
 ///
 /// Implementing this trait allows for consistent behavior across various game elements, making

@@ -1,26 +1,26 @@
 use crate::prelude::*;
-use crate::systems::{remove_stale_results, remove_stale_trajectories};
+use crate::systems::{remove_stale_requests, remove_stale_results};
 use bevy_app::{App, PostUpdate, Update};
 use bevy_ecs::prelude::*;
 use ryot_core::prelude::Navigable;
 use ryot_utils::prelude::*;
 
-/// Represents an App that can add one or more `Trajectory` to its systems.
+/// Represents an App that can add one or more `RayCasting<T, P>` to its systems.
 /// Requires the `SimpleCache<RadialArea, Vec<Vec<P>>>` resource to be initialized.
-pub trait TrajectoryApp {
-    fn add_trajectory<
+pub trait RayCastingApp {
+    fn add_ray_casting<
         Marker: Copy + Send + Sync + 'static,
-        P: TrajectoryPoint + Component,
+        P: RayCastingPoint + Component,
         N: Navigable + Copy + Default,
     >(
         &mut self,
     ) -> &mut Self;
 }
 
-impl TrajectoryApp for App {
-    fn add_trajectory<
+impl RayCastingApp for App {
+    fn add_ray_casting<
         Marker: Copy + Send + Sync + 'static,
-        P: TrajectoryPoint + Component,
+        P: RayCastingPoint + Component,
         N: Navigable + Copy + Default,
     >(
         &mut self,
@@ -31,10 +31,10 @@ impl TrajectoryApp for App {
                 Update,
                 (
                     update_intersection_cache::<Marker, P>.in_set(CacheSystems::UpdateCache),
-                    process_trajectories::<Marker, P, N>
-                        .in_set(TrajectorySystems::ProcessTrajectories)
+                    process_ray_casting::<Marker, P, N>
+                        .in_set(RayCastingSystems::Process)
                         .after(CacheSystems::UpdateCache),
-                    share_results::<Marker, P>.in_set(TrajectorySystems::ProcessTrajectories),
+                    share_results::<Marker, P>.in_set(RayCastingSystems::Process),
                 )
                     .chain(),
             )
@@ -42,10 +42,10 @@ impl TrajectoryApp for App {
                 PostUpdate,
                 (
                     remove_stale_results::<Marker, P>,
-                    remove_stale_trajectories::<Marker, P>,
+                    remove_stale_requests::<Marker, P>,
                 )
-                    .in_set(TrajectorySystems::CleanUp)
-                    .after(TrajectorySystems::ProcessTrajectories)
+                    .in_set(RayCastingSystems::CleanUp)
+                    .after(RayCastingSystems::Process)
                     .chain(),
             )
     }

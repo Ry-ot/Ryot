@@ -1,9 +1,9 @@
-//! Shows how to do the bare minimum to use trajectories within ryot
+//! Shows how to do the bare minimum to use RyOT ray casting.
 use bevy::prelude::*;
 use ryot_core::prelude::Flags;
 use ryot_core::prelude::Point;
-use ryot_trajectories::prelude::*;
-use ryot_trajectories::stubs::*;
+use ryot_ray_casting::prelude::*;
+use ryot_ray_casting::stubs::*;
 use std::time::Duration;
 
 fn main() {
@@ -11,8 +11,8 @@ fn main() {
 
     builder
         .clone()
-        .with_trajectories(vec![(
-            visible_trajectory(RadialArea::default())
+        .with_ray_castings(vec![(
+            visible_ray_casting(RadialArea::default())
                 .with_execution_type(ExecutionType::TimeBased(Duration::from_millis(10))),
             1,
         )])
@@ -23,7 +23,7 @@ fn main() {
             (
                 draw_area_of_interest,
                 draw_collisions,
-                update_trajectory,
+                update_ray_casting,
                 change_area_type,
                 builder.move_obstacles(),
                 draw_obstacles,
@@ -66,15 +66,15 @@ fn change_area_type(mut area_type: ResMut<AreaType>, keyboard_input: Res<ButtonI
     }
 }
 
-fn update_trajectory(
+fn update_ray_casting(
     time: Res<Time>,
     area_type: Res<AreaType>,
-    mut query: Query<&mut TrajectoryRequest<(), Pos>>,
+    mut query: Query<&mut RayCasting<(), Pos>>,
     mut cache: Local<f32>,
 ) {
     *cache += 50f32 * time.delta_seconds();
 
-    for mut trajectory in &mut query.iter_mut() {
-        trajectory.area = area_type.get_radial_area((*cache % 360.) as u16);
+    for mut ray_casting in &mut query.iter_mut() {
+        ray_casting.area = area_type.get_radial_area((*cache % 360.) as u16);
     }
 }
