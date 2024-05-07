@@ -3,7 +3,7 @@ use ryot_core::prelude::Point;
 use std::collections::HashSet;
 
 impl TilePosition {
-    pub fn distance(self, other: Self) -> f32 {
+    pub fn distance(self, other: &Self) -> f32 {
         self.truncate()
             .as_vec2()
             .distance(other.truncate().as_vec2())

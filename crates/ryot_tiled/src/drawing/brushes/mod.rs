@@ -36,7 +36,7 @@ pub enum BrushParams<E: BrushItem> {
 
 impl<E: BrushItem> BrushParams<E> {
     pub fn get_size(&self, center: E) -> i32 {
-        let get_distance = |pos: TilePosition| center.get_position().distance(pos).abs() as i32;
+        let get_distance = |pos: TilePosition| center.get_position().distance(&pos).abs() as i32;
 
         match self {
             BrushParams::Size(size) => *size,
