@@ -32,7 +32,7 @@ pub fn round<B: BrushItem>(params: BrushParams<B>, center: B) -> Vec<B> {
 
     for x in center_pos.x.saturating_sub(size)..=center_pos.x.saturating_add(size) {
         for y in center_pos.y.saturating_sub(size)..=center_pos.y.saturating_add(size) {
-            let distance = center_pos.distance(TilePosition::new(x, y, center_pos.z));
+            let distance = center_pos.distance(&TilePosition::new(x, y, center_pos.z));
             if distance <= size as f32 {
                 elements.push(B::from_position(
                     center,
