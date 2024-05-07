@@ -99,7 +99,7 @@ pathfinding algorithm:
 - **to**: target position.
 - **cardinal_cost**: cost of moving in the cardinal directions.
 - **diagonal_cost**: cost of moving in the diagonal directions.
-- **success_distance**: distance from the target position that is considered a successful pathfinding computation.
+- **success_range**: distance range from the target position that is considered a successful pathfinding computation.
 - **timeout**: maximum time in seconds that the pathfinding algorithm can run before returning None.
 
 It's part of the public API and should be used by the user to trigger pathfinding computations.
