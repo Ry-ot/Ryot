@@ -76,7 +76,6 @@ pub struct PathFindingQuery<P: Pathable> {
 ///         };
 ///
 ///         path.remove(0);
-///         // do something with next_pos
 ///     }
 /// }
 #[derive(Component, Clone, Default, Debug, Deref, DerefMut)]
