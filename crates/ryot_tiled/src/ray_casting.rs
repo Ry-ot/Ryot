@@ -15,6 +15,9 @@ impl TiledRayCastingApp for App {
 }
 
 pub type TiledRayCasting<Marker> = RayCasting<Marker, TilePosition>;
+pub type TiledRayPropagation<Marker> = RayPropagation<Marker, TilePosition>;
+pub type TiledRadialArea = RadialArea<TilePosition>;
+pub type TiledPerspective = Perspective<TilePosition>;
 
 pub fn tiled_ray_casting<Marker>(
     area: RadialArea<TilePosition>,
