@@ -17,6 +17,8 @@ pub mod drawing;
 pub mod flags;
 pub mod map;
 pub mod movement;
+#[cfg(feature = "pathfinding")]
+pub mod pathfinding;
 #[cfg(feature = "ray_casting")]
 pub mod ray_casting;
 
@@ -86,9 +88,12 @@ pub mod prelude {
 
     #[cfg(feature = "ray_casting")]
     pub use crate::ray_casting::{
-        tiled_ray_casting, tiled_visible_ray_casting, tiled_walkable_ray_casting, TiledRayCasting,
-        TiledRayCastingApp,
+        tiled_ray_casting, tiled_visible_ray_casting, tiled_walkable_ray_casting, TiledRadialArea,
+        TiledRayCasting, TiledRayCastingApp, TiledRayPropagation,
     };
+
+    #[cfg(feature = "pathfinding")]
+    pub use crate::pathfinding::{TiledPath, TiledPathFindingQuery};
 }
 
 pub static TILE_SIZE: OnceLock<UVec2> = OnceLock::new();
