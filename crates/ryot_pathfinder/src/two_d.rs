@@ -7,11 +7,7 @@ use std::time::Instant;
 /// Calculates a 2D path using the A* algorithm, optimized for grid-based environments.
 /// This function provides default pathfinding behavior which can be overridden for
 /// customized pathfinding logic or non-grid environments.
-pub fn find_path_2d<
-    P: Pathable,
-    FV: Fn(&P) -> bool,
-    FN: Fn(&P, &FV, &PathFindingQuery<P>) -> Vec<(P, u32)>,
->(
+pub fn find_path_2d<P: Pathable, FV: Fn(&P) -> bool, FN: Fn(&P, &FV, u32, u32) -> Vec<(P, u32)>>(
     from: &P,
     query: &PathFindingQuery<P>,
     validator: &FV,
@@ -33,7 +29,7 @@ pub fn find_path_2d<
         from,
         |next| match query.timeout {
             Some(timeout) if Instant::now().duration_since(start) > timeout => vec![],
-            _ => neighbors_generator(next, validator, query),
+            _ => neighbors_generator(next, validator, query.cardinal_cost, query.diagonal_cost),
         },
         |next| (distance(&query.to, next) / 3.) as u32,
         |next| {
@@ -48,7 +44,8 @@ pub fn find_path_2d<
 pub fn weighted_neighbors_2d_generator<P: Pathable, F: Fn(&P) -> bool + ?Sized>(
     pathable: &P,
     validator: &F,
-    query: &PathFindingQuery<P>,
+    cardinal_cost: u32,
+    diagonal_cost: u32,
 ) -> Vec<(P, u32)> {
     let (x, y, z) = pathable.coordinates();
 
@@ -59,7 +56,7 @@ pub fn weighted_neighbors_2d_generator<P: Pathable, F: Fn(&P) -> bool + ?Sized>(
         P::generate(x, y - 1, z),
     ]
     .iter()
-    .map(|p| (*p, query.cardinal_cost))
+    .map(|p| (*p, cardinal_cost))
     .collect::<Vec<(P, u32)>>();
 
     cardinal.extend(
@@ -70,7 +67,7 @@ pub fn weighted_neighbors_2d_generator<P: Pathable, F: Fn(&P) -> bool + ?Sized>(
             P::generate(x - 1, y + 1, z),
         ]
         .iter()
-        .map(|p| (*p, query.diagonal_cost))
+        .map(|p| (*p, diagonal_cost))
         .collect::<Vec<(P, u32)>>(),
     );
 
