@@ -22,7 +22,7 @@ pub mod app;
 pub mod window;
 
 pub mod prelude {
-    pub use crate::{async_task::execute, is_true};
+    pub use crate::{async_task::execute, is_true, ThreadSafe};
 
     #[cfg(feature = "bevy")]
     pub use crate::{
@@ -32,7 +32,6 @@ pub mod prelude {
         conditions::{on_hold_every, run_every, run_every_millis, run_every_secs, TimeArg},
         on_hold_every,
         window::entitled_window,
-        ThreadSafe,
     };
 
     #[cfg(feature = "compression")]

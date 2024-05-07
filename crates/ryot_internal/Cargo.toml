@@ -36,6 +36,11 @@ compression = ["ryot_utils/compression"]
 egui = ["ryot_tiled/egui"]
 lmdb = ["ryot_tiled/lmdb"]
 
+brain = [
+    "bevy",
+    "dep:ryot_brain",
+]
+
 ray_casting = [
     "bevy",
     "ryot_tiled/ray_casting",
@@ -54,6 +59,7 @@ ryot_tibia = [
 
 [dependencies]
 ryot_assets = { workspace = true, optional = true }
+ryot_brain = { workspace = true, optional = true }
 ryot_core.workspace = true
 ryot_pathfinder = { workspace = true, optional = true }
 ryot_sprites.workspace = true

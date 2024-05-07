@@ -29,6 +29,11 @@ pub mod tiled {
     pub use ryot_tiled::*;
 }
 
+#[cfg(feature = "brain")]
+pub mod brain {
+    pub use ryot_brain::*;
+}
+
 #[cfg(feature = "pathfinding")]
 pub mod pathfinder {
     pub use ryot_pathfinder::*;

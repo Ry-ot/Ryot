@@ -1,0 +1,31 @@
+[package]
+name = "ryot_brain"
+version = "0.2.2"
+edition = "2021"
+authors = [
+    "Lucas Grossi <lucas.ggrosis@gmail.com>",
+    "Luan Santos <cargo@luan.sh>",
+]
+license = "AGPL-3.0-only"
+description = "Part of the Ryot game engine ecosystem, offering advanced NPC behaviors using big_brain and bevy."
+homepage = "https://github.com/ry-ot/Ryot"
+repository = "https://github.com/ry-ot/Ryot"
+documentation = "https://docs.rs/ryot/"
+keywords = ["bevy", "ai", "ryot"]
+categories = ["game-development", "game-engines", "games"]
+
+[package.metadata.docs.rs]
+rustdoc-args = ["-Zunstable-options", "--cfg", "docsrs"]
+all-features = true
+
+[dependencies]
+bevy.workspace = true
+big-brain = { git = "https://github.com/zkat/big-brain.git", branch = "main" }
+
+ryot_core.workspace = true
+ryot_tiled.workspace = true
+ryot_pathfinder.workspace = true
+ryot_utils.workspace = true
+
+derive_more.workspace = true
+rand = "0.8.5"

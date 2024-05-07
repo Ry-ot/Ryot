@@ -6,6 +6,9 @@ pub use ryot_utils::prelude::*;
 #[cfg(feature = "bevy")]
 pub use ryot_assets::prelude::*;
 
+#[cfg(feature = "brain")]
+pub use ryot_brain::prelude::*;
+
 #[cfg(feature = "pathfinding")]
 pub use ryot_pathfinder::prelude::*;
 
