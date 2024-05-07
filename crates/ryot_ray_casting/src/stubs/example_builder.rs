@@ -12,8 +12,7 @@ use bevy_ecs::change_detection::{Res, ResMut};
 use bevy_ecs::prelude::{Commands, Component, Local, Query, With};
 use glam::{UVec2, Vec2};
 use ryot_core::prelude::*;
-use ryot_utils::app::OptionalPlugin;
-use ryot_utils::cache::Cache;
+use ryot_utils::prelude::*;
 use std::marker::PhantomData;
 
 pub fn tile_size() -> UVec2 {
@@ -26,7 +25,7 @@ pub struct Obstacle;
 
 #[derive(Clone)]
 pub struct ExampleBuilder<
-    T: Copy + Send + Sync + 'static,
+    T: Copy + ThreadSafe,
     P: RayCastingPoint + Component,
     N: Navigable + Copy + Default,
 > {
@@ -36,11 +35,8 @@ pub struct ExampleBuilder<
     _marker: PhantomData<(T, N)>,
 }
 
-impl<
-        T: Copy + Send + Sync + 'static,
-        P: RayCastingPoint + Component,
-        N: Navigable + Copy + Default,
-    > Default for ExampleBuilder<T, P, N>
+impl<T: Copy + ThreadSafe, P: RayCastingPoint + Component, N: Navigable + Copy + Default> Default
+    for ExampleBuilder<T, P, N>
 {
     fn default() -> Self {
         Self {
@@ -53,7 +49,7 @@ impl<
 }
 
 impl<
-        T: Copy + Send + Sync + 'static,
+        T: Copy + ThreadSafe,
         P: RayCastingPoint + Component + Into<Vec2>,
         N: Navigable + Copy + Default,
     > ExampleBuilder<T, P, N>

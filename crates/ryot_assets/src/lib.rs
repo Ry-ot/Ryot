@@ -7,13 +7,14 @@
 
 use bevy_asset_loader::asset_collection::AssetCollection;
 use bevy_ecs::prelude::Resource;
+use ryot_utils::prelude::*;
 
 pub mod atlas;
 pub mod catalog;
 pub mod sprites;
 pub mod visual_elements;
 
-pub trait RyotAsset = Resource + AssetCollection + Send + Sync + 'static;
+pub trait RyotAsset = Resource + AssetCollection + ThreadSafe;
 
 pub mod prelude {
     pub use crate::{
