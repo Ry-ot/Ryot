@@ -3,13 +3,14 @@ use bevy_app::App;
 use ryot_core::game::Navigable;
 use ryot_core::prelude::Flags;
 use ryot_ray_casting::prelude::*;
+use ryot_utils::prelude::ThreadSafe;
 
 pub trait TiledRayCastingApp {
-    fn add_tiled_ray_casting<Marker: Copy + Send + Sync + 'static>(&mut self) -> &mut Self;
+    fn add_tiled_ray_casting<Marker: Copy + ThreadSafe>(&mut self) -> &mut Self;
 }
 
 impl TiledRayCastingApp for App {
-    fn add_tiled_ray_casting<Marker: Copy + Send + Sync + 'static>(&mut self) -> &mut Self {
+    fn add_tiled_ray_casting<Marker: Copy + ThreadSafe>(&mut self) -> &mut Self {
         self.add_ray_casting::<Marker, TilePosition, Flags>()
     }
 }

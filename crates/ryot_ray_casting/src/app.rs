@@ -9,7 +9,7 @@ use ryot_utils::prelude::*;
 /// Requires the `SimpleCache<RadialArea, Vec<Vec<P>>>` resource to be initialized.
 pub trait RayCastingApp {
     fn add_ray_casting<
-        Marker: Copy + Send + Sync + 'static,
+        Marker: Copy + ThreadSafe,
         P: RayCastingPoint + Component,
         N: Navigable + Copy + Default,
     >(
@@ -19,7 +19,7 @@ pub trait RayCastingApp {
 
 impl RayCastingApp for App {
     fn add_ray_casting<
-        Marker: Copy + Send + Sync + 'static,
+        Marker: Copy + ThreadSafe,
         P: RayCastingPoint + Component,
         N: Navigable + Copy + Default,
     >(

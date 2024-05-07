@@ -16,7 +16,7 @@ use ryot_utils::prelude::*;
 /// Trait for elements that can engage in pathfinding, providing a method to determine the path
 /// between two Points and if the current Pathable can be navigated based on a given Navigable.
 /// This trait depends on Point, which is a trait that represents a position in the world.
-pub trait Pathable: Point + Sync + Send + 'static {
+pub trait Pathable: Point + ThreadSafe {
     /// Calculates the path between two points, based on the provided query and a validator function
     /// that determines if a point is pathable. The path is returned as a vector of points and the
     /// total cost of the path.

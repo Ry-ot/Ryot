@@ -22,7 +22,7 @@ pub enum RayCastingSystems {
 /// maintaining an updated representation of the ray casting requests and their intersections.
 ///
 /// Run as part of [`CacheSystems::UpdateCache`].
-pub fn update_intersection_cache<T: Copy + Send + Sync + 'static, P: RayCastingPoint>(
+pub fn update_intersection_cache<T: Copy + ThreadSafe, P: RayCastingPoint>(
     mut intersection_cache: ResMut<SimpleCache<RadialArea<P>, Vec<Vec<P>>>>,
     q_radial_areas: Query<&RayCasting<T, P>, Changed<RayCasting<T, P>>>,
 ) {
@@ -45,7 +45,7 @@ pub fn update_intersection_cache<T: Copy + Send + Sync + 'static, P: RayCastingP
 ///
 /// Run as part of [`RayCastingSystems::Process`].
 pub fn process_ray_casting<
-    T: Copy + Send + Sync + 'static,
+    T: Copy + ThreadSafe,
     P: RayCastingPoint + Component,
     N: Navigable + Copy + Default,
 >(
@@ -86,7 +86,7 @@ pub fn process_ray_casting<
 /// Shares the results of ray casting requests with all the entities pointed to by the `shared_with`
 /// field in the RayCasting component. This system is crucial for sharing the results of ray casting
 /// requests across multiple entities.
-pub fn share_results<T: Copy + Send + Sync + 'static, P: RayCastingPoint>(
+pub fn share_results<T: Copy + ThreadSafe, P: RayCastingPoint>(
     mut commands: Commands,
     mut q_propagation: Query<(&RayCasting<T, P>, &mut RayPropagation<T, P>)>,
     mut q_results: Query<&mut RayPropagation<T, P>, Without<RayCasting<T, P>>>,
@@ -113,7 +113,7 @@ pub fn share_results<T: Copy + Send + Sync + 'static, P: RayCastingPoint>(
 }
 
 /// This system removes the RayPropagation component from entities that no longer have a RayCasting.
-pub fn remove_stale_results<T: Copy + Send + Sync + 'static, P: RayCastingPoint>(
+pub fn remove_stale_results<T: Copy + ThreadSafe, P: RayCastingPoint>(
     mut commands: Commands,
     q_orphan_results: Query<Entity, (With<RayPropagation<T, P>>, Without<RayCasting<T, P>>)>,
 ) {
@@ -124,7 +124,7 @@ pub fn remove_stale_results<T: Copy + Send + Sync + 'static, P: RayCastingPoint>
 
 /// This system removes the RayCasting component that are no longer valid, based on their execution
 /// type and last execution time.
-pub fn remove_stale_requests<T: Copy + Send + Sync + 'static, P: RayCastingPoint>(
+pub fn remove_stale_requests<T: Copy + ThreadSafe, P: RayCastingPoint>(
     mut commands: Commands,
     q_ray_casting: Query<(Entity, &RayCasting<T, P>)>,
 ) {

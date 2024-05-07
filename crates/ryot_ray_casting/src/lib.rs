@@ -3,6 +3,7 @@
 #![feature(trait_alias)]
 use bevy_math::bounding::Aabb3d;
 use ryot_core::prelude::Point;
+use ryot_utils::prelude::*;
 
 mod app;
 mod propagation;
@@ -18,7 +19,7 @@ mod tests;
 #[cfg(feature = "stubs")]
 pub mod stubs;
 
-pub trait RayCastingPoint = Point + Into<Aabb3d> + Send + Sync + 'static;
+pub trait RayCastingPoint = Point + Into<Aabb3d> + ThreadSafe;
 
 pub mod prelude {
     pub use crate::{

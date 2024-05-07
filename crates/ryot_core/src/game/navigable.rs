@@ -38,7 +38,7 @@
 ///     }
 /// }
 /// ```
-pub trait Navigable: Sync + Send + 'static {
+pub trait Navigable: ryot_utils::ThreadSafe {
     fn is_walkable(&self) -> bool {
         true
     }

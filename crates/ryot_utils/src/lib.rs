@@ -1,3 +1,4 @@
+#![feature(trait_alias)]
 //! `ryot_utils`
 //!
 //! Provides general utilities and helpers that are fundamental across the Ryot framework.
@@ -31,12 +32,14 @@ pub mod prelude {
         conditions::{on_hold_every, run_every, run_every_millis, run_every_secs, TimeArg},
         on_hold_every,
         window::entitled_window,
+        ThreadSafe,
     };
 
     #[cfg(feature = "compression")]
     pub use crate::compression::{compress, decompress, Compression, Zstd};
 }
 
+pub trait ThreadSafe = Send + Sync + 'static;
 pub fn is_true(value: Option<bool>) -> bool {
     value == Some(true)
 }

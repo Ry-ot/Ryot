@@ -41,6 +41,7 @@ bevy_render = { workspace = true, optional = true }
 bevy_sprite = { workspace = true, optional = true }
 bevy_utils = { workspace = true, optional = true }
 bevy_asset_loader = { workspace = true, optional = true }
+ryot_utils.workspace = true
 
 async-std = "1.12.0"
 derive_more.workspace = true
