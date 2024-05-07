@@ -35,8 +35,11 @@ pub fn find_path_2d<
             Some(timeout) if Instant::now().duration_since(start) > timeout => vec![],
             _ => neighbors_generator(next, validator, query),
         },
-        |next| distance(&query.to, next) as u32,
-        |next| distance(&query.to, next) <= query.success_distance,
+        |next| (distance(&query.to, next) / 3.) as u32,
+        |next| {
+            distance(&query.to, next) >= query.success_range.0
+                && distance(&query.to, next) <= query.success_range.0
+        },
     )
 }
 

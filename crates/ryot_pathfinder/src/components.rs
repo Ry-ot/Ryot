@@ -49,7 +49,7 @@ pub struct PathFindingQuery<P: Pathable> {
     pub to: P,
     pub cardinal_cost: u32,
     pub diagonal_cost: u32,
-    pub success_distance: f32,
+    pub success_range: (f32, f32),
     pub timeout: Option<Duration>,
 }
 
@@ -79,7 +79,7 @@ pub struct PathFindingQuery<P: Pathable> {
 ///         // do something with next_pos
 ///     }
 /// }
-#[derive(Component, Clone, Debug, Deref, DerefMut)]
+#[derive(Component, Clone, Default, Debug, Deref, DerefMut)]
 pub struct Path<P: Pathable>(pub(crate) Vec<P>);
 
 /// Manages the asynchronous execution of pathfinding tasks, holding a future
@@ -94,7 +94,7 @@ impl<P: Pathable + Default> Default for PathFindingQuery<P> {
             timeout: None,
             cardinal_cost: 1,
             diagonal_cost: 500,
-            success_distance: 1.,
+            success_range: (1., 1.),
         }
     }
 }
@@ -109,6 +109,10 @@ impl<P: Pathable + Default> PathFindingQuery<P> {
 }
 
 impl<P: Pathable> PathFindingQuery<P> {
+    pub fn with_target(self, to: P) -> Self {
+        Self { to, ..self }
+    }
+
     pub fn with_timeout(self, timeout: Duration) -> Self {
         Self {
             timeout: Some(timeout),
@@ -130,9 +134,16 @@ impl<P: Pathable> PathFindingQuery<P> {
         }
     }
 
-    pub fn with_success_distance(self, success_distance: f32) -> Self {
+    pub fn with_success_distance(self, distance: f32) -> Self {
         Self {
-            success_distance,
+            success_range: (distance, distance),
+            ..self
+        }
+    }
+
+    pub fn with_success_range(self, success_range: (f32, f32)) -> Self {
+        Self {
+            success_range,
             ..self
         }
     }
