@@ -79,7 +79,7 @@ pub fn process_ray_casting<
         });
 
     for (entity, positions) in rx.try_iter() {
-        commands.entity(entity).insert(positions);
+        commands.entity(entity).try_insert(positions);
     }
 }
 
@@ -107,7 +107,7 @@ pub fn share_results<T: Copy + Send + Sync + 'static, P: RayCastingPoint>(
             result.area_of_interest.extend(shared.area_of_interest);
             result.collisions.extend(shared.collisions);
         } else {
-            commands.entity(entity).insert(shared);
+            commands.entity(entity).try_insert(shared);
         }
     }
 }
