@@ -5,10 +5,10 @@ use bevy_utils::HashMap;
 use ryot_core::prelude::*;
 use ryot_utils::prelude::*;
 
-pub fn collect_updatable_positions(
+pub fn collect_updatable_positions<P: Into<TilePosition> + Copy + Component>(
     map_tiles: Res<MapTiles<Entity>>,
     q_updated_entities: Query<
-        (Option<&PreviousPosition>, &TilePosition),
+        &P,
         Or<(
             Changed<ContentId>,
             Changed<Visibility>,
@@ -18,27 +18,21 @@ pub fn collect_updatable_positions(
 ) -> HashMap<TilePosition, (Vec<Entity>, bool)> {
     let mut pos_map: HashMap<TilePosition, (Vec<Entity>, bool)> = HashMap::new();
 
-    for (previous_pos, new_pos) in q_updated_entities.iter() {
-        match previous_pos {
-            Some(PreviousPosition(previous_pos)) => vec![*new_pos, *previous_pos],
-            None => vec![*new_pos],
+    for pos in q_updated_entities.iter() {
+        let tile_pos: TilePosition = (*pos).into();
+
+        if pos_map.contains_key(&tile_pos) {
+            continue;
         }
-        .iter()
-        .enumerate()
-        .for_each(|(i, pos)| {
-            if pos_map.contains_key(pos) {
-                return;
-            }
 
-            let Some(tile) = map_tiles.get(pos) else {
-                return;
-            };
+        let Some(tile) = map_tiles.get(&tile_pos) else {
+            continue;
+        };
 
-            pos_map.insert(
-                *pos,
-                (tile.into_iter().map(|(_, entity)| entity).collect(), i == 0),
-            );
-        });
+        pos_map.insert(
+            tile_pos,
+            (tile.into_iter().map(|(_, entity)| entity).collect(), true),
+        );
     }
 
     pos_map

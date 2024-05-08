@@ -72,6 +72,7 @@ pub fn follow_path_scorer(
 }
 
 pub fn follow_path<T: From<OrdinalDirection>>(
+    mut cmd: Commands,
     positions: Query<&TilePosition>,
     mut paths: Query<&mut TiledPath>,
     flags_cache: Res<Cache<TilePosition, Flags>>,
@@ -91,12 +92,14 @@ pub fn follow_path<T: From<OrdinalDirection>>(
                 let actor_position = positions.get(*actor).expect("actor has no position");
                 let Ok(mut path) = paths.get_mut(*actor) else {
                     debug!("Actor has no path.");
+                    cmd.entity(*actor).remove::<Target>();
                     *action_state = ActionState::Success;
                     continue;
                 };
 
                 let Some(next_pos) = path.first().copied() else {
                     debug!("Actor path is empty.");
+                    cmd.entity(*actor).remove::<Target>();
                     *action_state = ActionState::Success;
                     continue;
                 };
@@ -105,7 +108,7 @@ pub fn follow_path<T: From<OrdinalDirection>>(
 
                 if next_pos == *actor_position {
                     if path.is_empty() {
-                        *action_state = ActionState::Failure;
+                        *action_state = ActionState::Cancelled;
                     }
 
                     continue;
@@ -113,7 +116,7 @@ pub fn follow_path<T: From<OrdinalDirection>>(
 
                 if !next_pos.is_navigable(&flags_cache) {
                     debug!("Next position is not valid, failing.");
-                    *action_state = ActionState::Failure;
+                    *action_state = ActionState::Cancelled;
                 } else {
                     debug!("Moving to {:?}", next_pos);
                     result.push((*actor, T::from(actor_position.direction_to(next_pos))));
@@ -121,6 +124,7 @@ pub fn follow_path<T: From<OrdinalDirection>>(
                 }
             }
             ActionState::Cancelled => {
+                cmd.entity(*actor).remove::<Target>();
                 *action_state = ActionState::Failure;
             }
             _ => {}

@@ -23,9 +23,12 @@ bevy.workspace = true
 big-brain = { git = "https://github.com/zkat/big-brain.git", branch = "main" }
 
 ryot_core.workspace = true
-ryot_tiled.workspace = true
+ryot_tiled = { workspace = true, features = ["bevy", "pathfinding"] }
 ryot_pathfinder.workspace = true
 ryot_utils.workspace = true
 
 derive_more.workspace = true
 rand = "0.8.5"
+
+[[example]]
+name = "pathfinding"

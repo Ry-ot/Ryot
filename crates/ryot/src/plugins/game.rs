@@ -37,8 +37,15 @@ impl NavigableApp for App {
     fn add_navigable<N: Navigable + Copy + Default + Component>(&mut self) -> &mut Self {
         self.init_resource_once::<Cache<TilePosition, N>>()
             .add_systems(
+                PreUpdate,
+                collect_updatable_positions::<TilePosition>
+                    .pipe(build_new_flags_for_map::<N>)
+                    .pipe(update_tile_flag_cache::<N>)
+                    .in_set(CacheSystems::UpdateCache),
+            )
+            .add_systems(
                 PostUpdate,
-                collect_updatable_positions
+                collect_updatable_positions::<PreviousPosition>
                     .pipe(build_new_flags_for_map::<N>)
                     .pipe(update_tile_flag_cache::<N>)
                     .in_set(CacheSystems::UpdateCache),

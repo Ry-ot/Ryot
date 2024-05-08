@@ -22,7 +22,7 @@ pub trait PathFindingThinker {
 impl PathFindingThinker for ThinkerBuilder {
     fn find_path<T: Thinking>(self) -> Self {
         self.when(
-            FindTargetScorer::<T>::default(),
+            FindTargetScorer::<T>::with_duration_in_seconds(1.),
             Steps::build()
                 .label("FindClosestTarget")
                 .step(FindClosestTarget::<T>::default()),
@@ -35,7 +35,16 @@ pub struct FindTargetScorer<T: Thinking>(Timer, PhantomData<T>);
 
 impl<T: Thinking> Default for FindTargetScorer<T> {
     fn default() -> Self {
-        Self(Timer::from_seconds(0.5, TimerMode::Repeating), PhantomData)
+        Self::with_duration_in_seconds(0.5)
+    }
+}
+
+impl<T: Thinking> FindTargetScorer<T> {
+    fn with_duration_in_seconds(duration: f32) -> Self {
+        Self(
+            Timer::from_seconds(duration, TimerMode::Repeating),
+            PhantomData,
+        )
     }
 }
 
@@ -50,10 +59,13 @@ impl<T: Thinking> Default for FindClosestTarget<T> {
 
 pub fn find_path_scorer<T: Thinking + Component>(
     time: Res<Time>,
+    targets: Query<&Target>,
     mut query: Query<(&Actor, &mut Score, &mut FindTargetScorer<T>)>,
 ) {
     for (Actor(_actor), mut score, mut scorer) in &mut query {
-        if scorer.0.tick(time.delta()).just_finished() {
+        let tick = if targets.get(*_actor).is_err() { 3 } else { 1 } * time.delta();
+
+        if scorer.0.tick(tick).just_finished() {
             score.set(0.7);
         } else {
             score.set(0.);
@@ -68,7 +80,7 @@ pub fn find_closest_target<T: Component + Thinking>(
     q_target_positions: Query<(Entity, &TilePosition), With<T>>,
     mut action_query: Query<(&Actor, &mut ActionState, &FindClosestTarget<T>, &ActionSpan)>,
 ) {
-    for (actor, mut action_state, _, span) in &mut action_query {
+    for (Actor(actor), mut action_state, _, span) in &mut action_query {
         let _guard = span.span().enter();
 
         match *action_state {
@@ -77,12 +89,12 @@ pub fn find_closest_target<T: Component + Thinking>(
                 *action_state = ActionState::Executing;
             }
             ActionState::Executing => {
-                let actor_position = positions.get(actor.0).expect("actor has no position");
+                let actor_position = positions.get(*actor).expect("actor has no position");
                 let closest_target = get_closest_target(actor_position, &q_target_positions);
 
                 let Some((target, closest_target)) = closest_target else {
                     debug!("No closest target found, failing.");
-                    *action_state = ActionState::Failure;
+                    *action_state = ActionState::Cancelled;
                     continue;
                 };
 
@@ -96,7 +108,13 @@ pub fn find_closest_target<T: Component + Thinking>(
 
                 let Some(target_pos) = target_pos else {
                     debug!("Unreachable path, failing.");
-                    *action_state = ActionState::Failure;
+                    *action_state = ActionState::Cancelled;
+                    continue;
+                };
+
+                if closest_target.distance(actor_position) > 300. {
+                    debug!("Target is too far away, failing.");
+                    *action_state = ActionState::Cancelled;
                     continue;
                 };
 
@@ -106,7 +124,7 @@ pub fn find_closest_target<T: Component + Thinking>(
                     continue;
                 };
 
-                cmd.entity(actor.0).insert((
+                cmd.entity(*actor).insert((
                     Target(target),
                     TiledPathFindingQuery::new(target_pos)
                         .with_success_range((0., 0.))
@@ -117,6 +135,7 @@ pub fn find_closest_target<T: Component + Thinking>(
                 *action_state = ActionState::Success;
             }
             ActionState::Cancelled => {
+                cmd.entity(*actor).remove::<Target>();
                 *action_state = ActionState::Failure;
             }
             _ => {}
