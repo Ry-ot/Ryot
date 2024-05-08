@@ -16,7 +16,7 @@ pub mod prelude {
         content_plugin,
         plugins::{
             content::{BaseContentPlugin, MetaContentPlugin, VisualContentPlugin},
-            game::{ElevationPlugin, GamePlugin, NavigablePlugin},
+            game::{ElevationPlugin, GamePlugin, NavigableApp},
             sprites::{RyotDrawingPlugin, RyotSpritePlugin},
         },
     };
