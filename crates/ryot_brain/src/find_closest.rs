@@ -3,7 +3,6 @@ use big_brain::actions::ActionState;
 use big_brain::prelude::*;
 use derive_more::{Deref, DerefMut};
 use ryot_core::prelude::*;
-use ryot_pathfinder::prelude::*;
 use ryot_tiled::prelude::*;
 use ryot_utils::prelude::*;
 use std::fmt::Debug;
@@ -13,7 +12,7 @@ use std::time::Duration;
 pub trait Thinking = Clone + Debug + ThreadSafe;
 
 #[derive(Clone, Copy, Component, Debug, Deref, DerefMut)]
-pub struct Target(Entity);
+pub struct Target(pub TilePosition);
 
 pub trait PathFindingThinker {
     fn find_path<T: Thinking>(self) -> Self;
@@ -31,7 +30,7 @@ impl PathFindingThinker for ThinkerBuilder {
 }
 
 #[derive(Clone, Component, Debug, ScorerBuilder)]
-pub struct FindTargetScorer<T: Thinking>(Timer, PhantomData<T>);
+pub struct FindTargetScorer<T: Thinking>(pub Timer, PhantomData<T>);
 
 impl<T: Thinking> Default for FindTargetScorer<T> {
     fn default() -> Self {
@@ -92,7 +91,7 @@ pub fn find_closest_target<T: Component + Thinking>(
                 let actor_position = positions.get(*actor).expect("actor has no position");
                 let closest_target = get_closest_target(actor_position, &q_target_positions);
 
-                let Some((target, closest_target)) = closest_target else {
+                let Some((_, closest_target)) = closest_target else {
                     debug!("No closest target found, failing.");
                     *action_state = ActionState::Cancelled;
                     continue;
@@ -101,8 +100,6 @@ pub fn find_closest_target<T: Component + Thinking>(
                 let target_pos = get_closest_valid_surrounding_position(
                     &closest_target,
                     actor_position,
-                    1,
-                    2,
                     &flags_cache,
                 );
 
@@ -125,7 +122,7 @@ pub fn find_closest_target<T: Component + Thinking>(
                 };
 
                 cmd.entity(*actor).insert((
-                    Target(target),
+                    Target(target_pos),
                     TiledPathFindingQuery::new(target_pos)
                         .with_success_range((0., 0.))
                         .with_timeout(Duration::from_secs(2)),
@@ -160,23 +157,17 @@ fn get_closest_target<T: Component>(
 fn get_closest_valid_surrounding_position(
     destination_pos: &TilePosition,
     actor_pos: &TilePosition,
-    cardinal_cost: u32,
-    diagonal_cost: u32,
     flags_cache: &Res<Cache<TilePosition, Flags>>,
 ) -> Option<TilePosition> {
-    let surrounding_positions = weighted_neighbors_2d_generator(
-        destination_pos,
-        &|pos| pos.is_navigable(flags_cache) || pos == actor_pos,
-        cardinal_cost,
-        diagonal_cost,
-    );
-
-    surrounding_positions
+    destination_pos
+        .get_surroundings()
         .iter()
+        .filter(|&pos| pos.is_navigable(flags_cache) || pos == actor_pos)
+        .map(|&pos| (pos, pos.distance(actor_pos)))
         .min_by(|(a, a_weight), (b, b_weight)| {
-            (a.distance(actor_pos) * *a_weight as f32)
-                .partial_cmp(&(b.distance(actor_pos) * *b_weight as f32))
+            (a.distance(actor_pos) * *a_weight)
+                .partial_cmp(&(b.distance(actor_pos) * *b_weight))
                 .unwrap()
         })
-        .map(|(pos, _)| *pos)
+        .map(|(pos, _)| pos)
 }

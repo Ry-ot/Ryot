@@ -29,7 +29,7 @@ fn main() {
             ..default()
         })
         .add_pathable::<TilePosition, Flags>()
-        .add_systems(Startup, (spawn_basic))
+        .add_systems(Startup, spawn_basic)
         .add_plugins(BigBrainPlugin::new(PreUpdate))
         .add_systems(
             PreUpdate,
@@ -75,7 +75,7 @@ fn spawn_basic(mut commands: Commands) {
         ),
         Target,
     ));
-    for i in 0..=400_000 {
+    for _ in 0..=400_000 {
         commands.spawn((
             TilePosition::generate(
                 rand::random::<i32>() % 100 + 1,
@@ -86,7 +86,7 @@ fn spawn_basic(mut commands: Commands) {
                 .label("ChaserThinker")
                 .picker(FirstToScore::new(0.6))
                 .find_path::<Target>()
-                .follows_path_with_fallback(MovesRandomly),
+                .follows_path_with_fallback(1., MovesRandomly),
         ));
     }
 }

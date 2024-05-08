@@ -7,24 +7,31 @@ use ryot_core::prelude::*;
 use ryot_pathfinder::prelude::*;
 use ryot_tiled::prelude::*;
 use ryot_utils::prelude::*;
-use std::ops::Deref;
 
 pub trait PathFollowingThinker {
-    fn follows_path(self) -> Self;
-    fn follows_path_with_fallback(self, default: impl ActionBuilder + 'static) -> Self;
+    fn follows_path(self, duration_sec: f32) -> Self;
+    fn follows_path_with_fallback(
+        self,
+        duration_sec: f32,
+        default: impl ActionBuilder + 'static,
+    ) -> Self;
 }
 
 impl PathFollowingThinker for ThinkerBuilder {
-    fn follows_path(self) -> Self {
+    fn follows_path(self, duration_sec: f32) -> Self {
         self.when(
-            FollowPathScore::default(),
+            FollowPathScore::with_duration_in_seconds(duration_sec),
             Steps::build().label("FollowPath").step(FollowPath),
         )
     }
 
-    fn follows_path_with_fallback(self, default: impl ActionBuilder + 'static) -> Self {
+    fn follows_path_with_fallback(
+        self,
+        duration_sec: f32,
+        default: impl ActionBuilder + 'static,
+    ) -> Self {
         self.when(
-            FollowPathScore::default(),
+            FollowPathScore::with_duration_in_seconds(duration_sec),
             Steps::build()
                 .label("FollowPath")
                 .step(FollowPath)
@@ -34,11 +41,17 @@ impl PathFollowingThinker for ThinkerBuilder {
 }
 
 #[derive(Clone, Component, Debug, ScorerBuilder)]
-pub struct FollowPathScore(Timer);
+pub struct FollowPathScore(pub Timer);
 
 impl Default for FollowPathScore {
     fn default() -> Self {
-        Self(Timer::from_seconds(1., TimerMode::Repeating))
+        Self::with_duration_in_seconds(1.)
+    }
+}
+
+impl FollowPathScore {
+    fn with_duration_in_seconds(duration: f32) -> Self {
+        Self(Timer::from_seconds(duration, TimerMode::Repeating))
     }
 }
 
@@ -54,12 +67,8 @@ pub fn follow_path_scorer(
     for (Actor(actor), mut score, mut scorer) in &mut query {
         let actor_position = positions.get(*actor).expect("actor has no position");
 
-        let is_far_from_target = targets.get(*actor).map_or(true, |target| {
-            let target_position = positions
-                .get(*target.deref())
-                .expect("target has no position");
-
-            actor_position.distance(target_position) > 1.42
+        let is_far_from_target = targets.get(*actor).map_or(true, |target_position| {
+            actor_position.distance(target_position) > 0.
         });
 
         if scorer.0.tick(time.delta()).just_finished() && is_far_from_target {
