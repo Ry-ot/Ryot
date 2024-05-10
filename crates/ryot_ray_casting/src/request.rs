@@ -1,5 +1,6 @@
 use crate::prelude::*;
 use bevy_ecs::prelude::*;
+use bevy_mod_index::prelude::*;
 use bevy_utils::HashSet;
 use ryot_core::prelude::{Navigable, Point};
 use std::collections::VecDeque;
@@ -208,4 +209,42 @@ pub fn visible_ray_casting<T, P: Point>(area: RadialArea<P>) -> RayCasting<T, P>
 
 pub fn walkable_ray_casting<T, P: Point>(area: RadialArea<P>) -> RayCasting<T, P> {
     RayCasting::<T, P>::new(area, |_, flags, _pos| flags.is_walkable())
+}
+
+pub struct SharedWith<T, P>(PhantomData<(T, P)>);
+
+impl<T, P> Default for SharedWith<T, P> {
+    fn default() -> Self {
+        Self(PhantomData)
+    }
+}
+
+impl<T: Send + Sync + 'static, P: Send + Sync + 'static> IndexInfo for SharedWith<T, P> {
+    type Component = RayCasting<T, P>;
+    type Value = bool;
+    type Storage = HashmapStorage<Self>;
+    type RefreshPolicy = NoDespawnRefreshPolicy;
+
+    fn value(ray_casting: &RayCasting<T, P>) -> bool {
+        !ray_casting.shared_with.is_empty()
+    }
+}
+
+pub struct StaleRequest<T, P>(PhantomData<(T, P)>);
+
+impl<T, P> Default for StaleRequest<T, P> {
+    fn default() -> Self {
+        Self(PhantomData)
+    }
+}
+
+impl<T: Send + Sync + 'static, P: Send + Sync + 'static> IndexInfo for StaleRequest<T, P> {
+    type Component = RayCasting<T, P>;
+    type Value = bool;
+    type Storage = HashmapStorage<Self>;
+    type RefreshPolicy = NoDespawnRefreshPolicy;
+
+    fn value(ray_casting: &RayCasting<T, P>) -> bool {
+        ray_casting.execution_type == ExecutionType::Once && ray_casting.last_executed_at.is_some()
+    }
 }

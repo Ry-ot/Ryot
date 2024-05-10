@@ -3,7 +3,9 @@
 //! It leverages RadialAreas to calculate potential intersections and updates
 //! entities' visible positions accordingly.
 use crate::prelude::*;
+use crate::request::{SharedWith, StaleRequest};
 use bevy_ecs::prelude::*;
+use bevy_mod_index::prelude::Index;
 use ryot_core::prelude::Navigable;
 use ryot_utils::prelude::*;
 use std::sync::mpsc;
@@ -88,14 +90,17 @@ pub fn process_ray_casting<
 /// requests across multiple entities.
 pub fn share_results<T: Copy + ThreadSafe, P: RayCastingPoint>(
     mut commands: Commands,
+    mut index: Index<SharedWith<T, P>>,
     mut q_propagation: Query<(&RayCasting<T, P>, &mut RayPropagation<T, P>)>,
     mut q_results: Query<&mut RayPropagation<T, P>, Without<RayCasting<T, P>>>,
 ) {
     let (tx, rx) = mpsc::channel::<(Entity, RayPropagation<T, P>)>();
 
-    q_propagation.iter().for_each(|(ray_casting, propagation)| {
-        for shared_entity in &ray_casting.shared_with {
-            tx.send((*shared_entity, propagation.clone())).ok();
+    index.lookup(&true).for_each(|entity| {
+        if let Ok((ray_casting, propagation)) = q_propagation.get_mut(entity) {
+            for shared_entity in &ray_casting.shared_with {
+                tx.send((*shared_entity, propagation.clone())).ok();
+            }
         }
     });
 
@@ -126,18 +131,9 @@ pub fn remove_stale_results<T: Copy + ThreadSafe, P: RayCastingPoint>(
 /// type and last execution time.
 pub fn remove_stale_requests<T: Copy + ThreadSafe, P: RayCastingPoint>(
     mut commands: Commands,
-    q_ray_casting: Query<(Entity, &RayCasting<T, P>)>,
+    mut index: Index<StaleRequest<T, P>>,
 ) {
-    q_ray_casting.iter().for_each(|(entity, ray_casting)| {
-        if ray_casting.last_execution().is_none() {
-            return;
-        }
-
-        match ray_casting.execution_type() {
-            ExecutionType::Once => {
-                commands.entity(entity).remove::<RayCasting<T, P>>();
-            }
-            ExecutionType::TimeBased(_) => (),
-        }
+    index.lookup(&true).for_each(|entity| {
+        commands.entity(entity).remove::<RayCasting<T, P>>();
     });
 }

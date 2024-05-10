@@ -21,13 +21,15 @@ fn main() {
         .add_systems(
             Update,
             (
-                draw_area_of_interest,
-                draw_collisions,
                 update_ray_casting,
                 change_area_type,
                 builder.move_obstacles(),
-                draw_obstacles,
             ),
+        )
+        .add_systems(
+            Update,
+            (draw_area_of_interest, draw_collisions, draw_obstacles)
+                .after(RayCastingSystems::Process),
         )
         .init_resource::<AreaType>()
         .run();

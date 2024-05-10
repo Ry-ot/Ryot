@@ -9,7 +9,7 @@ use bevy::prelude::{Camera2dBundle, Color, Gizmos, Time, Timer, TimerMode};
 use bevy::{DefaultPlugins, MinimalPlugins};
 use bevy_app::*;
 use bevy_ecs::change_detection::{Res, ResMut};
-use bevy_ecs::prelude::{Commands, Component, Local, Query, With};
+use bevy_ecs::prelude::*;
 use glam::{UVec2, Vec2};
 use ryot_core::prelude::*;
 use ryot_utils::prelude::*;
