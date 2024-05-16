@@ -12,6 +12,12 @@ use bevy_reflect::prelude::*;
 #[cfg_attr(feature = "bevy", derive(Component, Reflect, Deref, DerefMut))]
 pub struct PreviousPosition(pub TilePosition);
 
+impl From<PreviousPosition> for TilePosition {
+    fn from(pos: PreviousPosition) -> Self {
+        pos.0
+    }
+}
+
 /// System to track changes in the position of entities. Needs to be run after the position
 /// component has been changed, so it can track the previous position.
 /// Better to run it during the [`Last`](Last) or [`PostUpdate`](PostUpdate) stages.

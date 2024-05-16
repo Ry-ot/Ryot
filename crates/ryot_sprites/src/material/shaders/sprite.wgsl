@@ -72,7 +72,7 @@ fn fragment(
 
     var outlined = mix(base, outline_color, outline_alpha - base.a);
     var tinted = mix(outlined, vec4<f32>(outlined.rgb * material.tint.rgb, outlined.a), material.tint.a);
-    tinted.a *= material.alpha;
+    tinted.a *= clamp(material.alpha, 0.0, 1.0);
     return tinted;
 }
 

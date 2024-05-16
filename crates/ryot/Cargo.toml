@@ -33,6 +33,7 @@ default = [
 ]
 
 bevy = ["ryot_internal/bevy"]
+brain = ["ryot_internal/brain"]
 
 tibia = ["ryot_internal/ryot_tibia"]
 

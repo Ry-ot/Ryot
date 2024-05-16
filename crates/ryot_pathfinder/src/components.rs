@@ -71,15 +71,17 @@ pub struct PathFindingQuery<P: Pathable> {
 ///             continue;
 ///         }
 ///
-///         let Some(next_pos) = path.first().copied() else {
-///             continue;
-///         };
-///
-///         path.remove(0);
+///         let next_pos = path.remove(0);
 ///     }
 /// }
 #[derive(Component, Clone, Default, Debug, Deref, DerefMut)]
-pub struct Path<P: Pathable>(pub(crate) Vec<P>);
+pub struct Path<P: Pathable>(Vec<P>);
+
+impl<P: Pathable> Path<P> {
+    pub fn new(path: Vec<P>) -> Self {
+        Path(path)
+    }
+}
 
 /// Manages the asynchronous execution of pathfinding tasks, holding a future
 /// that resolves to the computed path and associated costs.

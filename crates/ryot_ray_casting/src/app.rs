@@ -1,6 +1,6 @@
 use crate::prelude::*;
 use crate::systems::{remove_stale_requests, remove_stale_results};
-use bevy_app::{App, PostUpdate, Update};
+use bevy_app::{App, PostUpdate, PreUpdate, Update};
 use bevy_ecs::prelude::*;
 use ryot_core::prelude::Navigable;
 use ryot_utils::prelude::*;
@@ -28,9 +28,12 @@ impl RayCastingApp for App {
         self.init_resource_once::<Cache<P, N>>()
             .init_resource::<SimpleCache<RadialArea<P>, Vec<Vec<P>>>>()
             .add_systems(
+                PreUpdate,
+                update_intersection_cache::<Marker, P>.in_set(CacheSystems::UpdateCache),
+            )
+            .add_systems(
                 Update,
                 (
-                    update_intersection_cache::<Marker, P>.in_set(CacheSystems::UpdateCache),
                     process_ray_casting::<Marker, P, N>
                         .in_set(RayCastingSystems::Process)
                         .after(CacheSystems::UpdateCache),

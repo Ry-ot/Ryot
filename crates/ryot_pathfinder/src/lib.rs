@@ -1,6 +1,7 @@
 #![doc = include_str!("../README.md")]
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
+pub mod commands;
 pub mod components;
 pub mod pathable;
 pub mod systems;
@@ -11,6 +12,7 @@ pub mod stubs;
 
 pub mod prelude {
     pub use crate::{
+        commands::AmendPathCommand,
         components::{Path, PathFindingQuery},
         pathable::{Pathable, PathableApp},
         systems::PathFindingSystems,

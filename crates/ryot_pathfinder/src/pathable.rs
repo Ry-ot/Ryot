@@ -7,11 +7,13 @@
 //! by using the `add_pathable` method, which initializes the required resources and systems for a
 //! pair of Pathable and Navigable types.
 use crate::prelude::*;
-use crate::systems::{handle_path_finding_tasks, trigger_path_finding_tasks};
+use crate::systems::{amend_path, handle_path_finding_tasks, trigger_path_finding_tasks};
 use bevy_app::{App, Update};
 use bevy_ecs::prelude::*;
+use bevy_utils::HashMap;
 use ryot_core::prelude::*;
 use ryot_utils::prelude::*;
+use std::sync::{Arc, RwLock};
 
 /// Trait for elements that can engage in pathfinding, providing a method to determine the path
 /// between two Points and if the current Pathable can be navigated based on a given Navigable.
@@ -35,8 +37,12 @@ pub trait Pathable: Point + ThreadSafe {
     /// context of the game environment.
     /// The default implementation returns true if the Navigable element is walkable, or true if
     /// no Navigable element is provided.
-    fn can_be_navigated<N: Navigable>(&self, nav: Option<&N>) -> bool {
-        nav.map_or(true, |nav| nav.is_walkable())
+    fn can_be_navigated<N: Navigable>(&self, flags_cache: Arc<RwLock<HashMap<Self, N>>>) -> bool {
+        if let Ok(read_guard) = flags_cache.read() {
+            read_guard.get(self).map_or(true, |nav| nav.is_walkable())
+        } else {
+            false
+        }
     }
 }
 
@@ -53,14 +59,16 @@ impl PathableApp for App {
     fn add_pathable<P: Pathable + Component, N: Navigable + Copy + Default>(
         &mut self,
     ) -> &mut Self {
-        self.init_resource_once::<Cache<P, N>>().add_systems(
-            Update,
-            (
-                trigger_path_finding_tasks::<P, N>.in_set(PathFindingSystems::TriggerTask),
-                handle_path_finding_tasks::<P>
-                    .in_set(PathFindingSystems::ExecuteTask)
-                    .after(PathFindingSystems::TriggerTask),
-            ),
-        )
+        self.add_event::<AmendPathCommand<P>>()
+            .init_resource_once::<Cache<P, N>>()
+            .add_systems(
+                Update,
+                (
+                    trigger_path_finding_tasks::<P, N>.in_set(PathFindingSystems::TriggerTask),
+                    (handle_path_finding_tasks::<P>, amend_path::<P>)
+                        .in_set(PathFindingSystems::ExecuteTask)
+                        .after(PathFindingSystems::TriggerTask),
+                ),
+            )
     }
 }

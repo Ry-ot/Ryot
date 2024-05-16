@@ -26,6 +26,7 @@ bevy_app.workspace = true
 bevy_ecs.workspace = true
 bevy_math.workspace = true
 bevy_tasks = { workspace = true, features = ["multi-threaded"] }
+bevy_utils.workspace = true
 
 ryot_core.workspace = true
 ryot_utils.workspace = true

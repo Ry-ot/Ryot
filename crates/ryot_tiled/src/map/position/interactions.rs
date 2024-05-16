@@ -1,4 +1,5 @@
 use crate::prelude::*;
+use glam::IVec3;
 use ryot_core::prelude::Point;
 use std::collections::HashSet;
 
@@ -32,5 +33,21 @@ impl TilePosition {
         }
 
         true
+    }
+
+    pub fn get_surroundings(&self) -> Vec<TilePosition> {
+        let mut surroundings = Vec::with_capacity(8);
+
+        for x in -1..=1 {
+            for y in -1..=1 {
+                if x == 0 && y == 0 {
+                    continue;
+                }
+
+                surroundings.push(TilePosition(self.0 + IVec3::new(x, y, 0)));
+            }
+        }
+
+        surroundings
     }
 }

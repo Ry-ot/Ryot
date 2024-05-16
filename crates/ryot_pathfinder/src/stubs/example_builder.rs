@@ -7,6 +7,7 @@ use bevy::utils::HashMap;
 use ryot_core::prelude::Navigable;
 use ryot_utils::cache::Cache;
 use std::fmt::Debug;
+use std::sync::Arc;
 use std::time::{Duration, Instant};
 
 fn tile_size() -> UVec2 {
@@ -146,6 +147,8 @@ impl<P: Pathable + Default + Component + Debug + Into<Vec2>, N: Navigable + Copy
         move |mut commands: Commands,
               cache: Res<Cache<P, N>>,
               q_pos: Query<(Entity, &P), (Without<Pathing<P>>, Without<Obstacle>)>| {
+            let cache_arc = Arc::clone(&cache);
+
             // Here we have a system that goes through all entities with a P component that
             // doesn't have a Pathing component (no pathing being executed) and is not an Obstacle.
             for (entity, current_pos) in q_pos.iter() {
@@ -154,7 +157,7 @@ impl<P: Pathable + Default + Component + Debug + Into<Vec2>, N: Navigable + Copy
 
                 // This loop is just a way to avoid spawning an entity on top of an obstacle.
                 // Can be ignored for the sake of understanding the pathfinding system.
-                while !pos.can_be_navigated(cache.read().unwrap().get(&pos)) {
+                while !pos.can_be_navigated(cache_arc.clone()) {
                     pos = builder.random_from_pos(current_pos);
                 }
 
@@ -230,21 +233,18 @@ impl<P: Pathable + Default + Component + Debug + Into<Vec2>, N: Navigable + Copy
                 // Here we update the last execution time, to keep track of the delay.
                 last_executed.insert(entity, Instant::now());
 
-                // If the path is empty, and there is no new query being executed,
-                // we remove the Pathing component, so the entity stops.
-                if path.is_empty() && path_query.is_none() {
-                    commands.entity(entity).remove::<Pathing<P>>();
+                if path.is_empty() {
+                    if path_query.is_none() {
+                        // If the path is empty, and there is no new query being executed,
+                        // we remove the Pathing component, so the entity stops.
+                        commands.entity(entity).remove::<Pathing<P>>();
+                    }
                     continue;
                 }
 
-                let Some(next_pos) = path.first().copied() else {
-                    return;
-                };
-
                 // If there is a next position, we remove it from the path and update the entity's
                 // position to the next position.
-                path.remove(0);
-                *pos = next_pos;
+                *pos = path.remove(0);
             }
         }
     }

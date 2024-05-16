@@ -61,6 +61,7 @@ bevy_window = "0.13"
 # Ryot dependencies
 ryot = { path = "./crates/ryot", version = "0.2" }
 ryot_assets = { path = "./crates/ryot_assets", version = "0.2" }
+ryot_brain = { path = "./crates/ryot_brain", version = "0.2" }
 ryot_core = { path = "./crates/ryot_core", version = "0.2" }
 ryot_derive = { path = "./crates/ryot_derive", version = "0.2" }
 ryot_internal = { path = "./crates/ryot_internal", version = "0.2" }
