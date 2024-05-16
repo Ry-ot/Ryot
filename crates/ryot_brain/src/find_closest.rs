@@ -1,18 +1,38 @@
+use crate::follow_path::MovesRandomly;
 use bevy::prelude::*;
 use big_brain::actions::ActionState;
 use big_brain::prelude::*;
-use derive_more::{Deref, DerefMut};
 use ryot_core::prelude::*;
+use ryot_pathfinder::prelude::Pathable;
 use ryot_tiled::prelude::*;
 use ryot_utils::prelude::*;
 use std::fmt::Debug;
 use std::marker::PhantomData;
+use std::sync::Arc;
 use std::time::Duration;
 
-pub trait Thinking = Clone + Debug + ThreadSafe;
+/*
+Thinker Bundle {
+    Thinker,
+    Thinker timer (every X seconds),
+}
 
-#[derive(Clone, Copy, Component, Debug, Deref, DerefMut)]
-pub struct Target(pub TilePosition);
+struct
+ */
+
+#[derive(Bundle, Debug)]
+pub struct ThinkerBundle {
+    pub thinker: ThinkerBuilder,
+    pub cooldown: Cooldown<Thinker>,
+}
+
+impl ThinkerBundle {
+    pub fn new(thinker: ThinkerBuilder, cooldown: Cooldown<Thinker>) -> Self {
+        Self { thinker, cooldown }
+    }
+}
+
+pub trait Thinking = Clone + Debug + ThreadSafe;
 
 pub trait PathFindingThinker {
     fn find_path<T: Thinking>(self) -> Self;
@@ -21,29 +41,21 @@ pub trait PathFindingThinker {
 impl PathFindingThinker for ThinkerBuilder {
     fn find_path<T: Thinking>(self) -> Self {
         self.when(
-            FindTargetScorer::<T>::with_duration_in_seconds(1.),
+            FindTargetScore::<T>::default(),
             Steps::build()
                 .label("FindClosestTarget")
-                .step(FindClosestTarget::<T>::default()),
+                .step(FindClosestTarget::<T>::default())
+                .step(MovesRandomly),
         )
     }
 }
 
 #[derive(Clone, Component, Debug, ScorerBuilder)]
-pub struct FindTargetScorer<T: Thinking>(pub Timer, PhantomData<T>);
+pub struct FindTargetScore<T: Thinking>(PhantomData<T>);
 
-impl<T: Thinking> Default for FindTargetScorer<T> {
+impl<T: Thinking> Default for FindTargetScore<T> {
     fn default() -> Self {
-        Self::with_duration_in_seconds(0.5)
-    }
-}
-
-impl<T: Thinking> FindTargetScorer<T> {
-    fn with_duration_in_seconds(duration: f32) -> Self {
-        Self(
-            Timer::from_seconds(duration, TimerMode::Repeating),
-            PhantomData,
-        )
+        Self(PhantomData)
     }
 }
 
@@ -57,15 +69,12 @@ impl<T: Thinking> Default for FindClosestTarget<T> {
 }
 
 pub fn find_path_scorer<T: Thinking + Component>(
-    time: Res<Time>,
-    targets: Query<&Target>,
-    mut query: Query<(&Actor, &mut Score, &mut FindTargetScorer<T>)>,
+    cooldowns: Query<&Cooldown<Thinker>>,
+    mut query: Query<(&Actor, &mut Score), With<FindTargetScore<T>>>,
 ) {
-    for (Actor(_actor), mut score, mut scorer) in &mut query {
-        let tick = if targets.get(*_actor).is_err() { 3 } else { 1 } * time.delta();
-
-        if scorer.0.tick(tick).just_finished() {
-            score.set(0.7);
+    for (Actor(actor), mut score) in &mut query {
+        if is_valid_cooldown_for_entity(actor, &cooldowns) {
+            score.set(0.3);
         } else {
             score.set(0.);
         }
@@ -91,9 +100,11 @@ pub fn find_closest_target<T: Component + Thinking>(
                 let actor_position = positions.get(*actor).expect("actor has no position");
                 let closest_target = get_closest_target(actor_position, &q_target_positions);
 
+                // This action is successful by default
+                *action_state = ActionState::Success;
+
                 let Some((_, closest_target)) = closest_target else {
-                    debug!("No closest target found, failing.");
-                    *action_state = ActionState::Cancelled;
+                    debug!("No closest target found.");
                     continue;
                 };
 
@@ -104,35 +115,30 @@ pub fn find_closest_target<T: Component + Thinking>(
                 );
 
                 let Some(target_pos) = target_pos else {
-                    debug!("Unreachable path, failing.");
-                    *action_state = ActionState::Cancelled;
+                    debug!("Unreachable path.");
                     continue;
                 };
 
                 if closest_target.distance(actor_position) > 300. {
-                    debug!("Target is too far away, failing.");
-                    *action_state = ActionState::Cancelled;
+                    debug!("Target is too far away.");
                     continue;
                 };
+
+                *action_state = ActionState::Failure;
 
                 if *actor_position == target_pos {
-                    debug!("Target is already at the closest valid position, failing.");
-                    *action_state = ActionState::Failure;
+                    debug!("Target is already at the closest valid position.");
                     continue;
                 };
 
-                cmd.entity(*actor).insert((
-                    Target(target_pos),
-                    TiledPathFindingQuery::new(target_pos)
+                cmd.entity(*actor)
+                    .insert((TiledPathFindingQuery::new(target_pos)
                         .with_success_range((0., 0.))
-                        .with_timeout(Duration::from_secs(2)),
-                ));
+                        .with_timeout(Duration::from_secs(2)),));
 
                 debug!("Calculating path towards {:?}", target_pos);
-                *action_state = ActionState::Success;
             }
             ActionState::Cancelled => {
-                cmd.entity(*actor).remove::<Target>();
                 *action_state = ActionState::Failure;
             }
             _ => {}
@@ -159,10 +165,12 @@ fn get_closest_valid_surrounding_position(
     actor_pos: &TilePosition,
     flags_cache: &Res<Cache<TilePosition, Flags>>,
 ) -> Option<TilePosition> {
+    let flags_cache_arc = Arc::clone(&flags_cache);
+
     destination_pos
         .get_surroundings()
         .iter()
-        .filter(|&pos| pos.is_navigable(flags_cache) || pos == actor_pos)
+        .filter(|&pos| pos.can_be_navigated(flags_cache_arc.clone()) || pos == actor_pos)
         .map(|&pos| (pos, pos.distance(actor_pos)))
         .min_by(|(a, a_weight), (b, b_weight)| {
             (a.distance(actor_pos) * *a_weight)

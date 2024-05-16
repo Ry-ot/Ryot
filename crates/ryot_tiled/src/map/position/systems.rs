@@ -122,19 +122,3 @@ pub fn finish_position_animation(
             }
         });
 }
-
-#[cfg(feature = "pathfinding")]
-use ryot_pathfinder::pathable::Pathable;
-#[cfg(feature = "pathfinding")]
-impl TilePosition {
-    pub fn is_navigable(
-        &self,
-        flags_cache: &Res<ryot_utils::cache::Cache<TilePosition, ryot_core::prelude::Flags>>,
-    ) -> bool {
-        if let Ok(read_guard) = flags_cache.read() {
-            self.can_be_navigated(read_guard.get(self))
-        } else {
-            false
-        }
-    }
-}
