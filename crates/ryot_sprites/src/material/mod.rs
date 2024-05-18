@@ -5,13 +5,21 @@ use bevy_ecs::prelude::{Commands, Query, With, Without};
 use bevy_reflect::TypePath;
 use bevy_render::color::Color;
 use bevy_render::prelude::Image;
-use bevy_render::render_resource::{AsBindGroup, ShaderRef};
+use bevy_render::render_resource::{AsBindGroup, ShaderRef, ShaderType};
 use bevy_sprite::{Material2d, MaterialMesh2dBundle};
 use glam::Vec2;
 use ryot_core::prelude::{ContentId, SpriteLayout};
 
 pub mod meshes;
 pub mod params;
+
+#[derive(AsBindGroup, TypePath, Asset, Debug, Clone, Default, PartialEq, ShaderType)]
+pub struct ColorMask {
+    pub yellow: Color,
+    pub red: Color,
+    pub green: Color,
+    pub blue: Color,
+}
 
 #[derive(AsBindGroup, TypePath, Asset, Debug, Clone, Default, PartialEq)]
 pub struct SpriteMaterial {
@@ -27,6 +35,10 @@ pub struct SpriteMaterial {
     pub tint: Color,
     #[uniform(0)]
     pub alpha: f32,
+    #[uniform(0)]
+    pub colorize: u32,
+    #[uniform(0)]
+    pub color_mask: ColorMask,
     #[texture(1)]
     #[sampler(2)]
     pub texture: Handle<Image>,

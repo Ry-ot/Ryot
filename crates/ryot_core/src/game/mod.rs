@@ -1,5 +1,5 @@
 mod properties;
-pub use properties::{Elevation, Properties};
+pub use properties::{Addons, Color, Colorize, Elevation, Properties};
 
 mod navigable;
 pub use navigable::{append_navigable, Navigable};

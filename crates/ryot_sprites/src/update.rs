@@ -68,16 +68,12 @@ pub(crate) fn sprite_material_from_params(
     sprite: &LoadedSprite,
 ) -> Handle<SpriteMaterial> {
     sprite_params
-        .map(|params| {
-            if params.has_any() {
-                materials
-                    .get(sprite.material.id())
-                    .map(|base| params.to_material(base.clone()))
-                    .map(|material| materials.add(material))
-                    .unwrap_or_else(|| sprite.material.clone())
-            } else {
-                sprite.material.clone()
-            }
+        .filter(|params| params.has_any())
+        .and_then(|params| {
+            materials
+                .get(sprite.material.id())
+                .map(|base| params.to_material(base.clone()))
+                .map(|material| materials.add(material))
         })
         .unwrap_or_else(|| sprite.material.clone())
 }
