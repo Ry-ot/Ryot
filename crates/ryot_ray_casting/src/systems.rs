@@ -106,8 +106,8 @@ pub fn share_results<T: Copy + ThreadSafe, P: RayCastingPoint>(
         } else if let Ok(mut result) = q_results.get_mut(entity) {
             result.area_of_interest.extend(shared.area_of_interest);
             result.collisions.extend(shared.collisions);
-        } else {
-            commands.entity(entity).try_insert(shared);
+        } else if let Some(mut entity) = commands.get_entity(entity) {
+            entity.try_insert(shared);
         }
     }
 }

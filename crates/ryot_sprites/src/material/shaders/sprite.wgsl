@@ -1,4 +1,12 @@
 #import bevy_sprite::mesh2d_view_bindings::globals
+
+struct ColorMask {
+    yellow: vec4<f32>,
+    red: vec4<f32>,
+    green: vec4<f32>,
+    blue: vec4<f32>,
+};
+
 struct SpriteMaterial {
     index: u32,
     counts: vec2<f32>,
@@ -6,7 +14,10 @@ struct SpriteMaterial {
     outline_color: vec4<f32>,
     tint: vec4<f32>,
     alpha: f32,
+    colorize: u32,
+    color_mask: ColorMask,
 };
+
 @group(2) @binding(0)
 var<uniform> material: SpriteMaterial;
 @group(2) @binding(1)
@@ -35,17 +46,17 @@ fn fragment(
     let cuv = vec2(ux, uy);
     let thickness = material.outline_thickness / 1000.;
 
-    let base = pixel(vec2(0., 0.), cuv, vec2(0., 0.));
+    var base = pixel(0, cuv, vec2(0., 0.));
 
     var outline_alpha : f32 = 0.;
-    outline_alpha += pixel(vec2(0., 0.), cuv, vec2(thickness, 0.)).a;
-    outline_alpha += pixel(vec2(0., 0.), cuv, vec2(-thickness, 0.)).a;
-    outline_alpha += pixel(vec2(0., 0.), cuv, vec2(0., thickness)).a;
-    outline_alpha += pixel(vec2(0., 0.), cuv, vec2(0., -thickness)).a;
-    outline_alpha += pixel(vec2(0., 0.), cuv, vec2(thickness, -thickness)).a;
-    outline_alpha += pixel(vec2(0., 0.), cuv, vec2(-thickness, thickness)).a;
-    outline_alpha += pixel(vec2(0., 0.), cuv, vec2(thickness, thickness)).a;
-    outline_alpha += pixel(vec2(0., 0.), cuv, vec2(-thickness, -thickness)).a;
+    outline_alpha += pixel(0, cuv, vec2(thickness, 0.)).a;
+    outline_alpha += pixel(0, cuv, vec2(-thickness, 0.)).a;
+    outline_alpha += pixel(0, cuv, vec2(0., thickness)).a;
+    outline_alpha += pixel(0, cuv, vec2(0., -thickness)).a;
+    outline_alpha += pixel(0, cuv, vec2(thickness, -thickness)).a;
+    outline_alpha += pixel(0, cuv, vec2(-thickness, thickness)).a;
+    outline_alpha += pixel(0, cuv, vec2(thickness, thickness)).a;
+    outline_alpha += pixel(0, cuv, vec2(-thickness, -thickness)).a;
     outline_alpha = min(outline_alpha, 1.0);
 
     let outline_color = material.outline_color * vec4<f32>(1.0, 1.0, 1.0, outline_alpha);
@@ -70,13 +81,20 @@ fn fragment(
         return outline_color;
     }
 
-    var outlined = mix(base, outline_color, outline_alpha - base.a);
+    var colorized = base;
+    if (material.colorize == 1) {
+        let mask = pixel(1, cuv, vec2(0., 0.));
+        colorized = colorize(base, mask);
+    }
+
+    var outlined = mix(colorized, outline_color, outline_alpha - colorized.a);
     var tinted = mix(outlined, vec4<f32>(outlined.rgb * material.tint.rgb, outlined.a), material.tint.a);
     tinted.a *= material.alpha;
+
     return tinted;
 }
 
-fn pixel(offset: vec2<f32>, uv: vec2<f32>, adjustment: vec2<f32>) -> vec4<f32> {
+fn pixel(offset: i32, uv: vec2<f32>, adjustment: vec2<f32>) -> vec4<f32> {
     let base_uv = uv_offset(offset, vec2<f32>(0, 0));
     // Use a small inset to avoid sampling the borders
     let inset = 0.001;
@@ -96,8 +114,18 @@ fn pixel(offset: vec2<f32>, uv: vec2<f32>, adjustment: vec2<f32>) -> vec4<f32> {
     return get_sample(clamped_uv);
 }
 
-fn uv_offset(offset: vec2<f32>, uv: vec2<f32>) -> vec2<f32> {
-    let uvx = uv.x + (f32(material.index % u32(material.counts.x)) + offset.x) / material.counts.x;
-    let uvy = uv.y + (f32(material.index / u32(material.counts.y)) + offset.y) / material.counts.y;
+fn colorize(base: vec4<f32>, mask: vec4<f32>) -> vec4<f32> {
+    let imask = 1. - mask;
+    let mask_color = (material.color_mask.yellow* mask.x*mask.y*imask.z + // 110
+            material.color_mask.red * mask.x*imask.y*imask.z +         // 100
+            material.color_mask.green * imask.x*mask.y*imask.z +         // 010
+            material.color_mask.blue * imask.x*imask.y*mask.z);         // 001
+    return base * (1. - mask_color.w) + base*mask_color*mask_color.w;
+}
+
+fn uv_offset(offset: i32, uv: vec2<f32>) -> vec2<f32> {
+    let index = i32(material.index) + offset;
+    let uvx = uv.x + f32(index % i32(material.counts.x)) / material.counts.x;
+    let uvy = uv.y + f32(index / i32(material.counts.y)) / material.counts.y;
     return vec2(uvx, uvy);
 }
